@@ -1,9 +1,6 @@
 #!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
-#!/sw/opt/pypy-2.4.0-src/pypy/goal/pypy-c
-
-
 """
 ---------
 config.py
@@ -18,84 +15,38 @@ parameters.
 :created_on: 26-02-2015
 
 """
+from ConfigParser import  ConfigParser
 
-from __future__ import print_function
+__all__ = ["get_config"]
 
-import os
-import sys
-from ConfigParser import SafeConfigParser
+config = ConfigParser()
+config.read("../config.txt")
 
-from utils import flash
+class Defaults(object):
+    pass
 
-# edit this name if you rename your config file
-CONFIG_FILE = "config.txt"
-
-
-def load_config(option):
-    """
-    Loads and tests input parameters.
-
-    :param option: option name
-    :return: returns a valid config value for the inputed option
+def get_config(*vars, **default):
     """
 
-    parser = SafeConfigParser()
-    try:
-        filename = "{}/{}".format(os.getcwd(), CONFIG_FILE)
-        parser.read(filename)
+    :param var: list of [str, ]
+    :return:
+    """
+    if not default:
+        default = Defaults()
+    for var in vars:
+        found = False
+        for section in config.sections():
+            for var_name, var_par in config.items(section):
+                if var == var_name:
+                    if var_par == "...":
+                        raise NotImplementedError
+                    else:
+                        setattr(default, var, var_par)
+                    found = True
+        if not found:
+            raise TypeError
 
-        # global paths
-        if option == "tmp_dir":
-            return parser.get('Global', 'tmp_dir')
-        if option == "db_root":
-            return parser.get('Global', 'db_root')
-        elif option == "db_data":
-            return parser.get('Global', 'db_data')
-        elif option == "db_pdb":
-            return parser.get('Global', 'db_pdb')
-        elif option == "db_cif":
-            return parser.get('Global', 'db_cif')
-        elif option == "db_sifts":
-            return parser.get('Global', 'db_sifts')
-        elif option == "db_dssp":
-            return parser.get('Global', 'db_dssp')
-        elif option == "db_uniprot":
-            return parser.get('Global', 'db_uniprot')
-        elif option == "db_results":
-            return parser.get('Global', 'db_results')
-        elif option == "db_biolip":
-            return parser.get('Global', 'db_biolip')
-        elif option == "db_cath":
-            return parser.get('Global', 'db_cath')
+    return default
 
-        # addresses for fetching/downloading data
-        elif option == "api_pdbe":
-            return parser.get('Addresses', 'api_pdbe')
-        elif option == "api_cath":
-            return parser.get('Addresses', 'api_cath')
-        elif option == "web_cath":
-            return parser.get('Addresses', 'web_cath')
-        elif option == "api_rcsb":
-            return parser.get('Addresses', 'api_rcsb')
-        elif option == "rsync_pdb":
-            return parser.get('Addresses', 'rsync_pdb')
-        elif option == "rsync_cif":
-            return parser.get('Addresses', 'rsync_cif')
-        elif option == "rsync_sifts":
-            return parser.get('Addresses', 'rsync_sifts')
-        elif option == "rsync_dssp":
-            return parser.get('Addresses', 'rsync_dssp')
-        elif option == "ftp_sifts":
-            return parser.get('Addresses', 'ftp_sifts')
-        elif option == "ftp_obsolete":
-            return parser.get('Addresses', 'ftp_obsolete')
-        elif option == "http_uniprot":
-            return parser.get('Addresses', 'http_uniprot')
-        else:
-            raise ValueError("ERROR: Invalid option")
-    except IOError:
-        flash("ERROR: Invalid Config File")
-
-
-if __name__ == "__main__":
-    print("Testing...")
+defaults = get_config("api_rcsb")
+print dir(defaults)
