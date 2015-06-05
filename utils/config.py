@@ -8,8 +8,10 @@ config.py
 
 This defines the methods that load and validate user defined
 parameters.
+Usage
+defaults = get_config("api_rcsb")
+r = request.get(url = defaults.api_rcsb)
 
-.. moduleauthor:: Fabio Madeira
 
 :module_version: 1.0
 :created_on: 26-02-2015
@@ -48,5 +50,4 @@ def get_config(*vars, **default):
 
     return default
 
-defaults = get_config("api_rcsb")
-print dir(defaults)
+
