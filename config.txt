@@ -1,15 +1,12 @@
 [Global]
-tmp_dir = /tmp/
-db_root = /cluster/gjb_lab/fmmarquesmadeira/NOBACK/
-db_data = DATA/
-db_pdb = pdb/
-db_cif = cif/
-db_sifts = sifts/
-db_dssp = dssp/
-db_uniprot = uniprot/
-db_results = out/
-db_biolip = BIOLIP/
-db_cath = cath/
+db_pdb = ...
+db_mmcif = ...
+db_sifts = ...
+db_dssp = ...
+db_uniprot = ...
+db_output = ...
+db_biolip = ...
+db_cath = ...
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/
@@ -23,3 +20,6 @@ rsync_dssp = rsync.cmbi.ru.nl::dssp/
 ftp_sifts = ftp.ebi.ac.uk/pub/databases/msd/sifts/text/
 ftp_obsolete = ftp.ebi.ac.uk/pub/databases/rcsb/pdb/data/status/obsolete.dat
 http_uniprot = http://www.uniprot.org/uniprot/
+
+[Variables]
+
