@@ -49,5 +49,3 @@ def get_config(*vars, **default):
             raise TypeError
 
     return default
-
-
