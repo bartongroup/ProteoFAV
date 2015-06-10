@@ -39,6 +39,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_id_error5 = None
         self.uniprot_info = None
         self.uniprot_ensembl = None
+        self.isvalid = None
 
     def test_to_table_uniprot(self):
         """

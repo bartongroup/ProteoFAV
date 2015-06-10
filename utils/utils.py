@@ -165,7 +165,7 @@ def request_info_url(url, params=None, verbose=False):
 
 def isvalid_uniprot(identifier):
     """
-    'Quickly' checks if a UniProt is valid.
+    'Quickly' checks if a UniProt id is valid.
 
     :param identifier: testing ID
     :return: boolean
@@ -174,7 +174,27 @@ def isvalid_uniprot(identifier):
     config = get_config('http_uniprot')
     try:
         if identifier != '':
-            request_info_url("".join([config.http_uniprot, str(identifier)]))
+            request_info_url("{}{}.fasta".format(config.http_uniprot,
+                                                 str(identifier)))
+            return True
+        else:
+            raise Exception
+    except Exception:
+        return False
+
+
+def isvalid_pdb(identifier):
+    """
+    'Quickly' checks if a PDB id is valid.
+
+    :param identifier: testing ID
+    :return: boolean
+    """
+
+    config = get_config('http_pdbe')
+    try:
+        if identifier != '':
+            request_info_url("{}{}".format(config.http_pdbe, str(identifier)))
             return True
         else:
             raise Exception

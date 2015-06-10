@@ -10,6 +10,7 @@ __version__ = "1.0"
 
 import unittest
 from main import to_table
+from utils import utils
 
 
 class TestMMCIFParser(unittest.TestCase):
@@ -20,11 +21,39 @@ class TestMMCIFParser(unittest.TestCase):
         self.example_mmcif = "CIF/2pah.cif"
         self.mmcif_parser = to_table._mmcif_atom_to_table
 
+        self.pdb_id = '2pah'
+        self.pdb_id_error1 = ''
+        self.pdb_id_error2 = '1234 ads'
+        self.pdb_id_error3 = 1234
+        self.pdb_id_error4 = ()
+        self.pdb_id_error5 = []
+        self.isvalid = utils.isvalid_pdb
+
     def tearDown(self):
         """Remove testing framework."""
 
         self.example_mmcif = None
         self.mmcif_parser = None
+
+        self.pdb_id = None
+        self.pdb_id_error1 = None
+        self.pdb_id_error2 = None
+        self.pdb_id_error3 = None
+        self.pdb_id_error4 = None
+        self.pdb_id_error5 = None
+        self.isvalid = None
+
+    def test_to_table_pdb(self):
+        """
+        Testing input of invalid UniProt identifiers.
+        """
+
+        self.assertTrue(self.isvalid(self.pdb_id), 1)
+        self.assertFalse(self.isvalid(self.pdb_id_error1), 1)
+        self.assertFalse(self.isvalid(self.pdb_id_error2), 1)
+        self.assertFalse(self.isvalid(self.pdb_id_error3), 1)
+        self.assertFalse(self.isvalid(self.pdb_id_error4), 1)
+        self.assertFalse(self.isvalid(self.pdb_id_error5), 1)
 
     def test_to_table_mmcif(self):
         """
