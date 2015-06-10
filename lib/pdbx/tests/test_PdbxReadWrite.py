@@ -29,8 +29,8 @@ class PdbxReadWriteTests(unittest.TestCase):
     def setUp(self):
         self.lfh = sys.stdout
         self.verbose = False
-        self.pathPdbxDataFile = "mmCIF/1kip.cif"
-        self.pathOutputFile = "mmCIF/testOutputDataFile.cif"
+        self.pathPdbxDataFile = "CIF/1kip.cif"
+        self.pathOutputFile = "CIF/testOutputDataFile.cif"
 
     def tearDown(self):
         pass
@@ -42,7 +42,7 @@ class PdbxReadWriteTests(unittest.TestCase):
                                                sys._getframe().f_code.co_name))
         try:
             #
-            fn = "mmCIF/test-simple.cif"
+            fn = "CIF/test-simple.cif"
             attributeNameList = ['aOne', 'aTwo', 'aThree', 'aFour', 'aFive', 'aSix', 'aSeven', 'aEight', 'aNine',
                                  'aTen']
             rowList = [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -83,7 +83,7 @@ class PdbxReadWriteTests(unittest.TestCase):
                     self.lfh.write("Recovered data category  %s\n" % name)
                     self.lfh.write("Attribute list           %r\n" % repr(aList))
                     self.lfh.write("Row list                 %r\n" % repr(rList))
-            os.remove("mmCIF/test-simple.cif")
+            os.remove("CIF/test-simple.cif")
         except:
             traceback.print_exc(file=self.lfh)
             self.fail()
@@ -96,7 +96,7 @@ class PdbxReadWriteTests(unittest.TestCase):
         try:
             #
             myDataList = []
-            ofh = open("mmCIF/test-output.cif", "w")
+            ofh = open("CIF/test-output.cif", "w")
             curContainer = DataContainer("myblock")
             aCat = DataCategory("pdbx_seqtool_mapping_ref")
             aCat.appendAttribute("ordinal")
@@ -119,7 +119,7 @@ class PdbxReadWriteTests(unittest.TestCase):
             pdbxW = PdbxWriter(ofh)
             pdbxW.write(myDataList)
             ofh.close()
-            os.remove("mmCIF/test-output.cif")
+            os.remove("CIF/test-output.cif")
         except:
             traceback.print_exc(file=self.lfh)
             self.fail()
@@ -153,7 +153,7 @@ class PdbxReadWriteTests(unittest.TestCase):
 
             curContainer.append(aCat)
             myDataList.append(curContainer)
-            ofh = open("mmCIF/test-output-1.cif", "w")
+            ofh = open("CIF/test-output-1.cif", "w")
             pdbxW = PdbxWriter(ofh)
             pdbxW.write(myDataList)
             ofh.close()
@@ -162,7 +162,7 @@ class PdbxReadWriteTests(unittest.TestCase):
             # Read and update the data -
             # 
             myDataList = []
-            ifh = open("mmCIF/test-output-1.cif", "r")
+            ifh = open("CIF/test-output-1.cif", "r")
             pRd = PdbxReader(ifh)
             pRd.read(myDataList)
             ifh.close()
@@ -174,12 +174,12 @@ class PdbxReadWriteTests(unittest.TestCase):
             for iRow in xrange(0, myCat.getRowCount()):
                 myCat.setValue('some value', 'ref_mon_id', iRow)
                 myCat.setValue(100, 'ref_mon_num', iRow)
-            ofh = open("mmCIF/test-output-2.cif", "w")
+            ofh = open("CIF/test-output-2.cif", "w")
             pdbxW = PdbxWriter(ofh)
             pdbxW.write(myDataList)
             ofh.close()
-            os.remove("mmCIF/test-output-1.cif")
-            os.remove("mmCIF/test-output-2.cif")
+            os.remove("CIF/test-output-1.cif")
+            os.remove("CIF/test-output-2.cif")
 
         except:
             traceback.print_exc(file=self.lfh)

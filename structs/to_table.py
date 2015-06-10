@@ -40,26 +40,20 @@ def _mmcif_to_table(filename, delimiter=None):
     """
     Testing a loader of mmCIF ATOM lines with pandas.
 
-    :param filename: input mmCIF file
+    :param filename: input CIF file
     :return: pandas table dataframe
     """
 
     if not os.path.isfile(filename):
         raise IOError('File {} not found or unavailable.'.format(filename))
 
-    _header_mmcif = (
-    "group_PDB", "id", "type_symbol", "label_atom_id", "label_alt_id",
-    "label_comp_id", "label_asym_id", "label_entity_id", "label_seq_id",
-    "pdbx_PDB_ins_code", "Cartn_x", "Cartn_y", "Cartn_z", "occupancy",
-    "B_iso_or_equiv", "Cartn_x_esd", "Cartn_y_esd", "Cartn_z_esd",
-    "occupancy_esd", "B_iso_or_equiv_esd", "pdbx_formal_charge",
-    "auth_seq_id", "auth_comp_id", "auth_asym_id", "auth_atom_id",
-    "pdbx_PDB_model_num", "pdbe_label_seq_id")
-
+    _header_mmcif = []
     lines = []
     with open(filename) as inlines:
         for line in inlines:
-            if line.startswith("ATOM"):
+            if line.startswith("_atom_site."):
+                _header_mmcif.append(line.split('.')[1].rstrip())
+            elif line.startswith("ATOM"):
                 lines.append(line)
             elif line.startswith("HETATM"):
                 lines.append(line)

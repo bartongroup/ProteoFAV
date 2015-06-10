@@ -100,7 +100,7 @@ class PdbxReader(object):
 
            Returns: (reserved word, state)
            where - 
-              reserved word -  is one of CIF syntax elements:
+              reserved word -  is one of mmCIF syntax elements:
                                data_, loop_, global_, save_, stop_
               state - the parser state required to process this next section.
         """
@@ -338,7 +338,7 @@ class PdbxReader(object):
 
 
     def __tokenizer(self, ifh):
-        """ Tokenizer method for the mmCIF syntax file - 
+        """ Tokenizer method for the mmCIF syntax file -
 
             Each return/yield from this method returns information about
             the next token in the form of a tuple with the following structure.
@@ -412,7 +412,7 @@ class PdbxReader(object):
                     yield groups
 
     def __tokenizerOrg(self, ifh):
-        """ Tokenizer method for the mmCIF syntax file - 
+        """ Tokenizer method for the mmCIF syntax file -
 
             Each return/yield from this method returns information about
             the next token in the form of a tuple with the following structure.

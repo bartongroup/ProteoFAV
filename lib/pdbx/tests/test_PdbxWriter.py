@@ -30,8 +30,8 @@ class PdbxWriterTests(unittest.TestCase):
     def setUp(self):
         self.lfh = sys.stderr
         self.verbose = False
-        self.pathPdbxDataFile = "mmCIF/1kip.cif"
-        self.pathOutputFile = "mmCIF/testOutputDataFile.cif"
+        self.pathPdbxDataFile = "CIF/1kip.cif"
+        self.pathOutputFile = "CIF/testOutputDataFile.cif"
 
     def tearDown(self):
         pass
@@ -44,7 +44,7 @@ class PdbxWriterTests(unittest.TestCase):
         try:
             #
             myDataList = []
-            ofh = open("mmCIF/test-output.cif", "w")
+            ofh = open("CIF/test-output.cif", "w")
             curContainer = DataContainer("myblock")
             aCat = DataCategory("pdbx_seqtool_mapping_ref")
             aCat.appendAttribute("ordinal")
@@ -63,7 +63,7 @@ class PdbxWriterTests(unittest.TestCase):
             pdbxW = PdbxWriter(ofh)
             pdbxW.write(myDataList)
             ofh.close()
-            os.remove("mmCIF/test-output.cif")
+            os.remove("CIF/test-output.cif")
         except:
             traceback.print_exc(file=sys.stderr)
             self.fail()
@@ -77,7 +77,7 @@ class PdbxWriterTests(unittest.TestCase):
             # Create a initial data file --
             #
             myDataList = []
-            ofh = open("mmCIF/test-output-1.cif", "w")
+            ofh = open("CIF/test-output-1.cif", "w")
             curContainer = DataContainer("myblock")
             aCat = DataCategory("pdbx_seqtool_mapping_ref")
             aCat.appendAttribute("ordinal")
@@ -100,7 +100,7 @@ class PdbxWriterTests(unittest.TestCase):
             # Read and update the data -
             # 
             myDataList = []
-            ifh = open("mmCIF/test-output-1.cif", "r")
+            ifh = open("CIF/test-output-1.cif", "r")
             pRd = PdbxReader(ifh)
             pRd.read(myDataList)
             ifh.close()
@@ -112,12 +112,12 @@ class PdbxWriterTests(unittest.TestCase):
             for iRow in xrange(0, myCat.getRowCount()):
                 myCat.setValue('some value', 'ref_mon_id', iRow)
                 myCat.setValue(100, 'ref_mon_num', iRow)
-            ofh = open("mmCIF/test-output-2.cif", "w")
+            ofh = open("CIF/test-output-2.cif", "w")
             pdbxW = PdbxWriter(ofh)
             pdbxW.write(myDataList)
             ofh.close()
-            os.remove("mmCIF/test-output-1.cif")
-            os.remove("mmCIF/test-output-2.cif")
+            os.remove("CIF/test-output-1.cif")
+            os.remove("CIF/test-output-2.cif")
 
         except:
             traceback.print_exc(file=sys.stderr)

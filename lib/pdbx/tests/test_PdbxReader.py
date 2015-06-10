@@ -23,9 +23,9 @@ class PdbxReaderTests(unittest.TestCase):
     def setUp(self):
         self.lfh = sys.stderr
         self.verbose = False
-        self.pathPdbxDataFile = "mmCIF/1kip.cif"
-        self.pathBigPdbxDataFile = "mmCIF/1ffk.cif"
-        self.pathSFDataFile = "mmCIF/1kip-sf.cif"
+        self.pathPdbxDataFile = "CIF/1kip.cif"
+        self.pathBigPdbxDataFile = "CIF/1ffk.cif"
+        self.pathSFDataFile = "CIF/1kip-sf.cif"
 
     def tearDown(self):
         pass
