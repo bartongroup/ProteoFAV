@@ -47,23 +47,22 @@ def _mmcif_to_table(lines):
     "auth_seq_id", "auth_comp_id", "auth_asym_id", "auth_atom_id",
     "pdbx_PDB_model_num", "pdbe_label_seq_id")
 
-    line = None
     for line in lines:
         if line.startswith("ATOM"):
             break
-    lines = [line]
+    rows = [line]
     for line in lines:
         if line.startswith("HETATM"):
             break
-        lines.append(line)
-    lines.append(line)
+        rows.append(line)
+    rows.append(line)
     for line in lines:
         if not line.startswith("HETATM"):
             break
-        lines.append(line)
+        rows.append(line)
 
-    lines = "".join(lines)
-    return pd.read_table(StringIO(lines), sep=" ", names=_header_mmcif,
+    rows = "".join(rows)
+    return pd.read_table(StringIO(rows), sep=" ", names=_header_mmcif,
                          compression=None)
 
 
