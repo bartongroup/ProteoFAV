@@ -43,7 +43,7 @@ class TestDSSPParser(unittest.TestCase):
         self.assertEqual(len(data.columns.values), 7)
 
         # check whether there are particular keys
-        self.assertTrue('chain_id' in data.columns.values)
+        self.assertIn('chain_id', data.columns.values)
 
         # check the values for particular entries
         self.assertTrue(data.loc[1, 'chain_id'] == 'A')

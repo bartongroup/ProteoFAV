@@ -1,0 +1,3 @@
+# mmCIF/PDBx Parser from http://mmcif.wwpdb.org/docs/sw-examples/python/html/
+# Added on the 03 December 2014
+# I (Fabio) have performed some refactoring but didn't touch functionality

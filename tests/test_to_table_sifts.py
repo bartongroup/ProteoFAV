@@ -45,7 +45,7 @@ class TestSIFTSParser(unittest.TestCase):
         self.assertEqual(len(data.columns.values), 38)
 
         # check whether there are particular keys
-        self.assertTrue('CATH_dbAccessionId' in data.columns.values)
+        self.assertIn('CATH_dbAccessionId', data.columns.values)
 
         # check the values for particular entries
         self.assertTrue(data['CATH_dbAccessionId'][0] == '1.10.800.10')
@@ -70,7 +70,7 @@ class TestSIFTSParser(unittest.TestCase):
         self.assertEqual(len(data.columns.values), 24)
 
         # check whether there are particular keys
-        self.assertTrue('PDB_dbAccessionId' in data.columns.values)
+        self.assertIn('PDB_dbAccessionId', data.columns.values)
 
         # check the values of particular entries
         self.assertTrue(data['PDB_dbAccessionId'][0] == '2pah')

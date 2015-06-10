@@ -4,6 +4,7 @@
 Created on 18:16 03/06/15 2015
 
 """
+import os
 import logging
 from StringIO import StringIO
 from lxml import etree
@@ -21,6 +22,10 @@ def _dssp_to_table(filename):
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
     """
+
+    if not os.path.isfile(filename):
+        raise IOError('File {} not found or unavailable.'.format(filename))
+
     # column width descriptors
     cols_widths = ((0, 5), (6, 10), (11, 12), (13, 14), (16, 17), (35, 38),
                    (103, 109), (109, 115))
@@ -31,13 +36,17 @@ def _dssp_to_table(filename):
                        colspecs=cols_widths, index_col=0, compression=None)
 
 
-def _mmcif_to_table(lines):
+def _mmcif_to_table(filename, delimiter=None):
     """
     Testing a loader of mmCIF ATOM lines with pandas.
 
-    :param lines: mmCIF ATOM lines
+    :param filename: input mmCIF file
     :return: pandas table dataframe
     """
+
+    if not os.path.isfile(filename):
+        raise IOError('File {} not found or unavailable.'.format(filename))
+
     _header_mmcif = (
     "group_PDB", "id", "type_symbol", "label_atom_id", "label_alt_id",
     "label_comp_id", "label_asym_id", "label_entity_id", "label_seq_id",
@@ -47,24 +56,21 @@ def _mmcif_to_table(lines):
     "auth_seq_id", "auth_comp_id", "auth_asym_id", "auth_atom_id",
     "pdbx_PDB_model_num", "pdbe_label_seq_id")
 
-    line = None
-    for line in lines:
-        if line.startswith("ATOM"):
-            break
-    lines = [line]
-    for line in lines:
-        if line.startswith("HETATM"):
-            break
-        lines.append(line)
-    lines.append(line)
-    for line in lines:
-        if not line.startswith("HETATM"):
-            break
-        lines.append(line)
-
+    lines = []
+    with open(filename) as inlines:
+        for line in inlines:
+            if line.startswith("ATOM"):
+                lines.append(line)
+            elif line.startswith("HETATM"):
+                lines.append(line)
     lines = "".join(lines)
-    return pd.read_table(StringIO(lines), sep=" ", names=_header_mmcif,
-                         compression=None)
+
+    if delimiter is None:
+        return pd.read_table(StringIO(lines), delim_whitespace=True,
+                             names=_header_mmcif, compression=None)
+    else:
+        return pd.read_table(StringIO(lines), sep=str(delimiter),
+                             names=_header_mmcif, compression=None)
 
 
 def _sifts_to_table_residues(filename):
@@ -72,11 +78,12 @@ def _sifts_to_table_residues(filename):
     Loads and parses SIFTS XML files generating a pandas dataframe.
     Parses the Residue entries.
 
-    TODO: Test that the file exists and it is valid?
-
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
     """
+
+    if not os.path.isfile(filename):
+        raise IOError('File {} not found or unavailable.'.format(filename))
 
     tree = etree.parse(filename)
     root = tree.getroot()
@@ -139,11 +146,12 @@ def _sifts_to_table_regions(filename):
     Loads and parses SIFTS XML files generating a pandas dataframe.
     Parses the Regions entries.
 
-    TODO: Test that the file exists and it is valid?
-
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
     """
+
+    if not os.path.isfile(filename):
+        raise IOError('File {} not found or unavailable.'.format(filename))
 
     tree = etree.parse(filename)
     root = tree.getroot()
@@ -164,7 +172,7 @@ def _sifts_to_table_regions(filename):
                 for k, v in annotation.attrib.items():
                     # db entries
                     if annotation.tag == db_reference:
-                        # skiping dbSource
+                        # skipping dbSource
                         if k == 'dbSource':
                             continue
 
