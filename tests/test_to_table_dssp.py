@@ -1,4 +1,5 @@
 #!/local/bin/python
+# -*- coding: utf-8 -*-
 
 """
 Created on 09/06/2015
@@ -8,7 +9,7 @@ Created on 09/06/2015
 __version__ = "1.0"
 
 import unittest
-from structs import to_table
+from main import to_table
 
 
 class TestDSSPParser(unittest.TestCase):
@@ -28,7 +29,6 @@ class TestDSSPParser(unittest.TestCase):
     def test_to_table_dssp_residues(self):
         """
         Tests the parsing real DSSP files.
-        This test focuses on the method that parses the residue entries.
 
         Some checks are made to whether the parsed keys and values
         are the ones we are expecting.

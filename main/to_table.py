@@ -1,15 +1,21 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 Created on 18:16 03/06/15 2015
 
 """
+import sys
+sys.path.insert(0, '../')
 import os
 import logging
 from StringIO import StringIO
 from lxml import etree
 
 import pandas as pd
+
+from utils.config import get_config
+from utils.utils import request_info_url
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +42,7 @@ def _dssp_to_table(filename):
                        colspecs=cols_widths, index_col=0, compression=None)
 
 
-def _mmcif_to_table(filename, delimiter=None):
+def _mmcif_atom_to_table(filename, delimiter=None):
     """
     Testing a loader of mmCIF ATOM lines with pandas.
 
@@ -67,7 +73,7 @@ def _mmcif_to_table(filename, delimiter=None):
                              names=_header_mmcif, compression=None)
 
 
-def _sifts_to_table_residues(filename):
+def _sifts_residues_to_table(filename):
     """
     Loads and parses SIFTS XML files generating a pandas dataframe.
     Parses the Residue entries.
@@ -135,7 +141,7 @@ def _sifts_to_table_residues(filename):
     return pd.DataFrame(rows)
 
 
-def _sifts_to_table_regions(filename):
+def _sifts_regions_to_table(filename):
     """
     Loads and parses SIFTS XML files generating a pandas dataframe.
     Parses the Regions entries.
@@ -226,5 +232,92 @@ def _sifts_to_table_regions(filename):
     return pd.DataFrame(rows)
 
 
+def _uniprot_info_to_table(identifier, verbose=False):
+    """
+    Fetches some information including the sequence of a particular
+    UniProt entry.
+
+    :param identifier: UniProt accession identifier
+    :param verbose: boolean
+    :return: pandas table dataframe
+    """
+
+    information = {}
+    rows = []
+
+    params = {'query': 'accession:%s' % identifier,
+              'columns': 'entry name,reviewed,protein names,genes,organism,sequence,length',
+              'format': 'tab',
+              'contact': 'fmmarquesmadeira@dundee.ac.uk'}
+    config = get_config('http_uniprot')
+    request = request_info_url(config.http_uniprot, params, verbose=verbose)
+
+    data = request.text.split('\n')
+    for i, line in enumerate(data):
+        if i == 1 and line != '':
+            line = line.split('\t')
+            information['Name'] = line[0]
+            information['Status'] = line[1]
+            information['Protein'] = line[2]
+            information['Genes'] = line[3]
+            information['Organism'] = line[4]
+            information['Sequence'] = line[5]
+            information['Length'] = int(line[6])
+
+    rows.append(information)
+    return pd.DataFrame(rows)
+
+
+def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
+    """
+    Uses the UniProt mapping service to try and get Ensembl IDs for
+    the UniProt accession identifier provided.
+
+    :param identifier: UniProt accession identifier
+    :param verbose: boolean
+    :return: pandas table dataframe
+    """
+
+    information = {}
+    rows = []
+
+    ensembl_mappings = ["ENSEMBL_ID", "ENSEMBL_PRO_ID", "ENSEMBL_TRS_ID"]
+    for ensembl in ensembl_mappings:
+        params = {'from': 'ACC',
+                  'to': ensembl,
+                  'format': 'tab',
+                  'query': identifier,
+                  'contact': 'fmmarquesmadeira@dundee.ac.uk'}
+
+        config = get_config('http_uniprot_mapping')
+        request = request_info_url(config.http_uniprot_mapping, params,
+                                   verbose=verbose)
+
+        data = request.text.split('\n')
+        for i, line in enumerate(data):
+            if i >= 1 and line != '':
+                line = line.split('\t')
+                try:
+                    if line[1] in information[ensembl]:
+                        continue
+                    information[ensembl].append(line[1])
+                except KeyError:
+                    information[ensembl] = line[1]
+                except AttributeError:
+                    information[ensembl] = [information[ensembl]]
+                    information[ensembl].append(line[1])
+
+    rows.append(information)
+    return pd.DataFrame(rows)
+
+
 if __name__ == '__main__':
+    # testing routines
     pass
+    info = _uniprot_info_to_table('O96013')
+    print(info)
+
+    print(info.columns.values)
+
+    info = _uniprot_ensembl_mapping_to_table('O96013')
+    print(info)

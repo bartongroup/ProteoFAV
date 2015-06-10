@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 
@@ -22,8 +22,14 @@ from __future__ import print_function
 import os
 import re
 import sys
+sys.path.insert(0, '../')
 import random
+import time
 from datetime import datetime
+
+import requests
+
+from config import get_config
 
 
 def current_date():
@@ -67,9 +73,7 @@ def create_directory(directory):
     :return: creates a directory if it does not exist yet
     """
 
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    return
+    return os.makedirs(directory)
 
 
 def flash(message):
@@ -117,8 +121,66 @@ def get_random_string_with_n_digits(n):
     return random.randint(range_start, range_end)
 
 
+def request_info_url(url, params=None, verbose=False):
+    """
+    Gets content from the provided url.
+
+    If it fails, tries to access it a few more times to make sure it
+    was not a temporary server hang.
+
+    @param url: input URL
+    @param params: parameters to be encoded and requested
+    @param verbose: boolean
+    @return: returns a data object from *requests*
+    """
+
+    if params is None:
+        params = {}
+
+    # limiting ourselves to up to 10 requests per second
+    time.sleep(0.1)
+
+    try:
+        request = requests.get(url, params=params)
+    except Exception as e:
+        message = "{}\t{}".format(url, e)
+        flash(message)
+        raise Exception(message)
+
+    if verbose:
+        message = "{}\t{}".format(url, request.status_code)
+        flash(message)
+
+    if request.ok:
+        return request
+    # Ensembl status for exceeding number of connections per second
+    elif request.status_code == 429:
+        time.sleep(0.5)
+        request_info_url(url, params=params, verbose=verbose)
+    else:
+        message = "{}\t{}".format(url, request.status_code)
+        flash(message)
+        raise Exception(message)
+
+
+def isvalid_uniprot(identifier):
+    """
+    'Quickly' checks if a UniProt is valid.
+
+    :param identifier: testing ID
+    :return: boolean
+    """
+
+    config = get_config('http_uniprot')
+    try:
+        if identifier != '':
+            request_info_url("".join([config.http_uniprot, str(identifier)]))
+            return True
+        else:
+            raise Exception
+    except Exception:
+        return False
 
 if __name__ == '__main__':
     # testing routines
-    print(current_time())
     pass

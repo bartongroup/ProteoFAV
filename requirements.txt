@@ -4,3 +4,5 @@
 numpy
 biopython
 requests
+pandas
+lxml

@@ -1,4 +1,6 @@
 #!/local/bin/python
+# -*- coding: utf-8 -*-
+
 '''
 --------------------
 standard_parsers.py

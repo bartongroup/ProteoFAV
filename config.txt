@@ -20,6 +20,7 @@ rsync_dssp = rsync.cmbi.ru.nl::dssp/
 ftp_sifts = ftp.ebi.ac.uk/pub/databases/msd/sifts/text/
 ftp_obsolete = ftp.ebi.ac.uk/pub/databases/rcsb/pdb/data/status/obsolete.dat
 http_uniprot = http://www.uniprot.org/uniprot/
+http_uniprot_mapping = http://www.uniprot.org/mapping/
 
 [Variables]
 

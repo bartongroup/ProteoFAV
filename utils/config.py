@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -12,27 +12,32 @@ Usage
 defaults = get_config("api_rcsb")
 r = request.get(url = defaults.api_rcsb)
 
-
 :module_version: 1.0
 :created_on: 26-02-2015
 
 """
-from ConfigParser import  ConfigParser
+from ConfigParser import ConfigParser
 
 __all__ = ["get_config"]
 
 config = ConfigParser()
-config.read("../config.txt")
+config_default = "../config.txt"
+config.read(config_default)
+
 
 class Defaults(object):
     pass
 
 def get_config(*vars, **default):
     """
+    Gets the config values defined locally.
 
+    :param input_config: input config file
     :param var: list of [str, ]
-    :return:
+    :param default:
+    :return: returns an object
     """
+
     if not default:
         default = Defaults()
     for var in vars:

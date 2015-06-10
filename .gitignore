@@ -6,3 +6,4 @@ env
 ._*
 .DS_Store
 __pycache__
+config_fabio.txt
