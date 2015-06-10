@@ -13,7 +13,7 @@ from main import to_table
 from utils import utils
 
 
-class TestDSSPParser(unittest.TestCase):
+class TestUNIPROTParser(unittest.TestCase):
     """Test UniProt fetcher/parser methods."""
 
     def setUp(self):
@@ -101,5 +101,5 @@ class TestDSSPParser(unittest.TestCase):
         self.assertEqual(data['ENSEMBL_ID'][0], 'ENSG00000130669')
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestDSSPParser)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestUNIPROTParser)
     unittest.TextTestRunner(verbosity=2).run(suite)
