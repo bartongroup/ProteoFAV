@@ -358,7 +358,7 @@ def _uniprot_pdb_sifts_mapping_to_table(identifier, verbose=False):
     """
 
     if not isvalid_uniprot(identifier):
-        raise ValueError("{} is not a valid PDB Accession.".format(identifier))
+        raise ValueError("{} is not a valid UniProt Accession.".format(identifier))
 
     config = get_config('api_pdbe')
     sifts_endpoint = "mappings/best_structures/"

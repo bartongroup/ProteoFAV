@@ -194,7 +194,8 @@ def isvalid_pdb(identifier):
     config = get_config('http_pdbe')
     try:
         if identifier != '':
-            request_info_url("{}{}".format(config.http_pdbe, str(identifier)))
+            request_info_url("{}{}".format(config.http_pdbe,
+                                           str(identifier)))
             return True
         else:
             raise Exception
