@@ -46,7 +46,8 @@ def get_config(*vars, **default):
             for var_name, var_par in config.items(section):
                 if var == var_name:
                     if var_par == "...":
-                        raise NotImplementedError
+                        raise NotImplementedError(  # TODO offer to fill fields
+                            "Fill {} parameter in config.txt".format(var_par))
                     else:
                         setattr(default, var, var_par)
                     found = True
