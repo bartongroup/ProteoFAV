@@ -9,7 +9,7 @@ Created on 10/06/2015
 __version__ = "1.0"
 
 import unittest
-from main import to_table
+from uniprots import to_table
 from utils import utils
 
 
@@ -41,7 +41,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_ensembl = None
         self.isvalid = None
 
-    def test_to_table_uniprot(self):
+    def test_uniprot_ids(self):
         """
         Testing input of invalid UniProt identifiers.
         """

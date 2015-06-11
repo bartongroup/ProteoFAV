@@ -2,17 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-Created on 18:16 03/06/15 2015
+Created on 11/06/2015
 
 """
+
 import sys
 sys.path.insert(0, '../')
 import os
 import logging
 import json
-from StringIO import StringIO
 from lxml import etree
-
 import pandas as pd
 
 from utils.config import get_config
@@ -21,59 +20,6 @@ from utils.utils import isvalid_uniprot
 from utils.utils import isvalid_pdb
 
 logger = logging.getLogger(__name__)
-
-
-
-def _dssp_to_table(filename):
-    """
-    Loads and parses DSSP files generating a pandas dataframe.
-
-    :param filename: input SIFTS xml file
-    :return: pandas table dataframe
-    """
-
-    if not os.path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
-
-    # column width descriptors
-    cols_widths = ((0, 5), (6, 10), (11, 12), (13, 14), (16, 17), (35, 38),
-                   (103, 109), (109, 115))
-    # simplified headers for the table
-    dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi",
-                   "psi")
-    return pd.read_fwf(filename, skiprows=28, names=dssp_header,
-                       colspecs=cols_widths, index_col=0, compression=None)
-
-
-def _mmcif_atom_to_table(filename, delimiter=None):
-    """
-    Testing a loader of mmCIF ATOM lines with pandas.
-
-    :param filename: input CIF file
-    :return: pandas table dataframe
-    """
-
-    if not os.path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
-
-    _header_mmcif = []
-    lines = []
-    with open(filename) as inlines:
-        for line in inlines:
-            if line.startswith("_atom_site."):
-                _header_mmcif.append(line.split('.')[1].rstrip())
-            elif line.startswith("ATOM"):
-                lines.append(line)
-            elif line.startswith("HETATM"):
-                lines.append(line)
-    lines = "".join(lines)
-
-    if delimiter is None:
-        return pd.read_table(StringIO(lines), delim_whitespace=True,
-                             names=_header_mmcif, compression=None)
-    else:
-        return pd.read_table(StringIO(lines), sep=str(delimiter),
-                             names=_header_mmcif, compression=None)
 
 
 def _sifts_residues_to_table(filename):
@@ -232,91 +178,6 @@ def _sifts_regions_to_table(filename):
                         region_annotation[k].append(v)
 
             rows.append(region_annotation)
-    return pd.DataFrame(rows)
-
-
-def _uniprot_info_to_table(identifier, verbose=False):
-    """
-    Fetches some information including the sequence of a particular
-    UniProt entry.
-
-    :param identifier: UniProt accession identifier
-    :param verbose: boolean
-    :return: pandas table dataframe
-    """
-
-    if not isvalid_uniprot(identifier):
-        raise ValueError("{} is not a valid UniProt Accession.".format(identifier))
-
-    information = {}
-    rows = []
-
-    params = {'query': 'accession:%s' % identifier,
-              'columns': 'entry name,reviewed,protein names,genes,organism,sequence,length',
-              'format': 'tab',
-              'contact': 'fmmarquesmadeira@dundee.ac.uk'}
-    config = get_config('http_uniprot')
-    request = request_info_url(config.http_uniprot, params, verbose=verbose)
-
-    data = request.text.split('\n')
-    for i, line in enumerate(data):
-        if i == 1 and line != '':
-            line = line.split('\t')
-            information['Name'] = line[0]
-            information['Status'] = line[1]
-            information['Protein'] = line[2]
-            information['Genes'] = line[3]
-            information['Organism'] = line[4]
-            information['Sequence'] = line[5]
-            information['Length'] = int(line[6])
-
-    rows.append(information)
-    return pd.DataFrame(rows)
-
-
-def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
-    """
-    Uses the UniProt mapping service to try and get Ensembl IDs for
-    the UniProt accession identifier provided.
-
-    :param identifier: UniProt accession identifier
-    :param verbose: boolean
-    :return: pandas table dataframe
-    """
-
-    if not isvalid_uniprot(identifier):
-        raise ValueError("{} is not a valid UniProt Accession.".format(identifier))
-
-    information = {}
-    rows = []
-
-    ensembl_mappings = ["ENSEMBL_ID", "ENSEMBL_PRO_ID", "ENSEMBL_TRS_ID"]
-    for ensembl in ensembl_mappings:
-        params = {'from': 'ACC',
-                  'to': ensembl,
-                  'format': 'tab',
-                  'query': identifier,
-                  'contact': 'fmmarquesmadeira@dundee.ac.uk'}
-
-        config = get_config('http_uniprot_mapping')
-        request = request_info_url(config.http_uniprot_mapping, params,
-                                   verbose=verbose)
-
-        data = request.text.split('\n')
-        for i, line in enumerate(data):
-            if i >= 1 and line != '':
-                line = line.split('\t')
-                try:
-                    if line[1] in information[ensembl]:
-                        continue
-                    information[ensembl].append(line[1])
-                except KeyError:
-                    information[ensembl] = line[1]
-                except AttributeError:
-                    information[ensembl] = [information[ensembl]]
-                    information[ensembl].append(line[1])
-
-    rows.append(information)
     return pd.DataFrame(rows)
 
 

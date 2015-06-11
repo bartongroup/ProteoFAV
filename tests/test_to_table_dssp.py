@@ -9,7 +9,7 @@ Created on 09/06/2015
 __version__ = "1.0"
 
 import unittest
-from main import to_table
+from pdbs import to_table
 
 
 class TestDSSPParser(unittest.TestCase):

@@ -3,17 +3,7 @@
 
 
 """
---------
-utils.py
---------
-
-Defines a number of general purpose routines. Some need to be removed or
-moved to more appropriated locations.
-
-.. moduleauthor:: Fabio Madeira
-
-:module_version: 1.0
-:created_on: 01-03-2015
+Created on 03/06/2015
 
 """
 
@@ -25,6 +15,7 @@ import sys
 sys.path.insert(0, '../')
 import random
 import time
+import json
 from datetime import datetime
 
 import requests
@@ -201,6 +192,44 @@ def isvalid_pdb(identifier):
             raise Exception
     except Exception:
         return False
+
+
+def isvalid_ensembl(identifier, variant=False):
+    """
+    'Quickly' checks if an Ensembl id is valid.
+
+    :param identifier: testing ID
+    :param variant: boolean if True uses the variant endpoint
+    :return: boolean
+    """
+
+    config = get_config('api_ensembl')
+    if variant:
+        ensembl_endpoint = 'variation/human/'
+    else:
+        ensembl_endpoint = 'lookup/id/'
+    params = {'content-type': 'application/json'}
+    try:
+        if identifier != '':
+            request = request_info_url("{}{}{}".format(config.api_ensembl,
+                                                       ensembl_endpoint,
+                                                       str(identifier)),
+                                       params=params)
+            print(request.url)
+            data = json.loads(request.text)
+            if 'error' not in data:
+                return True
+            else:
+                return False
+        else:
+            raise Exception
+    except Exception:
+        return False
+
+
+def compare_uniprot_ensembl_sequence():
+    pass
+
 
 if __name__ == '__main__':
     # testing routines

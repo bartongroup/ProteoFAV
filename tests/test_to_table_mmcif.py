@@ -9,7 +9,7 @@ Created on 10/06/2015
 __version__ = "1.0"
 
 import unittest
-from main import to_table
+from pdbs import to_table
 from utils import utils
 
 
@@ -43,7 +43,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.pdb_id_error5 = None
         self.isvalid = None
 
-    def test_to_table_pdb(self):
+    def test_pdb_ids(self):
         """
         Testing input of invalid UniProt identifiers.
         """
