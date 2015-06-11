@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, '../')
 import os
 import logging
+import json
 from StringIO import StringIO
 from lxml import etree
 
@@ -16,6 +17,8 @@ import pandas as pd
 
 from utils.config import get_config
 from utils.utils import request_info_url
+from utils.utils import isvalid_uniprot
+from utils.utils import isvalid_pdb
 
 logger = logging.getLogger(__name__)
 
@@ -242,6 +245,9 @@ def _uniprot_info_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
 
+    if not isvalid_uniprot(identifier):
+        raise ValueError("{} is not a valid UniProt Accession.".format(identifier))
+
     information = {}
     rows = []
 
@@ -278,6 +284,9 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
 
+    if not isvalid_uniprot(identifier):
+        raise ValueError("{} is not a valid UniProt Accession.".format(identifier))
+
     information = {}
     rows = []
 
@@ -311,13 +320,58 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     return pd.DataFrame(rows)
 
 
+def _pdb_uniprot_sifts_mapping_to_table(identifier, verbose=False):
+    """
+    Queries the PDBe API for SIFTS mapping between PDB - UniProt.
+    One to many relationship expected.
+
+    :param identifier: PDB id
+    :param verbose: boolean
+    :return: pandas table dataframe
+    """
+
+    if not isvalid_pdb(identifier):
+        raise ValueError("{} is not a valid PDB Accession.".format(identifier))
+
+    config = get_config('api_pdbe')
+    sifts_endpoint = "mappings/uniprot/"
+    request = request_info_url("{}{}{}".format(config.api_pdbe, sifts_endpoint,
+                                               str(identifier), verbose=verbose))
+    information = json.loads(request.text)
+
+    rows = []
+    for uniprot in information[identifier]['UniProt']:
+        uniprots = {'uniprot_id': uniprot}
+        rows.append(uniprots)
+
+    return pd.DataFrame(rows)
+
+
+def _uniprot_pdb_sifts_mapping_to_table(identifier, verbose=False):
+    """
+    Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
+    One to many relationship expected.
+
+    :param identifier: UniProt ID
+    :param verbose: boolean
+    :return: pandas table dataframe
+    """
+
+    if not isvalid_uniprot(identifier):
+        raise ValueError("{} is not a valid PDB Accession.".format(identifier))
+
+    config = get_config('api_pdbe')
+    sifts_endpoint = "mappings/best_structures/"
+    request = request_info_url("{}{}{}".format(config.api_pdbe, sifts_endpoint,
+                                               str(identifier), verbose=verbose))
+    information = json.loads(request.text)
+
+    rows = []
+    for entry in information[identifier]:
+        rows.append(entry)
+    return pd.DataFrame(rows)
+
+
 if __name__ == '__main__':
     # testing routines
     pass
-    info = _uniprot_info_to_table('O96013')
-    print(info)
-
-    print(info.columns.values)
-
-    info = _uniprot_ensembl_mapping_to_table('O96013')
-    print(info)
