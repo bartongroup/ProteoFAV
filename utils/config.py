@@ -9,49 +9,47 @@ config.py
 This defines the methods that load and validate user defined
 parameters.
 Usage
-defaults = get_config("api_rcsb")
-r = request.get(url = defaults.api_rcsb)
+>>> from config import defaults
+>>> print(defaults.api_pdbe)
+http://www.ebi.ac.uk/pdbe/api/
 
-:module_version: 1.0
-:created_on: 26-02-2015
-
-"""
+>>> from config import Defaults
+>>> local_defaults = Defaults("../config_thiago_local.txt")
+>>> print(local_defaults.db_pdb)
+/Users/tbrittoborges/Downloads
+>>> print(local_defaults.contact_email)
+tbrittoborges@dundee.ac.uk
+>>> print(local_defaults.email)
+Traceback (most recent call last):
+...
+AttributeError: 'Defaults' object has no attribute 'email'"""
 from ConfigParser import ConfigParser
+import logging
 
-__all__ = ["get_config"]
-
-config = ConfigParser()
-config_default = "../config.txt"
-config.read(config_default)
-
+logger = logging.getLogger(__name__)
 
 class Defaults(object):
-    pass
-
-def get_config(*vars, **default):
-    """
-    Gets the config values defined locally.
-
-    :param input_config: input config file
-    :param var: list of [str, ]
-    :param default:
-    :return: returns an object
     """
 
-    if not default:
-        default = Defaults()
-    for var in vars:
-        found = False
-        for section in config.sections():
-            for var_name, var_par in config.items(section):
-                if var == var_name:
-                    if var_par == "...":
-                        raise NotImplementedError(  # TODO offer to fill fields
-                            "Fill {} parameter in config.txt".format(var_par))
-                    else:
-                        setattr(default, var, var_par)
-                    found = True
-        if not found:
-            raise TypeError
+    """
 
-    return default
+    def __init__(self, config_file=None):
+        config = ConfigParser()
+        config_default = config_file or "../config.txt"
+        config.read(config_default)
+        self.__config = config
+        self.__populate_attributes()
+
+    def __populate_attributes(self):
+        for section in self.__config.sections():
+            for var_name, var_par in self.__config.items(section):
+                if var_par == "...":
+                    var_par = self.manual_filling(var_name)
+                setattr(self, var_name, var_par)
+
+    def manual_filling(self, var_name):
+        """Offers user to write in config.txt"""
+        # raise NotImplementedError
+        return "..."
+
+defaults = Defaults()
