@@ -55,17 +55,17 @@ class TestENSEMBLParser(unittest.TestCase):
         Testing input of invalid Ensembl/Variant identifiers.
         """
 
-        self.assertTrue(self.isvalid(self.ensembl_id), 1)
-        self.assertFalse(self.isvalid(self.ensembl_id_error1), 1)
-        self.assertFalse(self.isvalid(self.ensembl_id_error2), 1)
-        self.assertFalse(self.isvalid(self.ensembl_id_error3), 1)
-        self.assertFalse(self.isvalid(self.ensembl_id_error4), 1)
-        self.assertFalse(self.isvalid(self.ensembl_id_error5), 1)
+        self.assertTrue(self.isvalid(self.ensembl_id))
+        self.assertFalse(self.isvalid(self.ensembl_id_error1))
+        self.assertFalse(self.isvalid(self.ensembl_id_error2))
+        self.assertFalse(self.isvalid(self.ensembl_id_error3))
+        self.assertFalse(self.isvalid(self.ensembl_id_error4))
+        self.assertFalse(self.isvalid(self.ensembl_id_error5))
 
-        self.assertTrue(self.isvalid(self.variant_id, variant=True), 1)
-        self.assertFalse(self.isvalid(self.variant_id_error1, variant=True), 1)
-        self.assertFalse(self.isvalid(self.variant_id_error2, variant=True), 1)
-        self.assertFalse(self.isvalid(self.variant_id_error3, variant=True), 1)
+        self.assertTrue(self.isvalid(self.variant_id, variant=True))
+        self.assertFalse(self.isvalid(self.variant_id_error1, variant=True))
+        self.assertFalse(self.isvalid(self.variant_id_error2, variant=True))
+        self.assertFalse(self.isvalid(self.variant_id_error3, variant=True))
 
     def test_to_table_transcript_variants_ensembl(self):
         """

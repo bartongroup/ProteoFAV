@@ -9,6 +9,7 @@ Created on 09/06/2015
 __version__ = "1.0"
 
 import unittest
+from os import path
 from sifts import to_table
 
 
@@ -17,7 +18,7 @@ class TestSIFTSParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_xml = "SIFTS/2pah.xml"
+        self.example_xml = path.join(path.dirname(__file__), "SIFTS/2pah.xml")
         self.residues_parser = to_table._sifts_residues_to_table
         self.regions_parser = to_table._sifts_regions_to_table
 

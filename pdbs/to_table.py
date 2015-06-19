@@ -6,8 +6,6 @@ Created on 03/06/2015
 
 """
 
-import sys
-sys.path.insert(0, '../')
 import os
 import logging
 from StringIO import StringIO
@@ -26,8 +24,7 @@ def _dssp_to_table(filename):
     :return: pandas table dataframe
     """
 
-    if not os.path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
+
 
     # column width descriptors
     cols_widths = ((0, 5), (6, 10), (11, 12), (13, 14), (16, 17), (35, 38),
@@ -35,8 +32,11 @@ def _dssp_to_table(filename):
     # simplified headers for the table
     dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi",
                    "psi")
-    return pd.read_fwf(filename, skiprows=28, names=dssp_header,
+    try:
+        return pd.read_fwf(filename, skiprows=28, names=dssp_header,
                        colspecs=cols_widths, index_col=0, compression=None)
+    except IOError:
+        raise IOError('File {} not found or unavailable.'.format(filename))
 
 
 def _mmcif_atom_to_table(filename, delimiter=None):

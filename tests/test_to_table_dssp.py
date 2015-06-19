@@ -5,19 +5,18 @@
 Created on 09/06/2015
 
 """
-
-__version__ = "1.0"
-
+from os import path
 import unittest
 from pdbs import to_table
 
+__version__ = "1.0"
 
 class TestDSSPParser(unittest.TestCase):
     """Test the DSSP parser methods."""
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_dssp = "DSSP/1iej.dssp"
+        self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
         self.residues_parser = to_table._dssp_to_table
 
     def tearDown(self):
@@ -28,7 +27,7 @@ class TestDSSPParser(unittest.TestCase):
 
     def test_to_table_dssp_residues(self):
         """
-        Tests the parsing real DSSP files.
+        Tests the parsing real DSSP files.‰
 
         Some checks are made to whether the parsed keys and values
         are the ones we are expecting.

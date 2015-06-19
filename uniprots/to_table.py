@@ -5,57 +5,81 @@
 Created on 11/06/2015
 
 """
+from StringIO import StringIO
 
-import sys
-sys.path.insert(0, '../')
 import logging
 
 import pandas as pd
 
-from utils.config import get_config
+from utils.config import defaults
 from utils.utils import request_info_url
-from utils.utils import isvalid_uniprot
+from utils.utils import get_url_or_retry
 
 logger = logging.getLogger(__name__)
 
+# def _uniprot_info_to_table(identifier, verbose=False):
+#     """
+#     Fetches some information including the sequence of a particular
+#     UniProt entry.
+#
+#     :param identifier: UniProt accession identifier
+#     :param verbose: boolean
+#     :return: pandas table dataframe
+#     """
+#
+#     information = {}
+#     rows = []
+#
+#     params = {'query': 'accession:' + identifier,
+#               'columns': 'entry name,reviewed,protein names,genes,organism,sequence,length',
+#               'format': 'tab',
+#               'contact': defaults.contact_email}
+#     request = request_info_url(defaults.http_uniprot, params, verbose=verbose)
+#
+#     data = request.text.split('\n')
+#     for i, line in enumerate(data):
+#         if i == 1 and line != '':
+#             line = line.split('\t')
+#             information['Name'] = line[0]
+#             information['Status'] = line[1]
+#             information['Protein'] = line[2]
+#             information['Genes'] = line[3]
+#             information['Organism'] = line[4]
+#             information['Sequence'] = line[5]
+#             information['Length'] = int(line[6])
+#
+#     rows.append(information)
+#     return pd.DataFrame(rows)
 
-def _uniprot_info_to_table(identifier, verbose=False):
+def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
     """
-    Fetches some information including the sequence of a particular
-    UniProt entry.
+    Retrive uniprot information from the database.
 
     :param identifier: UniProt accession identifier
     :param verbose: boolean
     :return: pandas table dataframe
     """
 
-    if not isvalid_uniprot(identifier):
-        raise ValueError("{} is not a valid UniProt Accession.".format(identifier))
+    if not cols:
+        cols = ('entry name', 'reviewed', 'protein names', 'genes', 'organism',
+                'sequence', 'length')
+    elif isinstance(cols, str):
+        cols = ('entry name', cols)
 
-    information = {}
-    rows = []
-
-    params = {'query': 'accession:%s' % identifier,
-              'columns': 'entry name,reviewed,protein names,genes,organism,sequence,length',
+    params = {'query': 'accession:' + identifier,
+              'columns': ",".join(cols),
               'format': 'tab',
-              'contact': 'fmmarquesmadeira@dundee.ac.uk'}
-    config = get_config('http_uniprot')
-    request = request_info_url(config.http_uniprot, params, verbose=verbose)
+              'contact': ""}
+    url = "http://www.uniprot.org/uniprot/"
+    response = get_url_or_retry(url=url, retry_in=retry_in, **params)
+    try:
+        data = pd.read_table(StringIO(response))
+    except ValueError as e:
+        #logger
+        data = response
+    return data
 
-    data = request.text.split('\n')
-    for i, line in enumerate(data):
-        if i == 1 and line != '':
-            line = line.split('\t')
-            information['Name'] = line[0]
-            information['Status'] = line[1]
-            information['Protein'] = line[2]
-            information['Genes'] = line[3]
-            information['Organism'] = line[4]
-            information['Sequence'] = line[5]
-            information['Length'] = int(line[6])
 
-    rows.append(information)
-    return pd.DataFrame(rows)
 
 
 def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
@@ -67,10 +91,6 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     :param verbose: boolean
     :return: pandas table dataframe
     """
-
-    if not isvalid_uniprot(identifier):
-        raise ValueError("{} is not a valid UniProt Accession.".format(identifier))
-
     information = {}
     rows = []
 
@@ -80,10 +100,9 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
                   'to': ensembl,
                   'format': 'tab',
                   'query': identifier,
-                  'contact': 'fmmarquesmadeira@dundee.ac.uk'}
+                  'contact': defaults.contact_email}
 
-        config = get_config('http_uniprot_mapping')
-        request = request_info_url(config.http_uniprot_mapping, params,
+        request = request_info_url(defaults.http_uniprot_mapping, params,
                                    verbose=verbose)
 
         data = request.text.split('\n')

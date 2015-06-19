@@ -12,7 +12,7 @@ import logging
 import json
 import pandas as pd
 
-from utils.config import get_config
+from utils.config import defaults
 from utils.utils import request_info_url
 from utils.utils import isvalid_ensembl
 
@@ -32,11 +32,11 @@ def _transcript_variants_ensembl_to_table(identifier, verbose=False):
     if not isvalid_ensembl(identifier):
         raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
 
-    config = get_config('api_ensembl')
     ensembl_endpoint = 'overlap/translation/'
     params = {'feature': 'transcript_variation',
               'content-type': 'application/json'}
-    request = request_info_url("{}{}{}".format(config.api_ensembl, ensembl_endpoint,
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+                                               ensembl_endpoint,
                                                str(identifier)),
                                params=params,
                                verbose=verbose)
@@ -57,11 +57,11 @@ def _somatic_variants_ensembl_to_table(identifier, verbose=False):
     if not isvalid_ensembl(identifier):
         raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
 
-    config = get_config('api_ensembl')
     ensembl_endpoint = 'overlap/translation/'
     params = {'feature': 'somatic_transcript_variation',
               'content-type': 'application/json'}
-    request = request_info_url("{}{}{}".format(config.api_ensembl, ensembl_endpoint,
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+                                               ensembl_endpoint,
                                                str(identifier)),
                                params=params,
                                verbose=verbose)
@@ -81,12 +81,13 @@ def _ensembl_variant_to_table(identifier, verbose=False):
     if not isvalid_ensembl(identifier, variant=True):
         raise ValueError("{} is not a valid Variation Accession.".format(identifier))
 
-    config = get_config('api_ensembl')
+
     # TODO: fix this assuming human variation
     ensembl_endpoint = 'variation/human/'
     params = {'content-type': 'application/json'}
     # other params are {'pops': '1', 'phenotypes': '1', 'genotypes': '1'}
-    request = request_info_url("{}{}{}".format(config.api_ensembl, ensembl_endpoint,
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+                                               ensembl_endpoint,
                                                str(identifier)),
                                params=params,
                                verbose=verbose)

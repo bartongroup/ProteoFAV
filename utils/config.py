@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 ---------
 config.py
@@ -12,7 +11,6 @@ Usage
 >>> from config import defaults
 >>> print(defaults.api_pdbe)
 http://www.ebi.ac.uk/pdbe/api/
-
 >>> from config import Defaults
 >>> local_defaults = Defaults("../config_thiago_local.txt")
 >>> print(local_defaults.db_pdb)
@@ -23,19 +21,22 @@ tbrittoborges@dundee.ac.uk
 Traceback (most recent call last):
 ...
 AttributeError: 'Defaults' object has no attribute 'email'"""
+
+
 from ConfigParser import ConfigParser
 import logging
+from os import path
+
+__all__ = ["defaults", "Defaults"]
 
 logger = logging.getLogger(__name__)
 
+
 class Defaults(object):
-    """
-
-    """
-
     def __init__(self, config_file=None):
+        default_config = path.join(path.dirname(__file__), "../config.txt")
         config = ConfigParser()
-        config_default = config_file or "../config.txt"
+        config_default = config_file or default_config
         config.read(config_default)
         self.__config = config
         self.__populate_attributes()
@@ -44,10 +45,10 @@ class Defaults(object):
         for section in self.__config.sections():
             for var_name, var_par in self.__config.items(section):
                 if var_par == "...":
-                    var_par = self.manual_filling(var_name)
+                    var_par = self._manual_filling(var_name)
                 setattr(self, var_name, var_par)
 
-    def manual_filling(self, var_name):
+    def _manual_filling(self, var_name):
         """Offers user to write in config.txt"""
         # raise NotImplementedError
         return "..."

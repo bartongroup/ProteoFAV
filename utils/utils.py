@@ -8,11 +8,11 @@ Created on 03/06/2015
 """
 
 from __future__ import print_function
+import logging
 
 import os
 import re
 import sys
-sys.path.insert(0, '../')
 import random
 import time
 import json
@@ -20,7 +20,9 @@ from datetime import datetime
 
 import requests
 
-from config import get_config
+from config import defaults
+
+logger = logging.getLogger(__name__)
 
 
 def current_date():
@@ -162,11 +164,10 @@ def isvalid_uniprot(identifier):
     :return: boolean
     """
 
-    config = get_config('http_uniprot')
+
     try:
         if identifier != '':
-            request_info_url("{}{}.fasta".format(config.http_uniprot,
-                                                 str(identifier)))
+            request_info_url(defaults.http_uniprot + identifier)
             return True
         else:
             raise Exception
@@ -182,10 +183,10 @@ def isvalid_pdb(identifier):
     :return: boolean
     """
 
-    config = get_config('http_pdbe')
+
     try:
         if identifier != '':
-            request_info_url("{}{}".format(config.http_pdbe,
+            request_info_url("{}{}".format(defaults.http_pdbe,
                                            str(identifier)))
             return True
         else:
@@ -203,7 +204,6 @@ def isvalid_ensembl(identifier, variant=False):
     :return: boolean
     """
 
-    config = get_config('api_ensembl')
     if variant:
         ensembl_endpoint = 'variation/human/'
     else:
@@ -211,7 +211,7 @@ def isvalid_ensembl(identifier, variant=False):
     params = {'content-type': 'application/json'}
     try:
         if identifier != '':
-            request = request_info_url("{}{}{}".format(config.api_ensembl,
+            request = request_info_url("{}{}{}".format(defaults.api_ensembl,
                                                        ensembl_endpoint,
                                                        str(identifier)),
                                        params=params)
@@ -230,6 +230,30 @@ def isvalid_ensembl(identifier, variant=False):
 def compare_uniprot_ensembl_sequence():
     pass
 
+def get_url_or_retry(url, retry_in=(), wait=1, json=False, header={}, **params):
+    """
+    Fetch an url using Requests or retry fetching it if the server is
+     complaining with retry_in error.
+    :param url: url to be fetched as a string
+    :param wait: sleeping between tries in seconds
+    :param params: request.get kwargs.
+    :return: url content or url content in json data structure.
+    """
+    if json:
+        header.update({"Content-Type": "application/json"})
+    request = requests.get(url, headers=header, params=params)
+    if request.ok:
+        if json:
+            return request.json()
+        else:
+            return request.content
+    elif request.status_code in retry_in:
+        time.sleep(wait)
+        return request_info_url(
+            url, retry_in, wait, json, header, **params)
+    else:
+        logger.error(request.status_code)
+        request.raise_for_status()
 
 if __name__ == '__main__':
     # testing routines

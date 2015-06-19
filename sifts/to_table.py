@@ -6,15 +6,13 @@ Created on 11/06/2015
 
 """
 
-import sys
-sys.path.insert(0, '../')
 import os
 import logging
 import json
 from lxml import etree
 import pandas as pd
 
-from utils.config import get_config
+from utils.config import defaults
 from utils.utils import request_info_url
 from utils.utils import isvalid_uniprot
 from utils.utils import isvalid_pdb
@@ -190,14 +188,9 @@ def _pdb_uniprot_sifts_mapping_to_table(identifier, verbose=False):
     :param verbose: boolean
     :return: pandas table dataframe
     """
-
-    if not isvalid_pdb(identifier):
-        raise ValueError("{} is not a valid PDB Accession.".format(identifier))
-
-    config = get_config('api_pdbe')
     sifts_endpoint = "mappings/uniprot/"
-    request = request_info_url("{}{}{}".format(config.api_pdbe, sifts_endpoint,
-                                               str(identifier), verbose=verbose))
+    request = request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
+                               verbose=verbose)
     information = json.loads(request.text)
 
     rows = []
@@ -217,14 +210,9 @@ def _uniprot_pdb_sifts_mapping_to_table(identifier, verbose=False):
     :param verbose: boolean
     :return: pandas table dataframe
     """
-
-    if not isvalid_uniprot(identifier):
-        raise ValueError("{} is not a valid UniProt Accession.".format(identifier))
-
-    config = get_config('api_pdbe')
     sifts_endpoint = "mappings/best_structures/"
-    request = request_info_url("{}{}{}".format(config.api_pdbe, sifts_endpoint,
-                                               str(identifier), verbose=verbose))
+    request = request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
+                               verbose=verbose)
     information = json.loads(request.text)
 
     rows = []
