@@ -23,6 +23,5 @@ http_uniprot = http://www.uniprot.org/uniprot/
 http_uniprot_mapping = http://www.uniprot.org/mapping/
 http_pdbe = http://www.ebi.ac.uk/pdbe/entry/pdb/
 api_ensembl = http://rest.ensembl.org/
-
-[Variables]
+contact_email = ...
 
