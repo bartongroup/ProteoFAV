@@ -33,7 +33,7 @@ import os
 import main_callable as cc
 
 
-def standard_parser(ver, prog, usage, description=None,
+def standard_parser(ver, prog=None, usage=None, description=None,
                     epilog=None, tmpdir=True, infile=True, infiletype="txt",
                     outfile=True):
     """Set up a command line parser with standard options.
@@ -105,7 +105,7 @@ def standard_parser(ver, prog, usage, description=None,
                              help=loghelp)
 
     optarggroup = parser.add_argument_group('Standard Options (optional)')
-    kw_args.append(('log', 'log', None))
+    kw_args.append(('log', None))
 
     ########## tmpdir #########
 
@@ -125,7 +125,7 @@ def standard_parser(ver, prog, usage, description=None,
                                  type=cc.output_path,
                                  help=tmpdirhelp)
 
-        kw_args.append(('tmpdir', 'tmpdir', tmp_dir))
+        kw_args.append(('tmpdir', tmp_dir))
 
     ########## version, verbose, help #########
     optarggroup.add_argument('--version',
@@ -139,7 +139,7 @@ def standard_parser(ver, prog, usage, description=None,
                              dest='verbose',
                              help='Verbosity switch for logging and warnings')
 
-    kw_args.append(('verbose', 'verbose', False))
+    kw_args.append(('verbose', False))
 
     optarggroup.add_argument('-h', '--help',
                              action='help',
