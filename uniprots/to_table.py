@@ -80,8 +80,6 @@ def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
     return data
 
 
-
-
 def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     """
     Uses the UniProt mapping service to try and get Ensembl IDs for
@@ -91,9 +89,12 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     :param verbose: boolean
     :return: pandas table dataframe
     """
+
     information = {}
     rows = []
 
+    # TODO: keeps failing due to server issues - perhaps use Ensembl endpoints
+    # for this mapping
     ensembl_mappings = ["ENSEMBL_ID", "ENSEMBL_PRO_ID", "ENSEMBL_TRS_ID"]
     for ensembl in ensembl_mappings:
         params = {'from': 'ACC',

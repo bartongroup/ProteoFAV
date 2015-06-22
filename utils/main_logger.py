@@ -139,9 +139,9 @@ def standard_logger(script_version, cmd_line, script_args, pos_args, kw_args,
 
     # report keyword arguments (denote them with --)
     for arg in kw_args:
-        argstr = '\t%s:  %s' % (("--" + arg[1]).ljust(maxlen),
+        argstr = '\t%s:  %s' % (("--" + arg[0]).ljust(maxlen),
                                 arg_dict[arg[0]])
-        if arg_dict[arg[0]] == arg[2]:
+        if arg_dict[arg[0]] == arg[1]:
             argstr += " (default)"
         loggerstr += argstr + "\n"
 
