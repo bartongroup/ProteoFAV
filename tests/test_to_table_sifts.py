@@ -10,7 +10,8 @@ __version__ = "1.0"
 
 import unittest
 from os import path
-from sifts import to_table
+
+import to_table
 
 
 class TestSIFTSParser(unittest.TestCase):

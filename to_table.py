@@ -2,22 +2,73 @@
 # -*- coding: utf-8 -*-
 
 """
-Created on 11/06/2015
+Created on 03/06/2015
 
 """
-
-import os
-import logging
 import json
+import logging
+from StringIO import StringIO
+from os import path
+
 from lxml import etree
 import pandas as pd
 
-from utils.config import defaults
-from utils.utils import request_info_url
-from utils.utils import isvalid_uniprot
-from utils.utils import isvalid_pdb
+from config import defaults
+from utils import request_info_url, get_url_or_retry
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
+
+
+def _dssp_to_table(filename):
+    """
+    Loads and parses DSSP files generating a pandas dataframe.
+
+    :param filename: input SIFTS xml file
+    :return: pandas table dataframe
+    """
+    # column width descriptors
+    cols_widths = ((0, 5), (6, 10), (11, 12), (13, 14), (16, 17), (35, 38),
+                   (103, 109), (109, 115))
+    # simplified headers for the table
+    dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi",
+                   "psi")
+    try:
+        return pd.read_fwf(filename, skiprows=28, names=dssp_header,
+                           colspecs=cols_widths, index_col=0, compression=None)
+    except IOError:
+        raise IOError('File {} not found or unavailable.'.format(filename))
+
+
+def _mmcif_atom_to_table(filename, delimiter=None):
+    """
+    Testing a loader of mmCIF ATOM lines with pandas.
+
+    :param filename: input CIF file
+    :return: pandas table dataframe
+    """
+
+    if not path.isfile(filename):
+        raise IOError('File {} not found or unavailable.'.format(filename))
+
+    _header_mmcif = []
+    lines = []
+    with open(filename) as inlines:
+        for line in inlines:
+            if line.startswith("_atom_site."):
+                _header_mmcif.append(line.split('.')[1].rstrip())
+            elif line.startswith("ATOM"):
+                lines.append(line)
+            elif line.startswith("HETATM"):
+                lines.append(line)
+    lines = "".join(lines)
+
+    if delimiter is None:
+        return pd.read_table(StringIO(lines), delim_whitespace=True,
+                             names=_header_mmcif, compression=None)
+    else:
+        return pd.read_table(StringIO(lines), sep=str(delimiter),
+                             names=_header_mmcif, compression=None)
+
 
 
 def _sifts_residues_to_table(filename):
@@ -29,7 +80,7 @@ def _sifts_residues_to_table(filename):
     :return: pandas table dataframe
     """
 
-    if not os.path.isfile(filename):
+    if not path.isfile(filename):
         raise IOError('File {} not found or unavailable.'.format(filename))
 
     tree = etree.parse(filename)
@@ -40,8 +91,10 @@ def _sifts_residues_to_table(filename):
     residue_detail = "{{{}}}residueDetail".format(namespace)
     rows = []
 
-    for segment in root.find('.//ns:entity[@type="protein"]', namespaces=namespace_map):
-        for residue in segment.find('.//ns:listResidue', namespaces=namespace_map):
+    for segment in root.find('.//ns:entity[@type="protein"]',
+                             namespaces=namespace_map):
+        for residue in segment.find('.//ns:listResidue',
+                                    namespaces=namespace_map):
             # get residue annotations
             residue_annotation = {}
             # key, value pairs
@@ -97,7 +150,7 @@ def _sifts_regions_to_table(filename):
     :return: pandas table dataframe
     """
 
-    if not os.path.isfile(filename):
+    if not path.isfile(filename):
         raise IOError('File {} not found or unavailable.'.format(filename))
 
     tree = etree.parse(filename)
@@ -109,8 +162,10 @@ def _sifts_regions_to_table(filename):
     rows = []
     regions = {}
 
-    for segment in root.find('.//ns:entity[@type="protein"]', namespaces=namespace_map):
-        for region in segment.find('.//ns:listMapRegion', namespaces=namespace_map):
+    for segment in root.find('.//ns:entity[@type="protein"]',
+                             namespaces=namespace_map):
+        for region in segment.find('.//ns:listMapRegion',
+                                   namespaces=namespace_map):
             # get region annotations
             region_annotation = {}
 
@@ -218,6 +273,114 @@ def _uniprot_pdb_sifts_mapping_to_table(identifier, verbose=False):
     rows = []
     for entry in information[identifier]:
         rows.append(entry)
+    return pd.DataFrame(rows)
+
+
+def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
+    """
+    Retrive uniprot information from the database.
+
+    :param identifier: UniProt accession identifier
+    :return: pandas table dataframe
+    """
+
+    if not cols:
+        cols = ('entry name', 'reviewed', 'protein names', 'genes', 'organism',
+                'sequence', 'length')
+    elif isinstance(cols, str):
+        cols = ('entry name', cols)
+
+    params = {'query': 'accession:' + identifier,
+              'columns': ",".join(cols),
+              'format': 'tab',
+              'contact': ""}
+    url = "http://www.uniprot.org/uniprot/"
+    response = get_url_or_retry(url=url, retry_in=retry_in, **params)
+    try:
+        data = pd.read_table(StringIO(response))
+    except ValueError as e:
+        log.errore(e)
+        data = response
+    return data
+
+
+def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
+    """
+    Uses the UniProt mapping service to try and get Ensembl IDs for
+    the UniProt accession identifier provided.
+
+    :param identifier: UniProt accession identifier
+    :param verbose: boolean
+    :return: pandas table dataframe
+    """
+
+    information = {}
+    rows = []
+
+    # TODO: keeps failing due to server issues - perhaps use Ensembl endpoints
+    # for this mapping
+    ensembl_mappings = ["ENSEMBL_ID", "ENSEMBL_PRO_ID", "ENSEMBL_TRS_ID"]
+    for ensembl in ensembl_mappings:
+        params = {'from': 'ACC',
+                  'to': ensembl,
+                  'format': 'tab',
+                  'query': identifier,
+                  'contact': defaults.contact_email}
+
+        request = request_info_url(defaults.http_uniprot_mapping + identifier,
+                                   params,
+                                   verbose=verbose)
+
+        data = request.text.split('\n')
+        for i, line in enumerate(data):
+            if i >= 1 and line != '':
+                line = line.split('\t')
+                try:
+                    if line[1] in information[ensembl]:
+                        continue
+                    information[ensembl].append(line[1])
+                except KeyError:
+                    information[ensembl] = line[1]
+                except AttributeError:
+                    information[ensembl] = [information[ensembl]]
+                    information[ensembl].append(line[1])
+
+    rows.append(information)
+    return pd.DataFrame(rows)
+
+
+def _uniprot_info_to_table_old(identifier, verbose=False):
+    """
+    Fetches some information including the sequence of a particular
+    UniProt entry.
+
+    :param identifier: UniProt accession identifier
+    :param verbose: boolean
+    :return: pandas table dataframe
+    """
+    #TODO delete when safe
+    information = {}
+    rows = []
+
+    params = {'query': 'accession:' + identifier,
+              'columns': 'entry name,reviewed,protein names,genes,organism,sequence,length',
+              'format': 'tab',
+              'contact': defaults.contact_email}
+    request = request_info_url(defaults.http_uniprot, params, verbose=verbose)
+
+    data = request.text.split('\n')
+    for i, line in enumerate(data):
+        if i == 1 and line != '':
+            line = line.split('\t')
+            information['Name'] = line[0]
+            information['Status'] = line[1]
+            information['Protein'] = line[2]
+            information['Genes'] = line[3]
+            information['Organism'] = line[4]
+            information['Sequence'] = line[5]
+            information['Length'] = int(line[6])
+
+    rows.append(information)
     return pd.DataFrame(rows)
 
 

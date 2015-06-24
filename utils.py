@@ -9,7 +9,6 @@ Created on 03/06/2015
 
 from __future__ import print_function
 import logging
-
 import os
 import re
 import sys
@@ -241,19 +240,21 @@ def get_url_or_retry(url, retry_in=(), wait=1, json=False, header={}, **params):
     """
     if json:
         header.update({"Content-Type": "application/json"})
-    request = requests.get(url, headers=header, params=params)
-    if request.ok:
+    response = requests.get(url, headers=header, params=params)
+
+    if response.ok:
         if json:
-            return request.json()
+            return response.json()
         else:
-            return request.content
-    elif request.status_code in retry_in:
+            return response.content
+    elif response.status_code in retry_in:
         time.sleep(wait)
-        return request_info_url(
+        return get_url_or_retry(
             url, retry_in, wait, json, header, **params)
     else:
-        logger.error(request.status_code)
-        request.raise_for_status()
+        logger.error(response.status_code)
+        response.raise_for_status()
+
 
 if __name__ == '__main__':
     # testing routines

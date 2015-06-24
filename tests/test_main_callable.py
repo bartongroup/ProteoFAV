@@ -21,7 +21,7 @@ package and extend the :py:class:`unittest.TestCase` class.
 __version__ = "1.0"
 
 import unittest, os, tempfile, shutil, argparse, warnings
-from utils import main_callable as cc
+import main_callable as cc
 
 
 class TestParsingRoutines(unittest.TestCase):

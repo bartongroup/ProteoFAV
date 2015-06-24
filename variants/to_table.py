@@ -5,16 +5,13 @@
 Created on 11/06/2015
 
 """
-
-import sys
-sys.path.insert(0, '../')
 import logging
 import json
 import pandas as pd
 
-from utils.config import defaults
-from utils.utils import request_info_url
-from utils.utils import isvalid_ensembl
+from config import defaults
+from utils import request_info_url
+from utils import isvalid_ensembl
 
 logger = logging.getLogger(__name__)
 

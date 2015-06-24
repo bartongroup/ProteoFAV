@@ -28,8 +28,6 @@ from __future__ import print_function
 import argparse
 import tempfile
 
-
-import os
 import main_callable as cc
 
 

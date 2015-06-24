@@ -7,7 +7,8 @@ Created on 09/06/2015
 """
 from os import path
 import unittest
-from pdbs import to_table
+
+import to_table
 
 __version__ = "1.0"
 

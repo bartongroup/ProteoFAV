@@ -10,8 +10,8 @@ from os import path
 __version__ = "1.0"
 
 import unittest
-from pdbs import to_table
-from utils import utils
+import to_table
+import utils
 
 
 class TestMMCIFParser(unittest.TestCase):

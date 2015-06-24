@@ -22,8 +22,8 @@ options and choices. These tests use the standard `unittest <http://docs.python
 __version__ = "1.0"
 
 import unittest, os, tempfile, shutil, warnings, argparse, re, logging, sys
-from utils import main_logger as sl
-from utils import main_parser as sp
+import main_logger as sl
+import main_parser as sp
 
 
 class TestStandardLogging(unittest.TestCase):

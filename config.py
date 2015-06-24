@@ -12,7 +12,7 @@ Usage
 >>> print(defaults.api_pdbe)
 http://www.ebi.ac.uk/pdbe/api/
 >>> from config import Defaults
->>> local_defaults = Defaults("../config_thiago_local.txt")
+>>> local_defaults = Defaults("config_local.txt")
 >>> print(local_defaults.db_pdb)
 /Users/tbrittoborges/Downloads
 >>> print(local_defaults.contact_email)
@@ -22,7 +22,7 @@ Traceback (most recent call last):
 ...
 AttributeError: 'Defaults' object has no attribute 'email'"""
 
-
+from __future__ import print_function
 from ConfigParser import ConfigParser
 import logging
 from os import path
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 class Defaults(object):
     def __init__(self, config_file=None):
-        default_config = path.join(path.dirname(__file__), "../config.txt")
+        default_config = path.join(path.dirname(__file__), "config.txt")
         config = ConfigParser()
         config_default = config_file or default_config
         config.read(config_default)

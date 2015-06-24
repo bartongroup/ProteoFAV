@@ -9,7 +9,7 @@ Created on 10/06/2015
 __version__ = "1.0"
 
 import unittest
-from uniprots import to_table
+import to_table
 
 class TestUNIPROTParser(unittest.TestCase):
     """Test UniProt fetcher/parser methods."""
@@ -42,13 +42,13 @@ class TestUNIPROTParser(unittest.TestCase):
         Testing input of invalid UniProt identifiers.
         """
         # TODO
-        # self.assertTrue(self.isvalid(self.uniprot_id))
-        # self.assertFalse(self.isvalid(self.uniprot_id_error1))
-        # self.assertFalse(self.isvalid(self.uniprot_id_error2))
-        # self.assertFalse(self.isvalid(self.uniprot_id_error3))
-        # self.assertFalse(self.isvalid(self.uniprot_id_error4))
-        # self.assertFalse(self.isvalid(self.uniprot_id_error5))
-        pass
+        self.assertTrue(self.isvalid(self.uniprot_id))
+        self.assertFalse(self.isvalid(self.uniprot_id_error1))
+        self.assertFalse(self.isvalid(self.uniprot_id_error2))
+        self.assertFalse(self.isvalid(self.uniprot_id_error3))
+        self.assertFalse(self.isvalid(self.uniprot_id_error4))
+        self.assertFalse(self.isvalid(self.uniprot_id_error5))
+
 
     def test_to_table_uniprot_info(self):
         """

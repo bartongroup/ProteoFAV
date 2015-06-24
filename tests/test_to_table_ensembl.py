@@ -9,8 +9,9 @@ Created on 11/06/2015
 __version__ = "1.0"
 
 import unittest
+
 from variants import to_table
-from utils import utils
+import utils
 
 
 class TestENSEMBLParser(unittest.TestCase):

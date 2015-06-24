@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
+from __future__ import absolute_import
 import logging
 from os import path
 
 import numpy as np
 
-from pdbs.to_table import _mmcif_atom_to_table as mmcif_to_table
-from pdbs.to_table import _dssp_to_table as dssp_to_table
-from sifts.to_table import _sifts_residues_to_table as sifts_to_table
-
-from utils.config import defaults
-from utils.utils import get_url_or_retry
+from to_table import _mmcif_atom_to_table as mmcif_to_table
+from to_table import _dssp_to_table as dssp_to_table
+from to_table import _sifts_residues_to_table as sifts_to_table
+from config import defaults
+from utils import get_url_or_retry
 
 log = logging.getLogger(__name__)
 
@@ -65,12 +65,9 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA'):
         best_pdb = _fetch_sifts_best(uniprot_id)[pdb_id]
         chain = best_pdb['chain_id']
 
-    cif_path = path.join(path.dirname(__file__), '../tests/CIF/2w4o.cif')
-    # cif_path = path.join(defaults.db_mmcif, pdb_id, ".cif")
-    dssp_path = path.join(path.dirname(__file__), '../tests/DSSP/2w4o.dssp')
-    # dssp_path = path.join(defaults.db_dssp, pdb_id, ".dssp")
-    sifts_path = path.join(path.dirname(__file__), '../tests/SIFTS/2w4o.xml')
-    # sifts_path = path.join(defaults.db_sifts, pdb_id, ".xml")
+    cif_path = path.join(defaults.db_mmcif, pdb_id, ".cif")
+    dssp_path = path.join(defaults.db_dssp, pdb_id, ".dssp")
+    sifts_path = path.join(defaults.db_sifts, pdb_id, ".xml")
 
     cif_table = mmcif_to_table(cif_path)
     cif_table = cif_table.query("label_asym_id == @chain & group_PDB == 'ATOM'")
@@ -86,7 +83,7 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA'):
 
     if groupby == 'CA':
         cif_table = cif_table.query("label_atom_id == 'CA'")
-    cif_lines = cif_table.groupby('label_seq_id').agg(groupby_opts[groupby])
+    cif_table = cif_table.groupby('label_seq_id').agg(groupby_opts[groupby])
 
     # This remove all atoms annotated in sifts but not in mmcif seqres
     # To keep those, sift_table should be the left in join
@@ -96,4 +93,4 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA'):
 
 
 if __name__ == '__main__':
-    merge_tables('Q16566')
+    merge_tables("")
