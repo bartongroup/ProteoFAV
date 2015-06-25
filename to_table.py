@@ -41,7 +41,7 @@ def _dssp_to_table(filename):
 
 def _mmcif_atom_to_table(filename, delimiter=None):
     """
-    Testing a loader of mmCIF ATOM lines with pandas.
+    Loader of mmCIF ATOM and HETEROATOM lines with pandas.
 
     :param filename: input CIF file
     :return: pandas table dataframe

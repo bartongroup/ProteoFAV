@@ -10,18 +10,21 @@ Created on 03/06/2015
 from __future__ import print_function
 import logging
 import os
+from os import path
 import re
 import sys
 import random
 import time
 import json
 from datetime import datetime
+import numpy as np
 
 import requests
 
 from config import defaults
+import to_table
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def current_date():
@@ -82,7 +85,6 @@ def flash(message):
 
 def string_split(s):
     return filter(None, re.split(r'(\d+)', s))
-
 
 
 def write_log(message, output_file):
@@ -163,7 +165,6 @@ def isvalid_uniprot(identifier):
     :return: boolean
     """
 
-
     try:
         if identifier != '':
             request_info_url(defaults.http_uniprot + identifier)
@@ -181,7 +182,6 @@ def isvalid_pdb(identifier):
     :param identifier: testing ID
     :return: boolean
     """
-
 
     try:
         if identifier != '':
@@ -229,6 +229,7 @@ def isvalid_ensembl(identifier, variant=False):
 def compare_uniprot_ensembl_sequence():
     pass
 
+
 def get_url_or_retry(url, retry_in=(), wait=1, json=False, header={}, **params):
     """
     Fetch an url using Requests or retry fetching it if the server is
@@ -252,10 +253,90 @@ def get_url_or_retry(url, retry_in=(), wait=1, json=False, header={}, **params):
         return get_url_or_retry(
             url, retry_in, wait, json, header, **params)
     else:
-        logger.error(response.status_code)
+        log.error(response.status_code)
         response.raise_for_status()
 
 
 if __name__ == '__main__':
     # testing routines
     pass
+
+
+def _fetch_sifts_best(uniprot_id, first=False):
+    url = 'http://wwwdev.ebi.ac.uk/pdbe/api/mappings/best_structures/'
+    url = url + uniprot_id
+    response = get_url_or_retry(url, json=True)
+    return response if not first else response[uniprot_id][0]
+
+
+def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
+                 defaults=None):
+    """
+    Merges the output from multiple to table method.
+    if no pdb_id uses sifts_best_structure
+    if no chain uses first
+    or if use_all_chains use all chains of the pdb_id
+    """
+
+    def to_list(series):
+        return series.tolist()
+
+    if not defaults:
+        from config import defaults
+
+    groupby_opts = {'list': {'label_comp_id': 'unique',
+                             'label_atom_id': to_list,
+                             'label_asym_id': 'unique',
+                             'Cartn_x': to_list,
+                             'Cartn_y': to_list,
+                             'Cartn_z': to_list,
+                             'occupancy': 'unique',
+                             'B_iso_or_equiv': np.mean},
+                    'CA': {'label_comp_id': 'unique',
+                           'label_atom_id': 'unique',
+                           'label_asym_id': 'unique',
+                           'Cartn_x': 'unique',
+                           'Cartn_y': 'unique',
+                           'Cartn_z': 'unique',
+                           'occupancy': 'unique',
+                           'B_iso_or_equiv': 'unique'}}  # TODO centroid?
+
+    try:
+        groupby_opts[groupby]
+    except KeyError:
+        raise TypeError('Groupby paramenter should be one of {}'.format(
+            ', '.join(groupby_opts.keys())))
+
+    if not pdb_id:
+        best_pdb = _fetch_sifts_best(uniprot_id, first=True)
+        pdb_id = best_pdb['pdb_id']
+        chain = best_pdb['chain_id']
+    if not chain:
+        best_pdb = _fetch_sifts_best(uniprot_id)[pdb_id]
+        chain = best_pdb['chain_id']
+
+    cif_path = path.join(defaults.db_mmcif, pdb_id + ".cif")
+    dssp_path = path.join(defaults.db_dssp, pdb_id + ".dssp")
+    sifts_path = path.join(defaults.db_sifts, pdb_id + ".xml")
+
+    cif_table = to_table._mmcif_atom_to_table(cif_path)
+    cif_table = cif_table.query("label_asym_id == @chain & group_PDB == 'ATOM'")
+    # TODO keep heteroatoms?
+
+    dssp_table = to_table._dssp_to_table(dssp_path)
+    dssp_table = dssp_table.query('chain_id == @chain')
+    dssp_table.set_index(['icode'], inplace=True)
+
+    sifts_table = to_table._sifts_residues_to_table(sifts_path)
+    sifts_table = sifts_table.query('PDB_dbChainId == @chain')
+    sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+
+    if groupby == 'CA':
+        cif_table = cif_table.query("label_atom_id == 'CA'")
+    cif_table = cif_table.groupby('label_seq_id').agg(groupby_opts[groupby])
+
+    # This remove all atoms annotated in sifts but not in mmcif seqres
+    # To keep those, sift_table should be the left in join
+    cif_sifts = cif_table.join(sifts_table)
+    cif_sifts_dssp = cif_sifts.join(dssp_table)
+    return cif_sifts_dssp
