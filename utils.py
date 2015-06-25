@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
-"""
-Created on 03/06/2015
-
-"""
-
 from __future__ import print_function
 import logging
 import os
@@ -21,11 +14,10 @@ import numpy as np
 
 import requests
 
-from config import defaults
+from config import defaults, Defaults
 import to_table
 
 log = logging.getLogger(__name__)
-
 
 def current_date():
     """
@@ -257,9 +249,6 @@ def get_url_or_retry(url, retry_in=(), wait=1, json=False, header={}, **params):
         response.raise_for_status()
 
 
-if __name__ == '__main__':
-    # testing routines
-    pass
 
 
 def _fetch_sifts_best(uniprot_id, first=False):
@@ -281,6 +270,9 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
     def to_list(series):
         return series.tolist()
 
+    def to_unique(series):
+        return series.unique()
+
     if not defaults:
         from config import defaults
 
@@ -292,14 +284,14 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
                              'Cartn_z': to_list,
                              'occupancy': 'unique',
                              'B_iso_or_equiv': np.mean},
-                    'CA': {'label_comp_id': 'unique',
-                           'label_atom_id': 'unique',
-                           'label_asym_id': 'unique',
-                           'Cartn_x': 'unique',
-                           'Cartn_y': 'unique',
-                           'Cartn_z': 'unique',
-                           'occupancy': 'unique',
-                           'B_iso_or_equiv': 'unique'}}  # TODO centroid?
+                    'CA': {'label_comp_id': to_unique,
+                           'label_atom_id': to_unique,
+                           'label_asym_id': to_unique,
+                           'Cartn_x': to_unique,
+                           'Cartn_y': to_unique,
+                           'Cartn_z': to_unique,
+                           'occupancy': to_unique,
+                           'B_iso_or_equiv': to_unique}}  # TODO centroid?
 
     try:
         groupby_opts[groupby]
@@ -321,6 +313,8 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
 
     cif_table = to_table._mmcif_atom_to_table(cif_path)
     cif_table = cif_table.query("label_asym_id == @chain & group_PDB == 'ATOM'")
+    # next line raises a SettingWithCopyWarning but seems to be correct
+    cif_table.loc[:, ("label_seq_id")] = cif_table.loc[:, "label_seq_id"].astype(np.int)
     # TODO keep heteroatoms?
 
     dssp_table = to_table._dssp_to_table(dssp_path)
@@ -333,6 +327,7 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
 
     if groupby == 'CA':
         cif_table = cif_table.query("label_atom_id == 'CA'")
+
     cif_table = cif_table.groupby('label_seq_id').agg(groupby_opts[groupby])
 
     # This remove all atoms annotated in sifts but not in mmcif seqres
@@ -340,3 +335,8 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
     cif_sifts = cif_table.join(sifts_table)
     cif_sifts_dssp = cif_sifts.join(dssp_table)
     return cif_sifts_dssp
+
+if __name__ == '__main__':
+    # testing routines
+
+    pass
