@@ -30,8 +30,12 @@ class TestTableMeger(unittest.TestCase):
     def tearDown(self):
         """Remove testing framework by cleaning the namespace."""
         self.defaults = None
-        self.merge_table = None
 
+        self.cif_to_table = None
+        self.sifts_to_table = None
+        self.dssp_to_table = None
+
+        self.merge_table = None
 
     def test_camIV_ca_mode(self):
         """
