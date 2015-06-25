@@ -42,22 +42,22 @@ class TestTableMeger(unittest.TestCase):
         Test table merger for a protein example.
         :return:
         """
-        data = self.merge_table("Q16566", defaults=self.defaults)
+
+        data = self.merge_table("Q16566", "2w4o", "A", defaults=self.defaults)
         self.assertIsNotNone(data)
         cif = self.cif_to_table("CIF/2w4o.cif")
         sifts = self.sifts_to_table("SIFTS/2w4o.xml")
         dssp = self.dssp_to_table("DSSP/2w4o.dssp")
 
-        # number of rows (residues) is determiend by the number of residues in
-        # cif file
+        # number of CA atoms determine the n_rows
         chain = cif.query("label_asym_id == 'A' & group_PDB == 'ATOM' & label_atom_id == 'CA'")
         n_residues = chain.shape[0]
-
         self.assertEqual(data.shape[0], n_residues)
-
         # number of columns is given buy sum of cols in cif, dssp and sifts
-        n_cols = cif.shape[1] + sifts.shape[1] + dssp.shape[1]
-        self.assertEqual(data.shape[1], n_cols, "Incorrect number of cols in camIV table in CA mode.")
+        n_cols =  sifts.shape[1] + dssp.shape[1] + 6 #  dssp.shape[1] = 8 - 2 inds
+        self.assertEqual(data.shape[1], n_cols,
+                         "Incorrect number of cols in camIV table in CA mode:"
+                         "{} instead {}.".format(data.shape[1], n_cols))
 
 
     def test_camIV_list_mode(self):
@@ -65,6 +65,11 @@ class TestTableMeger(unittest.TestCase):
 
     def test_camIV_centroid_mode(self):
         pass
+
+    def test_dssp_3ovv(self):
+        pass
+
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMeger)

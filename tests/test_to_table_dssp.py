@@ -50,6 +50,18 @@ class TestDSSPParser(unittest.TestCase):
         self.assertEqual(data.loc[8, 'ss'], 'E')
         self.assertEqual(data.loc[1, 'acc'], 179)
 
+    def test_to_table_dssp_3j3q(self):
+        pass
+
+    def test_to_table_dssp_4v60(self):
+        pass
+
+    def test_to_table_dssp_3kic(self):
+        pass
+    # test if the number of residues per chain is correct
+    # check if all chains are there
+
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDSSPParser)
