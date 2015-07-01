@@ -19,6 +19,11 @@ from utils import request_info_url, get_url_or_retry
 log = logging.getLogger(__name__)
 
 
+from utils import isvalid_ensembl
+
+logger = logging.getLogger(__name__)
+
+
 def _dssp_to_table(filename):
     """
     Loads and parses DSSP files generating a pandas dataframe.
@@ -317,72 +322,152 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     information = {}
     rows = []
 
-    # TODO: keeps failing due to server issues - perhaps use Ensembl endpoints
-    # for this mapping
-    ensembl_mappings = ["ENSEMBL_ID", "ENSEMBL_PRO_ID", "ENSEMBL_TRS_ID"]
-    for ensembl in ensembl_mappings:
-        params = {'from': 'ACC',
-                  'to': ensembl,
-                  'format': 'tab',
-                  'query': identifier,
-                  'contact': defaults.contact_email}
+    # UniProt endpoint keeps failing due to server issues
+    # ensembl_mappings = ["ENSEMBL_ID", "ENSEMBL_PRO_ID", "ENSEMBL_TRS_ID"]
+    # for ensembl in ensembl_mappings:
+    #     params = {'from': 'ACC',
+    #               'to': ensembl,
+    #               'format': 'tab',
+    #               'query': identifier,
+    #               'contact': defaults.contact_email}
+    #
+    #     request = request_info_url(defaults.http_uniprot_mapping + identifier,
+    #                                params,
+    #                                verbose=verbose)
+    #
+    #     data = request.text.split('\n')
+    #     for i, line in enumerate(data):
+    #         if i >= 1 and line != '':
+    #             line = line.split('\t')
+    #             try:
+    #                 if line[1] in information[ensembl]:
+    #                     continue
+    #                 information[ensembl].append(line[1])
+    #             except KeyError:
+    #                 information[ensembl] = line[1]
+    #             except AttributeError:
+    #                 information[ensembl] = [information[ensembl]]
+    #                 information[ensembl].append(line[1])
 
-        request = request_info_url(defaults.http_uniprot_mapping + identifier,
-                                   params,
-                                   verbose=verbose)
+    # TODO: fix this assuming human variation
+    ensembl_endpoint = 'xrefs/symbol/human/'
+    params = {'content-type': 'application/json'}
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl, ensembl_endpoint,
+                                               str(identifier)),
+                               params=params,
+                               verbose=verbose)
 
-        data = request.text.split('\n')
-        for i, line in enumerate(data):
-            if i >= 1 and line != '':
-                line = line.split('\t')
-                try:
-                    if line[1] in information[ensembl]:
-                        continue
-                    information[ensembl].append(line[1])
-                except KeyError:
-                    information[ensembl] = line[1]
-                except AttributeError:
-                    information[ensembl] = [information[ensembl]]
-                    information[ensembl].append(line[1])
+    data = json.loads(request.text)
+    for entry in data:
+        typ = entry['type'].upper()
+        eid = entry['id']
+        try:
+            if eid in information[typ]:
+                continue
+            information[typ].append(eid)
+        except KeyError:
+            information[typ] = eid
+        except AttributeError:
+            information[typ] = [information[typ]]
+            information[typ].append(eid)
 
     rows.append(information)
     return pd.DataFrame(rows)
 
 
-def _uniprot_info_to_table_old(identifier, verbose=False):
+def _transcript_variants_ensembl_to_table(identifier, verbose=False):
     """
-    Fetches some information including the sequence of a particular
-    UniProt entry.
+    Queries the Ensembl API for transcript variants (mostly dbSNP)
+    based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
-    :param identifier: UniProt accession identifier
+    :param identifier: Ensembl Protein ID
     :param verbose: boolean
     :return: pandas table dataframe
     """
-    #TODO delete when safe
-    information = {}
+
+    if not isvalid_ensembl(identifier):
+        raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
+
+    ensembl_endpoint = 'overlap/translation/'
+    params = {'feature': 'transcript_variation',
+              'content-type': 'application/json'}
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+                                               ensembl_endpoint,
+                                               str(identifier)),
+                               params=params,
+                               verbose=verbose)
+    rows = json.loads(request.text)
+    return pd.DataFrame(rows)
+
+
+def _somatic_variants_ensembl_to_table(identifier, verbose=False):
+    """
+    Queries the Ensembl API for somatic transcript variants (COSMIC)
+    based on Ensembl Protein identifiers (e.g. ENSP00000326864).
+
+    :param identifier: Ensembl Protein ID
+    :param verbose: boolean
+    :return: pandas table dataframe
+    """
+
+    if not isvalid_ensembl(identifier):
+        raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
+
+    ensembl_endpoint = 'overlap/translation/'
+    params = {'feature': 'somatic_transcript_variation',
+              'content-type': 'application/json'}
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+                                               ensembl_endpoint,
+                                               str(identifier)),
+                               params=params,
+                               verbose=verbose)
+    rows = json.loads(request.text)
+    return pd.DataFrame(rows)
+
+
+def _ensembl_variant_to_table(identifier, verbose=False):
+    """
+    Queries the Ensembl API for variant IDs (e.g rs376845802 or COSM302853).
+
+    :param identifier: variant ID
+    :param verbose: boolean
+    :return: pandas table dataframe
+    """
+
+    if not isvalid_ensembl(identifier, variant=True):
+        raise ValueError("{} is not a valid Variation Accession.".format(identifier))
+
+    # TODO: fix this assuming human variation
+    ensembl_endpoint = 'variation/human/'
+    params = {'content-type': 'application/json'}
+    # other params are {'pops': '1', 'phenotypes': '1', 'genotypes': '1'}
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+                                               ensembl_endpoint,
+                                               str(identifier)),
+                               params=params,
+                               verbose=verbose)
+    data = json.loads(request.text)
+
     rows = []
-
-    params = {'query': 'accession:' + identifier,
-              'columns': 'entry name,reviewed,protein names,genes,organism,sequence,length',
-              'format': 'tab',
-              'contact': defaults.contact_email}
-    request = request_info_url(defaults.http_uniprot, params, verbose=verbose)
-
-    data = request.text.split('\n')
-    for i, line in enumerate(data):
-        if i == 1 and line != '':
-            line = line.split('\t')
-            information['Name'] = line[0]
-            information['Status'] = line[1]
-            information['Protein'] = line[2]
-            information['Genes'] = line[3]
-            information['Organism'] = line[4]
-            information['Sequence'] = line[5]
-            information['Length'] = int(line[6])
+    information = {}
+    for parent in data:
+        if parent == "mappings":
+            for entry in data[parent]:
+                for key in entry:
+                    try:
+                        if entry[key] in information[key]:
+                            continue
+                        information[key].append(entry[key])
+                    except KeyError:
+                        information[key] = entry[key]
+                    except AttributeError:
+                        information[key] = [information[key]]
+                        information[key].append(entry[key])
+        else:
+            information[parent] = data[parent]
 
     rows.append(information)
     return pd.DataFrame(rows)
-
 
 if __name__ == '__main__':
     # testing routines

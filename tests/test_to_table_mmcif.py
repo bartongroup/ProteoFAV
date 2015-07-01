@@ -5,11 +5,12 @@
 Created on 10/06/2015
 
 """
-from os import path
 
 __version__ = "1.0"
 
+from os import path
 import unittest
+
 import to_table
 import utils
 
