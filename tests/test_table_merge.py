@@ -45,8 +45,8 @@ class TestTableMeger(unittest.TestCase):
         Test table merger for a protein example.
         :return:
         """
-
-        data = self.merge_table("Q16566", "2w4o", "A", defaults=self.defaults)
+        print path.dirname(__file__)
+        data = self.merge_table(pdb_id="2w4o", chain="A", defaults=self.defaults)
         self.assertIsNotNone(data)
 
         self.cif_path = path.join(path.dirname(__file__), "CIF/2w4o.cif")
