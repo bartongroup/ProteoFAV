@@ -76,7 +76,7 @@ def _mmcif_atom_to_table(filename, delimiter=None):
 
 
 
-def _sifts_residues_to_table(filename):
+def _sifts_residues_to_table(filename, cols=None):
     """
     Loads and parses SIFTS XML files generating a pandas dataframe.
     Parses the Residue entries.
@@ -84,6 +84,13 @@ def _sifts_residues_to_table(filename):
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
     """
+    if not cols:
+        cols = ('InterPro_dbAccessionId', u'InterPro_dbCoordSys', u'InterPro_dbEvidence', u'InterPro_dbResName', u'InterPro_dbResNum',
+                u'NCBI_dbAccessionId', u'NCBI_dbCoordSys', u'NCBI_dbResName', u'NCBI_dbResNum',
+                u'PDB_dbAccessionId', u'PDB_dbChainId', u'PDB_dbCoordSys', u'PDB_dbResName', u'PDB_dbResNum',
+                u'PDBe_Annotation', u'PDBe_codeSecondaryStructure', u'PDBe_dbCoordSys', u'PDBe_dbResName', u'PDBe_dbResNum', u'PDBe_nameSecondaryStructure',
+                u'Pfam_dbAccessionId', u'Pfam_dbCoordSys', u'Pfam_dbResName', u'Pfam_dbResNum',
+                u'UniProt_dbAccessionId', u'UniProt_dbCoordSys', u'UniProt_dbResName', u'UniProt_dbResNum')
 
     if not path.isfile(filename):
         raise IOError('File {} not found or unavailable.'.format(filename))
@@ -143,7 +150,7 @@ def _sifts_residues_to_table(filename):
                         residue_annotation[k].append(v)
 
             rows.append(residue_annotation)
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows)[[cols]]
 
 
 def _sifts_regions_to_table(filename):
