@@ -14,14 +14,12 @@ from lxml import etree
 import pandas as pd
 
 from config import defaults
-from utils import request_info_url, get_url_or_retry
+import utils
 
 log = logging.getLogger(__name__)
 
 
-from utils import isvalid_ensembl
-
-logger = logging.getLogger(__name__)
+# from utils import isvalid_ensembl
 
 
 def _dssp_to_table(filename):
@@ -75,7 +73,6 @@ def _mmcif_atom_to_table(filename, delimiter=None):
                              names=_header_mmcif, compression=None)
 
 
-
 def _sifts_residues_to_table(filename, cols=None):
     """
     Loads and parses SIFTS XML files generating a pandas dataframe.
@@ -84,13 +81,6 @@ def _sifts_residues_to_table(filename, cols=None):
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
     """
-    if not cols:
-        cols = ('InterPro_dbAccessionId', u'InterPro_dbCoordSys', u'InterPro_dbEvidence', u'InterPro_dbResName', u'InterPro_dbResNum',
-                u'NCBI_dbAccessionId', u'NCBI_dbCoordSys', u'NCBI_dbResName', u'NCBI_dbResNum',
-                u'PDB_dbAccessionId', u'PDB_dbChainId', u'PDB_dbCoordSys', u'PDB_dbResName', u'PDB_dbResNum',
-                u'PDBe_Annotation', u'PDBe_codeSecondaryStructure', u'PDBe_dbCoordSys', u'PDBe_dbResName', u'PDBe_dbResNum', u'PDBe_nameSecondaryStructure',
-                u'Pfam_dbAccessionId', u'Pfam_dbCoordSys', u'Pfam_dbResName', u'Pfam_dbResNum',
-                u'UniProt_dbAccessionId', u'UniProt_dbCoordSys', u'UniProt_dbResName', u'UniProt_dbResNum')
 
     if not path.isfile(filename):
         raise IOError('File {} not found or unavailable.'.format(filename))
@@ -150,7 +140,11 @@ def _sifts_residues_to_table(filename, cols=None):
                         residue_annotation[k].append(v)
 
             rows.append(residue_annotation)
-    return pd.DataFrame(rows)[[cols]]
+    if cols:
+        data = pd.DataFrame(rows, columns=cols)
+    else:
+        data = pd.DataFrame(rows)
+    return data
 
 
 def _sifts_regions_to_table(filename):
@@ -256,7 +250,7 @@ def _pdb_uniprot_sifts_mapping_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
     sifts_endpoint = "mappings/uniprot/"
-    request = request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
+    request = utils.request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
                                verbose=verbose)
     information = json.loads(request.text)
 
@@ -278,7 +272,7 @@ def _uniprot_pdb_sifts_mapping_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
     sifts_endpoint = "mappings/best_structures/"
-    request = request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
+    request = utils.request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
                                verbose=verbose)
     information = json.loads(request.text)
 
@@ -307,7 +301,7 @@ def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
               'format': 'tab',
               'contact': ""}
     url = "http://www.uniprot.org/uniprot/"
-    response = get_url_or_retry(url=url, retry_in=retry_in, **params)
+    response = utils.get_url_or_retry(url=url, retry_in=retry_in, **params)
     try:
         data = pd.read_table(StringIO(response))
     except ValueError as e:
@@ -329,36 +323,13 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     information = {}
     rows = []
 
-    # UniProt endpoint keeps failing due to server issues
-    # ensembl_mappings = ["ENSEMBL_ID", "ENSEMBL_PRO_ID", "ENSEMBL_TRS_ID"]
-    # for ensembl in ensembl_mappings:
-    #     params = {'from': 'ACC',
-    #               'to': ensembl,
-    #               'format': 'tab',
-    #               'query': identifier,
-    #               'contact': defaults.contact_email}
-    #
-    #     request = request_info_url(defaults.http_uniprot_mapping + identifier,
-    #                                params,
-    #                                verbose=verbose)
-    #
-    #     data = request.text.split('\n')
-    #     for i, line in enumerate(data):
-    #         if i >= 1 and line != '':
-    #             line = line.split('\t')
-    #             try:
-    #                 if line[1] in information[ensembl]:
-    #                     continue
-    #                 information[ensembl].append(line[1])
-    #             except KeyError:
-    #                 information[ensembl] = line[1]
-    #             except AttributeError:
-    #                 information[ensembl] = [information[ensembl]]
-    #                 information[ensembl].append(line[1])
-
-        request = request_info_url(defaults.http_uniprot_mapping + identifier,
-                                   params,
-                                   verbose=verbose)
+    # TODO: fix this assuming human variation
+    ensembl_endpoint = 'xrefs/symbol/human/'
+    params = {'content-type': 'application/json'}
+    request = utils.request_info_url("{}{}{}".format(defaults.api_ensembl, ensembl_endpoint,
+                                               str(identifier)),
+                               params=params,
+                               verbose=verbose)
 
     data = json.loads(request.text)
     for entry in data:
@@ -391,13 +362,13 @@ def _transcript_variants_ensembl_to_table(identifier, verbose=False):
     information = {}
     rows = []
 
-    if not isvalid_ensembl(identifier):
+    if not utils.isvalid_ensembl(identifier):
         raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
 
     ensembl_endpoint = 'overlap/translation/'
     params = {'feature': 'transcript_variation',
               'content-type': 'application/json'}
-    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+    request = utils.request_info_url("{}{}{}".format(defaults.api_ensembl,
                                                ensembl_endpoint,
                                                str(identifier)),
                                params=params,
@@ -416,13 +387,13 @@ def _somatic_variants_ensembl_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
 
-    if not isvalid_ensembl(identifier):
+    if not utils.isvalid_ensembl(identifier):
         raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
 
     ensembl_endpoint = 'overlap/translation/'
     params = {'feature': 'somatic_transcript_variation',
               'content-type': 'application/json'}
-    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+    request = utils.request_info_url("{}{}{}".format(defaults.api_ensembl,
                                                ensembl_endpoint,
                                                str(identifier)),
                                params=params,
@@ -440,14 +411,14 @@ def _ensembl_variant_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
 
-    if not isvalid_ensembl(identifier, variant=True):
+    if not utils.isvalid_ensembl(identifier, variant=True):
         raise ValueError("{} is not a valid Variation Accession.".format(identifier))
 
     # TODO: fix this assuming human variation
     ensembl_endpoint = 'variation/human/'
     params = {'content-type': 'application/json'}
     # other params are {'pops': '1', 'phenotypes': '1', 'genotypes': '1'}
-    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
+    request = utils.request_info_url("{}{}{}".format(defaults.api_ensembl,
                                                ensembl_endpoint,
                                                str(identifier)),
                                params=params,
@@ -476,5 +447,4 @@ def _ensembl_variant_to_table(identifier, verbose=False):
     return pd.DataFrame(rows)
 
 if __name__ == '__main__':
-    # testing routines
     pass
