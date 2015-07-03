@@ -138,7 +138,7 @@ class TestStandardArgparse(unittest.TestCase):
         fakeargs = [self.existing_file,
                     self.existing_file,
                     "-l", self.existing_file
-        ]
+                    ]
 
         msg = "existing infile not being handled correctly"
         opts = parser.parse_args(fakeargs)
@@ -148,7 +148,7 @@ class TestStandardArgparse(unittest.TestCase):
         fakeargs = [self.nonexisting_file,
                     self.existing_file,
                     "-l", self.nonexisting_file
-        ]
+                    ]
 
         self.assertRaises(SystemExit,
                           parser.parse_args,
@@ -171,7 +171,7 @@ class TestStandardArgparse(unittest.TestCase):
         fakeargs = [self.existing_file,
                     self.existing_file,
                     "-l", self.existing_file
-        ]
+                    ]
 
         msg = "existing outfile not being handled correctly"
         opts = parser.parse_args(fakeargs)
@@ -181,7 +181,7 @@ class TestStandardArgparse(unittest.TestCase):
         fakeargs = [self.existing_file,
                     self.nonexisting_file,
                     "-l", self.existing_file
-        ]
+                    ]
 
         msg = "non-existent outfile and dir not being handled correctly"
         with warnings.catch_warnings():
@@ -207,7 +207,7 @@ class TestStandardArgparse(unittest.TestCase):
         fakeargs = [self.existing_file,
                     self.existing_file,
                     "-l", self.existing_file
-        ]
+                    ]
 
         msg = "existing logfile not being handled correctly"
         opts = parser.parse_args(fakeargs)
@@ -217,7 +217,7 @@ class TestStandardArgparse(unittest.TestCase):
         fakeargs = [self.existing_file,
                     self.existing_file,
                     "-l", self.nonexisting_file
-        ]
+                    ]
 
         msg = "non-existant log file and dir not being handled correctly"
         with warnings.catch_warnings():
@@ -243,7 +243,7 @@ class TestStandardArgparse(unittest.TestCase):
         fakeargs = [self.existing_file,
                     self.existing_file,
                     "-l", self.existing_file
-        ]
+                    ]
 
         msg = "verbosity not being parsed correctly"
         opts = parser.parse_args(fakeargs)
@@ -253,7 +253,7 @@ class TestStandardArgparse(unittest.TestCase):
                     self.existing_file,
                     "-l", self.existing_file,
                     "-v"
-        ]
+                    ]
 
         opts = parser.parse_args(fakeargs)
         self.assertTrue(opts.verbose, msg)
@@ -276,7 +276,7 @@ class TestStandardArgparse(unittest.TestCase):
         fakeargs = [self.existing_file,
                     self.existing_file,
                     "-l", self.existing_file
-        ]
+                    ]
 
         msg = "omitted tmpdir arg not being handled correctly"
         opts = parser.parse_args(fakeargs)
@@ -286,7 +286,7 @@ class TestStandardArgparse(unittest.TestCase):
                     self.existing_file,
                     "-l", self.existing_file,
                     "--tmpdir"
-        ]
+                    ]
 
         msg = "unspecified tmpdir arg not being handled correctly"
         opts = parser.parse_args(fakeargs)
@@ -297,7 +297,7 @@ class TestStandardArgparse(unittest.TestCase):
                     self.existing_file,
                     "-l", self.existing_file,
                     "--tmpdir", self.existing_path
-        ]
+                    ]
 
         msg = "existing tmpdir not being handled correctly"
         opts = parser.parse_args(fakeargs)
@@ -308,7 +308,7 @@ class TestStandardArgparse(unittest.TestCase):
                     self.existing_file,
                     "-l", self.existing_file,
                     "--tmpdir", self.nonexisting_path
-        ]
+                    ]
 
         msg = "non-existent tmpdir not being handled correctly"
         with warnings.catch_warnings():

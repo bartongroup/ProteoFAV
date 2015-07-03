@@ -135,6 +135,7 @@ class TestSIFTSParser(unittest.TestCase):
         self.assertTrue(type(data['resolution'][0]), float)
         self.assertTrue(type(data['tax_id'][0]), int)
 
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestSIFTSParser)
     unittest.TextTestRunner(verbosity=2).run(suite)

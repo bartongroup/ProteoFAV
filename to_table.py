@@ -5,6 +5,7 @@
 Created on 03/06/2015
 
 """
+
 import json
 import logging
 from StringIO import StringIO
@@ -17,7 +18,6 @@ from config import defaults
 from utils import isvalid_ensembl, request_info_url, get_url_or_retry
 
 log = logging.getLogger(__name__)
-
 
 
 def _dssp_to_table(filename):

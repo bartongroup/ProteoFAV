@@ -63,7 +63,7 @@ class TestStandardLogging(unittest.TestCase):
                             self.fake_outfile,
                             "-l", self.log_file,
                             "-v"
-        ]
+                            ]
 
         self.args = self.parser.parse_args(self.parser_args)
         self.fake_cmd_line = sys.argv + self.parser_args
@@ -94,7 +94,7 @@ class TestStandardLogging(unittest.TestCase):
         self.assertRaises(AttributeError,
                           sl.standard_logger,
                           __version__, sys.argv, args, [], [("log", None)]
-        )
+                          )
 
         parser = argparse.ArgumentParser()
         parser.add_argument('-verbose', action="store_true")
@@ -103,7 +103,7 @@ class TestStandardLogging(unittest.TestCase):
         self.assertRaises(AttributeError,
                           sl.standard_logger,
                           __version__, sys.argv, args, [], [("log", None)]
-        )
+                          )
 
     def test_standard_logger_basic_logging(self):
         '''Test for open logfile & that script command-line is correctly written
@@ -133,7 +133,7 @@ class TestStandardLogging(unittest.TestCase):
         match_critereon = "^.+%s$" % " ".join(self.fake_cmd_line)
         self.assertTrue(any(re.match(match_critereon, line)
                             for line in log_data
-        ),
+                            ),
                         msg)
 
     def test_standard_logger_parsed_arguments(self):
@@ -163,7 +163,7 @@ class TestStandardLogging(unittest.TestCase):
         infile_match = "^infile.+:  %s.*$" % self.fake_infile
         self.assertTrue(any(re.match(infile_match, line.strip())
                             for line in log_data
-        ),
+                            ),
                         msg)
 
         msg = "parsed outfile argument is not being registered to the log " \
@@ -171,7 +171,7 @@ class TestStandardLogging(unittest.TestCase):
         outfile_match = "^outfile.+:  %s$" % self.fake_outfile
         self.assertTrue(any(re.match(outfile_match, line.strip())
                             for line in log_data
-        ),
+                            ),
                         msg)
 
         msg = "parsed log argument is not being registered to the log " \
@@ -179,7 +179,7 @@ class TestStandardLogging(unittest.TestCase):
         logfile_match = "^--log.+:  %s$" % self.log_file
         self.assertTrue(any(re.match(logfile_match, line.strip())
                             for line in log_data
-        ),
+                            ),
                         msg)
 
         msg = "parsed verbose argument is not being registered to the log " \
@@ -187,7 +187,7 @@ class TestStandardLogging(unittest.TestCase):
         verbose_match = "^--verbose.+:  .+$"
         self.assertTrue(any(re.match(verbose_match, line.strip())
                             for line in log_data
-        ),
+                            ),
                         msg)
 
         print self.log_file
@@ -196,7 +196,7 @@ class TestStandardLogging(unittest.TestCase):
         tmpdir_match = "^--tmpdir.+:.+\(default\)$"
         self.assertTrue(any(re.match(tmpdir_match, line.strip())
                             for line in log_data
-        ),
+                            ),
                         msg)
 
 

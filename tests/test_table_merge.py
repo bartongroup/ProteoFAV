@@ -9,8 +9,9 @@ import unittest
 
 import to_table
 
-from utils import merge_tables
+from main import merge_tables
 from config import Defaults
+
 
 class TestTableMeger(unittest.TestCase):
     """Test table merging methodsthe DSSP parser methods."""
@@ -27,7 +28,6 @@ class TestTableMeger(unittest.TestCase):
         self.dssp_to_table = to_table._dssp_to_table
 
         self.merge_table = merge_tables
-
 
     def tearDown(self):
         """Remove testing framework by cleaning the namespace."""
@@ -65,8 +65,7 @@ class TestTableMeger(unittest.TestCase):
         self.assertEqual(data.shape[0], n_residues)
 
         # number of columns is given buy sum of cols in cif, dssp and sifts
-        n_cols =  self.sifts.shape[1] + self.dssp.shape[1] + 6 #  dssp.shape[1] = 8 - 2 inds
-
+        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + 6  # dssp.shape[1] = 8 - 2 inds
 
         self.assertEqual(data.shape[1], n_cols,
                          "Incorrect number of cols in camIV table in CA mode:"
@@ -76,7 +75,6 @@ class TestTableMeger(unittest.TestCase):
         self.assertTrue(any(self.sifts.UniProt_dbResNum))
         self.assertTrue(any(self.dssp.ss))
 
-
     def test_camIV_list_mode(self):
         pass
 
@@ -85,7 +83,6 @@ class TestTableMeger(unittest.TestCase):
 
     def test_dssp_3ovv(self):
         pass
-
 
 
 if __name__ == '__main__':

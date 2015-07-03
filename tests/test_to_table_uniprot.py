@@ -12,6 +12,7 @@ import unittest
 import to_table
 import utils
 
+
 class TestUNIPROTParser(unittest.TestCase):
     """Test UniProt fetcher/parser methods."""
 
@@ -97,6 +98,7 @@ class TestUNIPROTParser(unittest.TestCase):
 
         # check the values for particular entries
         self.assertEqual(data['GENE'][0], 'ENSG00000130669')
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUNIPROTParser)

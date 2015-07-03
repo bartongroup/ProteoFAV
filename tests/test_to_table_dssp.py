@@ -12,6 +12,7 @@ import to_table
 
 __version__ = "1.0"
 
+
 class TestDSSPParser(unittest.TestCase):
     """Test the DSSP parser methods."""
 
@@ -58,9 +59,8 @@ class TestDSSPParser(unittest.TestCase):
 
     def test_to_table_dssp_3kic(self):
         pass
-    # test if the number of residues per chain is correct
-    # check if all chains are there
-
+        # test if the number of residues per chain is correct
+        # check if all chains are there
 
 
 if __name__ == '__main__':

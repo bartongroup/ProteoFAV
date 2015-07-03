@@ -143,6 +143,7 @@ class TestENSEMBLParser(unittest.TestCase):
         self.assertEqual(data['seq_region_name'][0], '19')
         self.assertEqual(data['evidence'][0], ['Frequency', '1000Genomes'])
 
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestENSEMBLParser)
     unittest.TextTestRunner(verbosity=2).run(suite)

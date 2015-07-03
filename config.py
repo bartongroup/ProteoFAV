@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 """
 ---------
 config.py
@@ -23,6 +24,7 @@ Traceback (most recent call last):
 AttributeError: 'Defaults' object has no attribute 'email'"""
 
 from __future__ import print_function
+
 from ConfigParser import ConfigParser
 import logging
 from os import path
