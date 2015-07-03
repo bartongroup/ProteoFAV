@@ -4,17 +4,24 @@
 from os import path
 import numpy as np
 
-from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_table
+from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_table, pd
 from utils import _fetch_sifts_best
 
 
-def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
-                 defaults=None, cols=None):
+def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', defaults=None, cols=None,
+                 model=1):
     """
     Merges the output from multiple to table method.
     if no pdb_id uses sifts_best_structure
     if no chain uses first
     or if use_all_chains use all chains of the pdb_id
+    :param uniprot_id:
+    :param pdb_id:
+    :param chain:
+    :param groupby:
+    :param defaults:
+    :param cols:
+    :param model:
     """
     if cols:
         for col in ('PDB_dbResNum', 'PDB_dbChainId'):
@@ -68,7 +75,12 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
     sifts_path = path.join(defaults.db_sifts, pdb_id + ".xml")
 
     cif_table = _mmcif_atom_to_table(cif_path)
-    cif_table = cif_table.query("label_asym_id == @chain & group_PDB == 'ATOM'")
+    try:
+        cif_table = cif_table.query("pdbx_PDB_model_num == model & label_asym_id == @chain & group_PDB == 'ATOM'")
+    except pd.computation.ops.UndefinedVariableError:
+        #TODO log
+        cif_table = cif_table.query("label_asym_id == @chain & group_PDB == 'ATOM'")
+
     # next line raises a SettingWithCopyWarning but seems to be correct
     # TODO review next line.
     cif_table.loc[:, "label_seq_id"] = cif_table.loc[:, "label_seq_id"].astype(np.int)
@@ -85,6 +97,8 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
 
     if groupby == 'CA':
         cif_table = cif_table.query("label_atom_id == 'CA'")
+        # assert cif_table.label_seq_id is a sequence with number of aas
+
     cif_table = cif_table.groupby('auth_seq_id').agg(groupby_opts[groupby])
 
     # This will remove all atoms annotated in sifts but not in mmcif seqres
