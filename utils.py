@@ -253,8 +253,6 @@ def get_url_or_retry(url, retry_in=(), wait=1, json=False, header={}, **params):
         response.raise_for_status()
 
 
-
-
 def _fetch_sifts_best(uniprot_id, first=False):
     url = 'http://wwwdev.ebi.ac.uk/pdbe/api/mappings/best_structures/'
     url = url + uniprot_id
@@ -291,9 +289,9 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
                     'CA': {'label_comp_id': to_unique,
                            'label_atom_id': to_unique,
                            'label_asym_id': to_unique,
-                           'Cartn_x': to_unique,
-                           'Cartn_y': to_unique,
-                           'Cartn_z': to_unique,
+                           'Cartn_x': to_list,
+                           'Cartn_y': to_list,
+                           'Cartn_z': to_list,
                            'occupancy': to_unique,
                            'B_iso_or_equiv': to_unique}}  # TODO centroid?
 
@@ -331,10 +329,9 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
 
     if groupby == 'CA':
         cif_table = cif_table.query("label_atom_id == 'CA'")
-
     cif_table = cif_table.groupby('label_seq_id').agg(groupby_opts[groupby])
 
-    # This remove all atoms annotated in sifts but not in mmcif seqres
+    # This will remove all atoms annotated in sifts but not in mmcif seqres
     # To keep those, sift_table should be the left in join
     cif_sifts = cif_table.join(sifts_table)
     cif_sifts_dssp = cif_sifts.join(dssp_table)
