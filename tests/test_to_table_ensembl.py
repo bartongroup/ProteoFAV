@@ -10,7 +10,7 @@ __version__ = "1.0"
 
 import unittest
 
-from variants import to_table
+import to_table
 import utils
 
 

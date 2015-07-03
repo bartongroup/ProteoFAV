@@ -10,6 +10,7 @@ __version__ = "1.0"
 
 import unittest
 import to_table
+import utils
 
 class TestUNIPROTParser(unittest.TestCase):
     """Test UniProt fetcher/parser methods."""
@@ -24,6 +25,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_id_error5 = []
         self.uniprot_info = to_table._uniprot_info_to_table
         self.uniprot_ensembl = to_table._uniprot_ensembl_mapping_to_table
+        self.isvalid = utils.isvalid_uniprot
 
     def tearDown(self):
         """Remove testing framework."""
@@ -41,14 +43,12 @@ class TestUNIPROTParser(unittest.TestCase):
         """
         Testing input of invalid UniProt identifiers.
         """
-        # TODO
         self.assertTrue(self.isvalid(self.uniprot_id))
         self.assertFalse(self.isvalid(self.uniprot_id_error1))
         self.assertFalse(self.isvalid(self.uniprot_id_error2))
         self.assertFalse(self.isvalid(self.uniprot_id_error3))
         self.assertFalse(self.isvalid(self.uniprot_id_error4))
         self.assertFalse(self.isvalid(self.uniprot_id_error5))
-
 
     def test_to_table_uniprot_info(self):
         """
@@ -93,10 +93,10 @@ class TestUNIPROTParser(unittest.TestCase):
         self.assertEqual(len(data.columns.values), 3)
 
         # check whether there are particular keys
-        self.assertIn('ENSEMBL_ID', data.columns.values)
+        self.assertIn('TRANSCRIPT', data.columns.values)
 
         # check the values for particular entries
-        self.assertEqual(data['ENSEMBL_ID'][0], 'ENSG00000130669')
+        self.assertEqual(data['GENE'][0], 'ENSG00000130669')
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUNIPROTParser)

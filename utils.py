@@ -157,6 +157,7 @@ def isvalid_uniprot(identifier):
     :return: boolean
     """
 
+    # TODO: Improve this!
     try:
         if identifier != '':
             request_info_url(defaults.http_uniprot + identifier)
@@ -175,6 +176,7 @@ def isvalid_pdb(identifier):
     :return: boolean
     """
 
+    # TODO: Improve this!
     try:
         if identifier != '':
             request_info_url("{}{}".format(defaults.http_pdbe,
@@ -194,6 +196,8 @@ def isvalid_ensembl(identifier, variant=False):
     :param variant: boolean if True uses the variant endpoint
     :return: boolean
     """
+
+    # TODO: Improve this!
 
     if variant:
         ensembl_endpoint = 'variation/human/'
