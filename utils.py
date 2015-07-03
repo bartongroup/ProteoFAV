@@ -15,7 +15,7 @@ import numpy as np
 import requests
 
 from config import defaults, Defaults
-from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_table
+import to_table
 
 log = logging.getLogger(__name__)
 
@@ -320,7 +320,7 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
     dssp_path = path.join(defaults.db_dssp, pdb_id + ".dssp")
     sifts_path = path.join(defaults.db_sifts, pdb_id + ".xml")
 
-    cif_table = _mmcif_atom_to_table(cif_path)
+    cif_table = to_table._mmcif_atom_to_table(cif_path)
     cif_table = cif_table.query("label_asym_id == @chain & group_PDB == 'ATOM'")
     # next line raises a SettingWithCopyWarning but seems to be correct
     # TODO review next line.
@@ -328,11 +328,11 @@ def merge_tables(uniprot_id, pdb_id=None, chain=None, groupby='CA',
 
     # TODO keep heteroatoms?
 
-    dssp_table = _dssp_to_table(dssp_path)
+    dssp_table = to_table._dssp_to_table(dssp_path)
     dssp_table = dssp_table.query('chain_id == @chain')
     dssp_table.set_index(['icode'], inplace=True)
 
-    sifts_table = _sifts_residues_to_table(sifts_path, cols=cols)
+    sifts_table = to_table._sifts_residues_to_table(sifts_path, cols=cols)
     sifts_table = sifts_table.query('PDB_dbChainId == @chain')
     sifts_table.set_index(['PDB_dbResNum'], inplace=True)
 

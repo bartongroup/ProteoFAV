@@ -47,30 +47,34 @@ class TestTableMeger(unittest.TestCase):
 
         data = self.merge_table("Q16566", "2w4o", "A", defaults=self.defaults)
         self.assertIsNotNone(data)
-        cif = self.cif_to_table("CIF/2w4o.cif")
-        sifts = self.sifts_to_table("SIFTS/2w4o.xml")
-        dssp = self.dssp_to_table("DSSP/2w4o.dssp")
 
-        cif = path.join(path.dirname(__file__), "CIF/2w4o.cif")
-        sifts = path.join(path.dirname(__file__), "SIFTS/2w4o.xml")
-        dssp = path.join(path.dirname(__file__), "DSSP/2w4o.dssp")
-        self.cif = self.cif_to_table(cif)
-        self.sifts = self.sifts_to_table(sifts)
-        self.dssp = self.dssp_to_table(dssp)
+        self.cif_path = path.join(path.dirname(__file__), "CIF/2w4o.cif")
+        self.sifts_path = path.join(path.dirname(__file__), "SIFTS/2w4o.xml")
+        self.dssp_path = path.join(path.dirname(__file__), "DSSP/2w4o.dssp")
+        self.cif = self.cif_to_table(self.cif_path)
+        self.sifts = self.sifts_to_table(self.sifts_path)
+        self.dssp = self.dssp_to_table(self.dssp_path)
 
         # number of rows (residues) is determined by the number of residues in
         # cif file
-        chain = self.cif.query("label_asym_id == 'A' & group_PDB == 'ATOM' & label_atom_id == 'CA'")
+        chain = self.cif.query(
+            "label_asym_id == 'A' & group_PDB == 'ATOM' & label_atom_id == 'CA'")
         n_residues = chain.shape[0]
 
         self.assertEqual(data.shape[0], n_residues)
 
         # number of columns is given buy sum of cols in cif, dssp and sifts
-        n_cols = self.cif.shape[1] + self.sifts.shape[1] + self.dssp.shape[1]
+        n_cols =  self.sifts.shape[1] + self.dssp.shape[1] + 6 #  dssp.shape[1] = 8 - 2 inds
 
-        # TODO: improve this!
-        # self.assertEqual(data.shape[1], n_cols, "Incorrect number of cols in camIV table in CA mode.")
-        self.assertNotEqual(data.shape[1], n_cols, "Incorrect number of cols in camIV table in CA mode.")
+
+        self.assertEqual(data.shape[1], n_cols,
+                         "Incorrect number of cols in camIV table in CA mode:"
+                         "{} instead {}.".format(data.shape[1], n_cols))
+
+        self.assertTrue(any(self.cif.auth_seq_id))
+        self.assertTrue(any(self.sifts.UniProt_dbResNum))
+        self.assertTrue(any(self.dssp.ss))
+
 
     def test_camIV_list_mode(self):
         pass

@@ -19,8 +19,6 @@ import utils
 log = logging.getLogger(__name__)
 
 
-# from utils import isvalid_ensembl
-
 
 def _dssp_to_table(filename):
     """
