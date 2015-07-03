@@ -10,7 +10,8 @@ __version__ = "1.0"
 
 import unittest
 
-import to_table
+from to_table import (_ensembl_variant_to_table, _transcript_variants_ensembl_to_table,
+                      _somatic_variants_ensembl_to_table)
 import utils
 
 
@@ -29,9 +30,9 @@ class TestENSEMBLParser(unittest.TestCase):
         self.variant_id_error1 = ''
         self.variant_id_error2 = 123456
         self.variant_id_error3 = []
-        self.ensembl_trascript = to_table._transcript_variants_ensembl_to_table
-        self.ensembl_somatic = to_table._somatic_variants_ensembl_to_table
-        self.ensembl_variant = to_table._ensembl_variant_to_table
+        self.ensembl_trascript = _transcript_variants_ensembl_to_table
+        self.ensembl_somatic = _somatic_variants_ensembl_to_table
+        self.ensembl_variant = _ensembl_variant_to_table
         self.isvalid = utils.isvalid_ensembl
 
     def tearDown(self):

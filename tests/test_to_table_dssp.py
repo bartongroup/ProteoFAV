@@ -8,7 +8,7 @@ Created on 09/06/2015
 from os import path
 import unittest
 
-import to_table
+from to_table import _dssp_to_table
 
 __version__ = "1.0"
 
@@ -19,7 +19,7 @@ class TestDSSPParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
-        self.residues_parser = to_table._dssp_to_table
+        self.residues_parser = _dssp_to_table
 
     def tearDown(self):
         """Remove testing framework."""

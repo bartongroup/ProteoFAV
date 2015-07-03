@@ -11,7 +11,7 @@ __version__ = "1.0"
 from os import path
 import unittest
 
-import to_table
+from to_table import _mmcif_atom_to_table
 import utils
 
 
@@ -21,7 +21,7 @@ class TestMMCIFParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_mmcif = path.join(path.dirname(__file__), "CIF/2pah.cif")
-        self.mmcif_parser = to_table._mmcif_atom_to_table
+        self.mmcif_parser = _mmcif_atom_to_table
 
         self.pdb_id = '2pah'
         self.pdb_id_error1 = ''

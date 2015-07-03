@@ -7,7 +7,7 @@ __version__ = "1.0"
 from os import path
 import unittest
 
-import to_table
+from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_table
 
 from main import merge_tables
 from config import Defaults
@@ -23,9 +23,9 @@ class TestTableMeger(unittest.TestCase):
         self.defaults.db_dssp = "DSSP"
         self.defaults.db_sifts = "SIFTS"
 
-        self.cif_to_table = to_table._mmcif_atom_to_table
-        self.sifts_to_table = to_table._sifts_residues_to_table
-        self.dssp_to_table = to_table._dssp_to_table
+        self.cif_to_table = _mmcif_atom_to_table
+        self.sifts_to_table = _sifts_residues_to_table
+        self.dssp_to_table = _dssp_to_table
 
         self.merge_table = merge_tables
 
