@@ -14,7 +14,7 @@ from lxml import etree
 import pandas as pd
 
 from config import defaults
-import utils
+from utils import isvalid_ensembl, request_info_url, get_url_or_retry
 
 log = logging.getLogger(__name__)
 
@@ -248,7 +248,7 @@ def _pdb_uniprot_sifts_mapping_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
     sifts_endpoint = "mappings/uniprot/"
-    request = utils.request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
+    request = request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
                                verbose=verbose)
     information = json.loads(request.text)
 
@@ -270,7 +270,7 @@ def _uniprot_pdb_sifts_mapping_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
     sifts_endpoint = "mappings/best_structures/"
-    request = utils.request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
+    request = request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
                                verbose=verbose)
     information = json.loads(request.text)
 
@@ -299,7 +299,7 @@ def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
               'format': 'tab',
               'contact': ""}
     url = "http://www.uniprot.org/uniprot/"
-    response = utils.get_url_or_retry(url=url, retry_in=retry_in, **params)
+    response = get_url_or_retry(url=url, retry_in=retry_in, **params)
     try:
         data = pd.read_table(StringIO(response))
     except ValueError as e:
@@ -324,7 +324,7 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     # TODO: fix this assuming human variation
     ensembl_endpoint = 'xrefs/symbol/human/'
     params = {'content-type': 'application/json'}
-    request = utils.request_info_url("{}{}{}".format(defaults.api_ensembl, ensembl_endpoint,
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl, ensembl_endpoint,
                                                str(identifier)),
                                params=params,
                                verbose=verbose)
@@ -360,13 +360,13 @@ def _transcript_variants_ensembl_to_table(identifier, verbose=False):
     information = {}
     rows = []
 
-    if not utils.isvalid_ensembl(identifier):
+    if not isvalid_ensembl(identifier):
         raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
 
     ensembl_endpoint = 'overlap/translation/'
     params = {'feature': 'transcript_variation',
               'content-type': 'application/json'}
-    request = utils.request_info_url("{}{}{}".format(defaults.api_ensembl,
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
                                                ensembl_endpoint,
                                                str(identifier)),
                                params=params,
@@ -385,13 +385,13 @@ def _somatic_variants_ensembl_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
 
-    if not utils.isvalid_ensembl(identifier):
+    if not isvalid_ensembl(identifier):
         raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
 
     ensembl_endpoint = 'overlap/translation/'
     params = {'feature': 'somatic_transcript_variation',
               'content-type': 'application/json'}
-    request = utils.request_info_url("{}{}{}".format(defaults.api_ensembl,
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
                                                ensembl_endpoint,
                                                str(identifier)),
                                params=params,
@@ -409,14 +409,14 @@ def _ensembl_variant_to_table(identifier, verbose=False):
     :return: pandas table dataframe
     """
 
-    if not utils.isvalid_ensembl(identifier, variant=True):
+    if not isvalid_ensembl(identifier, variant=True):
         raise ValueError("{} is not a valid Variation Accession.".format(identifier))
 
     # TODO: fix this assuming human variation
     ensembl_endpoint = 'variation/human/'
     params = {'content-type': 'application/json'}
     # other params are {'pops': '1', 'phenotypes': '1', 'genotypes': '1'}
-    request = utils.request_info_url("{}{}{}".format(defaults.api_ensembl,
+    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
                                                ensembl_endpoint,
                                                str(identifier)),
                                params=params,

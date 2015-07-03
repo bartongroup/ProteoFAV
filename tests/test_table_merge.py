@@ -8,6 +8,7 @@ from os import path
 import unittest
 
 import to_table
+
 from utils import merge_tables
 from config import Defaults
 
