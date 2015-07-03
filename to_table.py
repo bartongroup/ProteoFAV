@@ -91,53 +91,52 @@ def _sifts_residues_to_table(filename, cols=None):
     residue_detail = "{{{}}}residueDetail".format(namespace)
     rows = []
 
-    for segment in root.find('.//ns:entity[@type="protein"]',
-                             namespaces=namespace_map):
-        for residue in segment.find('.//ns:listResidue',
-                                    namespaces=namespace_map):
-            # get residue annotations
-            residue_annotation = {}
-            # key, value pairs
-            for k, v in residue.attrib.items():
-                # skipping dbSource
-                if k == 'dbSource':
-                    continue
-                # renaming all keys with dbSource prefix
-                k = "{}_{}".format(residue.attrib["dbSource"], k)
-                # adding to the dictionary
-                residue_annotation[k] = v
-
-            # parse extra annotations for each residue
-            for annotation in residue:
-                for k, v in annotation.attrib.items():
-                    # crossRefDb entries
-                    if annotation.tag == cross_reference:
-                        # skipping dbSource
-                        if k == 'dbSource':
-                            continue
-                        # renaming all keys with dbSource prefix
-                        k = "{}_{}".format(annotation.attrib["dbSource"], k)
-
-                    # residueDetail entries
-                    elif annotation.tag == residue_detail:
-                        # joining dbSource and property keys
-                        k = "_".join([annotation.attrib["dbSource"],
-                                      annotation.attrib["property"]])
-                        # value is the text field in the XML
-                        v = annotation.text
-
+    for segment in root.iterfind('.//ns:entity[@type="protein"]', namespaces=namespace_map):
+        for list_residue in segment.iterfind('.//ns:listResidue', namespaces=namespace_map):
+            for residue in list_residue :
+                # get residue annotations
+                residue_annotation = {}
+                # key, value pairs
+                for k, v in residue.attrib.items():
+                    # skipping dbSource
+                    if k == 'dbSource':
+                        continue
+                    # renaming all keys with dbSource prefix
+                    k = "{}_{}".format(residue.attrib["dbSource"], k)
                     # adding to the dictionary
-                    try:
-                        if v in residue_annotation[k]:
-                            continue
-                        residue_annotation[k].append(v)
-                    except KeyError:
-                        residue_annotation[k] = v
-                    except AttributeError:
-                        residue_annotation[k] = [residue_annotation[k]]
-                        residue_annotation[k].append(v)
+                    residue_annotation[k] = v
 
-            rows.append(residue_annotation)
+                # parse extra annotations for each residue
+                for annotation in residue:
+                    for k, v in annotation.attrib.items():
+                        # crossRefDb entries
+                        if annotation.tag == cross_reference:
+                            # skipping dbSource
+                            if k == 'dbSource':
+                                continue
+                            # renaming all keys with dbSource prefix
+                            k = "{}_{}".format(annotation.attrib["dbSource"], k)
+
+                        # residueDetail entries
+                        elif annotation.tag == residue_detail:
+                            # joining dbSource and property keys
+                            k = "_".join([annotation.attrib["dbSource"],
+                                          annotation.attrib["property"]])
+                            # value is the text field in the XML
+                            v = annotation.text
+
+                        # adding to the dictionary
+                        try:
+                            if v in residue_annotation[k]:
+                                continue
+                            residue_annotation[k].append(v)
+                        except KeyError:
+                            residue_annotation[k] = v
+                        except AttributeError:
+                            residue_annotation[k] = [residue_annotation[k]]
+                            residue_annotation[k].append(v)
+
+                rows.append(residue_annotation)
     if cols:
         data = pd.DataFrame(rows, columns=cols)
     else:
@@ -445,4 +444,5 @@ def _ensembl_variant_to_table(identifier, verbose=False):
     return pd.DataFrame(rows)
 
 if __name__ == '__main__':
+    X = _sifts_residues_to_table("tests/SIFTS/3edv.xml")
     pass
