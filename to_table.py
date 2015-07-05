@@ -93,7 +93,7 @@ def _sifts_residues_to_table(filename, cols=None):
 
     for segment in root.iterfind('.//ns:entity[@type="protein"]', namespaces=namespace_map):
         for list_residue in segment.iterfind('.//ns:listResidue', namespaces=namespace_map):
-            for residue in list_residue :
+            for residue in list_residue:
                 # get residue annotations
                 residue_annotation = {}
                 # key, value pairs
