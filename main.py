@@ -26,12 +26,11 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
     :param model:
     """
 
-    # if cols:
-    #     for col in ('PDB_dbResNum', 'PDB_dbChainId'):
-    #         if col not in cols:
-    #             if not isinstance(cols, list):
-    #                 cols = list(cols)
-    #             cols.append(col)
+    # TODO: cols
+
+    if not any(uniprot_id, pdb_id):
+        raise TypeError("One of the following arguments is expected:"
+                        "uniprot_id or pdb_id")
 
 
     def to_list(series):
@@ -79,9 +78,17 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
         best_pdb = _fetch_sifts_best(uniprot_id, first=True)
         pdb_id = best_pdb['pdb_id']
         chain = best_pdb['chain_id']
+        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
+
     if not chain:
-        best_pdb = _fetch_sifts_best(uniprot_id)[pdb_id]
+        try:
+            best_pdb = _fetch_sifts_best(uniprot_id)[pdb_id]
+        except KeyError:
+            err = "Structure {} not found in best structures".format
+            log.error(err(pdb_id))
         chain = best_pdb['chain_id']
+        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
+
 
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
     dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
@@ -89,16 +96,14 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
 
     cif_table = _mmcif_atom_to_table(cif_path)
     try:
-        cif_table = cif_table[cif_table.pdbx_PDB_model_num == model &
-                              cif_table.label_asym_id == chain &
-                              cif_table.group_PDB == 'ATOM']
+        cif_table = cif_table[(cif_table.pdbx_PDB_model_num == model) &
+                              (cif_table.label_asym_id == chain) &
+                              (cif_table.group_PDB == 'ATOM')]
     except AttributeError:
         err = 'Structure {} has only one model'.format
         log.info(err(pdb_id))
-        cif_table = cif_table[cif_table.label_asym_id == chain &
-                              cif_table.group_PDB == 'ATOM']
-
-
+        cif_table = cif_table[(cif_table.label_asym_id == chain) &
+                              (cif_table.group_PDB == 'ATOM')]
     # next line raises a SettingWithCopyWarning but seems to be correct
     cif_table.loc[:, 'label_seq_id'] = cif_table.loc[:, 'label_seq_id'].astype(np.int)
 
