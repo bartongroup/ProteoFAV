@@ -125,7 +125,9 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
     if len(cif_table.label_alt_id.unique()) > 1:
         cif_table = cif_table.groupby(['auth_seq_id', 'label_alt_id']).agg(
             groupby_opts[groupby])
-        cif_table = cif_table.groupby(level=0).agg({'occupancy': 'max'})
+        idx = cif_table.groupby(level=0).apply(lambda x: x.occupancy.idxmax())
+        cif_table = cif_table.ix[idx]
+        cif_table.reset_index(level=1, drop=True, inplace=True)
         log.info('Has atoms in alternative location')
         # TODO what should be done with atoms in alt location?
     else:
@@ -154,5 +156,5 @@ if __name__ == '__main__':
     defaults.db_dssp = 'tests/DSSP'
     defaults.db_sifts = 'tests/SIFTS'
 
-    X = merge_tables(pdb_id='4ibw', chain='A', defaults=defaults)
+    X = merge_tables(pdb_id='2w4o', chain='A', defaults=defaults)
     pass

@@ -36,4 +36,4 @@ def fetch_pdb_files(pdb_id, destination, data_sources=("cif", "dssp", "sifts")):
 
 
 if __name__ == '__main__':
-    fetch_pdb_files("4ibw", "/Users/tbrittoborges/Downloads/")
+    fetch_pdb_files("3mn5", "/Users/tbrittoborges/Downloads/")

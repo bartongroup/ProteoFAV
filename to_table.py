@@ -64,11 +64,17 @@ def _mmcif_atom_to_table(filename, delimiter=None):
     lines = "".join(lines)
 
     if delimiter is None:
-        return pd.read_table(StringIO(lines), delim_whitespace=True,
-                             names=_header_mmcif, compression=None)
+        return pd.read_table(StringIO(lines),
+                             delim_whitespace=True,
+                             low_memory=False,
+                             names=_header_mmcif,
+                             compression=None)
     else:
-        return pd.read_table(StringIO(lines), sep=str(delimiter),
-                             names=_header_mmcif, compression=None)
+        return pd.read_table(StringIO(lines),
+                             sep=str(delimiter),
+                             low_memory=False,
+                             names=_header_mmcif,
+                             compression=None)
 
 
 def _sifts_residues_to_table(filename, cols=None):
@@ -91,8 +97,10 @@ def _sifts_residues_to_table(filename, cols=None):
     residue_detail = "{{{}}}residueDetail".format(namespace)
     rows = []
 
-    for segment in root.iterfind('.//ns:entity[@type="protein"]', namespaces=namespace_map):
-        for list_residue in segment.iterfind('.//ns:listResidue', namespaces=namespace_map):
+    for segment in root.iterfind('.//ns:entity[@type="protein"]',
+                                 namespaces=namespace_map):
+        for list_residue in segment.iterfind('.//ns:listResidue',
+                                             namespaces=namespace_map):
             for residue in list_residue:
                 # get residue annotations
                 residue_annotation = {}
@@ -105,7 +113,6 @@ def _sifts_residues_to_table(filename, cols=None):
                     k = "{}_{}".format(residue.attrib["dbSource"], k)
                     # adding to the dictionary
                     residue_annotation[k] = v
-
                 # parse extra annotations for each residue
                 for annotation in residue:
                     for k, v in annotation.attrib.items():
@@ -118,6 +125,7 @@ def _sifts_residues_to_table(filename, cols=None):
                             k = "{}_{}".format(annotation.attrib["dbSource"], k)
 
                         # residueDetail entries
+                        # TODO better check if has .text attrib
                         elif annotation.tag == residue_detail:
                             # joining dbSource and property keys
                             k = "_".join([annotation.attrib["dbSource"],
@@ -323,10 +331,11 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     # TODO: fix this assuming human variation
     ensembl_endpoint = 'xrefs/symbol/human/'
     params = {'content-type': 'application/json'}
-    request = request_info_url("{}{}{}".format(defaults.api_ensembl, ensembl_endpoint,
-                                               str(identifier)),
-                               params=params,
-                               verbose=verbose)
+    request = request_info_url(
+        "{}{}{}".format(defaults.api_ensembl, ensembl_endpoint,
+                        str(identifier)),
+        params=params,
+        verbose=verbose)
 
     data = json.loads(request.text)
     for entry in data:
@@ -355,12 +364,13 @@ def _transcript_variants_ensembl_to_table(identifier, verbose=False):
     :param verbose: boolean
     :return: pandas table dataframe
     """
-    #TODO delete when safe
+    # TODO delete when safe
     information = {}
     rows = []
 
     if not isvalid_ensembl(identifier):
-        raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
+        raise ValueError(
+            "{} is not a valid Ensembl Accession.".format(identifier))
 
     ensembl_endpoint = 'overlap/translation/'
     params = {'feature': 'transcript_variation',
@@ -385,7 +395,8 @@ def _somatic_variants_ensembl_to_table(identifier, verbose=False):
     """
 
     if not isvalid_ensembl(identifier):
-        raise ValueError("{} is not a valid Ensembl Accession.".format(identifier))
+        raise ValueError(
+            "{} is not a valid Ensembl Accession.".format(identifier))
 
     ensembl_endpoint = 'overlap/translation/'
     params = {'feature': 'somatic_transcript_variation',
@@ -409,7 +420,8 @@ def _ensembl_variant_to_table(identifier, verbose=False):
     """
 
     if not isvalid_ensembl(identifier, variant=True):
-        raise ValueError("{} is not a valid Variation Accession.".format(identifier))
+        raise ValueError(
+            "{} is not a valid Variation Accession.".format(identifier))
 
     # TODO: fix this assuming human variation
     ensembl_endpoint = 'variation/human/'
@@ -443,6 +455,7 @@ def _ensembl_variant_to_table(identifier, verbose=False):
     rows.append(information)
     return pd.DataFrame(rows)
 
+
 if __name__ == '__main__':
-    X = _sifts_residues_to_table("tests/SIFTS/3edv.xml")
+    X = _mmcif_atom_to_table("tests/CIF/2pah.cif")
     pass

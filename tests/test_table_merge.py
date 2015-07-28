@@ -19,9 +19,9 @@ class TestTableMeger(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.defaults = Defaults("config.txt")
-        self.defaults.db_mmcif = "CIF"
-        self.defaults.db_dssp = "DSSP"
-        self.defaults.db_sifts = "SIFTS"
+        self.defaults.db_mmcif = path.join(path.dirname(__file__), "CIF")
+        self.defaults.db_dssp = path.join(path.dirname(__file__), "DSSP")
+        self.defaults.db_sifts = path.join(path.dirname(__file__), "SIFTS")
 
         self.cif_to_table = _mmcif_atom_to_table
         self.sifts_to_table = _sifts_residues_to_table
@@ -45,7 +45,6 @@ class TestTableMeger(unittest.TestCase):
         Test table merger for a protein example.
         :return:
         """
-        print path.dirname(__file__)
         data = self.merge_table(pdb_id="2w4o", chain="A", defaults=self.defaults)
         self.assertIsNotNone(data)
 
@@ -58,14 +57,13 @@ class TestTableMeger(unittest.TestCase):
 
         # number of rows (residues) is determined by the number of residues in
         # cif file
-        chain = self.cif.query(
-            "label_asym_id == 'A' & group_PDB == 'ATOM' & label_atom_id == 'CA'")
+        chain = self.sifts
         n_residues = chain.shape[0]
 
         self.assertEqual(data.shape[0], n_residues)
 
         # number of columns is given buy sum of cols in cif, dssp and sifts
-        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + 6  # dssp.shape[1] = 8 - 2 inds
+        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + 7  # dssp.shape[1] = 8 - 2 inds
 
         self.assertEqual(data.shape[1], n_cols,
                          "Incorrect number of cols in camIV table in CA mode:"
@@ -84,6 +82,23 @@ class TestTableMeger(unittest.TestCase):
     def test_dssp_3ovv(self):
         pass
 
+    def test_sift_3edv(self):
+        """
+        Example dbResNum is a string, therefore was not merging.
+        :return:
+        """
+        pass
+
+    def test_merge_4ibw_A_with_alt_loc(self):
+        """
+        Test case in a structure with alt locations.
+        """
+        #(81, 'P63094', 51, '3c16', 'C', 52, ValueError("invalid literal for long() with base 10: '63A'",))
+        data = self.merge_table(pdb_id="4ibw", chain="A", defaults=self.defaults)
+        self.assertIsNotNone(data)
+        self.sifts_path = path.join(path.dirname(__file__), "SIFTS/4ibw.xml")
+        self.sifts = self.sifts_to_table(self.sifts_path)
+        self.assertEqual(self.sifts.shape[0], data.shape[0])
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMeger)
