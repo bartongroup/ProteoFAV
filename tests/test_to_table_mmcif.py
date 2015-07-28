@@ -12,6 +12,8 @@ from os import path
 import unittest
 
 from to_table import _mmcif_atom_to_table
+from mmcif_tools import _mmcif_info_to_dict
+
 import utils
 
 
@@ -21,7 +23,8 @@ class TestMMCIFParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_mmcif = path.join(path.dirname(__file__), "CIF/2pah.cif")
-        self.mmcif_parser = _mmcif_atom_to_table
+        self.mmcif_atom_parser = _mmcif_atom_to_table
+        self.mmcif_info_parser = _mmcif_info_to_dict
 
         self.pdb_id = '2pah'
         self.pdb_id_error1 = ''
@@ -35,7 +38,8 @@ class TestMMCIFParser(unittest.TestCase):
         """Remove testing framework."""
 
         self.example_mmcif = None
-        self.mmcif_parser = None
+        self.mmcif_atom_parser = None
+        self.mmcif_info_parser = None
 
         self.pdb_id = None
         self.pdb_id_error1 = None
@@ -57,15 +61,17 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertFalse(self.isvalid(self.pdb_id_error4))
         self.assertFalse(self.isvalid(self.pdb_id_error5))
 
-    def test_to_table_mmcif(self):
+    def test_atom_to_table_mmcif(self):
         """
         Tests the parsing real mmCIF files.
 
         Some checks are made to whether the parsed keys and values
         are the ones we are expecting.
+
+        Parsing of ATOM and HETATOM lines.
         """
 
-        data = self.mmcif_parser(self.example_mmcif)
+        data = self.mmcif_atom_parser(self.example_mmcif)
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 5317)
@@ -81,6 +87,37 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(data.loc[1, 'pdbx_PDB_model_num'], 1)
         self.assertEqual(data['group_PDB'][0], 'ATOM')
 
+    def test_info_to_table_mmcif(self):
+        """
+        Tests the parsing real mmCIF files.
+
+        Some checks are made to whether the parsed keys and values
+        are the ones we are expecting.
+
+        Parsing all lines other than ATOM/HETATOM lines.
+        """
+
+        data = self.mmcif_info_parser(self.example_mmcif)
+
+        # number of main dict keys
+        self.assertEqual(len(data), 66)
+
+        # check whether there are particular main keys
+        self.assertIn('pdbx_struct_assembly', data)
+
+        # number of leading keys for a testing main key
+        self.assertEqual(len(data['exptl_crystal']), 5)
+
+        # check whether there are particular leading keys
+        self.assertIn('oligomeric_details', data['pdbx_struct_assembly'])
+
+        # check the values for particular entries
+        self.assertEqual(data['pdbx_struct_assembly']['oligomeric_details'],
+                         'tetrameric')
+        self.assertEqual(data['pdbx_struct_assembly_gen']['asym_id_list'],
+                         'A,C,B,D')
+        self.assertEqual(data['pdbx_struct_oper_list']['symmetry_operation'],
+                         ['x,y,z', '-y,-x,-z+2/3'])
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestMMCIFParser)
