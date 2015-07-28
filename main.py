@@ -28,7 +28,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
 
     # TODO: cols
 
-    if not any(uniprot_id, pdb_id):
+    if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
                         "uniprot_id or pdb_id")
 
@@ -38,6 +38,11 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
 
     def to_unique(series):
         return series.unique()
+
+    def to_first(series):
+        return series.first()
+
+
     if not defaults:
         from config import defaults
 
@@ -56,7 +61,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
                            'Cartn_y': to_unique,
                            'Cartn_z': to_unique,
                            'occupancy': to_unique,
-                           'B_iso_or_equiv': to_unique,},
+                           'B_iso_or_equiv': to_unique,
+                           'id': to_unique},
                     'SC': {'label_comp_id': to_unique,
                            'label_atom_id': to_unique,
                            'label_asym_id': to_unique,
@@ -64,7 +70,9 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
                            'Cartn_y': 'mean',
                            'Cartn_z': 'mean',
                            'occupancy': 'mean',
-                           'B_iso_or_equiv': 'mean'},
+                           'B_iso_or_equiv': 'mean',
+                           'label_alt_id': to_unique,
+                           'id': to_unique},
                     'centroid':{},
                     'all_atoms':{}} # TODO
 
@@ -89,7 +97,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
         chain = best_pdb['chain_id']
         log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
 
-
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
     dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
     sifts_path = path.join(defaults.db_sifts, pdb_id + '.xml')
@@ -105,17 +112,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
         cif_table = cif_table[(cif_table.label_asym_id == chain) &
                               (cif_table.group_PDB == 'ATOM')]
     # next line raises a SettingWithCopyWarning but seems to be correct
-    cif_table.loc[:, 'label_seq_id'] = cif_table.loc[:, 'label_seq_id'].astype(np.int)
-
-    dssp_table = _dssp_to_table(dssp_path)
-    dssp_table = dssp_table[dssp_table.chain_id == chain]
-    dssp_table.icode = dssp_table.icode.astype(np.int)
-    dssp_table.set_index(['icode'], inplace=True)
-
-    sifts_table = _sifts_residues_to_table(sifts_path)
-    sifts_table = sifts_table[sifts_table.PDB_dbChainId == chain]
-    sifts_table.PDB_dbResNum = sifts_table.PDB_dbResNum.astype(np.int)
-    sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+    cif_table.loc[:, 'auth_seq_id'] = cif_table.loc[:, 'auth_seq_id'].astype(np.int)
 
     if groupby == 'CA':
         cif_table = cif_table[cif_table.label_atom_id == 'CA']
@@ -124,7 +121,25 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
         cif_table = cif_table[~cif_table.label_atom_id.isin(['CA', 'C', 'O', 'N'])]
         # assert cif_table.label_seq_id is a sequence with number of aas
 
-    cif_table = cif_table.groupby('auth_seq_id').agg(groupby_opts[groupby])
+    # Check the existence of alt locations
+    if len(cif_table.label_alt_id.unique()) > 1:
+        cif_table = cif_table.groupby(['auth_seq_id', 'label_alt_id']).agg(
+            groupby_opts[groupby])
+        cif_table = cif_table.groupby(level=0).agg({'occupancy': 'max'})
+        log.info('Has atoms in alternative location')
+        # TODO what should be done with atoms in alt location?
+    else:
+        cif_table = cif_table.groupby('auth_seq_id').agg(groupby_opts[groupby])
+
+    dssp_table = _dssp_to_table(dssp_path)
+    dssp_table = dssp_table[dssp_table.chain_id == chain]
+    dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(np.int)
+    dssp_table.set_index(['icode'], inplace=True)
+
+    sifts_table = _sifts_residues_to_table(sifts_path)
+    sifts_table = sifts_table[sifts_table.PDB_dbChainId == chain]
+    sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(np.int)
+    sifts_table.set_index(['PDB_dbResNum'], inplace=True)
 
     # Sift data in used as left element int the join, because MMCIF atom lines and DSSP
     # Ignore not observed residues.
@@ -139,5 +154,5 @@ if __name__ == '__main__':
     defaults.db_dssp = 'tests/DSSP'
     defaults.db_sifts = 'tests/SIFTS'
 
-    X = merge_tables(pdb_id='3edv', chain='B', defaults=defaults)
+    X = merge_tables(pdb_id='4ibw', chain='A', defaults=defaults)
     pass
