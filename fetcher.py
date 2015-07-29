@@ -7,33 +7,24 @@ Created on 11:41 24/07/15 2015
 
 """
 import urllib
+from config import defaults
 
-
-def fetch_pdb_files(pdb_id, destination, data_sources=("cif", "dssp", "sifts")):
+def fetch_files(identifier, dir=defaults.temp, sources=("cif", "dssp", "sifts")):
     """
-
-    :param pdb_id:
-    :param destination:
-    :param data_sources:
-    :return:
+    Use defaults to fetch files from servers. Defaults server are defined in
+     the default config.txt. Returns None since it has side effects.
+    :param identifier: protein identifier as PDB identifier
+    :param dir: path to download
+    :param sources: where to fetch the data. Must be in the config file.
+    :return: None
     """
-
-    if "cif" in data_sources:
-        file_name = pdb_id + "_updated.cif"
-        cif_url = "http://www.ebi.ac.uk/pdbe/entry-files/"
-        urllib.urlretrieve(cif_url + file_name,
-                           destination + file_name)
-    if "dssp" in data_sources:
-        file_name = pdb_id + ".dssp"
-        dssp_url = "ftp://ftp.cmbi.ru.nl//pub/molbio/data/dssp/"
-        urllib.urlretrieve(dssp_url + file_name,
-                           destination + file_name)
-    if "sifts" in data_sources:
-        file_name = pdb_id + ".xml.gz"
-        sifts_url = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/"
-        urllib.urlretrieve(sifts_url + file_name,
-                           destination + file_name)
+    for source in sources:
+        url = getattr(defaults, 'fetch_' + source)
+        file_name =  getattr(defaults, 'extension_' + source)
+        urllib.urlretrieve(url, dir + file_name)
+    # TODO assert raise meaninfull error
+    # TODO test fetching from test dir
 
 
 if __name__ == '__main__':
-    fetch_pdb_files("3mn5", "/Users/tbrittoborges/Downloads/")
+    fetch_files("3mn5", "/Users/tbrittoborges/Downloads/")
