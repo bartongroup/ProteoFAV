@@ -8,11 +8,14 @@ Created on 10/06/2015
 
 __version__ = "1.0"
 
-from os import path
+import sys
+from os import path, remove
 import unittest
+import logging
 
 from to_table import _mmcif_atom_to_table
 from mmcif_tools import _mmcif_info_to_dict
+from mmcif_tools import _bio_unit_to_table
 
 import utils
 
@@ -25,6 +28,8 @@ class TestMMCIFParser(unittest.TestCase):
         self.example_mmcif = path.join(path.dirname(__file__), "CIF/2pah.cif")
         self.mmcif_atom_parser = _mmcif_atom_to_table
         self.mmcif_info_parser = _mmcif_info_to_dict
+        self.bio_unit_builder = _bio_unit_to_table
+        self.example_tsv_out = path.join(path.dirname(__file__), "CIF/2pah-bio.tsv")
 
         self.pdb_id = '2pah'
         self.pdb_id_error1 = ''
@@ -40,6 +45,8 @@ class TestMMCIFParser(unittest.TestCase):
         self.example_mmcif = None
         self.mmcif_atom_parser = None
         self.mmcif_info_parser = None
+        self.bio_unit_builder = None
+        self.example_tsv_out = None
 
         self.pdb_id = None
         self.pdb_id_error1 = None
@@ -119,6 +126,94 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(data['pdbx_struct_oper_list']['symmetry_operation'],
                          ['x,y,z', '-y,-x,-z+2/3'])
 
+    def test_bio_unit_to_table_mmcif(self):
+        """
+        Tests the parsing real mmCIF files.
+
+        Some checks are made to whether the parsed keys and values
+        are the ones we are expecting.
+
+        Parses the atom lines and the info lines and looks for
+        biological assemblies. Finds the most likely and generates
+        a new pandas Dataframe with the new atoms.
+        """
+
+        log = logging.getLogger("Biological.Assemblies")
+
+        # uses _mmcif_atom_to_table, _mmcif_info_to_table, and
+        # other mmcif_tools that needed to be tested
+
+        # method == 1
+        log.info("Method 1")
+        data = self.bio_unit_builder(self.example_mmcif,
+                                     most_likely=True,
+                                     method=1)
+
+        # number of values per column (or rows);
+        # double number of rows: dimer to tetramer
+        self.assertEqual(len(data), 5317 * 2)
+
+        # number of keys (or columns); same number of columns
+        self.assertEqual(len(data.columns.values), 26)
+
+        # check whether there are particular keys
+        self.assertIn('label_asym_id', data.columns.values)
+
+        # check the values for particular entries
+        self.assertTrue(data.loc[1, 'label_asym_id'] == 'A.1')
+        self.assertEqual(data.loc[1, 'pdbx_PDB_model_num'], 1)
+        self.assertEqual(data['group_PDB'][0], 'ATOM')
+
+        # method == 2
+        log.info("Method 2")
+        data = self.bio_unit_builder(self.example_mmcif,
+                                     most_likely=True,
+                                     method=2)
+
+        # number of values per column (or rows);
+        # double number of rows: dimer to tetramer
+        self.assertEqual(len(data), 5317 * 2)
+
+        # number of keys (or columns); same number of columns
+        self.assertEqual(len(data.columns.values), 26)
+
+        # check whether there are particular keys
+        self.assertIn('label_asym_id', data.columns.values)
+
+        # check the values for particular entries
+        self.assertTrue(data.loc[1, 'label_asym_id'] == 'A')
+        self.assertEqual(data.loc[1, 'pdbx_PDB_model_num'], 1)
+        self.assertEqual(data['group_PDB'][0], 'ATOM')
+
+        # method == 3
+        log.info("Method 3")
+        data = self.bio_unit_builder(self.example_mmcif,
+                                     most_likely=True,
+                                     method=3)
+
+        # number of values per column (or rows);
+        # double number of rows: dimer to tetramer
+        self.assertEqual(len(data), 5317 * 2)
+
+        # number of keys (or columns); same number of columns
+        self.assertEqual(len(data.columns.values), 27)
+
+        # check whether there are particular keys
+        self.assertIn('bio_unit_counter', data.columns.values)
+
+        # check the values for particular entries
+        self.assertTrue(data.loc[1, 'label_asym_id'] == 'A')
+        self.assertEqual(data.loc[1, 'bio_unit_counter'], 1)
+        self.assertEqual(data['group_PDB'][0], 'ATOM')
+
+        # create a tsv file
+        data.to_csv(self.example_tsv_out, sep='\t')
+        self.assertTrue(path.isfile(self.example_tsv_out))
+        remove(self.example_tsv_out)
+
+
 if __name__ == '__main__':
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("Biological.Assemblies").setLevel(logging.DEBUG)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestMMCIFParser)
     unittest.TextTestRunner(verbosity=2).run(suite)
