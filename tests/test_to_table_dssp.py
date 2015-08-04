@@ -62,6 +62,10 @@ class TestDSSPParser(unittest.TestCase):
         # test if the number of residues per chain is correct
         # check if all chains are there
 
+    def test_to_table_dssp_1o19(self):
+        pass
+        # getting some letters in the accession column
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDSSPParser)

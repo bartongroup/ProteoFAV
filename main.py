@@ -10,8 +10,8 @@ from utils import _fetch_sifts_best
 
 log = logging.getLogger(__name__)
 
-def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', defaults=None, cols=None,
-                 model=1):
+def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
+                 defaults=None, cols=None, model=1):
     """
     Merges the output from multiple to table method.
     if no pdb_id uses sifts_best_structure
@@ -111,20 +111,18 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA', default
         log.info(err(pdb_id))
         cif_table = cif_table[(cif_table.label_asym_id == chain) &
                               (cif_table.group_PDB == 'ATOM')]
-    # next line raises a SettingWithCopyWarning but seems to be correct
     cif_table.loc[:, 'auth_seq_id'] = cif_table.loc[:, 'auth_seq_id'].astype(np.int)
-
+    # TODO here to line 139 should be a function, that handles the cif table
     if groupby == 'CA':
         cif_table = cif_table[cif_table.label_atom_id == 'CA']
-        # assert cif_table.label_seq_id is a sequence with number of aas
     elif groupby == 'SC':
         cif_table = cif_table[~cif_table.label_atom_id.isin(['CA', 'C', 'O', 'N'])]
-        # assert cif_table.label_seq_id is a sequence with number of aas
 
     # Check the existence of alt locations
     if len(cif_table.label_alt_id.unique()) > 1:
         cif_table = cif_table.groupby(['auth_seq_id', 'label_alt_id']).agg(
             groupby_opts[groupby])
+        # We get the atom with max occupancy
         idx = cif_table.groupby(level=0).apply(lambda x: x.occupancy.idxmax())
         cif_table = cif_table.ix[idx]
         cif_table.reset_index(level=1, drop=True, inplace=True)

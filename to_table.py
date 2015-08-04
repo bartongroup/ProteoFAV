@@ -5,7 +5,6 @@
 Created on 03/06/2015
 
 """
-
 import json
 import logging
 from StringIO import StringIO
@@ -76,7 +75,6 @@ def _mmcif_atom_to_table(filename, delimiter=None):
                              names=_header_mmcif,
                              compression=None)
 
-
 def _sifts_residues_to_table(filename, cols=None):
     """
     Loads and parses SIFTS XML files generating a pandas dataframe.
@@ -91,16 +89,15 @@ def _sifts_residues_to_table(filename, cols=None):
 
     tree = etree.parse(filename)
     root = tree.getroot()
-    namespace = 'http://www.ebi.ac.uk/pdbe/docs/sifts/eFamily.xsd'
-    namespace_map = {'ns': namespace}
+    namespace = root.nsmap[None] #
+    nsmap = {'ns': namespace}
     cross_reference = "{{{}}}crossRefDb".format(namespace)
     residue_detail = "{{{}}}residueDetail".format(namespace)
     rows = []
+    reference = root.attrib['dbCoordSys']
 
-    for segment in root.iterfind('.//ns:entity[@type="protein"]',
-                                 namespaces=namespace_map):
-        for list_residue in segment.iterfind('.//ns:listResidue',
-                                             namespaces=namespace_map):
+    for segment in root.iterfind('.//ns:entity[@type="protein"]', namespaces=nsmap):
+        for list_residue in segment.iterfind('.//ns:listResidue', namespaces=nsmap):
             for residue in list_residue:
                 # get residue annotations
                 residue_annotation = {}
@@ -110,7 +107,10 @@ def _sifts_residues_to_table(filename, cols=None):
                     if k == 'dbSource':
                         continue
                     # renaming all keys with dbSource prefix
-                    k = "{}_{}".format(residue.attrib["dbSource"], k)
+                    try:
+                        k = "{}_{}".format(residue.attrib["dbSource"], k)
+                    except KeyError:
+                        k = "{}_{}".format("Reference", k)
                     # adding to the dictionary
                     residue_annotation[k] = v
                 # parse extra annotations for each residue
@@ -122,7 +122,10 @@ def _sifts_residues_to_table(filename, cols=None):
                             if k == 'dbSource':
                                 continue
                             # renaming all keys with dbSource prefix
-                            k = "{}_{}".format(annotation.attrib["dbSource"], k)
+                            try:
+                                k = "{}_{}".format(annotation.attrib["dbSource"], k)
+                            except KeyError:
+                                k = "{}_{}".format("Reference", k)
 
                         # residueDetail entries
                         # TODO better check if has .text attrib
@@ -149,6 +152,9 @@ def _sifts_residues_to_table(filename, cols=None):
         data = pd.DataFrame(rows, columns=cols)
     else:
         data = pd.DataFrame(rows)
+    data.columns = [col if not col.startswith("PDBe")
+                 else col.replace(reference, "REF")
+                 for col in data.columns]
     return data
 
 
@@ -457,5 +463,5 @@ def _ensembl_variant_to_table(identifier, verbose=False):
 
 
 if __name__ == '__main__':
-    X = _mmcif_atom_to_table("tests/CIF/2pah.cif")
+    X = _sifts_residues_to_table('/Volumes/tbrittoborges/NOBACK/pdb_files/1a3n.xml')
     pass

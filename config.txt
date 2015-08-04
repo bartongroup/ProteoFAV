@@ -24,9 +24,9 @@ http_uniprot = http://www.uniprot.org/uniprot/
 http_uniprot_mapping = http://www.uniprot.org/mapping/
 http_pdbe = http://www.ebi.ac.uk/pdbe/entry/pdb/
 api_ensembl = http://rest.ensembl.org/
-cif_fetch = "http://www.ebi.ac.uk/pdbe/entry-files/"
-dssp_fetch = "ftp://ftp.cmbi.ru.nl//pub/molbio/data/dssp/"
-sifts_fetch = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/"
+cif_fetch = http://www.ebi.ac.uk/pdbe/entry-files/
+dssp_fetch = ftp://ftp.cmbi.ru.nl//pub/molbio/data/dssp/
+sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 
 [Variables]
 contact_email = ...
