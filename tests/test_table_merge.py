@@ -55,6 +55,10 @@ class TestTableMeger(unittest.TestCase):
         self.sifts = self.sifts_to_table(self.sifts_path)
         self.dssp = self.dssp_to_table(self.dssp_path)
 
+        self.assertFalse(self.cif.empty)
+        self.assertFalse(self.sifts.empty)
+        self.assertFalse(self.dssp.empty)
+
         # number of rows (residues) is determined by the number of residues in
         # cif file
         chain = self.sifts
@@ -63,16 +67,16 @@ class TestTableMeger(unittest.TestCase):
         self.assertEqual(data.shape[0], n_residues)
 
         # number of columns is given buy sum of cols in cif, dssp and sifts
-        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + 9  # dssp.shape[1] = 8 - 2 inds
-        print(self.sifts.shape[1], self.dssp.shape[1], self.cif.shape[1] )
-        print(data.shape[1])
+        groupby = {'label_comp_id': 'unique', 'label_atom_id': 'unique',
+                   'label_asym_id': 'unique', 'Cartn_x': 'unique',
+                   'Cartn_y': 'unique', 'Cartn_z': 'unique',
+                   'occupancy': 'unique', 'B_iso_or_equiv': 'unique',
+                   'id': 'unique'}
+        self.cif = self.cif.groupby('auth_seq_id').agg(groupby)
+        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + self.cif.shape[1] + 1
         self.assertEqual(data.shape[1], n_cols,
                          "Incorrect number of cols in camIV table in CA mode:"
                          "{} instead {}.".format(data.shape[1], n_cols))
-
-        self.assertTrue(any(self.cif.auth_seq_id))
-        self.assertTrue(any(self.sifts.UniProt_dbResNum))
-        self.assertTrue(any(self.dssp.ss))
 
     def test_camIV_list_mode(self):
         pass

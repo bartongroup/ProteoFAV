@@ -149,13 +149,15 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
             raise ValueError('{pdb_id}|{chain}Cif and DSSP files have diffent'
                              ' sequences.'.format(pdb_id=pdb_id, chain=chain))
 
-    if use_pdbe:
-        cif_dssp.set_index(['pdbe_label_seq_id'], inplace=True)
-
     sifts_table = _sifts_residues_to_table(sifts_path)
     sifts_table = sifts_table[sifts_table.PDB_dbChainId == chain]
-    sifts_table.loc[:, 'REF_dbResNum'] = sifts_table.loc[:, 'REF_dbResNum'].astype(np.int)
-    sifts_table.set_index(['REF_dbResNum'], inplace=True)
+    try:
+        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(np.int)
+        sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+    except ValueError: # Means it has alpha numeric insertion code, use something else as index
+        sifts_table.loc[:, 'REF_dbResNum'] = sifts_table.loc[:, 'REF_dbResNum'].astype(np.int)
+        sifts_table.set_index(['REF_dbResNum'], inplace=True)
+        cif_dssp.set_index(['pdbe_label_seq_id'], inplace=True)
 
     # Sift data in used as base to keep not observed residues info.
     sifts_cif_dssp = sifts_table.join(cif_dssp)
@@ -170,10 +172,9 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
         val_aa2 = sifts_cif_dssp.sifts_aa[seq_idx]
         # Check if the sequences are the same
         if not (val_aa == val_aa2).all():
-            raise ValueError('{pdb_id}|{chain} Cif and DSSP files have '
+            raise ValueError('{pdb_id}|{chain} Cif and Sifts files have '
                              'different sequences '.format(pdb_id=pdb_id,
                                                            chain=chain))
-
     return sifts_cif_dssp
 
 
@@ -185,5 +186,5 @@ if __name__ == '__main__':
     defaults.db_dssp = 'tests/DSSP'
     defaults.db_sifts = 'tests/SIFTS'
 
-    X = merge_tables(pdb_id='2w4o', chain='A', default=defaults)
+    X = merge_tables(pdb_id='3mn5', chain='A', default=defaults)
     pass

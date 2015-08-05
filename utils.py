@@ -13,6 +13,7 @@ import json
 from datetime import datetime
 
 import requests
+import numpy as np
 
 from config import defaults
 
@@ -259,8 +260,14 @@ def _fetch_sifts_best(uniprot_id, first=False):
     response = get_url_or_retry(url, json=True)
     return response if not first else response[uniprot_id][0]
 
+sigle_letter_aa = list('ACDEFGHIKLMNPQRSTVWY-')
+
+three_letter_aa =  ["ALA", "CYS", "ASP", "GLU", "PHE", "GLY", "HIS", "ILE",
+                    "LYS", "LEU", "MET", "ASN", "PRO", "GLN", "ARG", "SER",
+                    "THR", "VAL", "TRP", "TYR", "-"]
+three_to_single_aa = dict(zip(three_letter_aa, sigle_letter_aa))
+
 
 if __name__ == '__main__':
     # testing routines
-
     pass
