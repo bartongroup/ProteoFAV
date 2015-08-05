@@ -45,7 +45,7 @@ class TestTableMeger(unittest.TestCase):
         Test table merger for a protein example.
         :return:
         """
-        data = self.merge_table(pdb_id="2w4o", chain="A", defaults=self.defaults)
+        data = self.merge_table(pdb_id="2w4o", chain="A", default=self.defaults)
         self.assertIsNotNone(data)
 
         self.cif_path = path.join(path.dirname(__file__), "CIF/2w4o.cif")
@@ -63,8 +63,9 @@ class TestTableMeger(unittest.TestCase):
         self.assertEqual(data.shape[0], n_residues)
 
         # number of columns is given buy sum of cols in cif, dssp and sifts
-        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + 7  # dssp.shape[1] = 8 - 2 inds
-
+        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + 9  # dssp.shape[1] = 8 - 2 inds
+        print(self.sifts.shape[1], self.dssp.shape[1], self.cif.shape[1] )
+        print(data.shape[1])
         self.assertEqual(data.shape[1], n_cols,
                          "Incorrect number of cols in camIV table in CA mode:"
                          "{} instead {}.".format(data.shape[1], n_cols))
@@ -94,11 +95,31 @@ class TestTableMeger(unittest.TestCase):
         Test case in a structure with alt locations.
         """
         #(81, 'P63094', 51, '3c16', 'C', 52, ValueError("invalid literal for long() with base 10: '63A'",))
-        data = self.merge_table(pdb_id="4ibw", chain="A", defaults=self.defaults)
-        self.assertIsNotNone(data)
+        data = self.merge_table(pdb_id="4ibw", chain="A", default=self.defaults)
+        self.assertFalse(data.empty)
         self.sifts_path = path.join(path.dirname(__file__), "SIFTS/4ibw.xml")
         self.sifts = self.sifts_to_table(self.sifts_path)
         self.assertEqual(self.sifts.shape[0], data.shape[0])
+
+    def test_merge_3mn5_with_insertion_code(self):
+        """
+        Test case with insertion code
+        """
+        self.cif_path = path.join(path.dirname(__file__), "CIF/3mn5.cif")
+        self.sifts_path = path.join(path.dirname(__file__), "SIFTS/3mn5.xml")
+        self.dssp_path = path.join(path.dirname(__file__), "DSSP/3mn5.dssp")
+
+        self.cif = self.cif_to_table(self.cif_path)
+        self.sifts = self.sifts_to_table(self.sifts_path)
+        self.dssp = self.dssp_to_table(self.dssp_path)
+
+        self.assertFalse(self.cif.empty)
+        self.assertFalse(self.sifts.empty)
+        self.assertFalse(self.dssp.empty)
+
+        data = self.merge_table(pdb_id="3mn5", chain="A", default=self.defaults)
+        self.assertFalse(data.empty)
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMeger)
