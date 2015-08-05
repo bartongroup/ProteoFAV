@@ -1,50 +1,44 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
 import logging
-
 from os import path
+
 import numpy as np
 
-from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_table, pd
-from utils import _fetch_sifts_best
+from to_table import _dssp_to_table, _sifts_residues_to_table, \
+    _mmcif_atom_to_table
+from utils import _fetch_sifts_best, three_to_single_aa
 
 log = logging.getLogger(__name__)
 
+
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
-                 defaults=None, cols=None, model=1):
+                 default=None, model=1, validate=True):
     """
     Merges the output from multiple to table method.
     if no pdb_id uses sifts_best_structure
     if no chain uses first
     or if use_all_chains use all chains of the pdb_id
+    :param validate:
     :param uniprot_id:
     :param pdb_id:
     :param chain:
     :param groupby:
-    :param defaults:
-    :param cols:
+    :param default:
     :param model:
     """
-
+    use_pdbe = False
     # TODO: cols
 
     if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
                         "uniprot_id or pdb_id")
 
+    to_list = lambda series: series.tolist()
+    to_unique = lambda series: series.unique()
 
-    def to_list(series):
-        return series.tolist()
-
-    def to_unique(series):
-        return series.unique()
-
-    def to_first(series):
-        return series.first()
-
-
-    if not defaults:
-        from config import defaults
+    if not default:
+        from config import defaults as default
 
     groupby_opts = {'list': {'label_comp_id': 'unique',
                              'label_atom_id': to_list,
@@ -73,8 +67,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
                            'B_iso_or_equiv': 'mean',
                            'label_alt_id': to_unique,
                            'id': to_unique},
-                    'centroid':{},
-                    'all_atoms':{}} # TODO
+                    'centroid': {},
+                    'all_atoms': {}}  # TODO
 
     try:
         groupby_opts[groupby]
@@ -86,7 +80,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
         best_pdb = _fetch_sifts_best(uniprot_id, first=True)
         pdb_id = best_pdb['pdb_id']
         chain = best_pdb['chain_id']
-        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
+        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain,
+                                                               uniprot_id))
 
     if not chain:
         try:
@@ -95,11 +90,12 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
             err = "Structure {} not found in best structures".format
             log.error(err(pdb_id))
         chain = best_pdb['chain_id']
-        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
+        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain,
+                                                               uniprot_id))
 
-    cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
-    dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
-    sifts_path = path.join(defaults.db_sifts, pdb_id + '.xml')
+    cif_path = path.join(default.db_mmcif, pdb_id + '.cif')
+    dssp_path = path.join(default.db_dssp, pdb_id + '.dssp')
+    sifts_path = path.join(default.db_sifts, pdb_id + '.xml')
 
     cif_table = _mmcif_atom_to_table(cif_path)
     try:
@@ -111,12 +107,17 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
         log.info(err(pdb_id))
         cif_table = cif_table[(cif_table.label_asym_id == chain) &
                               (cif_table.group_PDB == 'ATOM')]
-    cif_table.loc[:, 'auth_seq_id'] = cif_table.loc[:, 'auth_seq_id'].astype(np.int)
+    if 'pdbe_label_seq_id' in cif_table.columns:
+        groupby_opts[groupby].update({'pdbe_label_seq_id': to_unique})
+        use_pdbe = True
+        log.info('Column pdbe_label_seq_id present')
+
     # TODO here to line 139 should be a function, that handles the cif table
     if groupby == 'CA':
         cif_table = cif_table[cif_table.label_atom_id == 'CA']
     elif groupby == 'SC':
-        cif_table = cif_table[~cif_table.label_atom_id.isin(['CA', 'C', 'O', 'N'])]
+        cif_table = cif_table[
+            ~cif_table.label_atom_id.isin(['CA', 'C', 'O', 'N'])]
 
     # Check the existence of alt locations
     if len(cif_table.label_alt_id.unique()) > 1:
@@ -133,26 +134,56 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
 
     dssp_table = _dssp_to_table(dssp_path)
     dssp_table = dssp_table[dssp_table.chain_id == chain]
-    dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(np.int)
     dssp_table.set_index(['icode'], inplace=True)
+    cif_dssp = cif_table.join(dssp_table)
+
+    if validate:
+        # Fill all missing values with gaps
+        cif_dssp['dssp_aa'] = cif_dssp.aa.fillna('-')
+        cif_dssp['cif_aa'] = cif_dssp.label_comp_id.fillna('-')
+        # From three letter to sigle letters or X if not a standard aa
+        cif_dssp['cif_aa'] = cif_dssp['cif_aa'].apply(three_to_single_aa.get,
+                                                      args='X')
+        # Check if the sequences are the same
+        if not (cif_dssp.dssp_aa == cif_dssp.cif_aa).all():
+            raise ValueError('{pdb_id}|{chain}Cif and DSSP files have diffent'
+                             ' sequences.'.format(pdb_id=pdb_id, chain=chain))
+
+    if use_pdbe:
+        cif_dssp.set_index(['pdbe_label_seq_id'], inplace=True)
 
     sifts_table = _sifts_residues_to_table(sifts_path)
     sifts_table = sifts_table[sifts_table.PDB_dbChainId == chain]
-    sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(np.int)
-    sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+    sifts_table.loc[:, 'REF_dbResNum'] = sifts_table.loc[:, 'REF_dbResNum'].astype(np.int)
+    sifts_table.set_index(['REF_dbResNum'], inplace=True)
 
-    # Sift data in used as left element int the join, because MMCIF atom lines and DSSP
-    # Ignore not observed residues.
-    sifts_cif = sifts_table.join(cif_table)
-    cif_sifts_dssp = sifts_cif.join(dssp_table)
-    return cif_sifts_dssp
+    # Sift data in used as base to keep not observed residues info.
+    sifts_cif_dssp = sifts_table.join(cif_dssp)
+    if validate:
+        # Sifts seq has more res than the other, so we compare the common res
+        seq_idx = ((~sifts_cif_dssp.cif_aa.isnull()) &
+                   (sifts_cif_dssp.cif_aa != '-'))
+        val_aa = sifts_cif_dssp.cif_aa[seq_idx]
+        sifts_cif_dssp['sifts_aa'] = sifts_cif_dssp['REF_dbResName'].fillna('-')
+        sifts_cif_dssp['sifts_aa'] = sifts_cif_dssp['sifts_aa'].apply(
+            three_to_single_aa.get, args='X')
+        val_aa2 = sifts_cif_dssp.sifts_aa[seq_idx]
+        # Check if the sequences are the same
+        if not (val_aa == val_aa2).all():
+            raise ValueError('{pdb_id}|{chain} Cif and DSSP files have '
+                             'different sequences '.format(pdb_id=pdb_id,
+                                                           chain=chain))
+
+    return sifts_cif_dssp
+
 
 if __name__ == '__main__':
     from config import Defaults
+
     defaults = Defaults('config.txt')
     defaults.db_mmcif = 'tests/CIF'
     defaults.db_dssp = 'tests/DSSP'
     defaults.db_sifts = 'tests/SIFTS'
 
-    X = merge_tables(pdb_id='2w4o', chain='A', defaults=defaults)
+    X = merge_tables(pdb_id='2w4o', chain='A', default=defaults)
     pass
