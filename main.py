@@ -27,7 +27,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
     :param default:
     :param model:
     """
-    use_pdbe = False
     # TODO: cols
 
     if not any((uniprot_id, pdb_id)):
@@ -109,7 +108,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
                               (cif_table.group_PDB == 'ATOM')]
     if 'pdbe_label_seq_id' in cif_table.columns:
         groupby_opts[groupby].update({'pdbe_label_seq_id': to_unique})
-        use_pdbe = True
         log.info('Column pdbe_label_seq_id present')
 
     # TODO here to line 139 should be a function, that handles the cif table
@@ -146,7 +144,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
                                                       args='X')
         # Check if the sequences are the same
         if not (cif_dssp.dssp_aa == cif_dssp.cif_aa).all():
-            raise ValueError('{pdb_id}|{chain}Cif and DSSP files have diffent'
+            raise ValueError('{pdb_id}|{chain} Cif and DSSP files have diffent'
                              ' sequences.'.format(pdb_id=pdb_id, chain=chain))
 
     sifts_table = _sifts_residues_to_table(sifts_path)

@@ -110,7 +110,7 @@ def _sifts_residues_to_table(filename, cols=None):
                     try:
                         k = "{}_{}".format(residue.attrib["dbSource"], k)
                     except KeyError:
-                        k = "{}_{}".format("Reference", k)
+                        k = "{}_{}".format("REF", k)
                     # adding to the dictionary
                     residue_annotation[k] = v
                 # parse extra annotations for each residue
@@ -125,7 +125,7 @@ def _sifts_residues_to_table(filename, cols=None):
                             try:
                                 k = "{}_{}".format(annotation.attrib["dbSource"], k)
                             except KeyError:
-                                k = "{}_{}".format("Reference", k)
+                                k = "{}_{}".format("REF", k)
 
                         # residueDetail entries
                         # TODO better check if has .text attrib
@@ -152,7 +152,7 @@ def _sifts_residues_to_table(filename, cols=None):
         data = pd.DataFrame(rows, columns=cols)
     else:
         data = pd.DataFrame(rows)
-    data.columns = [col if not col.startswith("PDBe")
+    data.columns = [col if not col.startswith("PDBe") # this should come from reference
                  else col.replace(reference, "REF")
                  for col in data.columns]
     return data
@@ -462,6 +462,33 @@ def _ensembl_variant_to_table(identifier, verbose=False):
     return pd.DataFrame(rows)
 
 
+def _pdb_validation_to_table(filename, global_parameters=None):
+    """
+    Parse the validation xml to a pandas dataframe.
+    Private method, prefer using the wrapper.
+    :param filename: path to file
+    :return: pandas dataframe
+    :rtype: pandas.DataFrame
+    """
+    if not path.isfile(filename):
+        raise IOError('File {} not found or unavailable.'.format(filename))
+
+    tree = etree.parse(filename)
+    root = tree.getroot()
+    if global_parameters:
+        global_parameters = root.find('Entry').attrib
+        print(global_parameters)
+    rows = []
+    header = set()
+    for i, elem in enumerate(root.iterfind('ModelledSubgroup')):
+        rows.append(dict(elem.attrib))
+        header.update(rows[-1].keys())
+    for row in rows:
+        not_in = dict.fromkeys(header.difference(row.keys()), None)
+        row.update(not_in)
+    df = pd.DataFrame(rows, columns=header)
+    return df
+
+
 if __name__ == '__main__':
-    X = _sifts_residues_to_table('/Volumes/tbrittoborges/NOBACK/pdb_files/1a3n.xml')
     pass
