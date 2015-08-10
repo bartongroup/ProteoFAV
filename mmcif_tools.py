@@ -425,7 +425,7 @@ def _bio_unit_to_table(filename, most_likely=True, method=1):
 
 def _bio_unit_to_mmcif():
     """
-    Method that outputs an mmCIF formated file with the
+    Method that outputs an mmCIF formatted file with the
     selected biological assembly.
 
     :return: outputs a file

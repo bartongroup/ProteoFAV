@@ -53,7 +53,7 @@ class TestSIFTSParser(unittest.TestCase):
         data = self.residues_parser(self.example_xml)
 
         # number of values per column (or rows)
-        self.assertEqual(len(data), 335)
+        self.assertEqual(len(data), 670)
 
         # number of keys (or columns)
         self.assertEqual(len(data.columns.values), 38)

@@ -12,7 +12,7 @@ import unittest
 
 from to_table import (_ensembl_variant_to_table, _transcript_variants_ensembl_to_table,
                       _somatic_variants_ensembl_to_table)
-import utils
+from utils import isvalid_ensembl_id
 
 
 class TestENSEMBLParser(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestENSEMBLParser(unittest.TestCase):
         self.ensembl_trascript = _transcript_variants_ensembl_to_table
         self.ensembl_somatic = _somatic_variants_ensembl_to_table
         self.ensembl_variant = _ensembl_variant_to_table
-        self.isvalid = utils.isvalid_ensembl
+        self.isvalid = isvalid_ensembl_id
 
     def tearDown(self):
         """Remove testing framework."""
@@ -77,7 +77,7 @@ class TestENSEMBLParser(unittest.TestCase):
         are the ones we are expecting.
         """
 
-        data = self.ensembl_trascript(self.ensembl_id, verbose=False)
+        data = self.ensembl_trascript(self.ensembl_id, species='human')
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 127)
@@ -102,7 +102,7 @@ class TestENSEMBLParser(unittest.TestCase):
         are the ones we are expecting.
         """
 
-        data = self.ensembl_somatic(self.ensembl_id, verbose=False)
+        data = self.ensembl_somatic(self.ensembl_id, species='human')
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 59)
@@ -127,13 +127,13 @@ class TestENSEMBLParser(unittest.TestCase):
         are the ones we are expecting.
         """
 
-        data = self.ensembl_variant(self.variant_id, verbose=False)
+        data = self.ensembl_variant(self.variant_id, species='human')
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 1)
 
         # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 17)
+        self.assertEqual(len(data.columns.values), 18)
 
         # check whether there are particular keys
         self.assertIn('location', data.columns.values)

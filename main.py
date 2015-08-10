@@ -8,7 +8,6 @@ import numpy as np
 from to_table import _dssp_to_table, _sifts_residues_to_table, \
     _mmcif_atom_to_table
 from utils import _fetch_sifts_best, three_to_single_aa
-from config import defaults
 
 log = logging.getLogger(__name__)
 
@@ -38,8 +37,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
     to_unique = lambda series: series.unique()
 
     if not default:
-        default = defaults
-
+        from config import defaults as default
 
     groupby_opts = {'list': {'label_comp_id': 'unique',
                              'label_atom_id': to_list,
