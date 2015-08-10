@@ -26,7 +26,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_id_error5 = []
         self.uniprot_info = _uniprot_info_to_table
         self.uniprot_ensembl = _uniprot_ensembl_mapping_to_table
-        self.isvalid = utils.isvalid_uniprot
+        self.isvalid = utils.isvalid_uniprot_id
 
     def tearDown(self):
         """Remove testing framework."""
@@ -85,7 +85,7 @@ class TestUNIPROTParser(unittest.TestCase):
         are the ones we are expecting.
         """
 
-        data = self.uniprot_ensembl(self.uniprot_id, verbose=False)
+        data = self.uniprot_ensembl(self.uniprot_id)
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 1)

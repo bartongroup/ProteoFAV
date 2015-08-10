@@ -5,7 +5,7 @@
 Created on 03/06/2015
 
 """
-import json
+
 import logging
 from StringIO import StringIO
 from os import path
@@ -14,7 +14,8 @@ from lxml import etree
 import pandas as pd
 
 from config import defaults
-from utils import isvalid_ensembl, request_info_url, get_url_or_retry
+from utils import isvalid_ensembl_id, get_url_or_retry
+from library import valid_ensembl_species
 
 log = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ def _mmcif_atom_to_table(filename, delimiter=None):
                              low_memory=False,
                              names=_header_mmcif,
                              compression=None)
+
 
 def _sifts_residues_to_table(filename, cols=None):
     """
@@ -251,41 +253,36 @@ def _sifts_regions_to_table(filename):
     return pd.DataFrame(rows)
 
 
-def _pdb_uniprot_sifts_mapping_to_table(identifier, verbose=False):
+def _pdb_uniprot_sifts_mapping_to_table(identifier):
     """
     Queries the PDBe API for SIFTS mapping between PDB - UniProt.
     One to many relationship expected.
 
     :param identifier: PDB id
-    :param verbose: boolean
     :return: pandas table dataframe
     """
     sifts_endpoint = "mappings/uniprot/"
-    request = request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
-                               verbose=verbose)
-    information = json.loads(request.text)
+    url = defaults.api_pdbe + sifts_endpoint + identifier
+    information = get_url_or_retry(url, json=True)
 
     rows = []
     for uniprot in information[identifier]['UniProt']:
         uniprots = {'uniprot_id': uniprot}
         rows.append(uniprots)
-
     return pd.DataFrame(rows)
 
 
-def _uniprot_pdb_sifts_mapping_to_table(identifier, verbose=False):
+def _uniprot_pdb_sifts_mapping_to_table(identifier):
     """
     Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
     One to many relationship expected.
 
     :param identifier: UniProt ID
-    :param verbose: boolean
     :return: pandas table dataframe
     """
     sifts_endpoint = "mappings/best_structures/"
-    request = request_info_url(defaults.api_pdbe + sifts_endpoint + identifier,
-                               verbose=verbose)
-    information = json.loads(request.text)
+    url = defaults.api_pdbe + sifts_endpoint + str(identifier)
+    information = get_url_or_retry(url, json=True)
 
     rows = []
     for entry in information[identifier]:
@@ -307,11 +304,11 @@ def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
     elif isinstance(cols, str):
         cols = ('entry name', cols)
 
-    params = {'query': 'accession:' + identifier,
+    params = {'query': 'accession:' + str(identifier),
               'columns': ",".join(cols),
               'format': 'tab',
               'contact': ""}
-    url = "http://www.uniprot.org/uniprot/"
+    url = defaults.http_uniprot
     response = get_url_or_retry(url=url, retry_in=retry_in, **params)
     try:
         data = pd.read_table(StringIO(response))
@@ -321,29 +318,25 @@ def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
     return data
 
 
-def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
+def _uniprot_ensembl_mapping_to_table(identifier, species='human'):
     """
     Uses the UniProt mapping service to try and get Ensembl IDs for
     the UniProt accession identifier provided.
 
     :param identifier: UniProt accession identifier
-    :param verbose: boolean
+    :param species: Ensembl species
     :return: pandas table dataframe
     """
 
     information = {}
     rows = []
 
-    # TODO: fix this assuming human variation
-    ensembl_endpoint = 'xrefs/symbol/human/'
-    params = {'content-type': 'application/json'}
-    request = request_info_url(
-        "{}{}{}".format(defaults.api_ensembl, ensembl_endpoint,
-                        str(identifier)),
-        params=params,
-        verbose=verbose)
+    if species not in valid_ensembl_species:
+        raise ValueError('Provided species {} is not valid'.format(species))
 
-    data = json.loads(request.text)
+    ensembl_endpoint = "xrefs/symbol/{}/".format(species)
+    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
+    data = get_url_or_retry(url, json=True)
     for entry in data:
         typ = entry['type'].upper()
         eid = entry['id']
@@ -361,84 +354,65 @@ def _uniprot_ensembl_mapping_to_table(identifier, verbose=False):
     return pd.DataFrame(rows)
 
 
-def _transcript_variants_ensembl_to_table(identifier, verbose=False):
+def _transcript_variants_ensembl_to_table(identifier, species='human'):
     """
     Queries the Ensembl API for transcript variants (mostly dbSNP)
     based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
-    :param verbose: boolean
+    :param species: Ensembl species
     :return: pandas table dataframe
     """
-    # TODO delete when safe
-    information = {}
-    rows = []
 
-    if not isvalid_ensembl(identifier):
+    if not isvalid_ensembl_id(identifier, species):
         raise ValueError(
             "{} is not a valid Ensembl Accession.".format(identifier))
 
-    ensembl_endpoint = 'overlap/translation/'
-    params = {'feature': 'transcript_variation',
-              'content-type': 'application/json'}
-    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
-                                               ensembl_endpoint,
-                                               str(identifier)),
-                               params=params,
-                               verbose=verbose)
-    rows = json.loads(request.text)
+    ensembl_endpoint = "overlap/translation/"
+    params = {'feature': 'transcript_variation'}
+    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
+    rows = get_url_or_retry(url, json=True, **params)
     return pd.DataFrame(rows)
 
 
-def _somatic_variants_ensembl_to_table(identifier, verbose=False):
+def _somatic_variants_ensembl_to_table(identifier, species='human'):
     """
     Queries the Ensembl API for somatic transcript variants (COSMIC)
     based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
-    :param verbose: boolean
+    :param species: Ensembl species
     :return: pandas table dataframe
     """
 
-    if not isvalid_ensembl(identifier):
+    if not isvalid_ensembl_id(identifier, species):
         raise ValueError(
             "{} is not a valid Ensembl Accession.".format(identifier))
 
-    ensembl_endpoint = 'overlap/translation/'
-    params = {'feature': 'somatic_transcript_variation',
-              'content-type': 'application/json'}
-    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
-                                               ensembl_endpoint,
-                                               str(identifier)),
-                               params=params,
-                               verbose=verbose)
-    rows = json.loads(request.text)
+    ensembl_endpoint = "overlap/translation/"
+    params = {'feature': 'somatic_transcript_variation'}
+    url = defaults.api_ensembl + ensembl_endpoint + identifier
+    rows = get_url_or_retry(url, json=True, **params)
     return pd.DataFrame(rows)
 
 
-def _ensembl_variant_to_table(identifier, verbose=False):
+def _ensembl_variant_to_table(identifier, species='human'):
     """
     Queries the Ensembl API for variant IDs (e.g rs376845802 or COSM302853).
 
     :param identifier: variant ID
-    :param verbose: boolean
+    :param species: Ensembl species
     :return: pandas table dataframe
     """
 
-    if not isvalid_ensembl(identifier, variant=True):
+    if not isvalid_ensembl_id(identifier, species, variant=True):
         raise ValueError(
             "{} is not a valid Variation Accession.".format(identifier))
 
-    # TODO: fix this assuming human variation
-    ensembl_endpoint = 'variation/human/'
-    params = {'content-type': 'application/json'}
-    # other params are {'pops': '1', 'phenotypes': '1', 'genotypes': '1'}
-    request = request_info_url("{}{}{}".format(defaults.api_ensembl,
-                                               ensembl_endpoint,
-                                               str(identifier)),
-                               params=params,
-                               verbose=verbose)
-    data = json.loads(request.text)
+    ensembl_endpoint = "variation/{}/".format(species)
+    # params = {'pops': '1', 'phenotypes': '1', 'genotypes': '1'}
+    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
+    data = get_url_or_retry(url, json=True)
 
     rows = []
     information = {}
@@ -491,4 +465,5 @@ def _pdb_validation_to_table(filename, global_parameters=None):
 
 
 if __name__ == '__main__':
+    print(_sifts_residues_to_table("tests/SIFTS/2pah.xml"))
     pass

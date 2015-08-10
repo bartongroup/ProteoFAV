@@ -10,6 +10,7 @@ import os
 import urllib
 from config import defaults
 
+
 def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     """
     Use defaults to fetch files from servers. Defaults server are defined in
@@ -29,8 +30,8 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
             raise IOError(directory + " is not a valid path.")
         directory = [directory] * len(sources)
     elif hasattr(directory, "__iter__"):
-        if len(directory) != len((sources)):
-            raise IOError(directory + " you need one diretory for each source,"
+        if len(directory) != len(sources):
+            raise IOError(directory + " you need one directory for each source,"
                                       "or a path for all.")
         for d in directory:
             if not os.path.isdir(d):
@@ -38,11 +39,11 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     #else: FAIL?
 
     for source, destination in zip(sources, directory):
-        # test if destination is writtable?
+        # test if destination is writeable?
         url = getattr(defaults, 'fetch_' + source)
-        file_name =  getattr(defaults, 'extension_' + source)
+        file_name = getattr(defaults, 'extension_' + source)
         urllib.urlretrieve(url, destination + file_name)
-    # TODO assert raise meaninfull error
+    # TODO assert raise meaningful error
     # TODO test fetching from test dir
 
 if __name__ == '__main__':

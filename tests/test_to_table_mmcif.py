@@ -17,7 +17,7 @@ from to_table import _mmcif_atom_to_table
 from mmcif_tools import _mmcif_info_to_dict
 from mmcif_tools import _bio_unit_to_table
 
-import utils
+from utils import isvalid_pdb_id
 
 
 class TestMMCIFParser(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.pdb_id_error3 = 1234
         self.pdb_id_error4 = ()
         self.pdb_id_error5 = []
-        self.isvalid = utils.isvalid_pdb
+        self.isvalid = isvalid_pdb_id
 
     def tearDown(self):
         """Remove testing framework."""

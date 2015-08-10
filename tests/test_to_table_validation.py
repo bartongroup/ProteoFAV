@@ -12,9 +12,8 @@ class TestValidationParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.path_2pah = path.join(path.dirname(__file__),
-                                   "/validation_xml/2pah_validation.xml")
+                                   "validation_xml/2pah_validation.xml")
         self.parser = _pdb_validation_to_table
-
 
     def tearDown(self):
         """Remove testing framework."""

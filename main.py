@@ -7,25 +7,27 @@ import numpy as np
 
 from to_table import _dssp_to_table, _sifts_residues_to_table, \
     _mmcif_atom_to_table
-from utils import _fetch_sifts_best, three_to_single_aa
+from utils import _fetch_sifts_best
+from library import three_to_single_aa
 
 log = logging.getLogger(__name__)
 
 
-def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
-                 default=None, model=1, validate=True):
+def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1,
+                 groupby='CA', default=None, validate=True):
     """
     Merges the output from multiple to table method.
     if no pdb_id uses sifts_best_structure
     if no chain uses first
     or if use_all_chains use all chains of the pdb_id
-    :param validate:
-    :param uniprot_id:
-    :param pdb_id:
-    :param chain:
-    :param groupby:
-    :param default:
-    :param model:
+
+    :param uniprot_id: UniProt ID
+    :param pdb_id: PDB ID
+    :param chain: CHAIN ID
+    :param model: MODEL ID
+    :param groupby: options on how to group residues
+    :param default: default parameters
+    :param validate: boolean for structure validation entries
     """
     # TODO: cols
 
