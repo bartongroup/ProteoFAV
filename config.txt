@@ -30,6 +30,6 @@ sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 
 [Variables]
 contact_email = ...
-cif_extension = "_updated.cif"
-dssp_extension = ".dssp"
-sifts_extension = ".xml.gz"
+cif_extension = _updated.cif
+dssp_extension = .dssp
+sifts_extension = .xml.gz
