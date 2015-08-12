@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
-
+"""
+Created on 11:41 24/07/15 2015
+Small routine to fetch data files from their respective repositries.
+"""
 __author__ = 'tbrittoborges'
-"""
-Created on 11:41 24/07/15 2015 
 
-"""
+
+import gzip
+import shutil
 import os
 import urllib
 from config import defaults
@@ -23,6 +26,8 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     :param sources: where to fetch the data. Must be in the config file.
     :return: None
     """
+    if isinstance(sources, str):
+        sources = [sources]
     if not directory:
         directory = defaults.temp
     elif isinstance(directory, str):
@@ -36,15 +41,25 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
         for d in directory:
             if not os.path.isdir(d):
                 raise IOError(d + " is not a valid path.")
-    #else: FAIL?
+    else:
+        raise TypeError('Unidentified source|directory combination.')
 
+    result = []
     for source, destination in zip(sources, directory):
-        # test if destination is writeable?
-        url = getattr(defaults, 'fetch_' + source)
-        file_name = getattr(defaults, 'extension_' + source)
-        urllib.urlretrieve(url, destination + file_name)
-    # TODO assert raise meaningful error
-    # TODO test fetching from test dir
+        filename = identifier + getattr(defaults, source + '_extension')
+        url = getattr(defaults, source + '_fetch') + filename
+        try:
+            urllib.urlretrieve(url, destination + filename)
+        except IOError as e:
+            raise (e)
+        if filename.endswith('.gz'):
+            with gzip.open(destination + filename, 'rb') as input_f, \
+                open(destination + filename.replace('.gz', ''), 'wb') as output_f:
+                shutil.copyfileobj(input_f, output_f)
+                filename =  filename.replace('.gz', '')
+        result.append(destination + filename)
+    return result
+
 
 if __name__ == '__main__':
-    fetch_files("3mn5", "/Users/tbrittoborges/Downloads/")
+    fetch_files("3mn5", "/Users/tbrittoborges/Desktop/")
