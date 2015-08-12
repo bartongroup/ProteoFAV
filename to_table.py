@@ -14,7 +14,8 @@ from lxml import etree
 import pandas as pd
 
 from config import defaults
-from utils import isvalid_ensembl_id, get_url_or_retry
+from utils import (isvalid_pdb_id, isvalid_uniprot_id, isvalid_ensembl_id,
+                   get_url_or_retry, compare_uniprot_ensembl_sequence)
 from library import valid_ensembl_species
 
 log = logging.getLogger(__name__)
@@ -261,6 +262,11 @@ def _pdb_uniprot_sifts_mapping_to_table(identifier):
     :param identifier: PDB id
     :return: pandas table dataframe
     """
+
+    if not isvalid_pdb_id(identifier):
+        raise ValueError(
+            "{} is not a valid PDB identifier.".format(identifier))
+
     sifts_endpoint = "mappings/uniprot/"
     url = defaults.api_pdbe + sifts_endpoint + identifier
     information = get_url_or_retry(url, json=True)
@@ -280,6 +286,11 @@ def _uniprot_pdb_sifts_mapping_to_table(identifier):
     :param identifier: UniProt ID
     :return: pandas table dataframe
     """
+
+    if not isvalid_uniprot_id(identifier):
+        raise ValueError(
+            "{} is not a valid UniProt identifier.".format(identifier))
+
     sifts_endpoint = "mappings/best_structures/"
     url = defaults.api_pdbe + sifts_endpoint + str(identifier)
     information = get_url_or_retry(url, json=True)
@@ -297,6 +308,10 @@ def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
     :param identifier: UniProt accession identifier
     :return: pandas table dataframe
     """
+
+    if not isvalid_uniprot_id(identifier):
+        raise ValueError(
+            "{} is not a valid UniProt identifier.".format(identifier))
 
     if not cols:
         cols = ('entry name', 'reviewed', 'protein names', 'genes', 'organism',
@@ -328,11 +343,15 @@ def _uniprot_ensembl_mapping_to_table(identifier, species='human'):
     :return: pandas table dataframe
     """
 
-    information = {}
-    rows = []
+    if not isvalid_uniprot_id(identifier):
+        raise ValueError(
+            "{} is not a valid UniProt identifier.".format(identifier))
 
     if species not in valid_ensembl_species:
         raise ValueError('Provided species {} is not valid'.format(species))
+
+    information = {}
+    rows = []
 
     ensembl_endpoint = "xrefs/symbol/{}/".format(species)
     url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
@@ -354,13 +373,15 @@ def _uniprot_ensembl_mapping_to_table(identifier, species='human'):
     return pd.DataFrame(rows)
 
 
-def _transcript_variants_ensembl_to_table(identifier, species='human'):
+def _transcript_variants_ensembl_to_table(identifier, species='human',
+                                          missense=True):
     """
     Queries the Ensembl API for transcript variants (mostly dbSNP)
     based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
     :param species: Ensembl species
+    :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
 
@@ -369,19 +390,25 @@ def _transcript_variants_ensembl_to_table(identifier, species='human'):
             "{} is not a valid Ensembl Accession.".format(identifier))
 
     ensembl_endpoint = "overlap/translation/"
-    params = {'feature': 'transcript_variation'}
+    if missense:
+        params = {'feature': 'transcript_variation',
+                  'type': 'missense_variant'}
+    else:
+        params = {'feature': 'transcript_variation'}
     url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
     rows = get_url_or_retry(url, json=True, **params)
     return pd.DataFrame(rows)
 
 
-def _somatic_variants_ensembl_to_table(identifier, species='human'):
+def _somatic_variants_ensembl_to_table(identifier, species='human',
+                                       missense=True):
     """
     Queries the Ensembl API for somatic transcript variants (COSMIC)
     based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
     :param species: Ensembl species
+    :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
 
@@ -390,7 +417,11 @@ def _somatic_variants_ensembl_to_table(identifier, species='human'):
             "{} is not a valid Ensembl Accession.".format(identifier))
 
     ensembl_endpoint = "overlap/translation/"
-    params = {'feature': 'somatic_transcript_variation'}
+    if missense:
+        params = {'feature': 'somatic_transcript_variation',
+                  'type': 'missense_variant'}
+    else:
+        params = {'feature': 'somatic_transcript_variation'}
     url = defaults.api_ensembl + ensembl_endpoint + identifier
     rows = get_url_or_retry(url, json=True, **params)
     return pd.DataFrame(rows)
@@ -464,6 +495,88 @@ def _pdb_validation_to_table(filename, global_parameters=None):
     return df
 
 
+def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
+    """
+    Gets the sequence for an Ensembl identifier.
+
+    :param identifier: Ensembl ID
+    :param species: Ensembl species
+    :return: sequence
+    """
+
+    if not isvalid_ensembl_id(identifier, species):
+        raise ValueError(
+            "{} is not a valid Ensembl Accession.".format(identifier))
+
+    ensembl_endpoint = "sequence/id/"
+    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
+    header = {'content-type': 'text/plain'}
+    if protein:
+        params = {'type': 'protein'}
+    else:
+        params = {}
+    sequence = get_url_or_retry(url, json=False, header=header, **params)
+    return sequence
+
+
+def _uniprot_variants_to_table(identifier):
+    """
+    Goes from a UniProt ID to a table with variants
+    per residue.
+
+    :param identifier: UniProt ID
+    :return: pandas.DataFrame
+    """
+
+    # get organism and sequence for the provided ientifier
+    if not isvalid_uniprot_id(identifier):
+        raise ValueError(
+            "{} is not a valid UniProt Id.".format(identifier))
+
+    uni = _uniprot_info_to_table(identifier, cols=['organism', 'sequence'])
+    org = ('_'.join(uni.loc[0, 'Organism'].split()[-3:-1])).lower()
+    seq = uni.loc[0, 'Sequence']
+
+    # get the ensembl ids: this also validate this species as available
+    # through ensembl
+    ens = _uniprot_ensembl_mapping_to_table(identifier, species=org)
+
+    # get the ensembl protein ids
+    ens_pros = list(ens.loc[0, 'TRANSLATION'])
+
+    # get the sequence of the ensembl protein
+    usable_indexes = []
+    for i, enspro in enumerate(ens_pros):
+        seq_pro = _sequence_from_ensembl_protein(enspro, org, protein=True)
+
+        # validate if the sequence of uniprot and ensembl protein matches
+        if compare_uniprot_ensembl_sequence(seq, seq_pro, permissive=False):
+            usable_indexes.append(i)
+        else:
+            message = "Sequences don't match! skipping... {}".format(enspro)
+            logging.warning(message)
+
+    # get the variants for the ensembl proteins that match the uniprot
+    tables = []
+    for i in usable_indexes:
+        vars = _transcript_variants_ensembl_to_table(ens_pros[i], org,
+                                                     missense=True)
+        muts = _somatic_variants_ensembl_to_table(ens_pros[i], org,
+                                                  missense=True)
+        # tables.append(vars[['translation', 'id', 'start', 'residues']].groupby('start').agg(to_unique))
+        # tables.append(muts[['translation', 'id', 'start', 'residues']].groupby('start').agg(to_unique))
+
+        tables.append(vars[['translation', 'id', 'start', 'residues']])
+        tables.append(muts[['translation', 'id', 'start', 'residues']])
+
+    # to_unique = lambda series: series.unique()
+    # return table.groupby('start').apply(to_unique)
+    table = pd.concat(tables)
+    return table
+
+
 if __name__ == '__main__':
-    print(_sifts_residues_to_table("tests/SIFTS/2pah.xml"))
+    # print(_sifts_residues_to_table("tests/SIFTS/2pah.xml"))
+    data = _uniprot_variants_to_table('O96013')
+    print(data.to_csv())
     pass
