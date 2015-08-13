@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Created on 03/06/2015
-
+Functions that handle the reading data files and extracting their information
+as a pandas.DataFrame. Also include wrapper functions that select and index
+the information. Prefers the use o the wrapper instead the private functions
+for better error handling. Both levels are convered by test cases.
 """
 
 import logging
@@ -16,6 +18,7 @@ import pandas as pd
 from config import defaults
 from utils import isvalid_ensembl_id, get_url_or_retry
 from library import valid_ensembl_species
+from fetcher import fetch_files
 
 log = logging.getLogger(__name__)
 
@@ -444,8 +447,6 @@ def _pdb_validation_to_table(filename, global_parameters=None):
     :return: pandas dataframe
     :rtype: pandas.DataFrame
     """
-    if not path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
 
     tree = etree.parse(filename)
     root = tree.getroot()
@@ -464,6 +465,77 @@ def _pdb_validation_to_table(filename, global_parameters=None):
     return df
 
 
+def select_cif(pdb_id, models=None, chains=None, lines=('ATOM',),
+              heteroatoms=False):
+    """
+    Parse the mmcif file and select the rows of interess.
+    :param pdb_id:
+    :param models:
+    :param chains:
+    :param atoms:
+    :param heteroatoms:
+    :return:
+    """
+    cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
+
+    try:
+        cif_table = _mmcif_atom_to_table(cif_path)
+    except IOError:
+        cif_path = fetch_files(pdb_id, sources='cif').next()
+        cif_table = _mmcif_atom_to_table(cif_path)
+
+    if models:
+        if isinstance(models, str):
+            models = [models]
+        try:
+            cif_table = cif_table[(cif_table.pdbx_PDB_model_num.isin(models))]
+        except AttributeError:
+            err = 'Structure {} has only one model, which was kept'.format
+            log.info(err(pdb_id))
+
+    if chains:
+        if isinstance(chains, str):
+            chains = [chains]
+        cif_table = cif_table[cif_table.label_asym_id.isin(chains)]
+
+    if lines :
+        if isinstance(lines, str):
+            lines = [lines]
+        cif_table = cif_table[cif_table.group_PDB.isin(lines)]
+
+    # Check the existence of alt locations
+    if len(cif_table.label_alt_id.unique()) > 1:
+        cif_table = cif_table.groupby(['label_alt_id'])
+        # We get the atom with max occupancy
+        idx = cif_table.groupby(level=0).apply(lambda x: x.occupancy.idxmax())
+        cif_table = cif_table.ix[idx]
+        cif_table.reset_index(level=1, drop=True, inplace=True)
+        log.info('Has atoms in alternative location')
+
+    return cif_table
+
+
+def select_sifts(pdb_id, chains=None, keep_missing=True):
+    """
+
+    :param pdb_id:
+    :param chains:
+    :param keep_missing:
+    :return:
+    """
+
+    sift_path = path.join(defaults.db_mmcif, pdb_id + '.xml.gz')
+
+    try:
+        sift_table = _sifts_residues_to_table(sift_path)
+    except IOError:
+        sift_path = fetch_files(pdb_id, sources='sifts').next()
+        sift_table = _mmcif_atom_to_table(sift_path)
+    if chains:
+        if isinstance(chains, str):
+            chains = [chains]
+        sift_table = sift_table[sift_table.label_asym_id.isin(chains)]
+    return  sift_table
+
 if __name__ == '__main__':
-    print(_sifts_residues_to_table("tests/SIFTS/2pah.xml"))
     pass
