@@ -123,6 +123,7 @@ def get_url_or_retry(url, retry_in=(), wait=1, json=False, header={}, **params):
         return get_url_or_retry(
             url, retry_in, wait, json, header, **params)
     else:
+        print(response.url)
         log.error(response.status_code)
         response.raise_for_status()
 
@@ -223,9 +224,32 @@ def _fetch_sifts_best(identifier, first=False):
     return response if not first else response[identifier][0]
 
 
-def compare_uniprot_ensembl_sequence():
-    # TODO
-    pass
+def compare_uniprot_ensembl_sequence(sequence1, sequence2,
+                                     permissive=True):
+    """
+    Compares two given sequences in terms of length and
+    sequence content.
+
+    :param sequence1: sequence 1
+    :param sequence2: sequence 2
+    :param permissive: if True it allows for same size
+                      sequences with mismatches
+    :return: boolean
+    """
+
+    if permissive:
+        if len(sequence1) == len(sequence2):
+            return True
+        else:
+            return False
+    else:
+        if not len(sequence1) == len(sequence2):
+            return False
+        else:
+            for i, j in zip(sequence1, sequence2):
+                if i != j:
+                    return False
+            return True
 
 
 if __name__ == '__main__':

@@ -144,6 +144,10 @@ class TestENSEMBLParser(unittest.TestCase):
         self.assertEqual(data['seq_region_name'][0], '19')
         self.assertEqual(data['evidence'][0], ['Frequency', '1000Genomes'])
 
+    def test_to_table_uniprot_ensembl_variants(self):
+        # TODO: test the new wrapper method
+        pass
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestENSEMBLParser)
