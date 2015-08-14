@@ -99,7 +99,8 @@ def get_random_string_with_n_digits(n):
     return random.randint(range_start, range_end)
 
 
-def get_url_or_retry(url, retry_in=(), wait=1, json=False, header={}, **params):
+def get_url_or_retry(url, retry_in=None, wait=1, json=False, header={},
+                     **params):
     """
     Fetch an url using Requests or retry fetching it if the server is
     complaining with retry_in error.

@@ -23,6 +23,7 @@ from library import valid_ensembl_species
 from fetcher import fetch_files
 
 log = logging.getLogger(__name__)
+to_unique = lambda series: series.unique()
 
 
 def _dssp_to_table(filename):
@@ -52,9 +53,6 @@ def _mmcif_atom_to_table(filename, delimiter=None):
     :param filename: input CIF file
     :return: pandas table dataframe
     """
-
-    if not path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
 
     _header_mmcif = []
     lines = []
@@ -90,9 +88,6 @@ def _sifts_residues_to_table(filename, cols=None):
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
     """
-
-    if not path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
 
     tree = etree.parse(filename)
     root = tree.getroot()
@@ -499,7 +494,7 @@ def _pdb_validation_to_table(filename, global_parameters=None):
     return df
 
 
-def select_cif(pdb_id, models=None, chains=None, lines=('ATOM',),
+def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
               heteroatoms=False):
     """
     Parse the mmcif file and select the rows of interess.
@@ -510,16 +505,21 @@ def select_cif(pdb_id, models=None, chains=None, lines=('ATOM',),
     :param heteroatoms:
     :return:
     """
+    CA = {'label_comp_id': to_unique, 'label_atom_id': to_unique,
+          'label_asym_id': to_unique, 'Cartn_x': to_unique,
+          'Cartn_y': to_unique, 'Cartn_z': to_unique, 'occupancy': to_unique,
+          'B_iso_or_equiv': to_unique, 'id': to_unique}
+
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
 
     try:
         cif_table = _mmcif_atom_to_table(cif_path)
     except IOError:
-        cif_path = fetch_files(pdb_id, sources='cif').next()
+        cif_path = fetch_files(pdb_id, sources='cif')[0]
         cif_table = _mmcif_atom_to_table(cif_path)
 
     if models:
-        if isinstance(models, str):
+        if isinstance(models, int):
             models = [models]
         try:
             cif_table = cif_table[(cif_table.pdbx_PDB_model_num.isin(models))]
@@ -537,17 +537,24 @@ def select_cif(pdb_id, models=None, chains=None, lines=('ATOM',),
             lines = [lines]
         cif_table = cif_table[cif_table.group_PDB.isin(lines)]
 
+    if 'pdbe_label_seq_id' in cif_table.columns:
+        CA.update({'pdbe_label_seq_id': to_unique})
+        log.info('Column pdbe_label_seq_id present')
+
+    cif_table = cif_table[cif_table.label_atom_id == 'CA']
+
     # Check the existence of alt locations
     if len(cif_table.label_alt_id.unique()) > 1:
-        cif_table = cif_table.groupby(['label_alt_id'])
         # We get the atom with max occupancy
+        cif_table = cif_table.groupby(['auth_seq_id', 'label_alt_id']).agg(CA)
         idx = cif_table.groupby(level=0).apply(lambda x: x.occupancy.idxmax())
         cif_table = cif_table.ix[idx]
         cif_table.reset_index(level=1, drop=True, inplace=True)
         log.info('Has atoms in alternative location')
+    else:
+        cif_table = cif_table.groupby('auth_seq_id').agg(CA)
 
     return cif_table
-
 
 def select_sifts(pdb_id, chains=None, keep_missing=True):
     """
@@ -558,18 +565,39 @@ def select_sifts(pdb_id, chains=None, keep_missing=True):
     :return:
     """
 
-    sift_path = path.join(defaults.db_mmcif, pdb_id + '.xml.gz')
+    sift_path = path.join(defaults.db_sifts, pdb_id + '.xml')
 
     try:
         sift_table = _sifts_residues_to_table(sift_path)
     except IOError:
-        sift_path = fetch_files(pdb_id, sources='sifts').next()
-        sift_table = _mmcif_atom_to_table(sift_path)
+        sift_path = fetch_files(pdb_id, sources='sifts')[0]
+        sift_table = _sifts_residues_to_table(sift_path)
     if chains:
         if isinstance(chains, str):
             chains = [chains]
-        sift_table = sift_table[sift_table.label_asym_id.isin(chains)]
+        sift_table = sift_table[sift_table.PDB_dbChainId.isin(chains)]
     return  sift_table
+
+def select_dssp(pdb_id, chains=None):
+    """
+
+    :param pdb_id:
+    :param chains:
+    :return:
+    """
+
+    dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
+
+    try:
+        dssp_table = _dssp_to_table(dssp_path)
+    except IOError:
+        dssp_path = fetch_files(pdb_id, sources='dssp')[0]
+        dssp_table = _dssp_to_table(dssp_path)
+    if chains:
+        if isinstance(chains, str):
+            chains = [chains]
+        dssp_table = dssp_table[dssp_table.chain_id.isin(chains)]
+    return dssp_table
 
 def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
     """
@@ -593,7 +621,6 @@ def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
         params = {}
     sequence = get_url_or_retry(url, json=False, header=header, **params)
     return sequence
-
 
 def _uniprot_variants_to_table(identifier):
     """
@@ -652,4 +679,5 @@ def _uniprot_variants_to_table(identifier):
 
 
 if __name__ == '__main__':
+    X = select_sifts('4ibw', chains='A')
     pass
