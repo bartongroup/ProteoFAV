@@ -96,12 +96,4 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
 
 
 if __name__ == '__main__':
-    from config import Defaults
-
-    defaults = Defaults('config.txt')
-    defaults.db_mmcif = 'tests/CIF'
-    defaults.db_dssp = 'tests/DSSP'
-    defaults.db_sifts = 'tests/SIFTS'
-
-    X = merge_tables(pdb_id='4ibw', chain='A', default=defaults)
     pass

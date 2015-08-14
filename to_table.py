@@ -12,6 +12,7 @@ for better error handling. Both levels are convered by test cases.
 import logging
 from StringIO import StringIO
 from os import path
+from docutils.nodes import citation
 
 from lxml import etree
 import pandas as pd
@@ -91,15 +92,17 @@ def _sifts_residues_to_table(filename, cols=None):
 
     tree = etree.parse(filename)
     root = tree.getroot()
-    namespace = root.nsmap[None] #
+    namespace = root.nsmap[None]
     nsmap = {'ns': namespace}
     cross_reference = "{{{}}}crossRefDb".format(namespace)
     residue_detail = "{{{}}}residueDetail".format(namespace)
     rows = []
     reference = root.attrib['dbCoordSys']
 
-    for segment in root.iterfind('.//ns:entity[@type="protein"]', namespaces=nsmap):
-        for list_residue in segment.iterfind('.//ns:listResidue', namespaces=nsmap):
+    for segment in root.iterfind('.//ns:entity[@type="protein"]',
+                                 namespaces=nsmap):
+        for list_residue in segment.iterfind('.//ns:listResidue',
+                                             namespaces=nsmap):
             for residue in list_residue:
                 # get residue annotations
                 residue_annotation = {}
@@ -125,7 +128,9 @@ def _sifts_residues_to_table(filename, cols=None):
                                 continue
                             # renaming all keys with dbSource prefix
                             try:
-                                k = "{}_{}".format(annotation.attrib["dbSource"], k)
+                                k = "{}_{}".format(
+                                    annotation.attrib["dbSource"],
+                                    k)
                             except KeyError:
                                 k = "{}_{}".format("REF", k)
 
@@ -154,9 +159,10 @@ def _sifts_residues_to_table(filename, cols=None):
         data = pd.DataFrame(rows, columns=cols)
     else:
         data = pd.DataFrame(rows)
-    data.columns = [col if not col.startswith("PDBe") # this should come from reference
-                 else col.replace(reference, "REF")
-                 for col in data.columns]
+    data.columns = [
+        col if not col.startswith("PDBe")  # this should come from reference
+        else col.replace(reference, "REF")
+        for col in data.columns]
     return data
 
 
@@ -495,7 +501,7 @@ def _pdb_validation_to_table(filename, global_parameters=None):
 
 
 def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
-              heteroatoms=False):
+               heteroatoms=False):
     """
     Parse the mmcif file and select the rows of interess.
     :param pdb_id:
@@ -515,7 +521,8 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
     try:
         cif_table = _mmcif_atom_to_table(cif_path)
     except IOError:
-        cif_path = fetch_files(pdb_id, sources='cif')[0]
+        cif_path = fetch_files(pdb_id, sources='cif',
+                               directory=defaults.db_mmcif)[0]
         cif_table = _mmcif_atom_to_table(cif_path)
 
     if models:
@@ -532,29 +539,40 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
             chains = [chains]
         cif_table = cif_table[cif_table.label_asym_id.isin(chains)]
 
-    if lines :
+    if lines:
         if isinstance(lines, str):
             lines = [lines]
         cif_table = cif_table[cif_table.group_PDB.isin(lines)]
 
-    if 'pdbe_label_seq_id' in cif_table.columns:
-        CA.update({'pdbe_label_seq_id': to_unique})
-        log.info('Column pdbe_label_seq_id present')
-
     cif_table = cif_table[cif_table.label_atom_id == 'CA']
 
-    # Check the existence of alt locations
-    if len(cif_table.label_alt_id.unique()) > 1:
-        # We get the atom with max occupancy
-        cif_table = cif_table.groupby(['auth_seq_id', 'label_alt_id']).agg(CA)
-        idx = cif_table.groupby(level=0).apply(lambda x: x.occupancy.idxmax())
-        cif_table = cif_table.ix[idx]
-        cif_table.reset_index(level=1, drop=True, inplace=True)
-        log.info('Has atoms in alternative location')
-    else:
-        cif_table = cif_table.groupby('auth_seq_id').agg(CA)
+    def unique_index_or_fail(table):
+        """
+        Check whether the index is ready for aggregation otherwise raise
+        TypeError
+        :type table: pandas.DataFrame
+        :param table:
+        :return: table with aggregable index.
+        :raise TypeError: if don't find a unique index
+        """
+        for idx in ['auth_seq_id', 'pdbe_label_seq_id']:
+            try:
+                if not table[idx].duplicated().any():
+                    return cif_table.set_index(idx)
+            except KeyError:
+                continue
+        raise TypeError('Failed to find unique index')
 
-    return cif_table
+    try:
+        return unique_index_or_fail(cif_table)
+    except TypeError:
+        pass
+
+    if len(cif_table.label_alt_id.unique()) > 1:
+        idx = cif_table.groupby(['auth_seq_id']).occupancy.idxmax()
+        cif_table = cif_table.ix[idx]
+        return  cif_table.set_index(['auth_seq_id'])
+
 
 def select_sifts(pdb_id, chains=None, keep_missing=True):
     """
@@ -570,13 +588,15 @@ def select_sifts(pdb_id, chains=None, keep_missing=True):
     try:
         sift_table = _sifts_residues_to_table(sift_path)
     except IOError:
-        sift_path = fetch_files(pdb_id, sources='sifts')[0]
+        sift_path = fetch_files(pdb_id, sources='sifts',
+                                directory=defaults.db_sifts)[0]
         sift_table = _sifts_residues_to_table(sift_path)
     if chains:
         if isinstance(chains, str):
             chains = [chains]
         sift_table = sift_table[sift_table.PDB_dbChainId.isin(chains)]
-    return  sift_table
+    return sift_table
+
 
 def select_dssp(pdb_id, chains=None):
     """
@@ -591,13 +611,15 @@ def select_dssp(pdb_id, chains=None):
     try:
         dssp_table = _dssp_to_table(dssp_path)
     except IOError:
-        dssp_path = fetch_files(pdb_id, sources='dssp')[0]
+        dssp_path = fetch_files(pdb_id, sources='dssp',
+                                directory=defaults.db_dssp)[0]
         dssp_table = _dssp_to_table(dssp_path)
     if chains:
         if isinstance(chains, str):
             chains = [chains]
         dssp_table = dssp_table[dssp_table.chain_id.isin(chains)]
     return dssp_table
+
 
 def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
     """
@@ -621,6 +643,7 @@ def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
         params = {}
     sequence = get_url_or_retry(url, json=False, header=header, **params)
     return sequence
+
 
 def _uniprot_variants_to_table(identifier):
     """
@@ -679,5 +702,4 @@ def _uniprot_variants_to_table(identifier):
 
 
 if __name__ == '__main__':
-    X = select_sifts('4ibw', chains='A')
     pass
