@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
 import logging
-from os import path
 
 import numpy as np
 
-from to_table import _dssp_to_table, _sifts_residues_to_table, \
-    _mmcif_atom_to_table, select_cif, select_dssp, select_sifts
+from to_table import select_cif, select_dssp, select_sifts
 from utils import _fetch_sifts_best
-from config import defaults
 from library import three_to_single_aa
 
 log = logging.getLogger(__name__)
@@ -58,6 +55,10 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
     if validate:
         # Fill all missing values with gaps
         cif_dssp['dssp_aa'] = cif_dssp.aa.fillna('-')
+        # DSSP treat disulfite bonding cyteines as lower-cased pairs
+        lower_cased_aa = cif_dssp.dssp_aa.str.islower()
+        if lower_cased_aa.any():
+            cif_dssp.loc[lower_cased_aa, 'dssp_aa'] = "C"
         cif_dssp['cif_aa'] = cif_dssp.label_comp_id.fillna('-')
         # From three letter to sigle letters or X if not a standard aa
         cif_dssp['cif_aa'] = cif_dssp['cif_aa'].apply(three_to_single_aa.get,
@@ -96,4 +97,5 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
 
 
 if __name__ == '__main__':
+    # X = merge_tables(pdb_id='3ehk', chain='D')
     pass
