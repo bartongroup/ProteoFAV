@@ -533,6 +533,9 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
         if isinstance(chains, str):
             chains = [chains]
         cif_table = cif_table[cif_table.auth_asym_id.isin(chains)]
+        if cif_table.empty:
+            raise TypeError('Structure {} does not contain chains {}'.format(
+                pdb_id, ' '.join(chains)))
 
     if lines:
         if isinstance(lines, str):
@@ -540,6 +543,7 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
         cif_table = cif_table[cif_table.group_PDB.isin(lines)]
 
     cif_table = cif_table[cif_table.label_atom_id == 'CA']
+
 
     if not cif_table['auth_seq_id'].duplicated().any():
         return cif_table.set_index(['auth_seq_id'])
