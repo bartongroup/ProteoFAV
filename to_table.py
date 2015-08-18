@@ -34,16 +34,16 @@ def _dssp_to_table(filename):
     :return: pandas table dataframe
     """
     # column width descriptors
-    cols_widths = ((0, 5), (6, 10), (11, 12), (13, 14), (16, 17), (35, 38),
+    cols_widths = ((0, 5), (6, 11), (11, 12), (13, 14), (16, 17), (35, 38),
                    (103, 109), (109, 115))
     # simplified headers for the table
     dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi",
                    "psi")
-    try:
-        return pd.read_fwf(filename, skiprows=28, names=dssp_header,
-                           colspecs=cols_widths, index_col=0, compression=None)
-    except IOError:
-        raise IOError('File {} not found or unavailable.'.format(filename))
+    dssp_table = pd.read_fwf(filename, skiprows=28, names=dssp_header,
+                             colspecs=cols_widths, index_col=0, compression=None)
+    if dssp_table.icode.duplicated().any():
+        log.error('DSSP file {} has not unique index'.format(filename))
+    return dssp_table
 
 
 def _mmcif_atom_to_table(filename, delimiter=None):
@@ -541,32 +541,25 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
 
     cif_table = cif_table[cif_table.label_atom_id == 'CA']
 
-    def unique_index_or_fail(table):
-        """
-        Check whether the index is ready for aggregation otherwise raise
-        TypeError
-        :type table: pandas.DataFrame
-        :param table:
-        :return: table with aggregable index.
-        :raise TypeError: if don't find a unique index
-        """
-        for idx in ['auth_seq_id', 'pdbe_label_seq_id']:
-            try:
-                if not table[idx].duplicated().any():
-                    return cif_table.set_index(idx)
-            except KeyError:
-                continue
-        raise TypeError('Failed to find unique index')
+    if not cif_table['auth_seq_id'].duplicated().any():
+        return cif_table.set_index(['auth_seq_id'])
 
-    try:
-        return unique_index_or_fail(cif_table)
-    except TypeError:
-        pass
-
-    if len(cif_table.label_alt_id.unique()) > 1:
+    elif len(cif_table.label_alt_id.unique()) > 1 :
         idx = cif_table.groupby(['auth_seq_id']).occupancy.idxmax()
         cif_table = cif_table.ix[idx]
-        return  cif_table.set_index(['auth_seq_id'])
+        return cif_table.set_index(['auth_seq_id'])
+
+    elif len(cif_table.pdbx_PDB_ins_code.unique()) > 1:
+        cif_table.pdbx_PDB_ins_code.replace("?", "", inplace=True)
+        cif_table.auth_seq_id = cif_table.auth_seq_id.astype(str) + \
+                                cif_table.pdbx_PDB_ins_code
+        return cif_table.set_index(['auth_seq_id'])
+
+    elif not cif_table['pdbe_label_seq_id'].duplicated().any():
+        return cif_table.set_index(['pdbe_label_seq_id'])
+
+    else:
+        raise TypeError('Failed to find unique index')
 
 
 def select_sifts(pdb_id, chains=None, keep_missing=True):
@@ -614,7 +607,7 @@ def select_dssp(pdb_id, chains=None):
         if isinstance(chains, str):
             chains = [chains]
         dssp_table = dssp_table[dssp_table.chain_id.isin(chains)]
-    return dssp_table
+    return dssp_table.set_index(['icode'])
 
 
 def _sequence_from_ensembl_protein(identifier, species='human', protein=True):

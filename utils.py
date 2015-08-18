@@ -19,6 +19,12 @@ from config import defaults
 
 log = logging.getLogger(__name__)
 
+class IDNotValidError(Exception):
+    """
+    Base class for database related exceptions.
+    Databases: UniProt, PDB, Ensembl, etc.
+    """
+    pass
 
 def current_date():
     """
@@ -128,15 +134,6 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header={},
         log.error(response.status_code)
         response.raise_for_status()
 
-
-class IDNotValidError(Exception):
-    """
-    Base class for database related exceptions.
-    Databases: UniProt, PDB, Ensembl, etc.
-    """
-    pass
-
-
 def isvalid_uniprot_id(identifier):
     """
     'Quickly' checks if a UniProt id is valid.
@@ -196,7 +193,7 @@ def isvalid_ensembl_id(identifier, species='human', variant=False):
     try:
         if identifier != '':
             url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
-            data = get_url_or_retry(url, json=True,)
+            data = get_url_or_retry(url, json=True, )
             if 'error' not in data:
                 return True
             else:

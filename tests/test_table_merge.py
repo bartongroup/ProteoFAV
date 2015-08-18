@@ -4,6 +4,7 @@
 __author__ = 'tbrittoborges'
 __version__ = "1.0"
 
+import logging
 from os import path
 import unittest
 
@@ -11,6 +12,8 @@ from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_ta
 
 from main import merge_tables
 from config import Defaults
+
+log = logging.getLogger(__name__)
 
 
 class TestTableMeger(unittest.TestCase):
@@ -45,7 +48,7 @@ class TestTableMeger(unittest.TestCase):
         Test table merger for a protein example.
         :return:
         """
-        data = self.merge_table(pdb_id="2w4o", chain="A", default=self.defaults)
+        data = self.merge_table(pdb_id="2w4o", chain="A")
         self.assertIsNotNone(data)
 
         self.cif_path = path.join(path.dirname(__file__), "CIF/2w4o.cif")
@@ -101,7 +104,7 @@ class TestTableMeger(unittest.TestCase):
         Test case in a structure with alt locations.
         """
         #(81, 'P63094', 51, '3c16', 'C', 52, ValueError("invalid literal for long() with base 10: '63A'",))
-        data = self.merge_table(pdb_id="4ibw", chain="A", default=self.defaults)
+        data = self.merge_table(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
         self.sifts_path = path.join(path.dirname(__file__), "SIFTS/4ibw.xml")
         self.sifts = self.sifts_to_table(self.sifts_path)
@@ -123,11 +126,17 @@ class TestTableMeger(unittest.TestCase):
         self.assertFalse(self.sifts.empty)
         self.assertFalse(self.dssp.empty)
 
-        data = self.merge_table(pdb_id="3mn5", chain="A", default=self.defaults)
+        data = self.merge_table(pdb_id="3mn5", chain="A")
         self.assertFalse(data.empty)
 
     def test_merge_3fqd_A_no_pdbe_label_seq_id(self):
-        pass
+        self.data = self.merge_table(pdb_id='3fqd', chain='A', validate=True)
+        self.assertFalse(self.data.empty)
+
+    def test_merge_tables_3ehk_D_lowercased_dssp(self):
+        self.data = self.merge_table(pdb_id='3ehk', chain='D', validate=True)
+        self.assertFalse(self.data.empty)
+
 
 
 if __name__ == '__main__':

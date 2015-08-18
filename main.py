@@ -11,20 +11,19 @@ from library import three_to_single_aa
 log = logging.getLogger(__name__)
 
 
-def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
-                 default=None, model=1, validate=True):
+def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=True):
     """
     Merges the output from multiple to table method.
     if no pdb_id uses sifts_best_structure
     if no chain uses first
     or if use_all_chains use all chains of the pdb_id
-    :param validate:
-    :param uniprot_id:
-    :param pdb_id:
-    :param chain:
-    :param groupby:
-    :param default:
-    :param model:
+    :param uniprot_id: (opt) given a finds the best structure for a uniprot
+    identifier.
+    :param pdb_id: (opt) Alternatively parser
+    :param chain: (opt) protein chain to parse. If None uses Sifts
+    best_structure api to select best structure.
+    :param model: number of the model to retrive from mmcif files.
+    :param validate: Validate protein sequence between differnet data files.
     """
     if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
@@ -47,12 +46,10 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
                                                                uniprot_id))
 
     cif_table = select_cif(pdb_id, chains=chain, models=model)
-
     dssp_table = select_dssp(pdb_id, chains=chain)
-    dssp_table.set_index(['icode'], inplace=True)
     cif_dssp = cif_table.join(dssp_table)
 
-    if validate:
+    if validate:# and cif_dssp['aa', 'label_comp_id'].any():
         # Fill all missing values with gaps
         cif_dssp['dssp_aa'] = cif_dssp.aa.fillna('-')
         # DSSP treat disulfite bonding cyteines as lower-cased pairs
@@ -97,5 +94,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, groupby='CA',
 
 
 if __name__ == '__main__':
-    # X = merge_tables(pdb_id='3ehk', chain='D')
+    X = merge_tables(pdb_id='3mg7', chain='A')
+
     pass
