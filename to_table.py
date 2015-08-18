@@ -12,7 +12,6 @@ for better error handling. Both levels are convered by test cases.
 import logging
 from StringIO import StringIO
 from os import path
-from docutils.nodes import citation
 
 from lxml import etree
 import pandas as pd
@@ -511,10 +510,6 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
     :param heteroatoms:
     :return:
     """
-    CA = {'label_comp_id': to_unique, 'label_atom_id': to_unique,
-          'label_asym_id': to_unique, 'Cartn_x': to_unique,
-          'Cartn_y': to_unique, 'Cartn_z': to_unique, 'occupancy': to_unique,
-          'B_iso_or_equiv': to_unique, 'id': to_unique}
 
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
 
@@ -537,7 +532,7 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
     if chains:
         if isinstance(chains, str):
             chains = [chains]
-        cif_table = cif_table[cif_table.label_asym_id.isin(chains)]
+        cif_table = cif_table[cif_table.auth_asym_id.isin(chains)]
 
     if lines:
         if isinstance(lines, str):
@@ -607,13 +602,14 @@ def select_dssp(pdb_id, chains=None):
     """
 
     dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
-
     try:
         dssp_table = _dssp_to_table(dssp_path)
     except IOError:
         dssp_path = fetch_files(pdb_id, sources='dssp',
                                 directory=defaults.db_dssp)[0]
         dssp_table = _dssp_to_table(dssp_path)
+    except StopIteration:
+        raise IOError('{} is unreadable.'.format(dssp_path))
     if chains:
         if isinstance(chains, str):
             chains = [chains]
