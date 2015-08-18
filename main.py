@@ -44,9 +44,23 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
         chain = best_pdb['chain_id']
         log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain,
                                                                uniprot_id))
-
     cif_table = select_cif(pdb_id, chains=chain, models=model)
-    dssp_table = select_dssp(pdb_id, chains=chain)
+    try:
+        dssp_table = select_dssp(pdb_id, chains=chain)
+    except ValueError:
+        # This indicates we could find the corret PDB chain.
+        # What happens in case in structures with dozen of chains, ie: 4v9d
+        # So we parse all the PDB file
+        dssp_table = select_dssp(pdb_id)
+        cif_seq = cif_table.auth_comp_id.apply(three_to_single_aa.get)
+        dssp_table.reset_index(inplace=True)
+        dssp_seq = "".join(dssp_table.aa)
+        i = dssp_seq.find("".join(cif_seq)) # TODO assert there a single match
+        dssp_table = dssp_table.iloc[i : i + len(cif_seq), : ]
+        dssp_table.set_index(['icode'], inplace=True)
+        # the other possibility is look at the sequence for each block
+        # an slower option that adds no confidence.
+
     cif_dssp = cif_table.join(dssp_table)
 
     if validate:# and cif_dssp['aa', 'label_comp_id'].any():
@@ -94,6 +108,4 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='3mg7', chain='A')
-
     pass

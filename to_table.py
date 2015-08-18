@@ -43,6 +43,10 @@ def _dssp_to_table(filename):
                              colspecs=cols_widths, index_col=0, compression=None)
     if dssp_table.icode.duplicated().any():
         log.error('DSSP file {} has not unique index'.format(filename))
+    elif dssp_table.empty:
+        log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
+        raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
+            filename))
     return dssp_table
 
 
@@ -562,8 +566,9 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
     elif not cif_table['pdbe_label_seq_id'].duplicated().any():
         return cif_table.set_index(['pdbe_label_seq_id'])
 
-    else:
-        raise TypeError('Failed to find unique index')
+    log.error('Failed to find unique index for {}'.format(cif_path))
+    return cif_table.set_index(['auth_seq_id'])
+
 
 
 def select_sifts(pdb_id, chains=None, keep_missing=True):
@@ -610,7 +615,12 @@ def select_dssp(pdb_id, chains=None):
     if chains:
         if isinstance(chains, str):
             chains = [chains]
-        dssp_table = dssp_table[dssp_table.chain_id.isin(chains)]
+        sel = dssp_table.chain_id.isin(chains)
+        if not dssp_table[sel].empty:
+            dssp_table = dssp_table[sel]
+        else:
+            raise ValueError('{} structure DSSP file does not have chains {}'
+                            ''.format(pdb_id, ' '.join(chains)))
     return dssp_table.set_index(['icode'])
 
 

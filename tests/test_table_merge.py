@@ -133,11 +133,12 @@ class TestTableMeger(unittest.TestCase):
         self.data = self.merge_table(pdb_id='3fqd', chain='A', validate=True)
         self.assertFalse(self.data.empty)
 
-    def test_merge_tables_3ehk_D_lowercased_dssp(self):
+    def test_merge_3ehk_D_lowercased_dssp(self):
         self.data = self.merge_table(pdb_id='3ehk', chain='D', validate=True)
         self.assertFalse(self.data.empty)
-
-
+    def test_merge_4v9d_BD_excessive_chains(self):
+        self.data = self.merge_table(pdb_id='4v9d', chain='BD', validate=True)
+        self.assertFalse(self.data.empty)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMeger)
