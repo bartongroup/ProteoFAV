@@ -9,7 +9,10 @@ from utils import _fetch_sifts_best
 from library import three_to_single_aa
 
 log = logging.getLogger(__name__)
-
+logging.captureWarnings(True)
+logging.basicConfig(level=9,
+                    format='%(asctime)s - %(levelname)s - %(message)s ')
+#  TODO add Nick's logger.
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=True):
     """
@@ -63,7 +66,11 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
 
     cif_dssp = cif_table.join(dssp_table)
 
-    if validate:# and cif_dssp['aa', 'label_comp_id'].any():
+    if validate:
+        if not cif_dssp['aa'].any():
+            raise ValueError('Empty DSSP sequence cannot be validated')
+        if not cif_dssp['label_comp_id'].any():
+            raise ValueError('Empty Cif sequence cannot be validated')
         # Fill all missing values with gaps
         cif_dssp['dssp_aa'] = cif_dssp.aa.fillna('-')
         # DSSP treat disulfite bonding cyteines as lower-cased pairs
@@ -91,6 +98,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
     # Sift data in used as base to keep not observed residues info.
     sifts_cif_dssp = sifts_table.join(cif_dssp)
     if validate:
+        if not sifts_cif_dssp['REF_dbResName'].any():
+            raise ValueError('Empty Sifts sequence cannot be validated')
         # Sifts seq has more res than the other, so we compare the common res
         seq_idx = ((~sifts_cif_dssp.cif_aa.isnull()) &
                    (sifts_cif_dssp.cif_aa != '-'))

@@ -4,14 +4,17 @@
 Created on 11:41 24/07/15 2015
 Small routine to fetch data files from their respective repositries.
 """
-__author__ = 'tbrittoborges'
+import logging
 
+__author__ = 'tbrittoborges'
 
 import gzip
 import shutil
 import os
 import urllib
 from config import defaults
+
+log = logging.getLogger(__name__)
 
 
 def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
@@ -51,7 +54,8 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
         try:
             urllib.urlretrieve(url, destination + filename)
         except IOError as e:
-            raise (e)
+            log.error('Unable to retrieve {} for {}'.format(url, str(e)))
+            raise
         if filename.endswith('.gz'):
             with gzip.open(destination + filename, 'rb') as input_f, \
                 open(destination + filename.replace('.gz', ''), 'wb') as output_f:
