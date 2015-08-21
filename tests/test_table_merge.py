@@ -146,6 +146,10 @@ class TestTableMeger(unittest.TestCase):
         self.data = self.merge_table(pdb_id='4abo', chain='A', validate=True)
         self.assertFalse(self.data.empty)
 
+    def test_merge_4why_K_DSSP_index_as_object(self):
+        self.data = self.merge_table(pdb_id='4why', chain='K', validate=True)
+        self.assertFalse(self.data.empty)
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMeger)
     unittest.TextTestRunner(verbosity=2).run(suite)

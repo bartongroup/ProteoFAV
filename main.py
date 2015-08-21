@@ -61,8 +61,9 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
         i = dssp_seq.find("".join(cif_seq)) # TODO assert there a single match
         dssp_table = dssp_table.iloc[i : i + len(cif_seq), : ]
         dssp_table.set_index(['icode'], inplace=True)
-        # the other possibility is look at the sequence for each block
-        # an slower option that adds no confidence.
+    # Correction for some dssp index parsed as object instead int
+    if dssp_table.index.dtype == 'O' and cif_table.index.dtype != 'O' :
+        dssp_table.index = dssp_table.index.astype(np.int)
 
     cif_dssp = cif_table.join(dssp_table)
 
@@ -80,7 +81,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
         cif_dssp['cif_aa'] = cif_dssp.label_comp_id
         # mask nans since they are not comparable
         mask = cif_dssp['dssp_aa'].isnull()
-        mask += cif_dssp['cif_aa'].isnull()
+        mask = mask | cif_dssp['cif_aa'].isnull()
         # From three letter to sigle letters or X if not a standard aa
         cif_dssp['cif_aa'] = cif_dssp['cif_aa'].apply(three_to_single_aa.get,
                                                       args='X')
@@ -103,16 +104,15 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
     if validate:
         if not sifts_cif_dssp['REF_dbResName'].any():
             raise ValueError('Empty Sifts sequence cannot be validated')
-        # Sifts seq has more res than the other, so we compare the common res
-        seq_idx = ((~sifts_cif_dssp.cif_aa.isnull()) &
-                   (sifts_cif_dssp.cif_aa != '-'))
-        val_aa = sifts_cif_dssp.cif_aa[seq_idx]
-        sifts_cif_dssp['sifts_aa'] = sifts_cif_dssp['REF_dbResName'].fillna('-')
+        # Mask here because Sifts conseve missing residues and other data don't
+        mask = sifts_cif_dssp.cif_aa.isnull()
+        sifts_cif_dssp['sifts_aa'] = sifts_cif_dssp['REF_dbResName']
         sifts_cif_dssp['sifts_aa'] = sifts_cif_dssp['sifts_aa'].apply(
             three_to_single_aa.get, args='X')
-        val_aa2 = sifts_cif_dssp.sifts_aa[seq_idx]
+        mask = mask | sifts_cif_dssp.sifts_aa.isnull()
+
         # Check if the sequences are the same
-        if not (val_aa == val_aa2).all():
+        if not (sifts_cif_dssp.cif_aa[~mask] == sifts_cif_dssp.sifts_aa[~mask]).all():
             raise ValueError('{pdb_id}|{chain} Cif and Sifts files have '
                              'different sequences '.format(pdb_id=pdb_id,
                                                            chain=chain))
@@ -120,6 +120,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='4abo', chain='A')
+    X = merge_tables(pdb_id='3fqd', chain='A')
 
     pass
