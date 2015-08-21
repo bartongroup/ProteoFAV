@@ -23,6 +23,7 @@ class TestTableMeger(unittest.TestCase):
         """Initialize the framework for testing."""
         self.defaults = Defaults("config.txt")
         self.defaults.db_mmcif = path.join(path.dirname(__file__), "CIF")
+        self.defaults.db_mmcif = path.join(path.dirname(__file__), "CIF")
         self.defaults.db_dssp = path.join(path.dirname(__file__), "DSSP")
         self.defaults.db_sifts = path.join(path.dirname(__file__), "SIFTS")
 
@@ -136,8 +137,13 @@ class TestTableMeger(unittest.TestCase):
     def test_merge_3ehk_D_lowercased_dssp(self):
         self.data = self.merge_table(pdb_id='3ehk', chain='D', validate=True)
         self.assertFalse(self.data.empty)
+
     def test_merge_4v9d_BD_excessive_chains(self):
         self.data = self.merge_table(pdb_id='4v9d', chain='BD', validate=True)
+        self.assertFalse(self.data.empty)
+
+    def test_merge_4abo_A_DSSP_missing_first_residue(self):
+        self.data = self.merge_table(pdb_id='4abo', chain='A', validate=True)
         self.assertFalse(self.data.empty)
 
 if __name__ == '__main__':

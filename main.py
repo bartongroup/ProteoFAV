@@ -72,17 +72,20 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
         if not cif_dssp['label_comp_id'].any():
             raise ValueError('Empty Cif sequence cannot be validated')
         # Fill all missing values with gaps
-        cif_dssp['dssp_aa'] = cif_dssp.aa.fillna('-')
+        cif_dssp['dssp_aa'] = cif_dssp.aa
         # DSSP treat disulfite bonding cyteines as lower-cased pairs
         lower_cased_aa = cif_dssp.dssp_aa.str.islower()
         if lower_cased_aa.any():
             cif_dssp.loc[lower_cased_aa, 'dssp_aa'] = "C"
-        cif_dssp['cif_aa'] = cif_dssp.label_comp_id.fillna('-')
+        cif_dssp['cif_aa'] = cif_dssp.label_comp_id
+        # mask nans since they are not comparable
+        mask = cif_dssp['dssp_aa'].isnull()
+        mask += cif_dssp['cif_aa'].isnull()
         # From three letter to sigle letters or X if not a standard aa
         cif_dssp['cif_aa'] = cif_dssp['cif_aa'].apply(three_to_single_aa.get,
                                                       args='X')
         # Check if the sequences are the same
-        if not (cif_dssp.dssp_aa == cif_dssp.cif_aa).all():
+        if not (cif_dssp.dssp_aa[~mask] == cif_dssp.cif_aa[~mask]).all():
             raise ValueError('{pdb_id}|{chain} Cif and DSSP files have diffent'
                              ' sequences.'.format(pdb_id=pdb_id, chain=chain))
 
@@ -117,4 +120,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
 
 
 if __name__ == '__main__':
+    X = merge_tables(pdb_id='4abo', chain='A')
+
     pass
