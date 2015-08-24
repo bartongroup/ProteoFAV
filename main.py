@@ -6,7 +6,7 @@ import numpy as np
 
 from to_table import select_cif, select_dssp, select_sifts, select_validation
 from utils import _fetch_sifts_best
-from library import three_to_single_aa
+from library import to_single_aa
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -14,8 +14,8 @@ logging.basicConfig(level=9,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
 #  TODO add Nick's logger.
 
-def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=True,
-                 add_validation=False):
+def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1,
+                 validate=True, add_validation=False):
     """
     Merges the output from multiple to table method.
     if no pdb_id uses sifts_best_structure
@@ -56,7 +56,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
         # What happens in case in structures with dozen of chains, ie: 4v9d
         # So we parse all the PDB file
         dssp_table = select_dssp(pdb_id)
-        cif_seq = cif_table.auth_comp_id.apply(three_to_single_aa.get)
+        cif_seq = cif_table.auth_comp_id.apply(to_single_aa.get)
         dssp_table.reset_index(inplace=True)
         dssp_seq = "".join(dssp_table.aa)
         i = dssp_seq.find("".join(cif_seq)) # TODO assert there a single match
@@ -79,24 +79,27 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
         lower_cased_aa = table.dssp_aa.str.islower()
         if lower_cased_aa.any():
             table.loc[lower_cased_aa, 'dssp_aa'] = "C"
-        table['cif_aa'] = table.label_comp_id
+        table['cif_aa'] = table['label_comp_id']
         # mask nans since they are not comparable
         mask = table['dssp_aa'].isnull()
-        mask = mask | table['cif_aa'].isnull()
+        mask = mask | table['cif_aa'].isnull() # TODO This might be wrong
         # From three letter to sigle letters or X if not a standard aa
-        table['cif_aa'] = table['cif_aa'].apply(three_to_single_aa.get,
+        table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get,
                                                       args='X')
         # Check if the sequences are the same
-        if not (table.dssp_aa[~mask] == table.cif_aa[~mask]).all():
+        if not (table['dssp_aa'][~mask] == table['cif_aa'][~mask]).all():
             raise ValueError('{pdb_id}|{chain} Cif and DSSP files have diffent'
                              ' sequences.'.format(pdb_id=pdb_id, chain=chain))
 
     sifts_table = select_sifts(pdb_id, chains=chain)
     try:
-        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(np.int)
+        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[
+                                             :, 'PDB_dbResNum'].astype(np.int)
         sifts_table.set_index(['PDB_dbResNum'], inplace=True)
-    except ValueError: # Means it has alpha numeric insertion code, use something else as index
-        sifts_table.loc[:, 'REF_dbResNum'] = sifts_table.loc[:, 'REF_dbResNum'].astype(np.int)
+    except ValueError:
+    # Means it has alpha numeric insertion code, use something else as index
+        sifts_table.loc[:, 'REF_dbResNum'] = sifts_table.loc[
+                                             :, 'REF_dbResNum'].astype(np.int)
         sifts_table.set_index(['REF_dbResNum'], inplace=True)
         table.set_index(['pdbe_label_seq_id'], inplace=True)
 
@@ -109,24 +112,39 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1, validate=Tru
         mask = table.cif_aa.isnull()
         table['sifts_aa'] = table['REF_dbResName']
         table['sifts_aa'] = table['sifts_aa'].apply(
-            three_to_single_aa.get, args='X')
-        mask = mask | table.sifts_aa.isnull()
+            to_single_aa.get, args='X')
+        mask = mask | table['sifts_aa'].isnull()
 
         # Check if the sequences are the same
-        if not (table.cif_aa[~mask] == table.sifts_aa[~mask]).all():
+        if not (table['cif_aa'][~mask] == table['sifts_aa'][~mask]).all():
             raise ValueError('{pdb_id}|{chain} Cif and Sifts files have '
                              'different sequences '.format(pdb_id=pdb_id,
                                                            chain=chain))
     if add_validation:
         validation_table = select_validation(pdb_id, chains=chain)
-        validation_table.loc[:, 'val_resnum'] = validation_table.loc[:, 'val_resnum'].astype(np.int)
+        validation_table.loc[:, 'val_resnum'] = validation_table.loc[
+                                                :, 'val_resnum'].astype(np.int)
         validation_table.set_index(['val_resnum'], inplace=True)
         table = table.join(validation_table)
+        if not table['val_resname'].any():
+            raise ValueError('The validation file has empty sequence and cannot'
+                             ' be validated')
+        mask = table['cif_aa'].isnull()
+        table['val_aa'] = table['val_resname']
+        table['val_aa'] = table['val_aa'].apply(to_single_aa.get, args='X')
+        mask = mask | table['val_aa'].isnull()
+        if not (table['cif_aa'][~mask] == table['val_aa'][~mask]).all():
+            raise ValueError('{pdb_id}|{chain} Cif and validation files have '
+                             'different sequences '.format(pdb_id=pdb_id,
+                                                           chain=chain))
+
+
+
+
 
     return table
 
 
 if __name__ == '__main__':
     X = merge_tables(pdb_id='4ibw', chain='A', add_validation=True)
-
     pass

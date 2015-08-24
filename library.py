@@ -7,7 +7,7 @@ three_letter_aa = ["ALA", "CYS", "ASP", "GLU", "PHE", "GLY", "HIS", "ILE",
                    "LYS", "LEU", "MET", "ASN", "PRO", "GLN", "ARG", "SER",
                    "THR", "VAL", "TRP", "TYR", "-"]
 
-three_to_single_aa = dict(zip(three_letter_aa, single_letter_aa))
+to_single_aa = dict(zip(three_letter_aa, single_letter_aa))
 
 # taken from http://www.ensembl.org/info/about/species.html
 # on 10.08.2015
