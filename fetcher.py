@@ -64,6 +64,5 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
         result.append(destination + filename)
     return result
 
-
 if __name__ == '__main__':
-    fetch_files("3mn5", "/Users/tbrittoborges/Desktop/")
+    pass

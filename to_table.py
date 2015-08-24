@@ -15,6 +15,8 @@ from os import path
 
 from lxml import etree
 import pandas as pd
+import requests
+import time
 
 from config import defaults
 from utils import (isvalid_pdb_id, isvalid_uniprot_id, isvalid_ensembl_id,
@@ -25,6 +27,34 @@ from fetcher import fetch_files
 log = logging.getLogger(__name__)
 to_unique = lambda series: series.unique()
 
+def get_url_or_retry(url, retry_in=None, wait=1, json=False, header={},
+                     **params):
+    """
+    Fetch an url using Requests or retry fetching it if the server is
+    complaining with retry_in error.
+
+    :param url: url to be fetched as a string
+    :param wait: sleeping between tries in seconds
+    :param params: request.get kwargs.
+    :return: url content or url content in json data structure.
+    """
+    if json:
+        header.update({"Content-Type": "application/json"})
+    response = requests.get(url, headers=header, params=params)
+
+    if response.ok:
+        if json:
+            return response.json()
+        else:
+            return response.content
+    elif response.status_code in retry_in:
+        time.sleep(wait)
+        return get_url_or_retry(
+            url, retry_in, wait, json, header, **params)
+    else:
+        print(response.url)
+        log.error(response.status_code)
+        response.raise_for_status()
 
 def _dssp_to_table(filename):
     """
@@ -42,7 +72,7 @@ def _dssp_to_table(filename):
     dssp_table = pd.read_fwf(filename, skiprows=28, names=dssp_header,
                              colspecs=cols_widths, index_col=0, compression=None)
     if dssp_table.icode.duplicated().any():
-        log.error('DSSP file {} has not unique index'.format(filename))
+        log.info('DSSP file {} has not unique index'.format(filename))
     elif dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
@@ -548,7 +578,6 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
 
     cif_table = cif_table[cif_table.label_atom_id == 'CA']
 
-
     if not cif_table['auth_seq_id'].duplicated().any():
         return cif_table.set_index(['auth_seq_id'])
 
@@ -568,7 +597,6 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
 
     log.error('Failed to find unique index for {}'.format(cif_path))
     return cif_table.set_index(['auth_seq_id'])
-
 
 
 def select_sifts(pdb_id, chains=None, keep_missing=True):
@@ -623,6 +651,33 @@ def select_dssp(pdb_id, chains=None):
                             ''.format(pdb_id, ' '.join(chains)))
     return dssp_table.set_index(['icode'])
 
+
+def select_validation(pdb_id, chains=None):
+    val_path = path.join(defaults.db_pdb, pdb_id + defaults.validation_extension)
+    try:
+        val_table = _pdb_validation_to_table(val_path)
+    except IOError:
+        val_path = fetch_files(pdb_id, sources='validation',
+                               directory=defaults.db_pdb)[0]
+        val_table = _pdb_validation_to_table(val_path)
+    # if models:
+    #     if isinstance(models, str):
+    #         models = list(models)
+    #     elif isinstance(models, int):
+    #         models = list(str(models))
+    #     try:
+    #         val_table = val_table[val_table.model.isin(models)]
+    #     except AttributeError:
+    #         err = 'Structure {} has only one model, which was kept'.format
+    #         log.info(err(pdb_id))
+    if chains:
+        if isinstance(chains, str):
+            chains = [chains]
+        val_table = val_table[val_table.chain.isin(chains)]
+    if not val_table.empty:
+        val_table.columns = ["val_" + name for name in val_table.columns]
+        return val_table
+    raise ValueError('Parsing {} resulted in a empty table'.format(val_path))
 
 def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
     """
@@ -705,4 +760,6 @@ def _uniprot_variants_to_table(identifier):
 
 
 if __name__ == '__main__':
-    pass
+    X = select_validation("4ibw")
+    print(X)
+
