@@ -19,25 +19,35 @@ import requests
 import time
 
 from config import defaults
-from utils import (isvalid_pdb_id, isvalid_uniprot_id, isvalid_ensembl_id,
-                   get_url_or_retry, compare_uniprot_ensembl_sequence)
-from library import valid_ensembl_species
 from fetcher import fetch_files
 
 log = logging.getLogger(__name__)
 to_unique = lambda series: series.unique()
 
-def get_url_or_retry(url, retry_in=None, wait=1, json=False, header={},
+class IDNotValidError(Exception):
+    """
+    Base class for database related exceptions.
+    Databases: UniProt, PDB, Ensembl, etc.
+    """
+    pass
+
+
+def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None,
                      **params):
     """
     Fetch an url using Requests or retry fetching it if the server is
     complaining with retry_in error.
 
+    :param retry_in:
+    :param json:
+    :param header:
     :param url: url to be fetched as a string
     :param wait: sleeping between tries in seconds
     :param params: request.get kwargs.
     :return: url content or url content in json data structure.
     """
+    if not header:
+        header = {}
     if json:
         header.update({"Content-Type": "application/json"})
     response = requests.get(url, headers=header, params=params)
@@ -56,6 +66,23 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header={},
         log.error(response.status_code)
         response.raise_for_status()
 
+def is_valid(identifier, database=None, url=None):
+    """
+
+    :param url:
+    :param identifier:
+    :param database:
+    :return:
+    """
+    if len(identifier) < 1:
+        raise IDNotValidError
+    if not url:
+        url = getattr(defaults, 'html_' + database + '/' + identifier)
+    r = get_url_or_retry(url)
+    if not r.ok:
+        raise IDNotValidError('{} not found at {}: (url check:{}'.format(
+            identifier, database, r.url))
+
 def _dssp_to_table(filename):
     """
     Loads and parses DSSP files generating a pandas dataframe.
@@ -70,7 +97,8 @@ def _dssp_to_table(filename):
     dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi",
                    "psi")
     dssp_table = pd.read_fwf(filename, skiprows=28, names=dssp_header,
-                             colspecs=cols_widths, index_col=0, compression=None)
+                             colspecs=cols_widths, index_col=0,
+                             compression=None)
     if dssp_table.icode.duplicated().any():
         log.info('DSSP file {} has not unique index'.format(filename))
     elif dssp_table.empty:
@@ -301,7 +329,7 @@ def _pdb_uniprot_sifts_mapping_to_table(identifier):
     :return: pandas table dataframe
     """
 
-    if not isvalid_pdb_id(identifier):
+    if not is_valid(identifier, 'pdb'):
         raise ValueError(
             "{} is not a valid PDB identifier.".format(identifier))
 
@@ -325,7 +353,7 @@ def _uniprot_pdb_sifts_mapping_to_table(identifier):
     :return: pandas table dataframe
     """
 
-    if not isvalid_uniprot_id(identifier):
+    if not is_valid(identifier, database='uniprot'):
         raise ValueError(
             "{} is not a valid UniProt identifier.".format(identifier))
 
@@ -347,7 +375,7 @@ def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
     :return: pandas table dataframe
     """
 
-    if not isvalid_uniprot_id(identifier):
+    if not is_valid(identifier, database='uniprot'):
         raise ValueError(
             "{} is not a valid UniProt identifier.".format(identifier))
 
@@ -380,8 +408,8 @@ def _uniprot_ensembl_mapping_to_table(identifier, species='human'):
     :param species: Ensembl species
     :return: pandas table dataframe
     """
-
-    if not isvalid_uniprot_id(identifier):
+    from library import  valid_ensembl_species
+    if not is_valid(identifier, url=None): # FIXME
         raise ValueError(
             "{} is not a valid UniProt identifier.".format(identifier))
 
@@ -422,7 +450,7 @@ def _transcript_variants_ensembl_to_table(identifier, species='human',
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
-
+    from utils import isvalid_ensembl_id
     if not isvalid_ensembl_id(identifier, species):
         raise ValueError(
             "{} is not a valid Ensembl Accession.".format(identifier))
@@ -449,7 +477,7 @@ def _somatic_variants_ensembl_to_table(identifier, species='human',
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
-
+    from utils import isvalid_ensembl_id
     if not isvalid_ensembl_id(identifier, species):
         raise ValueError(
             "{} is not a valid Ensembl Accession.".format(identifier))
@@ -473,7 +501,7 @@ def _ensembl_variant_to_table(identifier, species='human'):
     :param species: Ensembl species
     :return: pandas table dataframe
     """
-
+    from utils import isvalid_ensembl_id
     if not isvalid_ensembl_id(identifier, species, variant=True):
         raise ValueError(
             "{} is not a valid Variation Accession.".format(identifier))
@@ -533,10 +561,11 @@ def _pdb_validation_to_table(filename, global_parameters=None):
     return df
 
 
-def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
+def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
                heteroatoms=False):
     """
     Parse the mmcif file and select the rows of interess.
+    :param lines:
     :param pdb_id:
     :param models:
     :param chains:
@@ -555,20 +584,26 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
         cif_table = _mmcif_atom_to_table(cif_path)
 
     if models:
+        if models == 'first':
+            models = cif_table.pdbx_PDB_model_num.iloc[0]
+
         if isinstance(models, int):
             models = [models]
-        try:
-            cif_table = cif_table[(cif_table.pdbx_PDB_model_num.isin(models))]
-        except AttributeError:
-            err = 'Structure {} has only one model, which was kept'.format
-            log.info(err(pdb_id))
+            try:
+                cif_table = cif_table[(
+                    cif_table.pdbx_PDB_model_num.isin(models))]
+            except AttributeError:
+                err = 'Structure {} has only one model, which was kept'.format
+                log.info(err(pdb_id))
+
 
     if chains:
         if isinstance(chains, str):
             chains = [chains]
         cif_table = cif_table[cif_table.auth_asym_id.isin(chains)]
         if cif_table.empty:
-            raise TypeError('Structure {} does not contain chains {}'.format(
+
+            raise TypeError('Structure {} does not contain {} chain'.format(
                 pdb_id, ' '.join(chains)))
 
     if lines:
@@ -581,7 +616,7 @@ def select_cif(pdb_id, models=1, chains=None, lines=('ATOM',),
     if not cif_table['auth_seq_id'].duplicated().any():
         return cif_table.set_index(['auth_seq_id'])
 
-    elif len(cif_table.label_alt_id.unique()) > 1 :
+    elif len(cif_table.label_alt_id.unique()) > 1:
         idx = cif_table.groupby(['auth_seq_id']).occupancy.idxmax()
         cif_table = cif_table.ix[idx]
         return cif_table.set_index(['auth_seq_id'])
@@ -648,12 +683,13 @@ def select_dssp(pdb_id, chains=None):
             dssp_table = dssp_table[sel]
         else:
             raise ValueError('{} structure DSSP file does not have chains {}'
-                            ''.format(pdb_id, ' '.join(chains)))
+                             ''.format(pdb_id, ' '.join(chains)))
     return dssp_table.set_index(['icode'])
 
 
 def select_validation(pdb_id, chains=None):
-    val_path = path.join(defaults.db_pdb, pdb_id + defaults.validation_extension)
+    val_path = path.join(defaults.db_pdb,
+                         pdb_id + defaults.validation_extension)
     try:
         val_table = _pdb_validation_to_table(val_path)
     except IOError:
@@ -678,6 +714,7 @@ def select_validation(pdb_id, chains=None):
         val_table.columns = ["val_" + name for name in val_table.columns]
         return val_table
     raise ValueError('Parsing {} resulted in a empty table'.format(val_path))
+
 
 def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
     """
@@ -759,7 +796,21 @@ def _uniprot_variants_to_table(identifier):
     return table
 
 
+def _fetch_sifts_best(identifier, first=False):
+    """
+    Gets the best structures from the SIFTS endpoint in the
+    PDBe api.
+
+    :param identifier: Uniprot ID
+    :param first: gets the first entry
+    :return: url content or url content in json data structure.
+    """
+
+    sifts_endpoint = "mappings/best_structures/"
+    url = defaults.api_pdbe + sifts_endpoint + str(identifier)
+    response = get_url_or_retry(url, json=True)
+    return response if not first else response[identifier][0]
+
 if __name__ == '__main__':
     X = select_validation("4ibw")
     print(X)
-
