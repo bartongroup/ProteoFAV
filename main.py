@@ -4,23 +4,26 @@ import logging
 
 import numpy as np
 
-from to_table import select_cif, select_dssp, select_sifts, select_validation
-from utils import _fetch_sifts_best
+from to_table import (select_cif, select_dssp, select_sifts, select_validation,
+                      _fetch_sifts_best)
 from library import to_single_aa
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
 logging.basicConfig(level=9,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
-#  TODO add Nick's logger.
 
-def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1,
+
+#  TODO add Nick's logger.
+def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                  validate=True, add_validation=False):
     """
     Merges the output from multiple to table method.
     if no pdb_id uses sifts_best_structure
     if no chain uses first
     or if use_all_chains use all chains of the pdb_id
+    :param add_validation:
+    :param add_validation:
     :param uniprot_id: (opt) given a finds the best structure for a uniprot
     identifier.
     :param pdb_id: (opt) Alternatively parser
@@ -59,11 +62,11 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1,
         cif_seq = cif_table.auth_comp_id.apply(to_single_aa.get)
         dssp_table.reset_index(inplace=True)
         dssp_seq = "".join(dssp_table.aa)
-        i = dssp_seq.find("".join(cif_seq)) # TODO assert there a single match
-        dssp_table = dssp_table.iloc[i : i + len(cif_seq), : ]
+        i = dssp_seq.find("".join(cif_seq))  # TODO assert there a single match
+        dssp_table = dssp_table.iloc[i: i + len(cif_seq), :]
         dssp_table.set_index(['icode'], inplace=True)
     # Correction for some dssp index parsed as object instead int
-    if dssp_table.index.dtype == 'O' and cif_table.index.dtype != 'O' :
+    if dssp_table.index.dtype == 'O' and cif_table.index.dtype != 'O':
         dssp_table.index = dssp_table.index.astype(np.int)
 
     table = cif_table.join(dssp_table)
@@ -82,10 +85,10 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1,
         table['cif_aa'] = table['label_comp_id']
         # mask nans since they are not comparable
         mask = table['dssp_aa'].isnull()
-        mask = mask | table['cif_aa'].isnull() # TODO This might be wrong
+        mask = mask | table['cif_aa'].isnull()  # TODO This might be wrong
         # From three letter to sigle letters or X if not a standard aa
         table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get,
-                                                      args='X')
+                                                args='X')
         # Check if the sequences are the same
         if not (table['dssp_aa'][~mask] == table['cif_aa'][~mask]).all():
             raise ValueError('{pdb_id}|{chain} Cif and DSSP files have diffent'
@@ -97,7 +100,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1,
                                              :, 'PDB_dbResNum'].astype(np.int)
         sifts_table.set_index(['PDB_dbResNum'], inplace=True)
     except ValueError:
-    # Means it has alpha numeric insertion code, use something else as index
+        # Means it has alpha numeric insertion code, use something else as index
         sifts_table.loc[:, 'REF_dbResNum'] = sifts_table.loc[
                                              :, 'REF_dbResNum'].astype(np.int)
         sifts_table.set_index(['REF_dbResNum'], inplace=True)
@@ -138,13 +141,9 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model=1,
                              'different sequences '.format(pdb_id=pdb_id,
                                                            chain=chain))
 
-
-
-
-
     return table
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='4ibw', chain='A', add_validation=True)
+    X = merge_tables(pdb_id='4o45', chain='A', add_validation=True)
     pass
