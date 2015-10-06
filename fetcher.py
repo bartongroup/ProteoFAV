@@ -5,16 +5,16 @@ Created on 11:41 24/07/15 2015
 Small routine to fetch data files from their respective repositries.
 """
 import logging
-
-__author__ = 'tbrittoborges'
-
 import gzip
 import shutil
 import os
 import urllib
 from config import defaults
+import socket
 
+socket.setdefaulttimeout(15)
 log = logging.getLogger(__name__)
+__author__ = 'tbrittoborges'
 
 
 def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
@@ -58,11 +58,13 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
             raise
         if filename.endswith('.gz'):
             with gzip.open(destination + filename, 'rb') as input_f, \
-                open(destination + filename.replace('.gz', ''), 'wb') as output_f:
+                    open(destination + filename.replace('.gz', ''),
+                         'wb') as output_f:
                 shutil.copyfileobj(input_f, output_f)
-                filename =  filename.replace('.gz', '')
+                filename = filename.replace('.gz', '')
         result.append(destination + filename)
     return result
+
 
 if __name__ == '__main__':
     pass
