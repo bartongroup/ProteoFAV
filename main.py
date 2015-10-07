@@ -62,7 +62,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         cif_seq = cif_table.auth_comp_id.apply(to_single_aa.get)
         dssp_table.reset_index(inplace=True)
         dssp_seq = "".join(dssp_table.aa)
-        i = dssp_seq.find("".join(cif_seq))  # TODO assert there a single match
+        i = dssp_seq.find("".join(cif_seq))  # TODO assert there a single match?
         dssp_table = dssp_table.iloc[i: i + len(cif_seq), :]
         dssp_table.set_index(['icode'], inplace=True)
     # Correction for some dssp index parsed as object instead int
@@ -85,7 +85,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         table['cif_aa'] = table['label_comp_id']
         # mask nans since they are not comparable
         mask = table['dssp_aa'].isnull()
-        mask = mask | table['cif_aa'].isnull()  # TODO This might be wrong
+        mask = mask | table['cif_aa'].isnull()
+        mask = mask | (table.dssp_aa == 'X') # TODO TEST THIS BEFORE DEPLOYMENT
         # From three letter to sigle letters or X if not a standard aa
         table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get,
                                                 args='X')
@@ -145,5 +146,5 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='4o45', chain='A', add_validation=True)
-    pass
+    X = merge_tables(pdb_id='2pm7', chain='D')
+    X.head()
