@@ -1,8 +1,8 @@
 [Global]
-db_pdb = /Users/tbrittoborges/homedir/NOBACK/pdb_files/
-db_mmcif = /Users/tbrittoborges/homedir/NOBACK/pdb_files/
-db_sifts = /Users/tbrittoborges/homedir/NOBACK/pdb_files/
-db_dssp = /Users/tbrittoborges/homedir/NOBACK/pdb_files/
+db_pdb = /Users/smacgowan/Downloads
+db_mmcif = /Users/smacgowan/Downloads
+db_sifts = /Users/smacgowan/Downloads
+db_dssp = /Users/smacgowan/Downloads
 db_uniprot = ...
 db_output = ...
 db_biolip = ...
