@@ -79,11 +79,13 @@ def is_valid(identifier, database=None, url=None):
     if len(identifier) < 1:
         raise IDNotValidError
     if not url:
-        url = getattr(defaults, 'html_' + database + '/' + identifier)
-    r = get_url_or_retry(url)
+        url = getattr(defaults, 'http_' + database) + identifier
+    r = requests.get(url)
     if not r.ok:
         raise IDNotValidError('{} not found at {}: (url check:{}'.format(
             identifier, database, r.url))
+    else:
+        return True
 
 def _dssp_to_table(filename):
     """
