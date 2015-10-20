@@ -23,6 +23,7 @@ from fetcher import fetch_files
 
 from utils import isvalid_uniprot_id
 from utils import isvalid_ensembl_id
+from utils import compare_uniprot_ensembl_sequence
 
 log = logging.getLogger(__name__)
 to_unique = lambda series: series.unique()
