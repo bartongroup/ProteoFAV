@@ -22,6 +22,7 @@ from config import defaults
 from fetcher import fetch_files
 
 from utils import isvalid_uniprot_id
+from utils import isvalid_ensembl_id
 
 log = logging.getLogger(__name__)
 to_unique = lambda series: series.unique()
