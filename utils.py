@@ -193,7 +193,7 @@ def isvalid_ensembl_id(identifier, species='human', variant=False):
     try:
         if identifier != '':
             url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
-            data = get_url_or_retry(url, json=True, )
+            data = requests.get(url)
             if 'error' not in data:
                 return True
             else:
