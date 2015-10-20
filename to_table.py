@@ -66,6 +66,7 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None,
         log.error(response.status_code)
         response.raise_for_status()
 
+
 def is_valid(identifier, database=None, url=None):
     """
 
@@ -100,7 +101,7 @@ def _dssp_to_table(filename):
                              colspecs=cols_widths, index_col=0,
                              compression=None)
     if dssp_table.icode.duplicated().any():
-        log.info('DSSP file {} has not unique index'.format(filename))
+        log.info('DSSP file {} has non-unique index'.format(filename))
     elif dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
@@ -140,6 +141,22 @@ def _mmcif_atom_to_table(filename, delimiter=None):
                              low_memory=False,
                              names=_header_mmcif,
                              compression=None)
+
+
+def _generic_mmcif_field_to_table(filename, fieldname='_pdbx_poly_seq_scheme.'):
+    header = []
+    lines = []
+    with open(filename) as handle:
+        for line in handle:
+            if line.startswith(fieldname):
+                break
+        while line.startswith(fieldname):
+            header.append(line.split('.')[1].rstrip())
+            line = handle.next()
+        while not line.startswith('#'):
+            lines.append(line.split())
+            line = handle.next()
+    return pd.DataFrame(lines, columns=header)
 
 
 def _sifts_residues_to_table(filename, cols=None):
