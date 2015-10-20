@@ -414,7 +414,7 @@ def _uniprot_ensembl_mapping_to_table(identifier, species='human'):
     :return: pandas table dataframe
     """
     from library import  valid_ensembl_species
-    if not is_valid(identifier, url=None): # FIXME
+    if not is_valid(identifier, database="uniprot"):
         raise ValueError(
             "{} is not a valid UniProt identifier.".format(identifier))
 
