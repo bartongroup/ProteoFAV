@@ -768,7 +768,7 @@ def _uniprot_variants_to_table(identifier):
     ens = _uniprot_ensembl_mapping_to_table(identifier, species=org)
 
     # get the ensembl protein ids
-    ens_pros = list(ens.loc[0, 'TRANSLATION'])
+    ens_pros = [ens.loc[0, 'TRANSLATION'], ]
 
     # get the sequence of the ensembl protein
     usable_indexes = []
