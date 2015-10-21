@@ -822,3 +822,40 @@ def _fetch_sifts_best(identifier, first=False):
 if __name__ == '__main__':
     X = select_validation("4ibw")
     print(X)
+
+
+def _variant_characteristics_from_identifiers(variant_ids):
+    """
+    Retrieves variant info. from the variation endpoint.
+
+    :param variant_id:
+    :param list_of_variant_ids:
+    :return:
+    """
+
+    # POST if given a list of ids
+    if isinstance(variant_ids, list):
+        # Remove any nans from the list
+        variant_ids = [i for i in variant_ids if not str(i) == 'nan']
+
+        ensembl_endpoint = "variation/homo_sapiens"
+        url = defaults.api_ensembl + ensembl_endpoint
+        headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
+        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") + ', "phenotypes" : 1 }' ##FIXME
+        data = data.replace("'", "\"")
+        r = requests.post(url, headers=headers, data=data)
+
+    # GET if given single id
+    if isinstance(variant_ids, str):
+        ensembl_endpoint = "variation/homo_sapiens/" + variant_ids
+        headers={ "Content-Type" : "application/json" }
+        params={"phenotypes" : 1}
+        url = defaults.api_ensembl + ensembl_endpoint
+        r = requests.get(url, headers=headers, params=params)
+
+    if not r.ok:
+      r.raise_for_status()
+      sys.exit()
+
+    decoded = r.json()
+    return decoded
