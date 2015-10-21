@@ -824,7 +824,7 @@ if __name__ == '__main__':
     print(X)
 
 
-def _variant_characteristics_from_identifiers(variant_ids):
+def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
     """
     Retrieves variant info. from the variation endpoint.
 
@@ -839,6 +839,8 @@ def _variant_characteristics_from_identifiers(variant_ids):
         variant_ids = [i for i in variant_ids if not str(i) == 'nan']
 
         ensembl_endpoint = "variation/homo_sapiens"
+        if use_vep:
+            ensembl_endpoint = "vep/human/id"
         url = defaults.api_ensembl + ensembl_endpoint
         headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
         data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") + ', "phenotypes" : 1 }' ##FIXME
@@ -848,6 +850,8 @@ def _variant_characteristics_from_identifiers(variant_ids):
     # GET if given single id
     if isinstance(variant_ids, str):
         ensembl_endpoint = "variation/homo_sapiens/" + variant_ids
+        if use_vep:
+            ensembl_endpoint = "vep/human/id/"  + variant_ids
         headers={ "Content-Type" : "application/json" }
         params={"phenotypes" : 1}
         url = defaults.api_ensembl + ensembl_endpoint
