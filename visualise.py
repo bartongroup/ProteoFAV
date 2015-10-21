@@ -21,7 +21,8 @@ def visualise(pdb_id):
     # Get the variants
     for chain in chains:
         residue_mappings = merge_tables(pdb_id=pdb_id, chain=chain, add_variants=True)
-        start = residue_mappings.start
+        has_variant = residue_mappings.start.notnull()
+        start = residue_mappings.PDB_dbResNum[has_variant]
         variant_residues = list(start[pd.notnull(start)].astype(int).astype(str).unique())
 
         # Create the selection
