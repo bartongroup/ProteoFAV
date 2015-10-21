@@ -144,10 +144,14 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                                                            chain=chain))
 
     if add_variants:
-        structure_uniprot = table.UniProt_dbAccessionId.unique()[1]
+        structure_uniprots = table.UniProt_dbAccessionId
+        structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
+        structure_uniprot = structure_uniprots.unique()[0]
         variants_table = _uniprot_variants_to_table(structure_uniprot)
         variants_table[["start"]] = variants_table[["start"]].astype(float)
         table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
+
+        table = table.reset_index()
         table = pd.merge(table, variants_table, left_on = "UniProt_dbResNum", right_on = "start", how = "left")
 
     return table
