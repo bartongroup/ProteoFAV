@@ -32,4 +32,5 @@ def visualise(pdb_id):
 
         # Apply some styles
         pymol.cmd.show("sticks", name)
+        pymol.util.cnc(name)
 
