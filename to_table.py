@@ -12,11 +12,11 @@ for better error handling. Both levels are convered by test cases.
 import logging
 from StringIO import StringIO
 from os import path
+import time
 
 from lxml import etree
 import pandas as pd
 import requests
-import time
 
 from config import defaults
 from fetcher import fetch_files
@@ -84,6 +84,7 @@ def is_valid(identifier, database=None, url=None):
         raise IDNotValidError('{} not found at {}: (url check:{}'.format(
             identifier, database, r.url))
 
+
 def _dssp_to_table(filename):
     """
     Loads and parses DSSP files generating a pandas dataframe.
@@ -141,22 +142,6 @@ def _mmcif_atom_to_table(filename, delimiter=None):
                              low_memory=False,
                              names=_header_mmcif,
                              compression=None)
-
-
-def _generic_mmcif_field_to_table(filename, fieldname='_pdbx_poly_seq_scheme.'):
-    header = []
-    lines = []
-    with open(filename) as handle:
-        for line in handle:
-            if line.startswith(fieldname):
-                break
-        while line.startswith(fieldname):
-            header.append(line.split('.')[1].rstrip())
-            line = handle.next()
-        while not line.startswith('#'):
-            lines.append(line.split())
-            line = handle.next()
-    return pd.DataFrame(lines, columns=header)
 
 
 def _sifts_residues_to_table(filename, cols=None):
