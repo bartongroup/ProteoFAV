@@ -860,6 +860,54 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
     decoded = r.json()
     return decoded
 
+
+def _fetch_uniprot_variants(uniprot, format='tab'):
+    """
+
+    :param uniprot:
+    :return:
+    """
+    url = defaults.http_uniprot + '?query=accession:' + uniprot
+    url = url + '&format=' + format
+    url = url + '&columns=feature(NATURAL+VARIANT)'
+
+    r = requests.get(url)
+    if not r.ok:
+      r.raise_for_status()
+      sys.exit()
+
+    # Complicated parsing
+    records = r.content.replace('Natural variant\n', '').split('.; ')
+    variants = [ ['resi', 'resn', 'mut', 'disease'] ]
+    for record in records:
+
+        # Position and mutation
+        entry = record.split(' ')
+        resi = entry[1]
+        resn = entry[3]
+        if resn == 'Missing':
+            mut = 'NA'
+        else:
+            mut = entry[5]
+
+        # Label disease if specified
+        try:
+            ind = entry.index('(in')
+            if entry[ind + 1].startswith('dbSNP'):
+                disease = "Not present"
+            else:
+                disease = entry[ind + 1].replace(';', '').replace(').', '')
+        except ValueError:
+            disease = "Not found"
+
+        variants.append([resi, resn, mut, disease])
+
+    table = pd.DataFrame(variants, columns=variants.pop(0))
+    table.resi = table.resi.astype('float')
+
+    return table
+
+
 if __name__ == '__main__':
     X = select_validation("4ibw")
     print(X)
