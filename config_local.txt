@@ -1,12 +1,12 @@
 [Global]
-db_pdb = /Users/smacgowan/Downloads
-db_mmcif = /Users/smacgowan/Downloads
-db_sifts = /Users/smacgowan/Downloads
-db_dssp = /Users/smacgowan/Downloads
-db_uniprot = /Users/smacgowan/Downloads
-db_output = /Users/smacgowan/Downloads
-db_biolip = /Users/smacgowan/Downloads
-db_cath = /Users/smacgowan/Downloads
+db_pdb = /Users/smacgowan/Downloads/
+db_mmcif = /Users/smacgowan/Downloads/
+db_sifts = /Users/smacgowan/Downloads/
+db_dssp = /Users/smacgowan/Downloads/
+db_uniprot = /Users/smacgowan/Downloads/
+db_output = /Users/smacgowan/Downloads//
+db_biolip = /Users/smacgowan/Download/
+db_cath = /Users/smacgowan/Downloads/
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/

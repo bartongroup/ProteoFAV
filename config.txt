@@ -1,8 +1,8 @@
 [Global]
-db_pdb = /Users/smacgowan/Downloads
-db_mmcif = /Users/smacgowan/Downloads
-db_sifts = /Users/smacgowan/Downloads
-db_dssp = /Users/smacgowan/Downloads
+db_pdb = /Users/smacgowan/Downloads/
+db_mmcif = /Users/smacgowan/Downloads/
+db_sifts = /Users/smacgowan/Downloads/
+db_dssp = /Users/smacgowan/Downloads/
 db_uniprot = ...
 db_output = ...
 db_biolip = ...
