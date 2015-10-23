@@ -20,10 +20,26 @@ def visualise(pdb_id, assembly=False, group_by_trait=False, use_ensembl=False, u
     :return:
     """
 
-    if group_by_trait:
-        if not use_ensembl != use_uniprot and not any([use_ensembl, use_uniprot]):
-            raise TypeError("One of the following must be True if grouping by traits:"
-                            "use_ensembl or use_uniprot")
+
+    def build_selection(chain, group, in_group, mapped_variants):
+        start = mapped_variants.PDB_dbResNum[in_group]
+        variant_residues = list(start[pd.notnull(start)].astype(int).astype(str).unique())
+        # sanitisation of the selection name for pymol is important or the name existence test will always
+        # fail and we'll over write entries from previous chains!
+        name = group + '_vars'
+        name = re.sub("[\W\d]+", "_", name.strip())
+        if name not in pymol.cmd.get_names('selections'):
+            pymol.cmd.select(name, 'none')
+        selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues) + ' or ' + name
+        # name = group + '_vars'
+        print name, selection
+        pymol.cmd.select(name, selection)
+
+        if group_by_trait:
+            if not use_ensembl != use_uniprot and not any([use_ensembl, use_uniprot]):
+                raise TypeError("One of the following must be True if grouping by traits:"
+                                "use_ensembl or use_uniprot")
+
 
     # Open the PDB with pymol
     pymol.finish_launching()
@@ -76,21 +92,8 @@ def visualise(pdb_id, assembly=False, group_by_trait=False, use_ensembl=False, u
 
                 # Get the relevant residues and create selection for current group
                 in_group = [ True if x in variants_in_group else False for x in residue_mappings.id_y ]
-                start = residue_mappings.PDB_dbResNum[in_group]
-                variant_residues = list(start[pd.notnull(start)].astype(int).astype(str).unique())
 
-                # sanitisation of the selection name for pymol is important or the name existence test will always
-                # fail and we'll over write entries from previous chains!
-                name = group + '_vars'
-                name = re.sub("[\W\d]+", "_", name.strip())
-
-                if name not in pymol.cmd.get_names('selections'):
-                    pymol.cmd.select(name, 'none')
-
-                selection = '(chain ' + chain + ' and resi ' + '+'.join(variant_residues) + ') or ' + name
-                #name = group + '_vars'
-                print name, selection
-                pymol.cmd.select(name, selection)
+                build_selection(chain, group, in_group, residue_mappings)
 
         if group_by_trait and use_uniprot:
 
@@ -110,16 +113,4 @@ def visualise(pdb_id, assembly=False, group_by_trait=False, use_ensembl=False, u
             for group in groups:
                 in_group = mapped.disease == group
 
-                # The following is copied from the above with `residue_mappings` change to `mapped`
-                start = mapped.PDB_dbResNum[in_group]
-                variant_residues = list(start[pd.notnull(start)].astype(int).astype(str).unique())
-
-                name = group.replace(' ', '_') + '_vars'
-                if name not in pymol.cmd.get_names('selections'):
-                    pymol.cmd.select(name, 'none')
-
-                selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues) + ' or ' + name
-                #name = group + '_vars'
-                print name, selection
-                pymol.cmd.select(name, selection)
-                # END of copy
+                build_selection(chain, group, in_group, mapped)
