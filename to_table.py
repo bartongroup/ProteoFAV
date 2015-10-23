@@ -819,10 +819,6 @@ def _fetch_sifts_best(identifier, first=False):
     response = get_url_or_retry(url, json=True)
     return response if not first else response[identifier][0]
 
-if __name__ == '__main__':
-    X = select_validation("4ibw")
-    print(X)
-
 
 def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
     """
@@ -863,3 +859,7 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
 
     decoded = r.json()
     return decoded
+
+if __name__ == '__main__':
+    X = select_validation("4ibw")
+    print(X)
