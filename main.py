@@ -14,7 +14,6 @@ logging.basicConfig(level=9,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
 
 
-#  TODO add Nick's logger.
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                  validate=True, add_validation=False):
     """
@@ -52,6 +51,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain,
                                                                uniprot_id))
     cif_table = select_cif(pdb_id, chains=chain, models=model)
+    cif_table['auth_seq_id'] = cif_table.index
     try:
         dssp_table = select_dssp(pdb_id, chains=chain)
     except ValueError:
@@ -62,7 +62,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         cif_seq = cif_table.auth_comp_id.apply(to_single_aa.get)
         dssp_table.reset_index(inplace=True)
         dssp_seq = "".join(dssp_table.aa)
-        i = dssp_seq.find("".join(cif_seq))  # TODO assert there a single match?
+        i = dssp_seq.find("".join(cif_seq))
         dssp_table = dssp_table.iloc[i: i + len(cif_seq), :]
         dssp_table.set_index(['icode'], inplace=True)
     # Correction for some dssp index parsed as object instead int
@@ -76,17 +76,17 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             raise ValueError('Empty DSSP sequence cannot be validated')
         if not table['label_comp_id'].any():
             raise ValueError('Empty Cif sequence cannot be validated')
-        # Fill all missing values with gaps
         table['dssp_aa'] = table.aa
-        # DSSP treat disulfite bonding cyteines as lower-cased pairs
-        lower_cased_aa = table.dssp_aa.str.islower()
+        # DSSP disulfite bonding cyteines as lower-cased pairs
+        # mask nans since they are not comparable
+        mask = table['dssp_aa'].isnull()
+        lower_cased_aa = table[~mask].dssp_aa.str.islower()
         if lower_cased_aa.any():
             table.loc[lower_cased_aa, 'dssp_aa'] = "C"
         table['cif_aa'] = table['label_comp_id']
-        # mask nans since they are not comparable
-        mask = table['dssp_aa'].isnull()
         mask = mask | table['cif_aa'].isnull()
-        mask = mask | (table.dssp_aa == 'X') # TODO TEST THIS BEFORE DEPLOYMENT
+        # mask the X in DSSP since you can't compare those
+        mask = mask | (table.dssp_aa == 'X')
         # From three letter to sigle letters or X if not a standard aa
         table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get,
                                                 args='X')
