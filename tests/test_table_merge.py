@@ -150,6 +150,14 @@ class TestTableMeger(unittest.TestCase):
         self.data = self.merge_table(pdb_id='4why', chain='K', validate=True)
         self.assertFalse(self.data.empty)
 
+    def test_merge_2pm7_D_missing_residue_DSSP(self):
+        self.data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
+        self.assertFalse(self.data.empty)
+
+    def test_merge_4myi_A_fail(self):
+        self.data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
+        self.assertRaises(ValueError)  # DSSP and Cif unalligned
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMeger)
     unittest.TextTestRunner(verbosity=2).run(suite)
