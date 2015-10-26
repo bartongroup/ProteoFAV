@@ -25,6 +25,8 @@ from utils import isvalid_uniprot_id
 from utils import isvalid_ensembl_id
 from utils import compare_uniprot_ensembl_sequence
 
+from utils import map_sequence_indexes, apply_sequence_index_map
+
 log = logging.getLogger(__name__)
 to_unique = lambda series: series.unique()
 
@@ -775,15 +777,22 @@ def _uniprot_variants_to_table(identifier):
 
     # get the sequence of the ensembl protein
     usable_indexes = []
+    aligned_indexes = []
+    seq_maps = []
     for i, enspro in enumerate(ens_pros):
         seq_pro = _sequence_from_ensembl_protein(enspro, org, protein=True)
 
         # validate if the sequence of uniprot and ensembl protein matches
         if compare_uniprot_ensembl_sequence(seq, seq_pro, permissive=False):
             usable_indexes.append(i)
+            seq_maps.append(None)
         else:
-            message = "Sequences don't match! skipping... {}".format(enspro)
+            message = "Sequences don't match! Will attempt alignment... {}".format(enspro)
             logging.warning(message)
+            aligned_indexes.append(i)
+            ensembl_to_uniprot = map_sequence_indexes(seq_pro, seq)
+            seq_maps.append(ensembl_to_uniprot)
+
 
     # get the variants for the ensembl proteins that match the uniprot
     tables = []
@@ -797,6 +806,21 @@ def _uniprot_variants_to_table(identifier):
 
         tables.append(vars[['translation', 'id', 'start', 'residues']])
         tables.append(muts[['translation', 'id', 'start', 'residues']])
+
+    for i in aligned_indexes:
+        vars = _transcript_variants_ensembl_to_table(ens_pros[i], org,
+                                                     missense=True)
+        muts = _somatic_variants_ensembl_to_table(ens_pros[i], org,
+                                                  missense=True)
+
+        var_table = vars[['translation', 'id', 'start', 'residues']]
+        mut_table = muts[['translation', 'id', 'start', 'residues']]
+
+        var_table.start = apply_sequence_index_map(var_table.start, seq_maps[i])
+        mut_table.start = apply_sequence_index_map(mut_table.start, seq_maps[i])
+
+        tables.append(var_table)
+        tables.append(mut_table)
 
     # to_unique = lambda series: series.unique()
     # return table.groupby('start').apply(to_unique)
