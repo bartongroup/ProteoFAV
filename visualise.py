@@ -35,11 +35,6 @@ def visualise(pdb_id, assembly=False, group_by_trait=False, use_ensembl=False, u
         print name, selection
         pymol.cmd.select(name, selection)
 
-        if group_by_trait:
-            if not use_ensembl != use_uniprot and not any([use_ensembl, use_uniprot]):
-                raise TypeError("One of the following must be True if grouping by traits:"
-                                "use_ensembl or use_uniprot")
-
 
     # Open the PDB with pymol
     pymol.finish_launching()
