@@ -10,7 +10,7 @@ from to_table import _variant_characteristics_from_identifiers
 from to_table import _fetch_uniprot_variants
 
 
-def visualise(pdb_id, assembly=False, group_by_trait=False, use_ensembl=False, use_uniprot=False):
+def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
     """
 
     :param pdb_id:
@@ -68,7 +68,7 @@ def visualise(pdb_id, assembly=False, group_by_trait=False, use_ensembl=False, u
         pymol.util.cnc(name)
 
 
-        if group_by_trait and use_ensembl:
+        if use_ensembl:
             variant_ids = residue_mappings.id_y[has_variant]
 
             # For now, need to iterate with GET requests until POST can retrieve phenotypes
@@ -94,7 +94,7 @@ def visualise(pdb_id, assembly=False, group_by_trait=False, use_ensembl=False, u
 
                 build_selection(chain, group, in_group, residue_mappings)
 
-        if group_by_trait and use_uniprot:
+        if use_uniprot:
 
             # Extract first uniprot (REFACTOR THIS, also `merge_tables`)
             structure_uniprots = residue_mappings.UniProt_dbAccessionId
