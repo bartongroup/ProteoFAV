@@ -75,8 +75,12 @@ def visualise(pdb_id, assembly=False, group_by_trait=False, use_ensembl=False, u
             traits = []
             for variant in variant_ids:
                 phenos = _variant_characteristics_from_identifiers(str(variant))['phenotypes']
-                for entry in phenos:
-                    traits.append([variant, entry['trait']])
+                if phenos == []:
+                    traits.append([variant, 'No_Available_Phenotype'])
+                else:
+                    for entry in phenos:
+                        trait = entry['trait']
+                        traits.append([variant, trait])
 
             groups = set(zip(*traits)[1])
             for group in groups:
