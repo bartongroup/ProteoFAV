@@ -1,5 +1,8 @@
 __author__ = 'smacgowan'
 
+
+import logging
+
 import pymol
 import pandas as pd
 import re
@@ -32,7 +35,8 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
             pymol.cmd.select(name, 'none')
         selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues) + ' or ' + name
         # name = group + '_vars'
-        print name, selection
+        message = "Creating PyMol selection {} from '{}'".format(name, selection)
+        logging.debug(message)
         pymol.cmd.select(name, selection)
 
 
@@ -61,6 +65,8 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         # Create the selection
         selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues)
         name = 'chain_' + chain + '_vars'
+        message = "Creating PyMol selection {} from '{}'".format(name, selection)
+        logging.debug(message)
         pymol.cmd.select(name, selection)
 
         # Apply some styles
