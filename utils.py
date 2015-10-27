@@ -273,7 +273,7 @@ def map_sequence_indexes(from_seq, to_seq):
 
 
     # Build the global alignment
-    alignments = pairwise2.align.globalxx(from_seq, to_seq)
+    alignments = pairwise2.align.localxx(from_seq, to_seq)
     scores = zip(*alignments)[2]
     message = "Alignment score(s): {}".format(scores)
     logging.info(message)
