@@ -816,8 +816,17 @@ def _uniprot_variants_to_table(identifier):
         var_table = vars[['translation', 'id', 'start', 'residues']]
         mut_table = muts[['translation', 'id', 'start', 'residues']]
 
+        initial_var_starts = str(list(var_table.start))
+        initial_mut_starts = str(list(mut_table.start))
+
         var_table.start = apply_sequence_index_map(var_table.start, seq_maps[i])
         mut_table.start = apply_sequence_index_map(mut_table.start, seq_maps[i])
+
+        message = "EnsEMBL transcript variants for {} were translated to UniProt residue numbers.".format(ens_pros[i])
+        logging.debug(message)
+        logging.debug("Mapping:" + str(seq_maps[i]))
+        logging.debug("EnsEMBL indexes:" + initial_var_starts)
+        logging.debug("UniProt indexes:" + str(list(var_table.start)))
 
         tables.append(var_table)
         tables.append(mut_table)
