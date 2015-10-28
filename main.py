@@ -80,7 +80,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         # DSSP disulfite bonding cyteines as lower-cased pairs
         # mask nans since they are not comparable
         mask = table['dssp_aa'].isnull()
-        lower_cased_aa = table[~mask].dssp_aa.str.islower()
+        dssp_aa = table.dssp_aa.fillna('X')
+        lower_cased_aa = dssp_aa.str.islower()
         if lower_cased_aa.any():
             table.loc[lower_cased_aa, 'dssp_aa'] = "C"
         table['cif_aa'] = table['label_comp_id']
@@ -102,10 +103,11 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         sifts_table.set_index(['PDB_dbResNum'], inplace=True)
     except ValueError:
         # Means it has alpha numeric insertion code, use something else as index
-        sifts_table.loc[:, 'REF_dbResNum'] = sifts_table.loc[
-                                             :, 'REF_dbResNum'].astype(np.int)
-        sifts_table.set_index(['REF_dbResNum'], inplace=True)
-        table.set_index(['pdbe_label_seq_id'], inplace=True)
+        sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+        table.pdbx_PDB_ins_code = table.pdbx_PDB_ins_code.replace('?', '')
+        table['index'] = table.auth_seq_id.astype(str) + \
+                         table.pdbx_PDB_ins_code
+        table.set_index(['index'], inplace=True)
 
     # Sift data in used as base to keep not observed residues info.
     table = sifts_table.join(table)
@@ -146,5 +148,5 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='2pm7', chain='D')
+    X = merge_tables(pdb_id='4b9d', chain='A')
     X.head()
