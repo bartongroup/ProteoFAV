@@ -1,13 +1,10 @@
 [Global]
-db_pdb = pdb
-db_mmcif = mmcfi
-db_sifts = sifts
-db_dssp = dssp
-db_uniprot = uniprot
-db_output = results
-db_biolip = biolip
-db_cath = cath
-temp = /tmp/
+db_pdb = ...
+db_mmcif = ...
+db_sifts = ...
+db_dssp = ...
+db_uniprot = ...
+db_cath = ...
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/
