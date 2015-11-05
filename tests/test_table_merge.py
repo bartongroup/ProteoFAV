@@ -7,25 +7,22 @@ __version__ = "1.0"
 import logging
 from os import path
 import unittest
-
+from mock import patch
 from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_table
-
 from main import merge_tables
 from config import Defaults
 
 log = logging.getLogger(__name__)
 
+defaults = Defaults("config.txt")
 
+
+@patch("to_table.defaults", defaults)
 class TestTableMeger(unittest.TestCase):
     """Test table merging methodsthe DSSP parser methods."""
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.defaults = Defaults("config.txt")
-        self.defaults.db_mmcif = path.join(path.dirname(__file__), "CIF")
-        self.defaults.db_mmcif = path.join(path.dirname(__file__), "CIF")
-        self.defaults.db_dssp = path.join(path.dirname(__file__), "DSSP")
-        self.defaults.db_sifts = path.join(path.dirname(__file__), "SIFTS")
 
         self.cif_to_table = _mmcif_atom_to_table
         self.sifts_to_table = _sifts_residues_to_table
@@ -77,12 +74,11 @@ class TestTableMeger(unittest.TestCase):
                    'occupancy': 'unique', 'B_iso_or_equiv': 'unique',
                    'id': 'unique'}
         self.cif = self.cif.groupby('auth_seq_id').agg(groupby)
-        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + self.cif.shape[1] +2
+        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + self.cif.shape[1] + 2
         # self.assertEqual(data.shape[1], n_cols,
         #                  "Incorrect number of cols in camIV table in CA mode:"
         #                  "{} instead {}.".format(data.shape[1], n_cols))
         # this test is very instable to number of columsn return by cif TODO
-
 
     def test_camIV_list_mode(self):
         pass
@@ -104,7 +100,7 @@ class TestTableMeger(unittest.TestCase):
         """
         Test case in a structure with alt locations.
         """
-        #(81, 'P63094', 51, '3c16', 'C', 52, ValueError("invalid literal for long() with base 10: '63A'",))
+        # (81, 'P63094', 51, '3c16', 'C', 52, ValueError("invalid literal for long() with base 10: '63A'",))
         data = self.merge_table(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
         self.sifts_path = path.join(path.dirname(__file__), "SIFTS/4ibw.xml")
@@ -157,6 +153,7 @@ class TestTableMeger(unittest.TestCase):
     def test_merge_4myi_A_fail(self):
         self.data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
         self.assertRaises(ValueError)  # DSSP and Cif unalligned
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMeger)

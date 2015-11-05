@@ -1,12 +1,12 @@
 [Global]
-db_pdb = /Users/smacgowan/Downloads/
-db_mmcif = /Users/smacgowan/Downloads/
-db_sifts = /Users/smacgowan/Downloads/
-db_dssp = /Users/smacgowan/Downloads/
-db_uniprot = ...
-db_output = ...
-db_biolip = ...
-db_cath = ...
+db_pdb = pdb
+db_mmcif = mmcfi
+db_sifts = sifts
+db_dssp = dssp
+db_uniprot = uniprot
+db_output = results
+db_biolip = biolip
+db_cath = cath
 temp = /tmp/
 
 [Addresses]

@@ -13,20 +13,19 @@ import logging
 from StringIO import StringIO
 from os import path
 import time
-
+import sys
 from lxml import etree
 import pandas as pd
 import requests
-
 from config import defaults
 from fetcher import fetch_files
-
 from utils import isvalid_uniprot_id
 from utils import isvalid_ensembl_id
 from utils import compare_uniprot_ensembl_sequence
 
 log = logging.getLogger(__name__)
 to_unique = lambda series: series.unique()
+
 
 class IDNotValidError(Exception):
     """
@@ -416,7 +415,7 @@ def _uniprot_ensembl_mapping_to_table(identifier, species='human'):
     :param species: Ensembl species
     :return: pandas table dataframe
     """
-    from library import  valid_ensembl_species
+    from library import valid_ensembl_species
     if not is_valid(identifier, database="uniprot"):
         raise ValueError(
             "{} is not a valid UniProt identifier.".format(identifier))
@@ -604,13 +603,11 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
                 err = 'Structure {} has only one model, which was kept'.format
                 log.info(err(pdb_id))
 
-
     if chains:
         if isinstance(chains, str):
             chains = [chains]
         cif_table = cif_table[cif_table.auth_asym_id.isin(chains)]
         if cif_table.empty:
-
             raise TypeError('Structure {} does not contain {} chain'.format(
                 pdb_id, ' '.join(chains)))
 
@@ -840,8 +837,8 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
         if use_vep:
             ensembl_endpoint = "vep/human/id"
         url = defaults.api_ensembl + ensembl_endpoint
-        headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
-        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") + ', "phenotypes" : 1 }' ##FIXME
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") + ', "phenotypes" : 1 }'  ##FIXME
         data = data.replace("'", "\"")
         r = requests.post(url, headers=headers, data=data)
 
@@ -849,15 +846,15 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
     if isinstance(variant_ids, str):
         ensembl_endpoint = "variation/homo_sapiens/" + variant_ids
         if use_vep:
-            ensembl_endpoint = "vep/human/id/"  + variant_ids
-        headers={ "Content-Type" : "application/json" }
-        params={"phenotypes" : 1}
+            ensembl_endpoint = "vep/human/id/" + variant_ids
+        headers = {"Content-Type": "application/json"}
+        params = {"phenotypes": 1}
         url = defaults.api_ensembl + ensembl_endpoint
         r = requests.get(url, headers=headers, params=params)
 
     if not r.ok:
-      r.raise_for_status()
-      sys.exit()
+        r.raise_for_status()
+        sys.exit()
 
     decoded = r.json()
     return decoded
@@ -875,12 +872,12 @@ def _fetch_uniprot_variants(uniprot, format='tab'):
 
     r = requests.get(url)
     if not r.ok:
-      r.raise_for_status()
-      sys.exit()
+        r.raise_for_status()
+        sys.exit()
 
     # Complicated parsing
     records = r.content.replace('Natural variant\n', '').split('.; ')
-    variants = [ ['resi', 'resn', 'mut', 'disease'] ]
+    variants = [['resi', 'resn', 'mut', 'disease']]
     for record in records:
 
         # Position and mutation
