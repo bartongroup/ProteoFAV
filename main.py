@@ -3,9 +3,10 @@
 import logging
 
 import numpy as np
+import pandas as pd
 
 from to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                      _fetch_sifts_best)
+                      _fetch_sifts_best, _uniprot_variants_to_table)
 from library import to_single_aa
 
 log = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ logging.basicConfig(level=9,
 
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
-                 validate=True, add_validation=False):
+                 validate=True, add_validation=False, add_variants=False):
     """
     Merges the output from multiple to table method.
     if no pdb_id uses sifts_best_structure
@@ -143,6 +144,17 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             raise ValueError('{pdb_id}|{chain} Cif and validation files have '
                              'different sequences '.format(pdb_id=pdb_id,
                                                            chain=chain))
+
+    if add_variants:
+        structure_uniprots = table.UniProt_dbAccessionId
+        structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
+        structure_uniprot = structure_uniprots.unique()[0]
+        variants_table = _uniprot_variants_to_table(structure_uniprot)
+        variants_table[["start"]] = variants_table[["start"]].astype(float)
+        table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
+
+        table = table.reset_index()
+        table = pd.merge(table, variants_table, left_on = "UniProt_dbResNum", right_on = "start", how = "left")
 
     return table
 

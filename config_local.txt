@@ -1,12 +1,12 @@
 [Global]
-db_pdb = /Users/tbrittoborges/Downloads
-db_mmcif = /Users/tbrittoborges/Downloads
-db_sifts = /Users/tbrittoborges/Downloads
-db_dssp = /Users/tbrittoborges/Downloads
-db_uniprot = /Users/tbrittoborges/Downloads
-db_output = /Users/tbrittoborges/Downloads
-db_biolip = /Users/tbrittoborges/Downloads
-db_cath = /Users/tbrittoborges/Downloads
+db_pdb = /Users/smacgowan/Downloads/
+db_mmcif = /Users/smacgowan/Downloads/
+db_sifts = /Users/smacgowan/Downloads/
+db_dssp = /Users/smacgowan/Downloads/
+db_uniprot = /Users/smacgowan/Downloads/
+db_output = /Users/smacgowan/Downloads//
+db_biolip = /Users/smacgowan/Download/
+db_cath = /Users/smacgowan/Downloads/
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/
@@ -28,7 +28,7 @@ dssp_fetch = ftp://ftp.cmbi.ru.nl//pub/molbio/data/dssp/
 sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 
 [Variables]
-contact_email = tbrittoborges@dundee.ac.uk
+contact_email = smacgowan@dundee.ac.uk
 cif_extension = _updated.cif
 dssp_extension = .dssp
 sifts_extension = .xml.gz

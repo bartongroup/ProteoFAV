@@ -17,6 +17,8 @@ from library import valid_ensembl_species_variation
 
 from config import defaults
 
+from Bio import pairwise2
+
 log = logging.getLogger(__name__)
 
 class IDNotValidError(Exception):
@@ -193,7 +195,7 @@ def isvalid_ensembl_id(identifier, species='human', variant=False):
     try:
         if identifier != '':
             url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
-            data = get_url_or_retry(url, json=True, )
+            data = requests.get(url)
             if 'error' not in data:
                 return True
             else:
@@ -248,6 +250,61 @@ def compare_uniprot_ensembl_sequence(sequence1, sequence2,
                 if i != j:
                     return False
             return True
+
+
+def map_sequence_indexes(from_seq, to_seq):
+    """
+
+    :param from_seq:
+    :param to_seq:
+    :return:
+    """
+
+    def aligned_seq_indexes(seq):
+        seq_indexes = []
+        i = 0
+        for res in seq:
+            if res != '-':
+                seq_indexes.append(i)
+                i += 1
+            else:
+                seq_indexes.append('-')
+        return seq_indexes
+
+
+    # Build the global alignment
+    alignments = pairwise2.align.localxx(from_seq, to_seq)
+    scores = zip(*alignments)[2]
+    message = "Alignment score(s): {}".format(scores)
+    logging.info(message)
+    message = "First alignment:\n" + pairwise2.format_alignment(*alignments[0])
+    logging.debug(message)
+    if len(scores) > 1:
+        message = "Found multiple alignments, arbitrarily proceeding with the first."
+        logging.warning(message)
+
+    # Create the index mapping
+    seq_one = aligned_seq_indexes(alignments[0][0])
+    seq_two = aligned_seq_indexes(alignments[0][1])
+    map = dict(zip(seq_one, seq_two))
+
+    return map
+
+
+def apply_sequence_index_map(indexes, map):
+    """
+
+    :param indexes:
+    :return:
+    """
+
+    # Perform the raw translation
+    translation = []
+    for i in indexes:
+        equivalent = map.get(i)
+        translation.append(equivalent)
+
+    return translation
 
 
 if __name__ == '__main__':

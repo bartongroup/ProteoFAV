@@ -21,6 +21,10 @@ import requests
 from config import defaults
 from fetcher import fetch_files
 
+from utils import isvalid_uniprot_id
+from utils import isvalid_ensembl_id
+from utils import compare_uniprot_ensembl_sequence
+
 log = logging.getLogger(__name__)
 to_unique = lambda series: series.unique()
 
@@ -78,11 +82,13 @@ def is_valid(identifier, database=None, url=None):
     if len(identifier) < 1:
         raise IDNotValidError
     if not url:
-        url = getattr(defaults, 'html_' + database + '/' + identifier)
-    r = get_url_or_retry(url)
+        url = getattr(defaults, 'http_' + database) + identifier
+    r = requests.get(url)
     if not r.ok:
         raise IDNotValidError('{} not found at {}: (url check:{}'.format(
             identifier, database, r.url))
+    else:
+        return True
 
 
 def _dssp_to_table(filename):
@@ -411,7 +417,7 @@ def _uniprot_ensembl_mapping_to_table(identifier, species='human'):
     :return: pandas table dataframe
     """
     from library import  valid_ensembl_species
-    if not is_valid(identifier, url=None): # FIXME
+    if not is_valid(identifier, database="uniprot"):
         raise ValueError(
             "{} is not a valid UniProt identifier.".format(identifier))
 
@@ -765,7 +771,9 @@ def _uniprot_variants_to_table(identifier):
     ens = _uniprot_ensembl_mapping_to_table(identifier, species=org)
 
     # get the ensembl protein ids
-    ens_pros = list(ens.loc[0, 'TRANSLATION'])
+    ens_pros = ens.loc[0, 'TRANSLATION']
+    if not isinstance(ens_pros, list):
+        ens_pros = [ens_pros, ]
 
     # get the sequence of the ensembl protein
     usable_indexes = []
@@ -812,6 +820,95 @@ def _fetch_sifts_best(identifier, first=False):
     url = defaults.api_pdbe + sifts_endpoint + str(identifier)
     response = get_url_or_retry(url, json=True)
     return response if not first else response[identifier][0]
+
+
+def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
+    """
+    Retrieves variant info. from the variation endpoint.
+
+    :param variant_id:
+    :param list_of_variant_ids:
+    :return:
+    """
+
+    # POST if given a list of ids
+    if isinstance(variant_ids, list):
+        # Remove any nans from the list
+        variant_ids = [i for i in variant_ids if not str(i) == 'nan']
+
+        ensembl_endpoint = "variation/homo_sapiens"
+        if use_vep:
+            ensembl_endpoint = "vep/human/id"
+        url = defaults.api_ensembl + ensembl_endpoint
+        headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
+        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") + ', "phenotypes" : 1 }' ##FIXME
+        data = data.replace("'", "\"")
+        r = requests.post(url, headers=headers, data=data)
+
+    # GET if given single id
+    if isinstance(variant_ids, str):
+        ensembl_endpoint = "variation/homo_sapiens/" + variant_ids
+        if use_vep:
+            ensembl_endpoint = "vep/human/id/"  + variant_ids
+        headers={ "Content-Type" : "application/json" }
+        params={"phenotypes" : 1}
+        url = defaults.api_ensembl + ensembl_endpoint
+        r = requests.get(url, headers=headers, params=params)
+
+    if not r.ok:
+      r.raise_for_status()
+      sys.exit()
+
+    decoded = r.json()
+    return decoded
+
+
+def _fetch_uniprot_variants(uniprot, format='tab'):
+    """
+
+    :param uniprot:
+    :return:
+    """
+    url = defaults.http_uniprot + '?query=accession:' + uniprot
+    url = url + '&format=' + format
+    url = url + '&columns=feature(NATURAL+VARIANT)'
+
+    r = requests.get(url)
+    if not r.ok:
+      r.raise_for_status()
+      sys.exit()
+
+    # Complicated parsing
+    records = r.content.replace('Natural variant\n', '').split('.; ')
+    variants = [ ['resi', 'resn', 'mut', 'disease'] ]
+    for record in records:
+
+        # Position and mutation
+        entry = record.split(' ')
+        resi = entry[1]
+        resn = entry[3]
+        if resn == 'Missing':
+            mut = 'NA'
+        else:
+            mut = entry[5]
+
+        # Label disease if specified
+        try:
+            ind = entry.index('(in')
+            if entry[ind + 1].startswith('dbSNP'):
+                disease = "Not present"
+            else:
+                disease = entry[ind + 1].replace(';', '').replace(').', '')
+        except ValueError:
+            disease = "Not found"
+
+        variants.append([resi, resn, mut, disease])
+
+    table = pd.DataFrame(variants, columns=variants.pop(0))
+    table.resi = table.resi.astype('float')
+
+    return table
+
 
 if __name__ == '__main__':
     X = select_validation("4ibw")
