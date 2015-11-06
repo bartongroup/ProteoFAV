@@ -47,12 +47,7 @@ class Defaults(object):
         for section in self.__config.sections():
             for var_name, var_par in self.__config.items(section):
                 if var_par == "...":
-                    var_par = self._manual_filling(var_name)
+                    logger.warning("Update the config.txt file...")
                 setattr(self, var_name, var_par)
-
-    def _manual_filling(self, var_name):
-        """Offers user to write in config.txt"""
-        # raise NotImplementedError
-        return "..."
 
 defaults = Defaults()

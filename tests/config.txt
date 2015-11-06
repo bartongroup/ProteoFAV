@@ -1,0 +1,4 @@
+[Global]
+db_mmcif = CIF/
+db_sifts = SIFTS/
+db_dssp = DSSP/
