@@ -806,7 +806,7 @@ def _uniprot_variants_to_table(identifier):
     return table
 
 
-def _fetch_sifts_best(identifier, first=False):
+def sifts_best(identifier, first=False):
     """
     Gets the best structures from the SIFTS endpoint in the
     PDBe api.
