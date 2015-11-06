@@ -6,13 +6,15 @@ import numpy as np
 import pandas as pd
 
 from to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                      _fetch_sifts_best, _uniprot_variants_to_table)
+                      sifts_best, _uniprot_variants_to_table)
 from library import to_single_aa
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
 logging.basicConfig(level=9,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
+
+__all__ = ["merge_tables"]
 
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
@@ -37,14 +39,14 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                         "uniprot_id or pdb_id")
 
     if not pdb_id:
-        best_pdb = _fetch_sifts_best(uniprot_id, first=True)
+        best_pdb = sifts_best(uniprot_id, first=True)
         pdb_id = best_pdb['pdb_id']
         chain = best_pdb['chain_id']
         log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain,
                                                                uniprot_id))
     if not chain:
         try:
-            best_pdb = _fetch_sifts_best(uniprot_id)[pdb_id]
+            best_pdb = sifts_best(uniprot_id)[pdb_id]
         except KeyError:
             err = "Structure {} not found in best structures".format
             log.error(err(pdb_id))
