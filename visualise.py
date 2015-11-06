@@ -1,16 +1,16 @@
+# coding=utf-8
+
 __author__ = 'smacgowan'
 
-
 import logging
-
-import pymol
-import pandas as pd
 import re
 
-from main import merge_tables
+import pandas as pd
+import pymol
 
-from to_table import _variant_characteristics_from_identifiers
+from main import merge_tables
 from to_table import _fetch_uniprot_variants
+from to_table import _variant_characteristics_from_identifiers
 
 
 def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
@@ -23,22 +23,32 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
     :return:
     """
 
-
     def build_selection(chain, group, in_group, mapped_variants):
+        """
+
+        :param chain:
+        :param group:
+        :param in_group:
+        :param mapped_variants:
+        :return:
+        """
         start = mapped_variants.PDB_dbResNum[in_group]
-        variant_residues = list(start[pd.notnull(start)].astype(int).astype(str).unique())
-        # sanitisation of the selection name for pymol is important or the name existence test will always
-        # fail and we'll over write entries from previous chains!
+        variant_residues = list(
+            start[pd.notnull(start)].astype(int).astype(str).unique())
+        # sanitisation of the selection name for pymol is important
+        # or the name existence test will always fail and we'll over write
+        # entries from previous chains!
         name = group + '_vars'
         name = re.sub("[\W\d]+", "_", name.strip())
         if name not in pymol.cmd.get_names('selections'):
             pymol.cmd.select(name, 'none')
-        selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues) + ' or ' + name
+        selection = 'chain ' + chain + ' and resi ' + '+'.join(
+            variant_residues) + ' or ' + name
         # name = group + '_vars'
-        message = "Creating PyMol selection {} from '{}'".format(name, selection)
+        message = "Creating PyMol selection {} from '{}'".format(name,
+                                                                 selection)
         logging.debug(message)
         pymol.cmd.select(name, selection)
-
 
     # Open the PDB with pymol
     pymol.finish_launching()
@@ -57,15 +67,18 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
     for chain in chains:
 
         # Get the variants for this chain
-        residue_mappings = merge_tables(pdb_id=pdb_id, chain=chain, add_variants=True)
+        residue_mappings = merge_tables(pdb_id=pdb_id, chain=chain,
+                                        add_variants=True)
         has_variant = residue_mappings.start.notnull()
         start = residue_mappings.PDB_dbResNum[has_variant]
-        variant_residues = list(start[pd.notnull(start)].astype(int).astype(str).unique())
+        variant_residues = list(
+            start[pd.notnull(start)].astype(int).astype(str).unique())
 
         # Create the selection
         selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues)
         name = 'chain_' + chain + '_vars'
-        message = "Creating PyMol selection {} from '{}'".format(name, selection)
+        message = "Creating PyMol selection {} from '{}'".format(name,
+                                                                 selection)
         logging.debug(message)
         pymol.cmd.select(name, selection)
 
@@ -73,14 +86,16 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         pymol.cmd.show("lines", name)
         pymol.util.cnc(name)
 
-
         if use_ensembl:
             variant_ids = residue_mappings.id_y[has_variant]
 
-            # For now, need to iterate with GET requests until POST can retrieve phenotypes
+            # For now, need to iterate with GET requests
+            # until POST can retrieve phenotypes
             traits = []
             for variant in variant_ids:
-                phenos = _variant_characteristics_from_identifiers(str(variant))['phenotypes']
+                phenos = \
+                    _variant_characteristics_from_identifiers(str(variant))[
+                        'phenotypes']
                 if phenos == []:
                     traits.append([variant, 'No_Available_Phenotype'])
                 else:
@@ -95,8 +110,10 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
                     if trait == group:
                         variants_in_group.append(id)
 
-                # Get the relevant residues and create selection for current group
-                in_group = [ True if x in variants_in_group else False for x in residue_mappings.id_y ]
+                # Get the relevant residues and create
+                # selection for current group
+                in_group = [True if x in variants_in_group else False for x in
+                            residue_mappings.id_y]
 
                 build_selection(chain, group, in_group, residue_mappings)
 
@@ -104,14 +121,18 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
 
             # Extract first uniprot (REFACTOR THIS, also `merge_tables`)
             structure_uniprots = residue_mappings.UniProt_dbAccessionId
-            structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
+            structure_uniprots = structure_uniprots[
+                structure_uniprots.notnull()]
             structure_uniprot = structure_uniprots.unique()[0]
 
             # Get the variants and merge onto residue_mappings
             uniprot_vars = _fetch_uniprot_variants(structure_uniprot)
+            # Not ideal as UniProt_dbResNum  is not unique but is fit for
+            # purpose
+
             mapped = pd.merge(residue_mappings, uniprot_vars,
-                              left_on='UniProt_dbResNum', right_on='resi',
-                              how='inner') # Not ideal as UniProt_dbResNum is not unique but is fit for purpose
+                              left_on='UniProt_dbResNum',
+                              right_on='resi')
 
             # Create a selection for each trait
             groups = mapped.disease.unique()
