@@ -6,18 +6,23 @@ import numpy as np
 import scipy.cluster.hierarchy as hac
 import matplotlib.pyplot as plt
 
+from main import merge_tables
+from to_table import _fetch_uniprot_variants
+import pandas as pd
+from scipy.spatial.distance import pdist
 
-a = np.array([[0.1,   2.5],
-              [1.5,   .4 ],
-              [0.3,   1  ],
-              [1  ,   .8 ],
-              [0.5,   0  ],
-              [0  ,   0.5],
-              [0.5,   0.5],
-              [2.7,   2  ],
-              [2.2,   3.1],
-              [3  ,   2  ],
-              [3.2,   1.3]])
+# Fetch raw data
+structure = merge_tables(pdb_id='3tnu', chain='A')  ## Don't add variants yet!
+variants = _fetch_uniprot_variants('P02533')
+# Merge these
+structure.UniProt_dbResNum = structure.UniProt_dbResNum.astype('float')
+merged = pd.merge(structure, variants, on='UniProt_dbResNum')
+# Build array distance matrix
+merged_real = merged[np.isfinite(merged['Cartn_x'])]
+xyz = np.array([merged_real.Cartn_x, merged_real.Cartn_y, merged_real.Cartn_z])
+xyz = np.transpose(xyz)
+d = pdist(xyz)
+a = d
 
 fig, axes23 = plt.subplots(2, 3)
 
@@ -43,8 +48,8 @@ for method, axes in zip(['single', 'complete'], axes23):
 
     for part, ax in zip([part1, part2], axes[1:]):
         for cluster in set(part):
-            ax.scatter(a[part == cluster, 0], a[part == cluster, 1],
-                       color=clr[cluster])
+            ax.scatter(xyz[part == cluster, 0], xyz[part == cluster, 1],
+                       color=clr[cluster - 1])
 
     m = '\n(method: {})'.format(method)
     plt.setp(axes[0], title='Screeplot{}'.format(m), xlabel='partition',
