@@ -11,6 +11,7 @@ from to_table import _fetch_uniprot_variants
 import pandas as pd
 from scipy.spatial.distance import pdist
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial import ConvexHull, Delaunay
 
 # Fetch raw data
 structure = merge_tables(pdb_id='3tnu', chain='A')  ## Don't add variants yet!
@@ -57,6 +58,13 @@ for method, axes, offset in zip(['single', 'complete'], axes23, [0, 3]):
         for cluster in set(part):
             ax.scatter(xyz[part == cluster, 0], xyz[part == cluster, 1],
                        xyz[part == cluster, 2], c=clr[cluster - 1])
+            # Compute and plot the Point Cloud Complex Hull
+            points = xyz[part == cluster]
+            if len(points) >= 4:
+                hull = ConvexHull(points)
+                for simplex in hull.simplices:
+                    ax.plot_wireframe(points[simplex, 0], points[simplex, 1],
+                                      points[simplex, 2], color=clr[cluster - 1])
 
     m = '\n(method: {})'.format(method)
     plt.setp(axes[0], title='Screeplot{}'.format(m), xlabel='partition',
