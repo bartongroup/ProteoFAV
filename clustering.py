@@ -58,6 +58,8 @@ for method, axes, offset in zip(['single', 'complete'], axes23, [0, 3]):
              ylabel='{}\ncluster distance'.format(m))
     plt.setp(axes[1], title='{} Clusters'.format(num_clust1))
     plt.setp(axes[2], title='{} Clusters'.format(num_clust2))
+    axes[1].axis('off')
+    axes[2].axis('off')
 
 plt.tight_layout()
 plt.show()
