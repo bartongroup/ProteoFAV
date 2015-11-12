@@ -877,7 +877,7 @@ def _fetch_uniprot_variants(uniprot, format='tab'):
 
     # Complicated parsing
     records = r.content.replace('Natural variant\n', '').split('.; ')
-    variants = [['resi', 'resn', 'mut', 'disease']]
+    variants = [['UniProt_dbResNum', 'resn', 'mut', 'disease']]
     for record in records:
 
         # Position and mutation
@@ -902,7 +902,7 @@ def _fetch_uniprot_variants(uniprot, format='tab'):
         variants.append([resi, resn, mut, disease])
 
     table = pd.DataFrame(variants, columns=variants.pop(0))
-    table.resi = table.resi.astype('float')
+    table.UniProt_dbResNum = table.UniProt_dbResNum.astype('float')
 
     return table
 
