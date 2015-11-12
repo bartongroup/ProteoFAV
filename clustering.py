@@ -41,6 +41,11 @@ for method, axes, offset in zip(['single', 'complete'], axes23, [0, 3]):
 
     axes[0].text(num_clust1, z[::-1, 2][num_clust1-1], 'possible\n<- knee point')
 
+    if num_clust1 > 12:
+        num_clust1 = 12
+    if num_clust2 > 12:
+        num_clust2 = 12
+
     part1 = hac.fcluster(z, num_clust1, 'maxclust')
     part2 = hac.fcluster(z, num_clust2, 'maxclust')
 
