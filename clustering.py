@@ -32,7 +32,20 @@ def variant_distances(pdb_id, chain, uniprot_id):
     return pdist(xyz), xyz
 
 
-def linkage_cluster(a, methods=['single', 'complete'], expand_factor=2, inflate_factor=2, max_loop=50 , mult_factor=1):
+def invert_distances(d, method, threshold=float('inf')):
+    if method == 'max_minus_d':
+        d[d > threshold] = max(d)
+        s = max(d) - d
+    if method == 'reciprocal':
+        try:
+            s = 1. / d
+        except ZeroDivisionError:
+            d = d + 1
+            s = 1. / d
+    return s
+
+
+def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_d', threshold=float('inf')):
 
     linkages = []
     for method in methods:
@@ -40,6 +53,7 @@ def linkage_cluster(a, methods=['single', 'complete'], expand_factor=2, inflate_
             z = hac.linkage(a, method=method)
             linkages.append([z, method])
         else:
+            a = invert_distances(a, invert_method, threshold)
             M, clusters = mcl(squareform(a), max_loop=50)
             linkages.append([[M, clusters], method])
 
