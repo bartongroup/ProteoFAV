@@ -45,7 +45,8 @@ def _dssp_to_table(filename):
                              colspecs=cols_widths, index_col=0,
                              compression=None)
     if dssp_table.icode.duplicated().any():
-        log.info('DSSP file {} has non-unique index'.format(filename))
+        # TODO look this further
+        log.info('DSSP file {} has not unique index'.format(filename))
     elif dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
