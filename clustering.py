@@ -120,6 +120,13 @@ if __name__ == '__main__':
     links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points)
 
+    links = []
+    for inf_fact in [2., 6.]:
+        d[d > 10] = max(d)
+        d = max(d) - d
+        links.append([mcl(squareform(d), max_loop=50, inflate_factor=inf_fact), 'mcl_IF=' + str(inf_fact)])
+    compare_clustering(links, points)
+
     d, points = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
     links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points)
