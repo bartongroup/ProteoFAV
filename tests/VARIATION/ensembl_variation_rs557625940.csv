@@ -1,0 +1,2 @@
+,MAF,allele_string,ambiguity,ancestral_allele,assembly_name,coord_system,end,evidence,location,minor_allele,most_severe_consequence,name,seq_region_name,source,start,strand,synonyms,var_class
+0,0.000199681,G/A,R,G,GRCh38,chromosome,39175331,[u'1000Genomes'],19:39175331-39175331,A,missense_variant,rs557625940,19,Variants (including SNPs and indels) imported from dbSNP,39175331,1,[],SNP
