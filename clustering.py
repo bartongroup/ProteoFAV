@@ -56,7 +56,7 @@ def compare_clustering(linkages, xyz):
     for z, method, axes, offset in zip(links, methods, axes23, offsets):
 
         # Plotting
-        if method != 'mcl':
+        if not method.startswith('mcl'):
             axes[0].plot(range(1, len(z)+1), z[::-1, 2])
             knee = np.diff(z[::-1, 2], 2)
             axes[0].plot(range(2, len(z)), knee)
