@@ -12,7 +12,6 @@ for better error handling. Both levels are convered by test cases.
 import logging
 from StringIO import StringIO
 from os import path
-import time
 import sys
 from lxml import etree
 import pandas as pd
