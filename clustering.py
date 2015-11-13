@@ -28,11 +28,23 @@ def variant_distances(pdb_id, chain, uniprot_id):
     return pdist(xyz), xyz
 
 
-def linkage_cluster(a, xyz):
-    fig, axes23 = plt.subplots(2, 3)
+def linkage_cluster(a, methods=['single', 'complete']):
 
-    for method, axes, offset in zip(['single', 'complete'], axes23, [0, 3]):
+    linkages = []
+    for method in methods:
         z = hac.linkage(a, method=method)
+        linkages.append([z, method])
+    return linkages
+
+
+def compare_clustering(linkages, xyz):
+
+    nrows = len(linkages)
+    fig, axes23 = plt.subplots(nrows, 3)
+    links, methods = zip(*linkages)
+    offsets = [0, 3, 6, 9][:nrows]
+
+    for z, method, axes, offset in zip(links, methods, axes23, offsets):
 
         # Plotting
         axes[0].plot(range(1, len(z)+1), z[::-1, 2])
@@ -57,7 +69,7 @@ def linkage_cluster(a, xyz):
         '#8900CC' ,'#FF0000' ,'#FF9900' ,'#FFFF00' ,'#00CC01' ,'#0055CC']
 
         for part, i in zip([part1, part2], [2, 3]):
-            ax = fig.add_subplot(2, 3, i + offset, projection='3d')
+            ax = fig.add_subplot(nrows, 3, i + offset, projection='3d')
             for cluster in set(part):
                 ax.scatter(xyz[part == cluster, 0], xyz[part == cluster, 1],
                            xyz[part == cluster, 2], c=clr[cluster - 1])
@@ -86,4 +98,9 @@ def linkage_cluster(a, xyz):
 
 if __name__ == '__main__':
     d, points = variant_distances(pdb_id='3ecr', chain='A', uniprot_id='P08397')
-    linkage_cluster(d, points)
+    links = linkage_cluster(d, methods=['single', 'complete', 'average'])
+    compare_clustering(links, points)
+
+    d, points = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
+    links = linkage_cluster(d)
+    compare_clustering(links, points)
