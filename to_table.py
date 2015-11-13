@@ -19,75 +19,13 @@ import pandas as pd
 import requests
 from config import defaults
 from fetcher import fetch_files
-from utils import isvalid_uniprot_id
-from utils import isvalid_ensembl_id
+from utils import is_valid
+from utils import is_valid_ensembl_id
 from utils import compare_uniprot_ensembl_sequence
+from utils import get_url_or_retry
 
 log = logging.getLogger(__name__)
 to_unique = lambda series: series.unique()
-
-
-class IDNotValidError(Exception):
-    """
-    Base class for database related exceptions.
-    Databases: UniProt, PDB, Ensembl, etc.
-    """
-    pass
-
-
-def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None,
-                     **params):
-    """
-    Fetch an url using Requests or retry fetching it if the server is
-    complaining with retry_in error.
-
-    :param retry_in:
-    :param json:
-    :param header:
-    :param url: url to be fetched as a string
-    :param wait: sleeping between tries in seconds
-    :param params: request.get kwargs.
-    :return: url content or url content in json data structure.
-    """
-    if not header:
-        header = {}
-    if json:
-        header.update({"Content-Type": "application/json"})
-    response = requests.get(url, headers=header, params=params)
-
-    if response.ok:
-        if json:
-            return response.json()
-        else:
-            return response.content
-    elif response.status_code in retry_in:
-        time.sleep(wait)
-        return get_url_or_retry(
-            url, retry_in, wait, json, header, **params)
-    else:
-        print(response.url)
-        log.error(response.status_code)
-        response.raise_for_status()
-
-
-def is_valid(identifier, database=None, url=None):
-    """
-
-    :param url:
-    :param identifier:
-    :param database:
-    :return:
-    """
-    if len(identifier) < 1:
-        raise IDNotValidError
-    if not url:
-        url = getattr(defaults, 'http_' + database) + identifier
-    r = requests.get(url)
-    if not r.ok:
-        raise IDNotValidError('{} not found at {}: (url check:{}'.format(
-            identifier, database, r.url))
-    else:
-        return True
 
 
 def _dssp_to_table(filename):
@@ -336,7 +274,7 @@ def _pdb_uniprot_sifts_mapping_to_table(identifier):
     :return: pandas table dataframe
     """
 
-    if not is_valid(identifier, 'pdb'):
+    if not is_valid(identifier, 'pdbe'):
         raise ValueError(
             "{} is not a valid PDB identifier.".format(identifier))
 
@@ -457,8 +395,8 @@ def _transcript_variants_ensembl_to_table(identifier, species='human',
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
-    from utils import isvalid_ensembl_id
-    if not isvalid_ensembl_id(identifier, species):
+
+    if not is_valid_ensembl_id(identifier, species):
         raise ValueError(
             "{} is not a valid Ensembl Accession.".format(identifier))
 
@@ -484,8 +422,8 @@ def _somatic_variants_ensembl_to_table(identifier, species='human',
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
-    from utils import isvalid_ensembl_id
-    if not isvalid_ensembl_id(identifier, species):
+
+    if not is_valid_ensembl_id(identifier, species):
         raise ValueError(
             "{} is not a valid Ensembl Accession.".format(identifier))
 
@@ -508,8 +446,8 @@ def _ensembl_variant_to_table(identifier, species='human'):
     :param species: Ensembl species
     :return: pandas table dataframe
     """
-    from utils import isvalid_ensembl_id
-    if not isvalid_ensembl_id(identifier, species, variant=True):
+
+    if not is_valid_ensembl_id(identifier, species, variant=True):
         raise ValueError(
             "{} is not a valid Variation Accession.".format(identifier))
 
@@ -730,7 +668,7 @@ def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
     :return: sequence
     """
 
-    if not isvalid_ensembl_id(identifier, species):
+    if not is_valid_ensembl_id(identifier, species):
         raise ValueError(
             "{} is not a valid Ensembl Accession.".format(identifier))
 
@@ -755,7 +693,7 @@ def _uniprot_variants_to_table(identifier):
     """
 
     # get organism and sequence for the provided ientifier
-    if not isvalid_uniprot_id(identifier):
+    if not is_valid(identifier, 'uniprot'):
         raise ValueError(
             "{} is not a valid UniProt Id.".format(identifier))
 
@@ -791,6 +729,8 @@ def _uniprot_variants_to_table(identifier):
                                                      missense=True)
         muts = _somatic_variants_ensembl_to_table(ens_pros[i], org,
                                                   missense=True)
+
+        # TODO: From ... TO... mutated residues as different columns in the table
         # tables.append(vars[['translation', 'id', 'start', 'residues']].groupby('start').agg(to_unique))
         # tables.append(muts[['translation', 'id', 'start', 'residues']].groupby('start').agg(to_unique))
 
