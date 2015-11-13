@@ -10,6 +10,8 @@ import sys
 import random
 import time
 from datetime import datetime
+import numpy as np
+import colorsys
 
 import requests
 
@@ -305,6 +307,17 @@ def apply_sequence_index_map(indexes, map):
         translation.append(equivalent)
 
     return translation
+
+
+def _get_colors(num_colors):
+    # See http://stackoverflow.com/questions/470690/how-to-automatically-generate-n-distinct-colors
+    colors=[]
+    for i in np.arange(0., 360., 360. / num_colors):
+        hue = i/360.
+        lightness = (50 + np.random.rand() * 10)/100.
+        saturation = (90 + np.random.rand() * 10)/100.
+        colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
+    return colors
 
 
 if __name__ == '__main__':

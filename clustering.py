@@ -15,6 +15,7 @@ from scipy.spatial import ConvexHull
 from scipy.spatial.qhull import QhullError
 from mcl.mcl_clustering import mcl
 from time import strftime
+from utils import _get_colors
 
 
 def variant_distances(pdb_id, chain, uniprot_id):
@@ -66,11 +67,6 @@ def compare_clustering(linkages, xyz):
 
             axes[0].text(num_clust1, z[::-1, 2][num_clust1-1], 'possible\n<- knee point')
 
-            if num_clust1 > 12:
-                num_clust1 = 12
-            if num_clust2 > 12:
-                num_clust2 = 12
-
             part1 = hac.fcluster(z, num_clust1, 'maxclust')
             part2 = hac.fcluster(z, num_clust2, 'maxclust')
 
@@ -85,8 +81,7 @@ def compare_clustering(linkages, xyz):
             part2 = part1
             num_clust2 = num_clust1
 
-        clr = ['#2200CC' ,'#D9007E' ,'#FF6600' ,'#FFCC00' ,'#ACE600' ,'#0099CC' ,
-        '#8900CC' ,'#FF0000' ,'#FF9900' ,'#FFFF00' ,'#00CC01' ,'#0055CC']
+        clr = _get_colors(max([num_clust1, num_clust2]))
 
         for part, i in zip([part1, part2], [2, 3]):
             ax = fig.add_subplot(nrows, 3, i + offset, projection='3d')
