@@ -26,7 +26,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_id_error5 = []
         self.uniprot_info = _uniprot_info_to_table
         self.uniprot_ensembl = _uniprot_ensembl_mapping_to_table
-        self.isvalid = utils.isvalid_uniprot_id
+        self.isvalid = utils.is_valid
 
     def tearDown(self):
         """Remove testing framework."""
@@ -44,12 +44,12 @@ class TestUNIPROTParser(unittest.TestCase):
         """
         Testing input of invalid UniProt identifiers.
         """
-        self.assertTrue(self.isvalid(self.uniprot_id))
-        self.assertFalse(self.isvalid(self.uniprot_id_error1))
-        self.assertFalse(self.isvalid(self.uniprot_id_error2))
-        self.assertFalse(self.isvalid(self.uniprot_id_error3))
-        self.assertFalse(self.isvalid(self.uniprot_id_error4))
-        self.assertFalse(self.isvalid(self.uniprot_id_error5))
+        self.assertTrue(self.isvalid(self.uniprot_id, 'uniprot'))
+        self.assertFalse(self.isvalid(self.uniprot_id_error1, 'uniprot'))
+        self.assertFalse(self.isvalid(self.uniprot_id_error2, 'uniprot'))
+        self.assertFalse(self.isvalid(self.uniprot_id_error3, 'uniprot'))
+        self.assertFalse(self.isvalid(self.uniprot_id_error4, 'uniprot'))
+        self.assertFalse(self.isvalid(self.uniprot_id_error5, 'uniprot'))
 
     def test_to_table_uniprot_info(self):
         """

@@ -17,7 +17,7 @@ from to_table import _mmcif_atom_to_table
 from mmcif_tools import _mmcif_info_to_dict
 from mmcif_tools import _bio_unit_to_table
 
-from utils import isvalid_pdb_id
+from utils import is_valid
 
 
 class TestMMCIFParser(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.pdb_id_error3 = 1234
         self.pdb_id_error4 = ()
         self.pdb_id_error5 = []
-        self.isvalid = isvalid_pdb_id
+        self.isvalid = is_valid
 
     def tearDown(self):
         """Remove testing framework."""
@@ -61,12 +61,12 @@ class TestMMCIFParser(unittest.TestCase):
         Testing input of invalid UniProt identifiers.
         """
         #
-        self.assertTrue(self.isvalid(self.pdb_id))
-        self.assertFalse(self.isvalid(self.pdb_id_error1))
-        self.assertFalse(self.isvalid(self.pdb_id_error2))
-        self.assertFalse(self.isvalid(self.pdb_id_error3))
-        self.assertFalse(self.isvalid(self.pdb_id_error4))
-        self.assertFalse(self.isvalid(self.pdb_id_error5))
+        self.assertTrue(self.isvalid(self.pdb_id, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error1, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error2, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error3, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error4, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error5, database='pdbe'))
 
     def test_atom_to_table_mmcif(self):
         """
