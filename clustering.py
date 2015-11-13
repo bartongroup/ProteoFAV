@@ -11,7 +11,7 @@ from to_table import _fetch_uniprot_variants
 import pandas as pd
 from scipy.spatial.distance import pdist, squareform
 from mpl_toolkits.mplot3d import Axes3D
-from scipy.spatial import ConvexHull, Delaunay
+from scipy.spatial import ConvexHull
 from scipy.spatial.qhull import QhullError
 from mcl.mcl_clustering import mcl
 
