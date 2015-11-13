@@ -44,10 +44,7 @@ def _dssp_to_table(filename):
     dssp_table = pd.read_fwf(filename, skiprows=28, names=dssp_header,
                              colspecs=cols_widths, index_col=0,
                              compression=None)
-    if dssp_table.icode.duplicated().any():
-        # TODO look this further
-        log.info('DSSP file {} has not unique index'.format(filename))
-    elif dssp_table.empty:
+    if dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
             filename))
@@ -628,6 +625,9 @@ def select_dssp(pdb_id, chains=None):
         else:
             raise ValueError('{} structure DSSP file does not have chains {}'
                              ''.format(pdb_id, ' '.join(chains)))
+    if dssp_table.icode.duplicated().any():
+        log.info('DSSP file for {} has not unique index'.format(pdb_id))
+
     return dssp_table.set_index(['icode'])
 
 
