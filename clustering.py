@@ -9,10 +9,12 @@ import matplotlib.pyplot as plt
 from main import merge_tables
 from to_table import _fetch_uniprot_variants
 import pandas as pd
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, squareform
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import ConvexHull, Delaunay
 from scipy.spatial.qhull import QhullError
+from mcl.mcl_clustering import mcl
+
 
 def variant_distances(pdb_id, chain, uniprot_id):
     # Fetch raw data
@@ -28,12 +30,17 @@ def variant_distances(pdb_id, chain, uniprot_id):
     return pdist(xyz), xyz
 
 
-def linkage_cluster(a, methods=['single', 'complete']):
+def linkage_cluster(a, methods=['single', 'complete'], expand_factor=2, inflate_factor=2, max_loop=50 , mult_factor=1):
 
     linkages = []
     for method in methods:
-        z = hac.linkage(a, method=method)
-        linkages.append([z, method])
+        if method != 'mcl':
+            z = hac.linkage(a, method=method)
+            linkages.append([z, method])
+        else:
+            M, clusters = mcl(squareform(a), max_loop=50)
+            linkages.append([[M, clusters], method])
+
     return linkages
 
 
@@ -47,23 +54,35 @@ def compare_clustering(linkages, xyz):
     for z, method, axes, offset in zip(links, methods, axes23, offsets):
 
         # Plotting
-        axes[0].plot(range(1, len(z)+1), z[::-1, 2])
-        knee = np.diff(z[::-1, 2], 2)
-        axes[0].plot(range(2, len(z)), knee)
+        if method != 'mcl':
+            axes[0].plot(range(1, len(z)+1), z[::-1, 2])
+            knee = np.diff(z[::-1, 2], 2)
+            axes[0].plot(range(2, len(z)), knee)
 
-        num_clust1 = knee.argmax() + 2
-        knee[knee.argmax()] = 0
-        num_clust2 = knee.argmax() + 2
+            num_clust1 = knee.argmax() + 2
+            knee[knee.argmax()] = 0
+            num_clust2 = knee.argmax() + 2
 
-        axes[0].text(num_clust1, z[::-1, 2][num_clust1-1], 'possible\n<- knee point')
+            axes[0].text(num_clust1, z[::-1, 2][num_clust1-1], 'possible\n<- knee point')
 
-        if num_clust1 > 12:
-            num_clust1 = 12
-        if num_clust2 > 12:
-            num_clust2 = 12
+            if num_clust1 > 12:
+                num_clust1 = 12
+            if num_clust2 > 12:
+                num_clust2 = 12
 
-        part1 = hac.fcluster(z, num_clust1, 'maxclust')
-        part2 = hac.fcluster(z, num_clust2, 'maxclust')
+            part1 = hac.fcluster(z, num_clust1, 'maxclust')
+            part2 = hac.fcluster(z, num_clust2, 'maxclust')
+
+        else:
+            # Convert the MCL clusters into a partition vector
+            d = {i: k for k, v in z[1].items() for i in v}
+            part1 = []
+            for k in sorted(d.keys()):
+                part1.append(d[k] + 1)
+            part1 = np.array(part1)
+            num_clust1 = max(d.values())
+            part2 = part1
+            num_clust2 = num_clust1
 
         clr = ['#2200CC' ,'#D9007E' ,'#FF6600' ,'#FFCC00' ,'#ACE600' ,'#0099CC' ,
         '#8900CC' ,'#FF0000' ,'#FF9900' ,'#FFFF00' ,'#00CC01' ,'#0055CC']
@@ -98,9 +117,11 @@ def compare_clustering(linkages, xyz):
 
 if __name__ == '__main__':
     d, points = variant_distances(pdb_id='3ecr', chain='A', uniprot_id='P08397')
-    links = linkage_cluster(d, methods=['single', 'complete', 'average'])
+    links = linkage_cluster(d, methods=['single', 'complete'])
+    compare_clustering(links, points)
+    links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points)
 
     d, points = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
-    links = linkage_cluster(d)
+    links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points)
