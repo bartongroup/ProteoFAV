@@ -14,6 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import ConvexHull
 from scipy.spatial.qhull import QhullError
 from mcl.mcl_clustering import mcl
+from time import strftime
 
 
 def variant_distances(pdb_id, chain, uniprot_id):
@@ -112,7 +113,9 @@ def compare_clustering(linkages, xyz):
         axes[2].axis('off')
 
     plt.tight_layout()
-    plt.show()
+    file = 'cluster_figs/cluster_fig_' + strftime("%Y%m%d_%H%M%S") + '.png'
+    plt.savefig(file, format='png')
+    #plt.show()
 
 
 if __name__ == '__main__':
