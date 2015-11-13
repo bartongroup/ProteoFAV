@@ -9,6 +9,7 @@ import re
 import sys
 import random
 import time
+import urllib
 from datetime import datetime
 
 import requests
@@ -21,12 +22,14 @@ from Bio import pairwise2
 
 log = logging.getLogger(__name__)
 
+
 class IDNotValidError(Exception):
     """
     Base class for database related exceptions.
     Databases: UniProt, PDB, Ensembl, etc.
     """
     pass
+
 
 def current_date():
     """
@@ -107,17 +110,24 @@ def get_random_string_with_n_digits(n):
     return random.randint(range_start, range_end)
 
 
-def get_url_or_retry(url, retry_in=None, wait=1, json=False, header={},
+def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None,
                      **params):
     """
     Fetch an url using Requests or retry fetching it if the server is
     complaining with retry_in error.
 
+    :param retry_in: list or array of http status codes
+    :param json: boolean
+    :param header: dictionary with head params
     :param url: url to be fetched as a string
     :param wait: sleeping between tries in seconds
     :param params: request.get kwargs.
     :return: url content or url content in json data structure.
     """
+    if not header:
+        header = {}
+    if not retry_in:
+        retry_in = []
     if json:
         header.update({"Content-Type": "application/json"})
     response = requests.get(url, headers=header, params=params)
@@ -136,47 +146,41 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header={},
         log.error(response.status_code)
         response.raise_for_status()
 
-def isvalid_uniprot_id(identifier):
-    """
-    'Quickly' checks if a UniProt id is valid.
 
-    :param identifier: testing ID
+def is_valid(identifier, database=None, url=None):
+    """
+    Generic method to check if a given id is valid.
+
+    :param url: if given use this instead
+    :param identifier: accession id
+    :param database: database to test against
     :return: boolean
     """
+
     try:
-        if identifier != '':
-            url = defaults.http_uniprot + str(identifier)
-            get_url_or_retry(url)
-            return True
-        else:
-            raise IDNotValidError
-    except IDNotValidError:
-        return False
-    except requests.HTTPError:
+        identifier = str(identifier)
+    except ValueError:
+        # raise IDNotValidError
         return False
 
-
-def isvalid_pdb_id(identifier):
-    """
-    'Quickly' checks if a PDB id is valid.
-
-    :param identifier: testing ID
-    :return: boolean
-    """
-    try:
-        if identifier != '':
-            url = defaults.http_pdbe + str(identifier)
-            get_url_or_retry(url)
-            return True
-        else:
-            raise IDNotValidError
-    except IDNotValidError:
+    if len(str(identifier)) < 1:
+        # raise IDNotValidError
         return False
-    except requests.HTTPError:
-        return False
+    if not url:
+        url = getattr(defaults, 'http_' + database) + identifier
+    r = requests.get(url)
+    if not r.ok:
+        # not the best approach
+        try:
+            raise IDNotValidError('{} not found at {}: (url check:{}'.format(
+                identifier, database, r.url))
+        except IDNotValidError:
+            return False
+    else:
+        return True
 
 
-def isvalid_ensembl_id(identifier, species='human', variant=False):
+def is_valid_ensembl_id(identifier, species='human', variant=False):
     """
     'Quickly' checks if an Ensembl id is valid.
 
@@ -186,6 +190,16 @@ def isvalid_ensembl_id(identifier, species='human', variant=False):
     :return: boolean
     """
 
+    try:
+        identifier = str(identifier)
+    except ValueError:
+        # raise IDNotValidError
+        return False
+
+    if len(str(identifier)) < 1:
+        # raise IDNotValidError
+        return False
+
     if variant:
         if species not in valid_ensembl_species_variation:
             raise ValueError('Provided species {} is not valid'.format(species))
@@ -194,9 +208,11 @@ def isvalid_ensembl_id(identifier, species='human', variant=False):
         ensembl_endpoint = "lookup/id/"
     try:
         if identifier != '':
-            url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
+            url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
             data = requests.get(url)
-            if 'error' not in data:
+            if data.status_code is not 200:
+                return False
+            elif 'error' not in data.text:
                 return True
             else:
                 return False
