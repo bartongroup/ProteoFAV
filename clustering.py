@@ -107,7 +107,7 @@ def write_mcl_input(s):
         for i in xrange(length):
             for j in xrange(length):
                 if s[i, j] != 0.:
-                    writer.writerow([i, j, s[i,j]])
+                    writer.writerow([i, j, s[i, j]])
 
 
 def read_mcl_clusters(file='mcl_results.txt'):
@@ -163,7 +163,7 @@ def compare_clustering(linkages, xyz):
 
         # Plotting
         if not method.startswith('mcl'):
-            axes[0].plot(range(1, len(z)+1), z[::-1, 2])
+            axes[0].plot(range(1, len(z) + 1), z[::-1, 2])
             knee = np.diff(z[::-1, 2], 2)
             axes[0].plot(range(2, len(z)), knee)
 
@@ -171,7 +171,7 @@ def compare_clustering(linkages, xyz):
             knee[knee.argmax()] = 0
             num_clust2 = knee.argmax() + 2
 
-            axes[0].text(num_clust1, z[::-1, 2][num_clust1-1], 'possible\n<- knee point')
+            axes[0].text(num_clust1, z[::-1, 2][num_clust1 - 1], 'possible\n<- knee point')
 
             part1 = hac.fcluster(z, num_clust1, 'maxclust')
             part2 = hac.fcluster(z, num_clust2, 'maxclust')
@@ -212,7 +212,7 @@ def compare_clustering(linkages, xyz):
     plt.tight_layout()
     file = 'cluster_figs/cluster_fig_' + strftime("%Y%m%d_%H%M%S") + '.png'
     plt.savefig(file, format='png')
-    #plt.show()
+    # plt.show()
 
 
 if __name__ == '__main__':
@@ -247,7 +247,6 @@ if __name__ == '__main__':
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nreciprocal'])
     compare_clustering(links, points)
-
 
     # KRT14 from K5/14 dimer example
     d, points = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
