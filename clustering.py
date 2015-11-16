@@ -126,19 +126,40 @@ def compare_clustering(linkages, xyz):
 
 
 if __name__ == '__main__':
+    # Porphobilinogen deaminase example
     d, points = variant_distances(pdb_id='3ecr', chain='A', uniprot_id='P08397')
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points)
     links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points)
 
+    # Comparing MCL inflation factors and distance to similarity conversion
+    sq = squareform(d)
     links = []
     for inf_fact in [2., 6.]:
-        d[d > 10] = max(d)
-        d = max(d) - d
-        links.append([mcl(squareform(d), max_loop=50, inflate_factor=inf_fact), 'mcl_IF=' + str(inf_fact)])
+        s = invert_distances(sq, method='max_minus_d', threshold=10)
+        links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
+                      'mcl_IF=' + str(inf_fact) + '\nmax_minus_d(t=10)'])
     compare_clustering(links, points)
 
+    # No min. distance for connected threshold (saturated network)
+    links = []
+    for inf_fact in [2., 6.]:
+        s = invert_distances(sq, method='max_minus_d')
+        links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
+                      'mcl_IF=' + str(inf_fact) + '\nmax_minus_d(t=inf)'])
+    compare_clustering(links, points)
+
+    # Using reciprocal distance for similarity
+    links = []
+    for inf_fact in [2., 6.]:
+        s = invert_distances(sq, method='reciprocal')
+        links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
+                      'mcl_IF=' + str(inf_fact) + '\nreciprocal'])
+    compare_clustering(links, points)
+
+
+    # KRT14 from K5/14 dimer example
     d, points = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
     links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points)
