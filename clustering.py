@@ -16,6 +16,8 @@ from scipy.spatial.qhull import QhullError
 from mcl.mcl_clustering import mcl
 from time import strftime
 from utils import _get_colors
+import csv
+from subprocess import call
 
 
 def variant_distances(pdb_id, chain, uniprot_id):
@@ -91,6 +93,58 @@ def cluster_dict_to_partitions(clusters):
         part1.append(d[k] + 1)
     part1 = np.array(part1)
     return part1
+
+
+def write_mcl_input(s):
+    """
+    Re-format a similarity matrix into a list of edge weights and write to a file.
+    :param s: A similarity matrix
+    :return: Writes a CSV file in the current directory
+    """
+    with open('mcl_interactions.csv', 'wb') as csvfile:
+        writer = csv.writer(csvfile, delimiter=' ')
+        length = len(s)
+        for i in xrange(length):
+            for j in xrange(length):
+                if s[i, j] != 0.:
+                    writer.writerow([i, j, s[i,j]])
+
+
+def read_mcl_clusters(file='mcl_results.txt'):
+    """
+    Parse a results file produced by the MCL program.
+    :param file: The name of an MCL results file
+    :return: A list containing the nodes found in each cluster
+    """
+    clusters = []
+    with open('mcl_results.txt', 'rb') as csvfile:
+        reader = csv.reader(csvfile, delimiter='\t')
+        for row in reader:
+            clusters.append(row)
+    return clusters
+
+
+def launch_mcl(s, format='partition'):
+    """
+    Perform MCL analysis using an external MCL implementation.
+    :param s: A similarity matrix
+    :param format: 'partition' returns the clusters in the same format produced by `fcluster` on a linkage object;
+    any other value leaves the clusters in the format provided by the MCL program
+    :return: The clusters found by the MCL program
+    """
+    write_mcl_input(s)
+    call(['mcl', 'mcl_interactions.csv', '--abc', '-o', 'mcl_results.txt'])
+    clusters = read_mcl_clusters('mcl_results.txt')
+    if format == 'partition':
+        part = ['unassigned'] * len(s)
+        cluster_id = 0
+        for i in clusters:
+            for j in i:
+                part[int(j)] = cluster_id
+            cluster_id += 1
+        return part
+
+    return clusters
 
 
 def compare_clustering(linkages, xyz):
