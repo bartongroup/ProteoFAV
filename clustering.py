@@ -58,6 +58,15 @@ def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_
     return linkages
 
 
+def cluster_dict_to_partitions(clusters):
+    d = {i: k for k, v in clusters.items() for i in v}
+    part1 = []
+    for k in sorted(d.keys()):
+        part1.append(d[k] + 1)
+    part1 = np.array(part1)
+    return part1
+
+
 def compare_clustering(linkages, xyz):
 
     nrows = len(linkages)
@@ -84,11 +93,7 @@ def compare_clustering(linkages, xyz):
 
         else:
             # Convert the MCL clusters into a partition vector
-            d = {i: k for k, v in z[1].items() for i in v}
-            part1 = []
-            for k in sorted(d.keys()):
-                part1.append(d[k] + 1)
-            part1 = np.array(part1)
+            part1 = cluster_dict_to_partitions(z[1])
             num_clust1 = max(part1)
             part2 = part1
             num_clust2 = num_clust1
