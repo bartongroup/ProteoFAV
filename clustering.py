@@ -50,8 +50,9 @@ def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_
             z = hac.linkage(a, method=method)
             linkages.append([z, method])
         else:
+            a = squareform(a)
             a = invert_distances(a, invert_method, threshold)
-            M, clusters = mcl(squareform(a), max_loop=50)
+            M, clusters = mcl(a, max_loop=50)
             linkages.append([[M, clusters], method])
 
     return linkages
