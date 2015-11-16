@@ -19,6 +19,13 @@ from utils import _get_colors
 
 
 def variant_distances(pdb_id, chain, uniprot_id):
+    """
+    Find the intervariant distances for a given PDB chain
+    :param pdb_id:
+    :param chain:
+    :param uniprot_id:
+    :return: The reduced distance matrix produced by `pdist` and the XYZ coordinates of the mapped variants.
+    """
     # Fetch raw data
     structure = merge_tables(pdb_id=pdb_id, chain=chain)  ## Don't add variants yet!
     variants = _fetch_uniprot_variants(uniprot_id)
@@ -33,6 +40,13 @@ def variant_distances(pdb_id, chain, uniprot_id):
 
 
 def invert_distances(d, method, threshold=float('inf')):
+    """
+
+    :param d: A reduced distance matrix, such as produced by `pdist` or the expanded, squarematrix form.
+    :param method: The distance-to-similarity conversion to employ before MCL analysis. Choose from: 'max_minus_d' or 'reciprocal'
+    :param threshold: The threshold to discard distances (i.e. remove edges) before conversion to similarities
+    :return:
+    """
     if method == 'max_minus_d':
         d[d > threshold] = d.max()
         s = d.max() - d
@@ -43,7 +57,14 @@ def invert_distances(d, method, threshold=float('inf')):
 
 
 def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_d', threshold=float('inf')):
+    """
 
+    :param a: A reduced distance matrix, such as produced by `pdist`
+    :param methods: A list of strings indicating the cluster methods to employ. Choose from: 'single', 'complete', 'average' and 'mcl'
+    :param invert_method: See `invert_distances`
+    :param threshold: See `invert_distances`
+    :return:
+    """
     linkages = []
     for method in methods:
         if method != 'mcl':
@@ -59,6 +80,11 @@ def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_
 
 
 def cluster_dict_to_partitions(clusters):
+    """
+    Convert the cluster output format from the MCL function to a partition list; like that produced by `fcluster`
+    :param clusters: A dictionary where the keys indicate clusters and the list elements indicate node membership
+    :return: A list where the positioning indexes correspond to node numbers and the values correspond to its cluster
+    """
     d = {i: k for k, v in clusters.items() for i in v}
     part1 = []
     for k in sorted(d.keys()):
@@ -68,7 +94,12 @@ def cluster_dict_to_partitions(clusters):
 
 
 def compare_clustering(linkages, xyz):
-
+    """
+    Generate a plots comparing the cluster analyses provided.
+    :param linkages: A list of cluster analyses as produced by `linkage_cluster`
+    :param xyz: The coordinates of the original clustered points
+    :return:
+    """
     nrows = len(linkages)
     fig, axes23 = plt.subplots(nrows, 3)
     links, methods = zip(*linkages)
