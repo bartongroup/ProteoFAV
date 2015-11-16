@@ -89,7 +89,7 @@ def compare_clustering(linkages, xyz):
             for k in sorted(d.keys()):
                 part1.append(d[k] + 1)
             part1 = np.array(part1)
-            num_clust1 = max(d.values())
+            num_clust1 = max(part1)
             part2 = part1
             num_clust2 = num_clust1
 
