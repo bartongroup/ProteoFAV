@@ -34,14 +34,11 @@ def variant_distances(pdb_id, chain, uniprot_id):
 
 def invert_distances(d, method, threshold=float('inf')):
     if method == 'max_minus_d':
-        d[d > threshold] = max(d)
-        s = max(d) - d
+        d[d > threshold] = d.max()
+        s = d.max() - d
     if method == 'reciprocal':
-        try:
-            s = 1. / d
-        except ZeroDivisionError:
-            d = d + 1
-            s = 1. / d
+        d = d + 1
+        s = 1. / d
     return s
 
 
