@@ -2,22 +2,22 @@ __author__ = 'smacgowan'
 
 # Starting out with the example from http://stackoverflow.com/questions/21638130/tutorial-for-scipy-cluster-hierarchy
 
-import numpy as np
-import scipy.cluster.hierarchy as hac
+import csv
+from subprocess import call
+from time import strftime
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.cluster.hierarchy as hac
+from mcl.mcl_clustering import mcl
+from scipy.spatial import ConvexHull
+from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.qhull import QhullError
 
 from main import merge_tables
 from to_table import _fetch_uniprot_variants
-import pandas as pd
-from scipy.spatial.distance import pdist, squareform
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.spatial import ConvexHull
-from scipy.spatial.qhull import QhullError
-from mcl.mcl_clustering import mcl
-from time import strftime
 from utils import _get_colors
-import csv
-from subprocess import call
 
 
 def variant_distances(pdb_id, chain, uniprot_id):
