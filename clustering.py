@@ -181,6 +181,12 @@ def compare_clustering(linkages, xyz):
             part1 = hac.fcluster(z, num_clust1, 'maxclust')
             part2 = hac.fcluster(z, num_clust2, 'maxclust')
 
+        elif method.startswith('mcl_program'):
+            part1 = np.array(z)
+            num_clust1 = max(part1) + 1
+            part2 = part1
+            num_clust2 = num_clust1
+
         else:
             # Convert the MCL clusters into a partition vector
             part1 = cluster_dict_to_partitions(z[1])
