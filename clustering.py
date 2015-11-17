@@ -233,6 +233,8 @@ if __name__ == '__main__':
     compare_clustering(links, points)
     links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points)
+    links = linkage_cluster(d, methods=['mcl_program', 'mcl'], threshold=10)
+    compare_clustering(links, points)
 
     # Comparing MCL inflation factors and distance to similarity conversion
     sq = squareform(d)
