@@ -166,7 +166,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     # remove global information from the table.
     for col in table:
         try:
-            value = table[col].unique()
+            value = table[col].dropna().unique()
         except TypeError:  # break for list-like columns
             continue
 
