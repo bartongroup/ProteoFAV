@@ -18,6 +18,7 @@ from scipy.spatial.qhull import QhullError
 from main import merge_tables
 from to_table import _fetch_uniprot_variants
 from utils import _get_colors
+from mpl_toolkits.mplot3d import Axes3D
 
 
 def variant_distances(pdb_id, chain, uniprot_id):
