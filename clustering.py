@@ -280,3 +280,23 @@ if __name__ == '__main__':
     d, points, resids = variant_distances(pdb_id='3tnu', chains=['A', 'B'], uniprot_ids=['P02533', 'P13647'])
     links = linkage_cluster(d, methods=['average', 'mcl'], threshold=10)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647')
+
+    # Serine/threonine-protein kinase receptor R3, Telangiectasia example
+    d, points, resids = variant_distances(pdb_id='3my0', chains=['A'], uniprot_ids=['P37023'])
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
+    compare_clustering(links, points, '3my0(a) P37023')
+
+    # Alpha-galactosidase A, Fabry disease example
+    d, points, resids = variant_distances(pdb_id='3s5z', chains=['A'], uniprot_ids=['P06280'])
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
+    compare_clustering(links, points, '3s5z(a) P06280')
+
+    # Cholinesterase, BChE deficiency example
+    d, points, resids = variant_distances(pdb_id='4tpk', chains=['A'], uniprot_ids=['P06276'])
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
+    compare_clustering(links, points, '4tpk(a) P06276')
+
+    # UDP-glucose 4-epimerase, EDG example
+    d, points, resids = variant_distances(pdb_id='1ek6', chains=['A'], uniprot_ids=['Q14376'])
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
+    compare_clustering(links, points, '1ek6(a) Q14376')
