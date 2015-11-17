@@ -39,7 +39,7 @@ def variant_distances(pdb_id, chain, uniprot_id):
     merged_real = merged[np.isfinite(merged['Cartn_x'])]
     xyz = np.array([merged_real.Cartn_x, merged_real.Cartn_y, merged_real.Cartn_z])
     xyz = np.transpose(xyz)
-    return pdist(xyz), xyz
+    return pdist(xyz), xyz, merged_real.UniProt_dbResNum
 
 
 def invert_distances(d, method, threshold=float('inf')):
@@ -228,7 +228,7 @@ def compare_clustering(linkages, xyz):
 
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
-    d, points = variant_distances(pdb_id='3ecr', chain='A', uniprot_id='P08397')
+    d, points, resids = variant_distances(pdb_id='3ecr', chain='A', uniprot_id='P08397')
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points)
     links = linkage_cluster(d, methods=['average', 'mcl'])
@@ -262,6 +262,6 @@ if __name__ == '__main__':
     compare_clustering(links, points)
 
     # KRT14 from K5/14 dimer example
-    d, points = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
+    d, points, resids = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
     links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points)
