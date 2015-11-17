@@ -59,7 +59,8 @@ def invert_distances(d, method, threshold=float('inf')):
     return s
 
 
-def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_d', threshold=float('inf')):
+def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_d', threshold=float('inf'),
+                    inflate=None):
     """
 
     :param a: A reduced distance matrix, such as produced by `pdist`
@@ -77,10 +78,14 @@ def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_
             sq = squareform(a)
             s = invert_distances(sq, invert_method, threshold)
             if method.startswith('mcl_program'):
-                clusters = launch_mcl(s)
+                clusters = launch_mcl(s, inflate=inflate)
                 linkages.append([clusters, method])
             else:
-                M, clusters = mcl(s, max_loop=50)
+                if not inflate:
+                    inflate_factor = 2
+                else:
+                    inflate_factor = inflate
+                M, clusters = mcl(s, max_loop=50, inflate_factor=inflate_factor)
                 linkages.append([[M, clusters], method])
 
     return linkages
@@ -129,7 +134,7 @@ def read_mcl_clusters(file='mcl_results.txt'):
     return clusters
 
 
-def launch_mcl(s, format='partition'):
+def launch_mcl(s, format='partition', inflate=None):
     """
     Perform MCL analysis using an external MCL implementation.
     :param s: A similarity matrix
@@ -138,7 +143,11 @@ def launch_mcl(s, format='partition'):
     :return: The clusters found by the MCL program
     """
     write_mcl_input(s)
-    call(['mcl', 'mcl_interactions.csv', '--abc', '-o', 'mcl_results.txt'])
+    mcl_call = ['mcl', 'mcl_interactions.csv', '--abc', '-o', 'mcl_results.txt']
+    if inflate:
+        mcl_call.append('-I')
+        mcl_call.append(str(inflate))
+    call(mcl_call)
     clusters = read_mcl_clusters('mcl_results.txt')
     if format == 'partition':
         part = ['unassigned'] * len(s)
