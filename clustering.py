@@ -70,14 +70,18 @@ def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_
     """
     linkages = []
     for method in methods:
-        if method != 'mcl':
+        if not method.startswith('mcl'):
             z = hac.linkage(a, method=method)
             linkages.append([z, method])
         else:
-            a = squareform(a)
-            a = invert_distances(a, invert_method, threshold)
-            M, clusters = mcl(a, max_loop=50)
-            linkages.append([[M, clusters], method])
+            sq = squareform(a)
+            s = invert_distances(sq, invert_method, threshold)
+            if method.startswith('mcl_program'):
+                clusters = launch_mcl(s)
+                linkages.append([clusters, method])
+            else:
+                M, clusters = mcl(s, max_loop=50)
+                linkages.append([[M, clusters], method])
 
     return linkages
 
