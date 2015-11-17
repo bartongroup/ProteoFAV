@@ -30,21 +30,29 @@ def variant_distances(pdb_id, chains, uniprot_ids):
     :return: The reduced distance matrix produced by `pdist` and the XYZ coordinates of the mapped variants.
     """
     merged = pd.DataFrame()
+    unmapped = pd.DataFrame()
     for chain, uniprot_id in zip(chains, uniprot_ids):
         # Fetch raw data
         structure = merge_tables(pdb_id=pdb_id, chain=chain)  ## Don't add variants yet!
         variants = _fetch_uniprot_variants(uniprot_id)
         # Merge these
         structure.UniProt_dbResNum = structure.UniProt_dbResNum.astype('float')
-        table = pd.merge(structure, variants, on='UniProt_dbResNum')  ## TODO: Optionally uniquify variants at residue level
-        merged = merged.append(table)
+        table = pd.merge(structure, variants, on='UniProt_dbResNum', how='left')  ## TODO: Optionally uniquify variants at residue level
+        merged = merged.append(table[table.resn.notnull()])
+        unmapped = unmapped.append(table[table.resn.isnull()])
 
 
     # Build array distance matrix
+    merged_real, xyz = extract_coords(merged)
+    _, unmapped_xyz = extract_coords(unmapped)
+    return pdist(xyz), xyz, merged_real.UniProt_dbResNum, unmapped_xyz
+
+
+def extract_coords(merged):
     merged_real = merged[np.isfinite(merged['Cartn_x'])]
     xyz = np.array([merged_real.Cartn_x, merged_real.Cartn_y, merged_real.Cartn_z])
     xyz = np.transpose(xyz)
-    return pdist(xyz), xyz, merged_real.UniProt_dbResNum
+    return merged_real, xyz
 
 
 def invert_distances(d, method, threshold=float('inf')):
@@ -251,7 +259,7 @@ def compare_clustering(linkages, xyz, title=None):
 
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
-    d, points, resids = variant_distances(pdb_id='3ecr', chains=['A'], uniprot_ids=['P08397'])
+    d, points, resids, unmapped_points = variant_distances(pdb_id='3ecr', chains=['A'], uniprot_ids=['P08397'])
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['average', 'mcl'])
@@ -285,26 +293,26 @@ if __name__ == '__main__':
     compare_clustering(links, points, '3ecr(a) P08397')
 
     # KRT14 from K5/14 dimer example (multichain)
-    d, points, resids = variant_distances(pdb_id='3tnu', chains=['A', 'B'], uniprot_ids=['P02533', 'P13647'])
+    d, points, resids, unmapped_points = variant_distances(pdb_id='3tnu', chains=['A', 'B'], uniprot_ids=['P02533', 'P13647'])
     links = linkage_cluster(d, methods=['average', 'mcl'], threshold=10)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647')
 
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example
-    d, points, resids = variant_distances(pdb_id='3my0', chains=['A'], uniprot_ids=['P37023'])
+    d, points, resids, unmapped_points = variant_distances(pdb_id='3my0', chains=['A'], uniprot_ids=['P37023'])
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3my0(a) P37023')
 
     # Alpha-galactosidase A, Fabry disease example
-    d, points, resids = variant_distances(pdb_id='3s5z', chains=['A'], uniprot_ids=['P06280'])
+    d, points, resids, unmapped_points = variant_distances(pdb_id='3s5z', chains=['A'], uniprot_ids=['P06280'])
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3s5z(a) P06280')
 
     # Cholinesterase, BChE deficiency example
-    d, points, resids = variant_distances(pdb_id='4tpk', chains=['A'], uniprot_ids=['P06276'])
+    d, points, resids, unmapped_points = variant_distances(pdb_id='4tpk', chains=['A'], uniprot_ids=['P06276'])
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '4tpk(a) P06276')
 
     # UDP-glucose 4-epimerase, EDG example
-    d, points, resids = variant_distances(pdb_id='1ek6', chains=['A'], uniprot_ids=['Q14376'])
+    d, points, resids, unmapped_points = variant_distances(pdb_id='1ek6', chains=['A'], uniprot_ids=['Q14376'])
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '1ek6(a) Q14376')
