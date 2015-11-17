@@ -134,17 +134,16 @@ def _sifts_residues(filename, cols=None):
                             # renaming all keys with dbSource prefix
                             try:
                                 k = "{}_{}".format(
-                                    annotation.attrib["dbSource"],
-                                    k)
+                                    annotation.attrib["dbSource"], k)
                             except KeyError:
                                 k = "{}_{}".format("REF", k)
 
                         # residueDetail entries
-                        # TODO better check if has .text attrib
                         elif annotation.tag == residue_detail:
                             # joining dbSource and property keys
                             k = "_".join([annotation.attrib["dbSource"],
                                           annotation.attrib["property"]])
+
                             # value is the text field in the XML
                             v = annotation.text
 
@@ -561,11 +560,11 @@ def select_sifts(pdb_id, chains=None, keep_missing=True):
 
 
 def select_dssp(pdb_id, chains=None):
-    """
+    """High level function to parse DSSP file output to pandas.DataFrame
 
-    :param pdb_id:
-    :param chains:
-    :return:
+    :param pdb_id: PDB identifier
+    :param chains: PDB protein chain
+    :return: pandas dataframe
     """
 
     dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
@@ -593,6 +592,12 @@ def select_dssp(pdb_id, chains=None):
 
 
 def select_validation(pdb_id, chains=None):
+    """High level function that produces table of validation to a PDB entry
+
+    :param pdb_id: PDB identifier
+    :param chains: PDB protein chain
+    :return: pandas dataframe
+    """
     val_path = path.join(defaults.db_pdb,
                          pdb_id + defaults.validation_extension)
     try:
@@ -613,8 +618,7 @@ def select_validation(pdb_id, chains=None):
 
 
 def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
-    """
-    Gets the sequence for an Ensembl identifier.
+    """    Gets the sequence for an Ensembl identifier.
 
     :param identifier: Ensembl ID
     :param species: Ensembl species
@@ -672,9 +676,7 @@ def select_uniprot_variants(identifier):
         muts = _somatic_variants_ensembl(ens_pros[i], org,
                                          missense=True)
 
-        # TODO: From ... TO... mutated residues as different columns in the table
-        # tables.append(vars[['translation', 'id', 'start', 'residues']].groupby('start').agg(to_unique))
-        # tables.append(muts[['translation', 'id', 'start', 'residues']].groupby('start').agg(to_unique))
+        # TODO: From... TO... mutated residues as different columns in the table
 
         tables.append(vars[['translation', 'id', 'start', 'residues']])
         tables.append(muts[['translation', 'id', 'start', 'residues']])
@@ -721,8 +723,8 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
         url = defaults.api_ensembl + ensembl_endpoint
         headers = {"Content-Type": "application/json",
                    "Accept": "application/json"}
-        data = '{ "ids" : ' + str(variant_ids).replace("u'",
-                                                       "'") + ', "phenotypes" : 1 }'  ##FIXME
+        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") \
+                + ', "phenotypes" : 1 }'  # FIXME
         data = data.replace("'", "\"")
         r = requests.post(url, headers=headers, data=data)
 
@@ -792,4 +794,4 @@ def _fetch_uniprot_variants(identifier, _format='tab'):
 
 
 if __name__ == '__main__':
-    pass
+    X = _sifts_residues('tests/SIFTS/2pah.xml')
