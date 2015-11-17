@@ -166,7 +166,15 @@ def launch_mcl(s, format='partition', inflate=None):
     return clusters
 
 
-def compare_clustering(linkages, xyz):
+def merge_clusters_to_table(residue_ids, partition, target_table):
+    df = pd.DataFrame(residue_ids)
+    df['Cluster'] = pd.Series(partition)
+    target_table.UniProt_dbResNum = target_table.UniProt_dbResNum.astype('float')
+    merged = pd.merge(target_table, df, on = 'UniProt_dbResNum')
+    return merged
+
+
+def compare_clustering(linkages, xyz, title=None):
     """
     Generate a plots comparing the cluster analyses provided.
     :param linkages: A list of cluster analyses as produced by `linkage_cluster`
