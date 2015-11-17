@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-single_letter_aa = list('ACDEFGHIKLMNPQRSTVWY-')
+single_letter_aa = list('ACDEFGHIKLMNPQRSTVWY-TDHSM')
 
 three_letter_aa = ["ALA", "CYS", "ASP", "GLU", "PHE", "GLY", "HIS", "ILE",
                    "LYS", "LEU", "MET", "ASN", "PRO", "GLN", "ARG", "SER",
-                   "THR", "VAL", "TRP", "TYR", "-"]
+                   "THR", "VAL", "TRP", "TYR", "-", 'TPO', 'PHD', 'HIC', 'SEP',
+                   'MSE']
 
 to_single_aa = dict(zip(three_letter_aa, single_letter_aa))
 

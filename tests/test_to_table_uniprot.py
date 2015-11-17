@@ -9,7 +9,7 @@ Created on 10/06/2015
 __version__ = "1.0"
 
 import unittest
-from to_table import _uniprot_ensembl_mapping_to_table, _uniprot_info_to_table
+from to_table import _uniprot_ensembl_mapping, _uniprot_info
 import utils
 
 
@@ -24,8 +24,8 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_id_error3 = 1234
         self.uniprot_id_error4 = ()
         self.uniprot_id_error5 = []
-        self.uniprot_info = _uniprot_info_to_table
-        self.uniprot_ensembl = _uniprot_ensembl_mapping_to_table
+        self.uniprot_info = _uniprot_info
+        self.uniprot_ensembl = _uniprot_ensembl_mapping
         self.isvalid = utils.is_valid
 
     def tearDown(self):

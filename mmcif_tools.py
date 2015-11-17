@@ -13,7 +13,7 @@ import pandas as pd
 from os import path
 from collections import OrderedDict
 
-from to_table import _mmcif_atom_to_table
+from to_table import _mmcif_atom
 
 
 def _mmcif_info_to_dict(filename):
@@ -288,7 +288,7 @@ def _bio_unit_to_table(filename, most_likely=True, method=1):
     """
 
     # get the atom lines from mmCIF file
-    atom_site_ref = _mmcif_atom_to_table(filename)
+    atom_site_ref = _mmcif_atom(filename)
     # get attributes
     attributes = atom_site_ref.columns.values
     # add a new column with Biological Unit Counter
@@ -442,8 +442,8 @@ if __name__ == '__main__':
     # print(X['pdbx_struct_assembly_gen']['asym_id_list'])
     # print(X['pdbx_struct_oper_list']['symmetry_operation'])
 
-    # X = _mmcif_atom_to_table("tests/CIF/2pah.cif")
-    # X = _mmcif_atom_to_table("tests/CIF/3fad.cif")
+    # X = _mmcif_atom("tests/CIF/2pah.cif")
+    # X = _mmcif_atom("tests/CIF/3fad.cif")
     # print(X['label_asym_id'], X['Cartn_x'], X['Cartn_y'], X['Cartn_z'])
     # X.to_csv('3fad.tsv', sep='\t')
     # print(X)

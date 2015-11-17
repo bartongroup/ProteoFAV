@@ -13,8 +13,8 @@ import pandas as pd
 
 from os import path
 
-from to_table import (_ensembl_variant_to_table, _transcript_variants_ensembl_to_table,
-                      _somatic_variants_ensembl_to_table, _uniprot_variants_to_table)
+from to_table import (_ensembl_variant, _transcript_variants_ensembl,
+                      _somatic_variants_ensembl, select_uniprot_variants)
 from utils import is_valid_ensembl_id
 
 
@@ -34,10 +34,10 @@ class TestENSEMBLParser(unittest.TestCase):
         self.variant_id_error1 = ''
         self.variant_id_error2 = 123456
         self.variant_id_error3 = []
-        self.ensembl_trascript = _transcript_variants_ensembl_to_table
-        self.ensembl_somatic = _somatic_variants_ensembl_to_table
-        self.ensembl_variant = _ensembl_variant_to_table
-        self.uniprot_variants = _uniprot_variants_to_table
+        self.ensembl_trascript = _transcript_variants_ensembl
+        self.ensembl_somatic = _somatic_variants_ensembl
+        self.ensembl_variant = _ensembl_variant
+        self.uniprot_variants = select_uniprot_variants
         self.isvalid = is_valid_ensembl_id
 
     def tearDown(self):

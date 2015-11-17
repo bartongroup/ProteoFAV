@@ -11,8 +11,8 @@ __version__ = "1.0"
 import unittest
 from os import path
 
-from to_table import (_sifts_regions_to_table, _sifts_residues_to_table, _uniprot_pdb_sifts_mapping_to_table,
-                      _pdb_uniprot_sifts_mapping_to_table)
+from to_table import (_sifts_regions, _sifts_residues, _uniprot_pdb_sifts_mapping,
+                      _pdb_uniprot_sifts_mapping)
 
 
 class TestSIFTSParser(unittest.TestCase):
@@ -21,13 +21,13 @@ class TestSIFTSParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_xml = path.join(path.dirname(__file__), "SIFTS/2pah.xml")
-        self.residues_parser = _sifts_residues_to_table
-        self.regions_parser = _sifts_regions_to_table
+        self.residues_parser = _sifts_residues
+        self.regions_parser = _sifts_regions
 
         self.pdb_id = '2pah'
         self.uniprot_id = 'P00439'
-        self.pdb_uniprot = _pdb_uniprot_sifts_mapping_to_table
-        self.uniprot_pdb = _uniprot_pdb_sifts_mapping_to_table
+        self.pdb_uniprot = _pdb_uniprot_sifts_mapping
+        self.uniprot_pdb = _uniprot_pdb_sifts_mapping
 
     def tearDown(self):
         """Remove testing framework."""

@@ -4,7 +4,7 @@ import logging
 from os import path
 import unittest
 from mock import patch
-from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_table
+from to_table import _dssp, _sifts_residues, _mmcif_atom
 from main import merge_tables
 from config import Defaults
 
@@ -20,9 +20,9 @@ class TestTableMerger(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
 
-        self.cif_to_table = _mmcif_atom_to_table
-        self.sifts_to_table = _sifts_residues_to_table
-        self.dssp_to_table = _dssp_to_table
+        self.cif_to_table = _mmcif_atom
+        self.sifts_to_table = _sifts_residues
+        self.dssp_to_table = _dssp
 
         self.merge_table = merge_tables
 

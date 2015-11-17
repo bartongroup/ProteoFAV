@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                      sifts_best, _uniprot_variants_to_table)
+                      sifts_best, select_uniprot_variants)
 from library import to_single_aa
 
 log = logging.getLogger(__name__)
@@ -58,9 +58,11 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     try:
         dssp_table = select_dssp(pdb_id, chains=chain)
     except ValueError:
-        # This indicates we could find the corret PDB chain.
+        # This indicates we could find the correct PDB chain.
         # What happens in case in structures with dozen of chains, ie: 4v9d
         # So we parse all the PDB file
+        log.error('{} not found in {} DSSP'.format(chain, pdb_id))
+        # TODO this not good. We should map positionaly from sifts to DSSP
         dssp_table = select_dssp(pdb_id)
         cif_seq = cif_table.auth_comp_id.apply(to_single_aa.get)
         dssp_table.reset_index(inplace=True)
@@ -151,7 +153,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         structure_uniprots = table.UniProt_dbAccessionId
         structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
         structure_uniprot = structure_uniprots.unique()[0]
-        variants_table = _uniprot_variants_to_table(structure_uniprot)
+        variants_table = select_uniprot_variants(structure_uniprot)
         variants_table[["start"]] = variants_table[["start"]].astype(float)
         table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
 

@@ -13,7 +13,7 @@ from os import path, remove
 import unittest
 import logging
 
-from to_table import _mmcif_atom_to_table
+from to_table import _mmcif_atom
 from mmcif_tools import _mmcif_info_to_dict
 from mmcif_tools import _bio_unit_to_table
 
@@ -26,7 +26,7 @@ class TestMMCIFParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_mmcif = path.join(path.dirname(__file__), "CIF/2pah.cif")
-        self.mmcif_atom_parser = _mmcif_atom_to_table
+        self.mmcif_atom_parser = _mmcif_atom
         self.mmcif_info_parser = _mmcif_info_to_dict
         self.bio_unit_builder = _bio_unit_to_table
         self.example_tsv_out = path.join(path.dirname(__file__), "CIF/2pah-bio.tsv")
@@ -140,7 +140,7 @@ class TestMMCIFParser(unittest.TestCase):
 
         log = logging.getLogger("Biological.Assemblies")
 
-        # uses _mmcif_atom_to_table, _mmcif_info_to_table, and
+        # uses _mmcif_atom, _mmcif_info_to_table, and
         # other mmcif_tools that needed to be tested
 
         # method == 1

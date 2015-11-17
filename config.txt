@@ -1,10 +1,8 @@
 [Global]
-db_pdb = ...
-db_mmcif = ...
-db_sifts = ...
-db_dssp = ...
-db_uniprot = ...
-db_cath = ...
+db_pdb = /Volumes/tbrittoborges/NOBACK/pdb_files/
+db_mmcif = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/mmcif/
+db_sifts = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/sifts_xml/
+db_dssp = /Volumes/gjb/db/NOBACK/local_databases/dssp/
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/
@@ -27,7 +25,7 @@ sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 validation_fetch = http://www.ebi.ac.uk/pdbe/entry-files/download/
 
 [Variables]
-contact_email = ...
+contact_email = test@lol.com
 cif_extension = _updated.cif
 dssp_extension = .dssp
 sifts_extension = .xml.gz
