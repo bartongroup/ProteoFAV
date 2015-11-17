@@ -21,7 +21,7 @@ from utils import _get_colors
 from mpl_toolkits.mplot3d import Axes3D
 
 
-def variant_distances(pdb_id, chain, uniprot_id):
+def variant_distances(pdb_id, chains, uniprot_ids):
     """
     Find the intervariant distances for a given PDB chain
     :param pdb_id:
@@ -29,12 +29,17 @@ def variant_distances(pdb_id, chain, uniprot_id):
     :param uniprot_id:
     :return: The reduced distance matrix produced by `pdist` and the XYZ coordinates of the mapped variants.
     """
-    # Fetch raw data
-    structure = merge_tables(pdb_id=pdb_id, chain=chain)  ## Don't add variants yet!
-    variants = _fetch_uniprot_variants(uniprot_id)
-    # Merge these
-    structure.UniProt_dbResNum = structure.UniProt_dbResNum.astype('float')
-    merged = pd.merge(structure, variants, on='UniProt_dbResNum')
+    merged = pd.DataFrame()
+    for chain, uniprot_id in zip(chains, uniprot_ids):
+        # Fetch raw data
+        structure = merge_tables(pdb_id=pdb_id, chain=chain)  ## Don't add variants yet!
+        variants = _fetch_uniprot_variants(uniprot_id)
+        # Merge these
+        structure.UniProt_dbResNum = structure.UniProt_dbResNum.astype('float')
+        table = pd.merge(structure, variants, on='UniProt_dbResNum')  ## TODO: Optionally uniquify variants at residue level
+        merged = merged.append(table)
+
+
     # Build array distance matrix
     merged_real = merged[np.isfinite(merged['Cartn_x'])]
     xyz = np.array([merged_real.Cartn_x, merged_real.Cartn_y, merged_real.Cartn_z])
@@ -238,7 +243,7 @@ def compare_clustering(linkages, xyz):
 
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
-    d, points, resids = variant_distances(pdb_id='3ecr', chain='A', uniprot_id='P08397')
+    d, points, resids = variant_distances(pdb_id='3ecr', chains=['A'], uniprot_ids=['P08397'])
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['average', 'mcl'])
@@ -271,7 +276,7 @@ if __name__ == '__main__':
                       'mcl_IF=' + str(inf_fact) + '\nreciprocal'])
     compare_clustering(links, points, '3ecr(a) P08397')
 
-    # KRT14 from K5/14 dimer example
-    d, points, resids = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
-    links = linkage_cluster(d, methods=['average', 'mcl'])
-    compare_clustering(links, points)
+    # KRT14 from K5/14 dimer example (multichain)
+    d, points, resids = variant_distances(pdb_id='3tnu', chains=['A', 'B'], uniprot_ids=['P02533', 'P13647'])
+    links = linkage_cluster(d, methods=['average', 'mcl'], threshold=10)
+    compare_clustering(links, points, '3tnu(a/b) P02533/P13647')
