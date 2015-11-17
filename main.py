@@ -19,20 +19,23 @@ __all__ = ["merge_tables"]
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                  validate=True, add_validation=False, add_variants=False):
-    """
-    Merges the output from multiple to table method.
-    if no pdb_id uses sifts_best_structure
-    if no chain uses first
-    or if use_all_chains use all chains of the pdb_id
-    :param add_validation:
-    :param add_validation:
-    :param uniprot_id: (opt) given a finds the best structure for a uniprot
-    identifier.
-    :param pdb_id: (opt) Alternatively parser
-    :param chain: (opt) protein chain to parse. If None uses Sifts
-    best_structure api to select best structure.
-    :param model: number of the model to retrive from mmcif files.
-    :param validate: Validate protein sequence between differnet data files.
+    """Join multiple resource tables. If no pdb_id uses sifts_best_structure
+    If no chain uses the first on.
+    :type add_variants: bool
+    :type add_validation: bool
+    :type validate: bool
+    :type model: str
+    :type chain: str or None
+    :type pdb_id: str or None
+    :type uniprot_id: str
+    :rtype: pandas.DataFrame
+    :param add_validation: join the PDB validation table?
+    :param uniprot_id: gives sifts best representative for this UniProt entry
+    :param pdb_id: Entry to be parsed
+    :param chain: Protein chain to be parsed
+    :param model: Which entity to use? Useful for multiple entities protein
+    structures determined by NMR
+    :param validate: Checks whether sequence is the same in all tables
     """
     if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
@@ -160,9 +163,20 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         table = table.reset_index()
         table = pd.merge(table, variants_table, left_on = "UniProt_dbResNum", right_on = "start", how = "left")
 
+    # remove global information from the table.
+    for col in table:
+        try:
+            value = table[col].unique()
+        except TypeError:  # break for list-like columns
+            continue
+
+        if value.shape[0] == 1:
+            log.info('Global key {} is {}'.format(col, value[0]))
+            del table[col]
+
     return table
 
 
 if __name__ == '__main__':
     X = merge_tables(pdb_id='4b9d', chain='A')
-    X.head()
+    print X.head()
