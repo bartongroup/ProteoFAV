@@ -230,6 +230,7 @@ def compare_clustering(linkages, xyz):
         axes[2].axis('off')
 
     plt.tight_layout()
+    plt.suptitle(title)
     file = 'cluster_figs/cluster_fig_' + strftime("%Y%m%d_%H%M%S") + '.png'
     plt.savefig(file, format='png')
     # plt.show()
@@ -239,11 +240,11 @@ if __name__ == '__main__':
     # Porphobilinogen deaminase example
     d, points, resids = variant_distances(pdb_id='3ecr', chain='A', uniprot_id='P08397')
     links = linkage_cluster(d, methods=['single', 'complete'])
-    compare_clustering(links, points)
+    compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['average', 'mcl'])
-    compare_clustering(links, points)
+    compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['mcl_program', 'mcl'], threshold=10)
-    compare_clustering(links, points)
+    compare_clustering(links, points, '3ecr(a) P08397')
 
     # Comparing MCL inflation factors and distance to similarity conversion
     sq = squareform(d)
@@ -252,7 +253,7 @@ if __name__ == '__main__':
         s = invert_distances(sq, method='max_minus_d', threshold=10)
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nmax_minus_d(t=10)'])
-    compare_clustering(links, points)
+    compare_clustering(links, points, '3ecr(a) P08397')
 
     # No min. distance for connected threshold (saturated network)
     links = []
@@ -260,7 +261,7 @@ if __name__ == '__main__':
         s = invert_distances(sq, method='max_minus_d')
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nmax_minus_d(t=inf)'])
-    compare_clustering(links, points)
+    compare_clustering(links, points, '3ecr(a) P08397')
 
     # Using reciprocal distance for similarity
     links = []
@@ -268,7 +269,7 @@ if __name__ == '__main__':
         s = invert_distances(sq, method='reciprocal')
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nreciprocal'])
-    compare_clustering(links, points)
+    compare_clustering(links, points, '3ecr(a) P08397')
 
     # KRT14 from K5/14 dimer example
     d, points, resids = variant_distances(pdb_id='3tnu', chain='A', uniprot_id='P02533')
