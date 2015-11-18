@@ -19,6 +19,7 @@ from main import merge_tables
 from to_table import _fetch_uniprot_variants
 from utils import _get_colors, autoscale_axes, fractional_to_cartesian
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
 def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
@@ -245,6 +246,11 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                             simplex = np.append(simplex, simplex[0])  # Closes facet
                             ax.plot(points[simplex, 0], points[simplex, 1],
                                     points[simplex, 2], color=clr[cluster - 1])
+                            tri = Poly3DCollection([zip(points[simplex, 0], points[simplex, 1], points[simplex, 2])],
+                                                   alpha=0.2)
+                            tri.set_color(clr[cluster - 1])
+                            tri.set_edgecolor('k')
+                            ax.add_collection3d(tri)
                 except QhullError:
                     pass
             if addn_points is not None:
