@@ -131,8 +131,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
             # purpose
 
             mapped = pd.merge(residue_mappings, uniprot_vars,
-                              left_on='UniProt_dbResNum',
-                              right_on='resi')
+                              on='UniProt_dbResNum')
 
             # Create a selection for each trait
             groups = mapped.disease.unique()
@@ -140,3 +139,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
                 in_group = mapped.disease == group
 
                 build_selection(chain, group, in_group, mapped)
+
+
+if __name__ == '__main__':
+    visualise('3tnu', assembly=True, use_uniprot=True)
