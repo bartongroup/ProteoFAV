@@ -242,8 +242,9 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                     if len(points) >= 4:
                         hull = ConvexHull(points)
                         for simplex in hull.simplices:
-                            ax.plot_wireframe(points[simplex, 0], points[simplex, 1],
-                                              points[simplex, 2], color=clr[cluster - 1])
+                            simplex = np.append(simplex, simplex[0])  # Closes facet
+                            ax.plot(points[simplex, 0], points[simplex, 1],
+                                    points[simplex, 2], color=clr[cluster - 1])
                 except QhullError:
                     pass
             if addn_points is not None:
