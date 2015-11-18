@@ -238,9 +238,9 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                 ax.scatter(xyz[part == cluster, 0], xyz[part == cluster, 1],
                            xyz[part == cluster, 2], c=clr[cluster - 1])
                 # Compute and plot the Point Cloud Complex Hull
-                try:
-                    points = xyz[part == cluster]
-                    if len(points) >= 4:
+                points = xyz[part == cluster]
+                if len(points) >= 4:
+                    try:
                         hull = ConvexHull(points)
                         for simplex in hull.simplices:
                             simplex = np.append(simplex, simplex[0])  # Closes facet
@@ -251,8 +251,11 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                             tri.set_color(clr[cluster - 1])
                             tri.set_edgecolor('k')
                             ax.add_collection3d(tri)
-                except QhullError:
-                    pass
+                    except QhullError:
+                        pass
+                else:
+                    points = np.vstack([points, points[0]])  # Gives triangle for 3-points
+                    ax.plot(points[:, 0], points[:, 1], points[:, 2], color=clr[cluster - 1])
             if addn_points is not None:
                 ax.scatter(addn_points[:,0], addn_points[:,1], addn_points[:,2], c='grey', s=5, alpha=0.3)
                 x = np.append(xyz[:, 0], addn_points[:,0])
