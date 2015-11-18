@@ -17,7 +17,7 @@ __all__ = ["merge_tables"]
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                  validate=True, add_validation=False, add_variants=False,
-                 add_annotation=False):
+                 add_annotation=False, remove_redundant=False):
     """Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
     :type add_variants: bool
@@ -174,17 +174,18 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                              left_on="UniProt_dbResNum", right_index=True)
 
     # remove global information from the table.
-    for col in table:
-        try:
-            value = table[col].dropna().unique()
-        except TypeError:  # break for list-like columns
-            continue
-
-        if value.shape[0] == 1:
-            del table[col]
-            if value[0] == '?':
+    if remove_redundant:  # TODO: Redundant data could (optionally) be returned separately
+        for col in table:
+            try:
+                value = table[col].dropna().unique()
+            except TypeError:  # break for list-like columns
                 continue
-            log.info('Global key {} is {}'.format(col, value[0]))
+
+            if value.shape[0] == 1:
+                del table[col]
+                if value[0] == '?':
+                    continue
+                log.info('Global key {} is {}'.format(col, value[0]))
     return table
 
 
