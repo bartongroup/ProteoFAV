@@ -13,11 +13,11 @@ from os import path, remove
 import unittest
 import logging
 
-from to_table import _mmcif_atom_to_table
+from to_table import _mmcif_atom
 from mmcif_tools import _mmcif_info_to_dict
 from mmcif_tools import _bio_unit_to_table
 
-from utils import isvalid_pdb_id
+from utils import is_valid
 
 
 class TestMMCIFParser(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestMMCIFParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_mmcif = path.join(path.dirname(__file__), "CIF/2pah.cif")
-        self.mmcif_atom_parser = _mmcif_atom_to_table
+        self.mmcif_atom_parser = _mmcif_atom
         self.mmcif_info_parser = _mmcif_info_to_dict
         self.bio_unit_builder = _bio_unit_to_table
         self.example_tsv_out = path.join(path.dirname(__file__), "CIF/2pah-bio.tsv")
@@ -37,7 +37,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.pdb_id_error3 = 1234
         self.pdb_id_error4 = ()
         self.pdb_id_error5 = []
-        self.isvalid = isvalid_pdb_id
+        self.isvalid = is_valid
 
     def tearDown(self):
         """Remove testing framework."""
@@ -61,12 +61,12 @@ class TestMMCIFParser(unittest.TestCase):
         Testing input of invalid UniProt identifiers.
         """
         #
-        self.assertTrue(self.isvalid(self.pdb_id))
-        self.assertFalse(self.isvalid(self.pdb_id_error1))
-        self.assertFalse(self.isvalid(self.pdb_id_error2))
-        self.assertFalse(self.isvalid(self.pdb_id_error3))
-        self.assertFalse(self.isvalid(self.pdb_id_error4))
-        self.assertFalse(self.isvalid(self.pdb_id_error5))
+        self.assertTrue(self.isvalid(self.pdb_id, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error1, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error2, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error3, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error4, database='pdbe'))
+        self.assertFalse(self.isvalid(self.pdb_id_error5, database='pdbe'))
 
     def test_atom_to_table_mmcif(self):
         """
@@ -140,7 +140,7 @@ class TestMMCIFParser(unittest.TestCase):
 
         log = logging.getLogger("Biological.Assemblies")
 
-        # uses _mmcif_atom_to_table, _mmcif_info_to_table, and
+        # uses _mmcif_atom, _mmcif_info_to_table, and
         # other mmcif_tools that needed to be tested
 
         # method == 1

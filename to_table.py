@@ -12,87 +12,30 @@ for better error handling. Both levels are convered by test cases.
 import logging
 from StringIO import StringIO
 from os import path
-import time
 import sys
+from urllib2 import HTTPError
 from lxml import etree
 import pandas as pd
 import requests
 from config import defaults
 from fetcher import fetch_files
-from utils import isvalid_uniprot_id
-from utils import isvalid_ensembl_id
+from utils import is_valid
 from utils import compare_uniprot_ensembl_sequence
+from utils import get_url_or_retry
 
 log = logging.getLogger(__name__)
-to_unique = lambda series: series.unique()
 
 
-class IDNotValidError(Exception):
-    """
-    Base class for database related exceptions.
-    Databases: UniProt, PDB, Ensembl, etc.
-    """
-    pass
+def to_unique(series):
+    """Lambda-like expression for returning unique elements of a Series.
+    :param series: pandas.Series
+    :return: pandas.Series
+    """""
+    return series.unique()
 
 
-def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None,
-                     **params):
-    """
-    Fetch an url using Requests or retry fetching it if the server is
-    complaining with retry_in error.
-
-    :param retry_in:
-    :param json:
-    :param header:
-    :param url: url to be fetched as a string
-    :param wait: sleeping between tries in seconds
-    :param params: request.get kwargs.
-    :return: url content or url content in json data structure.
-    """
-    if not header:
-        header = {}
-    if json:
-        header.update({"Content-Type": "application/json"})
-    response = requests.get(url, headers=header, params=params)
-
-    if response.ok:
-        if json:
-            return response.json()
-        else:
-            return response.content
-    elif response.status_code in retry_in:
-        time.sleep(wait)
-        return get_url_or_retry(
-            url, retry_in, wait, json, header, **params)
-    else:
-        print(response.url)
-        log.error(response.status_code)
-        response.raise_for_status()
-
-
-def is_valid(identifier, database=None, url=None):
-    """
-
-    :param url:
-    :param identifier:
-    :param database:
-    :return:
-    """
-    if len(identifier) < 1:
-        raise IDNotValidError
-    if not url:
-        url = getattr(defaults, 'http_' + database) + identifier
-    r = requests.get(url)
-    if not r.ok:
-        raise IDNotValidError('{} not found at {}: (url check:{}'.format(
-            identifier, database, r.url))
-    else:
-        return True
-
-
-def _dssp_to_table(filename):
-    """
-    Loads and parses DSSP files generating a pandas dataframe.
+def _dssp(filename):
+    """Parses DSSP file output to a pandas DataFrame.
 
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
@@ -106,20 +49,17 @@ def _dssp_to_table(filename):
     dssp_table = pd.read_fwf(filename, skiprows=28, names=dssp_header,
                              colspecs=cols_widths, index_col=0,
                              compression=None)
-    if dssp_table.icode.duplicated().any():
-        log.info('DSSP file {} has non-unique index'.format(filename))
-    elif dssp_table.empty:
+    if dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
             filename))
     return dssp_table
 
 
-def _mmcif_atom_to_table(filename, delimiter=None):
-    """
-    Loader of mmCIF ATOM and HETEROATOM lines with pandas.
+def _mmcif_atom(filename, delimiter=None):
+    """Parse mmCIF ATOM and HETEROATOM lines to a pandas DataFrame.
 
-    :param filename: input CIF file
+    :param filename: input CIF file path
     :return: pandas table dataframe
     """
 
@@ -149,10 +89,8 @@ def _mmcif_atom_to_table(filename, delimiter=None):
                              compression=None)
 
 
-def _sifts_residues_to_table(filename, cols=None):
-    """
-    Loads and parses SIFTS XML files generating a pandas dataframe.
-    Parses the Residue entries.
+def _sifts_residues(filename, cols=None):
+    """Parses the residue fields of a SIFTS XML file to a pandas DataFrame
 
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
@@ -197,17 +135,16 @@ def _sifts_residues_to_table(filename, cols=None):
                             # renaming all keys with dbSource prefix
                             try:
                                 k = "{}_{}".format(
-                                    annotation.attrib["dbSource"],
-                                    k)
+                                    annotation.attrib["dbSource"], k)
                             except KeyError:
                                 k = "{}_{}".format("REF", k)
 
                         # residueDetail entries
-                        # TODO better check if has .text attrib
                         elif annotation.tag == residue_detail:
                             # joining dbSource and property keys
                             k = "_".join([annotation.attrib["dbSource"],
                                           annotation.attrib["property"]])
+
                             # value is the text field in the XML
                             v = annotation.text
 
@@ -234,12 +171,10 @@ def _sifts_residues_to_table(filename, cols=None):
     return data
 
 
-def _sifts_regions_to_table(filename):
-    """
-    Loads and parses SIFTS XML files generating a pandas dataframe.
-    Parses the Regions entries.
+def _sifts_regions(filename):
+    """Parse ther region field of the SIFTS XML file to a pandas dataframe
 
-    :param filename: input SIFTS xml file
+    :param filename: input SIFTS xml file path
     :return: pandas table dataframe
     """
 
@@ -327,16 +262,15 @@ def _sifts_regions_to_table(filename):
     return pd.DataFrame(rows)
 
 
-def _pdb_uniprot_sifts_mapping_to_table(identifier):
-    """
-    Queries the PDBe API for SIFTS mapping between PDB - UniProt.
-    One to many relationship expected.
+def _pdb_uniprot_sifts_mapping(identifier):
+    """Queries the PDBe API for SIFTS mapping between PDB - UniProt. One to many
+     relationship expected.
 
     :param identifier: PDB id
     :return: pandas table dataframe
     """
 
-    if not is_valid(identifier, 'pdb'):
+    if not is_valid(identifier, 'pdbe'):
         raise ValueError(
             "{} is not a valid PDB identifier.".format(identifier))
 
@@ -351,19 +285,13 @@ def _pdb_uniprot_sifts_mapping_to_table(identifier):
     return pd.DataFrame(rows)
 
 
-def _uniprot_pdb_sifts_mapping_to_table(identifier):
-    """
-    Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
+def _uniprot_pdb_sifts_mapping(identifier):
+    """Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
     One to many relationship expected.
 
     :param identifier: UniProt ID
     :return: pandas table dataframe
     """
-
-    if not is_valid(identifier, database='uniprot'):
-        raise ValueError(
-            "{} is not a valid UniProt identifier.".format(identifier))
-
     sifts_endpoint = "mappings/best_structures/"
     url = defaults.api_pdbe + sifts_endpoint + str(identifier)
     information = get_url_or_retry(url, json=True)
@@ -374,7 +302,100 @@ def _uniprot_pdb_sifts_mapping_to_table(identifier):
     return pd.DataFrame(rows)
 
 
-def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
+def _uniprot_gff(identifier):
+    """Retrive UniProt data from the GFF file
+
+    :param identifier: UniProt accession identifier
+    :return: pandas table
+    """
+
+    url = defaults.http_uniprot + identifier + ".gff"
+    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
+
+    try:
+        data = pd.read_table(url, skiprows=2, names=cols)
+    except HTTPError as e:
+        log.error(e)
+        data = None
+    return data
+
+
+def select_uniprot_gff(identifier, drop_types=('Helix', 'Beta strand', 'Turn',
+                                               'Chain')):
+    """Sumarieses the GFF file for a UniProt acession.
+    :param identifier: UniProt-SP acession
+    :param drop_types: Annotation type to be droped
+    :return: table read to be joined to main table
+    """
+
+    def annotation_writter(row):
+        """ Establish a set of rules to annotates uniprot GFF
+        :param row: each line in the GFF file
+        :return:
+        """
+        if not row.ids and not row.note:
+            return row.TYPE
+        elif not row.ids:
+            return '{0.TYPE}: {0.note}'.format(row)
+        elif not row.note:
+            return '{0.TYPE} ({0.ids})'.format(row)
+        else:
+            return '{0.TYPE}: {0.note} ({0.ids})'.format(row)
+
+    if not drop_types:
+        drop_types = []
+    data = _uniprot_gff(identifier)
+    try:
+        data = data[~data.TYPE.isin(drop_types)]
+    except TypeError:
+        return None
+    data['note'] = data.GROUP.str.extract(r'Note=(.*?)[;]').fillna('')
+    data['ids'] = data.GROUP.str.extract(r'ID=(.*?)[;]').fillna('')
+
+    lines = []
+    for i, row in data.iterrows():
+        lines.extend({'idx': i, 'annotation': annotation_writter(row)}
+                     for i in range(row.START, row.END + 1))
+    data = pd.DataFrame(lines)
+    return data.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
+
+
+def _uniprot_ensembl_mapping(identifier, species='human'):
+    """Uses the UniProt mapping service to try and get Ensembl IDs for the
+    UniProt accession identifier provided
+
+    :param identifier: UniProt accession identifier
+    :param species: Ensembl species
+    :return: pandas table dataframe
+    """
+    from library import valid_ensembl_species
+    if species not in valid_ensembl_species:
+        raise ValueError('Provided species {} is not valid'.format(species))
+
+    information = {}
+    rows = []
+
+    ensembl_endpoint = "xrefs/symbol/{}/".format(species)
+    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
+    data = get_url_or_retry(url, json=True)
+    for entry in data:
+        typ = entry['type'].upper()
+        eid = entry['id']
+        try:
+            if eid in information[typ]:
+                continue
+            information[typ].append(eid)
+        except KeyError:
+            information[typ] = eid
+        except AttributeError:
+            information[typ] = [information[typ]]
+            information[typ].append(eid)
+
+    rows.append(information)
+    return pd.DataFrame(rows)
+
+
+def _uniprot_info(identifier, retry_in=(503, 500), cols=None):
     """
     Retrive uniprot information from the database.
 
@@ -406,62 +427,15 @@ def _uniprot_info_to_table(identifier, retry_in=(503, 500), cols=None):
     return data
 
 
-def _uniprot_ensembl_mapping_to_table(identifier, species='human'):
-    """
-    Uses the UniProt mapping service to try and get Ensembl IDs for
-    the UniProt accession identifier provided.
-
-    :param identifier: UniProt accession identifier
-    :param species: Ensembl species
-    :return: pandas table dataframe
-    """
-    from library import valid_ensembl_species
-    if not is_valid(identifier, database="uniprot"):
-        raise ValueError(
-            "{} is not a valid UniProt identifier.".format(identifier))
-
-    if species not in valid_ensembl_species:
-        raise ValueError('Provided species {} is not valid'.format(species))
-
-    information = {}
-    rows = []
-
-    ensembl_endpoint = "xrefs/symbol/{}/".format(species)
-    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
-    data = get_url_or_retry(url, json=True)
-    for entry in data:
-        typ = entry['type'].upper()
-        eid = entry['id']
-        try:
-            if eid in information[typ]:
-                continue
-            information[typ].append(eid)
-        except KeyError:
-            information[typ] = eid
-        except AttributeError:
-            information[typ] = [information[typ]]
-            information[typ].append(eid)
-
-    rows.append(information)
-    return pd.DataFrame(rows)
-
-
-def _transcript_variants_ensembl_to_table(identifier, species='human',
-                                          missense=True):
-    """
-    Queries the Ensembl API for transcript variants (mostly dbSNP)
+def _transcript_variants_ensembl(identifier, missense=True, species=None):
+    """Queries the Ensembl API for transcript variants (mostly dbSNP)
     based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
-    :param species: Ensembl species
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
-    from utils import isvalid_ensembl_id
-    if not isvalid_ensembl_id(identifier, species):
-        raise ValueError(
-            "{} is not a valid Ensembl Accession.".format(identifier))
-
+    #TODO not using organism
     ensembl_endpoint = "overlap/translation/"
     if missense:
         params = {'feature': 'transcript_variation',
@@ -473,22 +447,14 @@ def _transcript_variants_ensembl_to_table(identifier, species='human',
     return pd.DataFrame(rows)
 
 
-def _somatic_variants_ensembl_to_table(identifier, species='human',
-                                       missense=True):
-    """
-    Queries the Ensembl API for somatic transcript variants (COSMIC)
-    based on Ensembl Protein identifiers (e.g. ENSP00000326864).
+def _somatic_variants_ensembl(identifier, missense=True, species=None):
+    """Queries the Ensembl API for somatic transcript variants (COSMIC) based on
+     Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
-    :param species: Ensembl species
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
-    from utils import isvalid_ensembl_id
-    if not isvalid_ensembl_id(identifier, species):
-        raise ValueError(
-            "{} is not a valid Ensembl Accession.".format(identifier))
-
     ensembl_endpoint = "overlap/translation/"
     if missense:
         params = {'feature': 'somatic_transcript_variation',
@@ -500,19 +466,13 @@ def _somatic_variants_ensembl_to_table(identifier, species='human',
     return pd.DataFrame(rows)
 
 
-def _ensembl_variant_to_table(identifier, species='human'):
-    """
-    Queries the Ensembl API for variant IDs (e.g rs376845802 or COSM302853).
+def _ensembl_variant(identifier, species='human'):
+    """Queries the Ensembl API for variant IDs (e.g rs376845802 or COSM302853).
 
     :param identifier: variant ID
     :param species: Ensembl species
     :return: pandas table dataframe
     """
-    from utils import isvalid_ensembl_id
-    if not isvalid_ensembl_id(identifier, species, variant=True):
-        raise ValueError(
-            "{} is not a valid Variation Accession.".format(identifier))
-
     ensembl_endpoint = "variation/{}/".format(species)
     # params = {'pops': '1', 'phenotypes': '1', 'genotypes': '1'}
     url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
@@ -540,12 +500,13 @@ def _ensembl_variant_to_table(identifier, species='human'):
     return pd.DataFrame(rows)
 
 
-def _pdb_validation_to_table(filename, global_parameters=None):
-    """
-    Parse the validation xml to a pandas dataframe.
-    Private method, prefer using the wrapper.
+def _pdb_validation_to_table(filename, global_parameters=False):
+    """Parse the PDB's validation validation file to a pandas DataFrame. Private
+     method, prefer its higher level wrapper.
+
+    :type global_parameters: bool
     :param filename: path to file
-    :return: pandas dataframe
+    :return: table with validation information
     :rtype: pandas.DataFrame
     """
     if not path.isfile(filename):
@@ -555,40 +516,37 @@ def _pdb_validation_to_table(filename, global_parameters=None):
     root = tree.getroot()
     if global_parameters:
         global_parameters = root.find('Entry').attrib
-        print(global_parameters)
+        log.info(global_parameters)
     rows = []
     header = set()
     for i, elem in enumerate(root.iterfind('ModelledSubgroup')):
         rows.append(dict(elem.attrib))
         header.update(rows[-1].keys())
     for row in rows:
-        not_in = dict.fromkeys(header.difference(row.keys()), None)
+        not_in = {k: None for k in header.difference(row.keys())}
         row.update(not_in)
     df = pd.DataFrame(rows, columns=header)
     return df
 
 
-def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
-               heteroatoms=False):
-    """
-    Parse the mmcif file and select the rows of interess.
-    :param lines:
-    :param pdb_id:
-    :param models:
-    :param chains:
-    :param atoms:
-    :param heteroatoms:
-    :return:
+def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
+    """Produce table read from mmCIF file
+
+    :param pdb_id: PDB identifier
+    :param models: protein structure entity
+    :param chains: protein structure chain
+    :param lines: choice of ATOM, HETEROATOMS or both.
+    :return: Table read to be joined
     """
 
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
 
     try:
-        cif_table = _mmcif_atom_to_table(cif_path)
+        cif_table = _mmcif_atom(cif_path)
     except IOError:
         cif_path = fetch_files(pdb_id, sources='cif',
                                directory=defaults.db_mmcif)[0]
-        cif_table = _mmcif_atom_to_table(cif_path)
+        cif_table = _mmcif_atom(cif_path)
 
     if models:
         if models == 'first':
@@ -639,23 +597,22 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
     return cif_table.set_index(['auth_seq_id'])
 
 
-def select_sifts(pdb_id, chains=None, keep_missing=True):
-    """
+def select_sifts(pdb_id, chains=None):
+    """Produce table ready from SIFTS XML file
 
-    :param pdb_id:
-    :param chains:
-    :param keep_missing:
-    :return:
+    :param pdb_id: PDB identifier
+    :param chains: Protein structure chain
+    :return: table read to be merged
     """
 
     sift_path = path.join(defaults.db_sifts, pdb_id + '.xml')
 
     try:
-        sift_table = _sifts_residues_to_table(sift_path)
+        sift_table = _sifts_residues(sift_path)
     except IOError:
         sift_path = fetch_files(pdb_id, sources='sifts',
                                 directory=defaults.db_sifts)[0]
-        sift_table = _sifts_residues_to_table(sift_path)
+        sift_table = _sifts_residues(sift_path)
     if chains:
         if isinstance(chains, str):
             chains = [chains]
@@ -664,20 +621,20 @@ def select_sifts(pdb_id, chains=None, keep_missing=True):
 
 
 def select_dssp(pdb_id, chains=None):
-    """
+    """Produce table from DSSP file output
 
-    :param pdb_id:
-    :param chains:
-    :return:
+    :param pdb_id: PDB identifier
+    :param chains: PDB protein chain
+    :return: pandas dataframe
     """
 
     dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
     try:
-        dssp_table = _dssp_to_table(dssp_path)
+        dssp_table = _dssp(dssp_path)
     except IOError:
         dssp_path = fetch_files(pdb_id, sources='dssp',
                                 directory=defaults.db_dssp)[0]
-        dssp_table = _dssp_to_table(dssp_path)
+        dssp_table = _dssp(dssp_path)
     except StopIteration:
         raise IOError('{} is unreadable.'.format(dssp_path))
     if chains:
@@ -689,10 +646,19 @@ def select_dssp(pdb_id, chains=None):
         else:
             raise ValueError('{} structure DSSP file does not have chains {}'
                              ''.format(pdb_id, ' '.join(chains)))
+    if chains and dssp_table.icode.duplicated().any():
+        log.info('DSSP file for {} has not unique index'.format(pdb_id))
+
     return dssp_table.set_index(['icode'])
 
 
 def select_validation(pdb_id, chains=None):
+    """Produces table from PDB validation XML file
+
+    :param pdb_id: PDB identifier
+    :param chains: PDB protein chain
+    :return: pandas dataframe
+    """
     val_path = path.join(defaults.db_pdb,
                          pdb_id + defaults.validation_extension)
     try:
@@ -701,16 +667,7 @@ def select_validation(pdb_id, chains=None):
         val_path = fetch_files(pdb_id, sources='validation',
                                directory=defaults.db_pdb)[0]
         val_table = _pdb_validation_to_table(val_path)
-    # if models:
-    #     if isinstance(models, str):
-    #         models = list(models)
-    #     elif isinstance(models, int):
-    #         models = list(str(models))
-    #     try:
-    #         val_table = val_table[val_table.model.isin(models)]
-    #     except AttributeError:
-    #         err = 'Structure {} has only one model, which was kept'.format
-    #         log.info(err(pdb_id))
+
     if chains:
         if isinstance(chains, str):
             chains = [chains]
@@ -722,18 +679,12 @@ def select_validation(pdb_id, chains=None):
 
 
 def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
-    """
-    Gets the sequence for an Ensembl identifier.
+    """    Gets the sequence for an Ensembl identifier.
 
     :param identifier: Ensembl ID
     :param species: Ensembl species
     :return: sequence
     """
-
-    if not isvalid_ensembl_id(identifier, species):
-        raise ValueError(
-            "{} is not a valid Ensembl Accession.".format(identifier))
-
     ensembl_endpoint = "sequence/id/"
     url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
     header = {'content-type': 'text/plain'}
@@ -745,27 +696,21 @@ def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
     return sequence
 
 
-def _uniprot_variants_to_table(identifier):
-    """
-    Goes from a UniProt ID to a table with variants
-    per residue.
+def select_uniprot_variants(identifier):
+    """Sumarise variants for a protein in the UniProt
 
     :param identifier: UniProt ID
-    :return: pandas.DataFrame
+    :return: table with variants, rows are residues
     """
-
     # get organism and sequence for the provided ientifier
-    if not isvalid_uniprot_id(identifier):
-        raise ValueError(
-            "{} is not a valid UniProt Id.".format(identifier))
 
-    uni = _uniprot_info_to_table(identifier, cols=['organism', 'sequence'])
+    uni = _uniprot_gff(identifier, cols=['organism', 'sequence'])
     org = ('_'.join(uni.loc[0, 'Organism'].split()[-3:-1])).lower()
     seq = uni.loc[0, 'Sequence']
 
     # get the ensembl ids: this also validate this species as available
     # through ensembl
-    ens = _uniprot_ensembl_mapping_to_table(identifier, species=org)
+    ens = _uniprot_ensembl_mapping(identifier, species=org)
 
     # get the ensembl protein ids
     ens_pros = ens.loc[0, 'TRANSLATION']
@@ -787,12 +732,10 @@ def _uniprot_variants_to_table(identifier):
     # get the variants for the ensembl proteins that match the uniprot
     tables = []
     for i in usable_indexes:
-        vars = _transcript_variants_ensembl_to_table(ens_pros[i], org,
-                                                     missense=True)
-        muts = _somatic_variants_ensembl_to_table(ens_pros[i], org,
-                                                  missense=True)
-        # tables.append(vars[['translation', 'id', 'start', 'residues']].groupby('start').agg(to_unique))
-        # tables.append(muts[['translation', 'id', 'start', 'residues']].groupby('start').agg(to_unique))
+        vars = _transcript_variants_ensembl(ens_pros[i], missense=True)
+        muts = _somatic_variants_ensembl(ens_pros[i], missense=True)
+
+        # TODO: From... TO... mutated residues as different columns in the table
 
         tables.append(vars[['translation', 'id', 'start', 'residues']])
         tables.append(muts[['translation', 'id', 'start', 'residues']])
@@ -804,9 +747,7 @@ def _uniprot_variants_to_table(identifier):
 
 
 def sifts_best(identifier, first=False):
-    """
-    Gets the best structures from the SIFTS endpoint in the
-    PDBe api.
+    """Retrives the best structures from the SIFTS endpoint in the PDBe api
 
     :param identifier: Uniprot ID
     :param first: gets the first entry
@@ -820,11 +761,10 @@ def sifts_best(identifier, first=False):
 
 
 def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
-    """
-    Retrieves variant info. from the variation endpoint.
+    """Retrieves variant annotation from ENSEMBL
 
-    :param variant_id:
-    :param list_of_variant_ids:
+    :param variant_ids: Enseble Variant identifier
+    :param use_vep: wether to use predicted variants fro VEP
     :return:
     """
 
@@ -837,8 +777,10 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
         if use_vep:
             ensembl_endpoint = "vep/human/id"
         url = defaults.api_ensembl + ensembl_endpoint
-        headers = {"Content-Type": "application/json", "Accept": "application/json"}
-        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") + ', "phenotypes" : 1 }'  ##FIXME
+        headers = {"Content-Type": "application/json",
+                   "Accept": "application/json"}
+        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") \
+               + ', "phenotypes" : 1 }'  # FIXME
         data = data.replace("'", "\"")
         r = requests.post(url, headers=headers, data=data)
 
@@ -860,15 +802,15 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
     return decoded
 
 
-def _fetch_uniprot_variants(uniprot, format='tab'):
-    """
+def _fetch_uniprot_variants(identifier, _format='tab'):
+    """Request human curated variants from UniProt
 
-    :param uniprot:
+    :param identifier:
     :return:
     """
-    url = defaults.http_uniprot + '?query=accession:' + uniprot
-    url = url + '&format=' + format
-    url = url + '&columns=feature(NATURAL+VARIANT)'
+    url = defaults.http_uniprot + '?query=accession:' + identifier
+    url += '&format=' + _format
+    url += '&columns=feature(NATURAL+VARIANT)'
 
     r = requests.get(url)
     if not r.ok:
@@ -908,5 +850,4 @@ def _fetch_uniprot_variants(uniprot, format='tab'):
 
 
 if __name__ == '__main__':
-    X = select_validation("4ibw")
-    print(X)
+    X = _sifts_residues('tests/SIFTS/2pah.xml')

@@ -1,14 +1,10 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
-
-__author__ = 'tbrittoborges'
-__version__ = "1.0"
-
 import logging
 from os import path
 import unittest
 from mock import patch
-from to_table import _dssp_to_table, _sifts_residues_to_table, _mmcif_atom_to_table
+from to_table import _dssp, _sifts_residues, _mmcif_atom
 from main import merge_tables
 from config import Defaults
 
@@ -18,15 +14,15 @@ defaults = Defaults("config.txt")
 
 
 @patch("to_table.defaults", defaults)
-class TestTableMeger(unittest.TestCase):
+class TestTableMerger(unittest.TestCase):
     """Test table merging methodsthe DSSP parser methods."""
 
     def setUp(self):
         """Initialize the framework for testing."""
 
-        self.cif_to_table = _mmcif_atom_to_table
-        self.sifts_to_table = _sifts_residues_to_table
-        self.dssp_to_table = _dssp_to_table
+        self.cif_to_table = _mmcif_atom
+        self.sifts_to_table = _sifts_residues
+        self.dssp_to_table = _dssp
 
         self.merge_table = merge_tables
 
@@ -74,7 +70,8 @@ class TestTableMeger(unittest.TestCase):
                    'occupancy': 'unique', 'B_iso_or_equiv': 'unique',
                    'id': 'unique'}
         self.cif = self.cif.groupby('auth_seq_id').agg(groupby)
-        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + self.cif.shape[1] + 2
+        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + self.cif.shape[
+            1] + 2
         # self.assertEqual(data.shape[1], n_cols,
         #                  "Incorrect number of cols in camIV table in CA mode:"
         #                  "{} instead {}.".format(data.shape[1], n_cols))
@@ -156,5 +153,5 @@ class TestTableMeger(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMeger)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMerger)
     unittest.TextTestRunner(verbosity=2).run(suite)
