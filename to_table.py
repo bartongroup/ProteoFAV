@@ -302,7 +302,7 @@ def _uniprot_pdb_sifts_mapping(identifier):
     return pd.DataFrame(rows)
 
 
-def _uniprot_gff(identifier, retry_in=(503, 500)):
+def _uniprot_gff(identifier):
     """Retrive UniProt data from the GFF file
 
     :param identifier: UniProt accession identifier
@@ -327,6 +327,7 @@ def select_uniprot_gff(identifier, drop_types=('Helix', 'Beta strand', 'Turn',
     :param drop_types: Annotation type to be droped
     :return: table read to be joined to main table
     """
+
     def annotation_writter(row):
         """ Establish a set of rules to annotates uniprot GFF
         :param row: each line in the GFF file
@@ -351,11 +352,11 @@ def select_uniprot_gff(identifier, drop_types=('Helix', 'Beta strand', 'Turn',
     data['note'] = data.GROUP.str.extract(r'Note=(.*?)[;]').fillna('')
     data['ids'] = data.GROUP.str.extract(r'ID=(.*?)[;]').fillna('')
 
-    rows = []
+    lines = []
     for i, row in data.iterrows():
-        rows.extend({'idx': i, 'annotation': annotation_writter(row)}
+        lines.extend({'idx': i, 'annotation': annotation_writter(row)}
                      for i in range(row.START, row.END + 1))
-    data = pd.DataFrame(rows)
+    data = pd.DataFrame(lines)
     return data.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
 
 
@@ -394,12 +395,11 @@ def _uniprot_ensembl_mapping(identifier, species='human'):
     return pd.DataFrame(rows)
 
 
-def _transcript_variants_ensembl(identifier, species='human', missense=True):
+def _transcript_variants_ensembl(identifier, missense=True):
     """Queries the Ensembl API for transcript variants (mostly dbSNP)
     based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
-    :param species: Ensembl species
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
@@ -414,12 +414,11 @@ def _transcript_variants_ensembl(identifier, species='human', missense=True):
     return pd.DataFrame(rows)
 
 
-def _somatic_variants_ensembl(identifier, species='human', missense=True):
+def _somatic_variants_ensembl(identifier, missense=True):
     """Queries the Ensembl API for somatic transcript variants (COSMIC) based on
      Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
-    :param species: Ensembl species
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
@@ -471,6 +470,7 @@ def _ensembl_variant(identifier, species='human'):
 def _pdb_validation_to_table(filename, global_parameters=False):
     """Parse the PDB's validation validation file to a pandas DataFrame. Private
      method, prefer its higher level wrapper.
+
     :type global_parameters: bool
     :param filename: path to file
     :return: table with validation information
@@ -496,17 +496,14 @@ def _pdb_validation_to_table(filename, global_parameters=False):
     return df
 
 
-def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
-               heteroatoms=False):
-    """
-    Parse the mmcif file and select the rows of interess.
-    :param lines:
-    :param pdb_id:
-    :param models:
-    :param chains:
-    :param atoms:
-    :param heteroatoms:
-    :return:
+def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
+    """Produce table read from mmCIF file
+
+    :param pdb_id: PDB identifier
+    :param models: protein structure entity
+    :param chains: protein structure chain
+    :param lines: choice of ATOM, HETEROATOMS or both.
+    :return: Table read to be joined
     """
 
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
@@ -567,13 +564,12 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
     return cif_table.set_index(['auth_seq_id'])
 
 
-def select_sifts(pdb_id, chains=None, keep_missing=True):
-    """
+def select_sifts(pdb_id, chains=None):
+    """Produce table ready from SIFTS XML file
 
-    :param pdb_id:
-    :param chains:
-    :param keep_missing:
-    :return:
+    :param pdb_id: PDB identifier
+    :param chains: Protein structure chain
+    :return: table read to be merged
     """
 
     sift_path = path.join(defaults.db_sifts, pdb_id + '.xml')
@@ -592,7 +588,7 @@ def select_sifts(pdb_id, chains=None, keep_missing=True):
 
 
 def select_dssp(pdb_id, chains=None):
-    """High level function to parse DSSP file output to pandas.DataFrame
+    """Produce table from DSSP file output
 
     :param pdb_id: PDB identifier
     :param chains: PDB protein chain
@@ -624,7 +620,7 @@ def select_dssp(pdb_id, chains=None):
 
 
 def select_validation(pdb_id, chains=None):
-    """High level function that produces table of validation to a PDB entry
+    """Produces table from PDB validation XML file
 
     :param pdb_id: PDB identifier
     :param chains: PDB protein chain
@@ -668,7 +664,7 @@ def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
 
 
 def select_uniprot_variants(identifier):
-    """High level function to sumarise variants for a protein in the UniProt
+    """Sumarise variants for a protein in the UniProt
 
     :param identifier: UniProt ID
     :return: table with variants, rows are residues
@@ -703,10 +699,8 @@ def select_uniprot_variants(identifier):
     # get the variants for the ensembl proteins that match the uniprot
     tables = []
     for i in usable_indexes:
-        vars = _transcript_variants_ensembl(ens_pros[i], org,
-                                            missense=True)
-        muts = _somatic_variants_ensembl(ens_pros[i], org,
-                                         missense=True)
+        vars = _transcript_variants_ensembl(ens_pros[i], missense=True)
+        muts = _somatic_variants_ensembl(ens_pros[i], missense=True)
 
         # TODO: From... TO... mutated residues as different columns in the table
 
@@ -720,9 +714,7 @@ def select_uniprot_variants(identifier):
 
 
 def sifts_best(identifier, first=False):
-    """
-    Gets the best structures from the SIFTS endpoint in the
-    PDBe api.
+    """Retrives the best structures from the SIFTS endpoint in the PDBe api
 
     :param identifier: Uniprot ID
     :param first: gets the first entry
@@ -736,11 +728,10 @@ def sifts_best(identifier, first=False):
 
 
 def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
-    """
-    Retrieves variant info. from the variation endpoint.
+    """Retrieves variant annotation from ENSEMBL
 
-    :param variant_id:
-    :param list_of_variant_ids:
+    :param variant_ids: Enseble Variant identifier
+    :param use_vep: wether to use predicted variants fro VEP
     :return:
     """
 
