@@ -12,8 +12,10 @@ usage = ''
 parser = argparse.ArgumentParser(description=__doc__, usage=usage)
 parser.add_argument('--pdb_acc', type=str)
 parser.add_argument('--chain')
+parser.add_argument('--add_annotation', type='store_true')
 parser.add_argument('output')
 
 args = parser.parse_args()
-table = merge_tables(pdb_id=args.pdb_acc, chain=args.chain)
+table = merge_tables(pdb_id=args.pdb_acc, chain=args.chain,
+                     add_annotation=args.add_annotation)
 table.to_csv(args.output)
