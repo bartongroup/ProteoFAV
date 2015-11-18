@@ -17,11 +17,11 @@ from scipy.spatial.qhull import QhullError
 
 from main import merge_tables
 from to_table import _fetch_uniprot_variants
-from utils import _get_colors, autoscale_axes
+from utils import _get_colors, autoscale_axes, fractional_to_cartesian
 from mpl_toolkits.mplot3d import Axes3D
 
 
-def variant_distances(pdb_id, chains, uniprot_ids):
+def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
     """
     Find the intervariant distances for a given PDB chain
     :param pdb_id:
@@ -41,10 +41,15 @@ def variant_distances(pdb_id, chains, uniprot_ids):
         merged = merged.append(table[table.resn.notnull()])
         unmapped = unmapped.append(table[table.resn.isnull()])
 
-
     # Build array distance matrix
     merged_real, xyz = extract_coords(merged)
     _, unmapped_xyz = extract_coords(unmapped)
+
+    # Convert to fractional coordinates
+    if cartesian:
+        xyz = fractional_to_cartesian(xyz, pdb_id)
+        unmapped_xyz = fractional_to_cartesian(unmapped_xyz, pdb_id)
+
     return pdist(xyz), xyz, merged_real.UniProt_dbResNum, unmapped_xyz
 
 

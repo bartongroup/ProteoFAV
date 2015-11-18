@@ -11,6 +11,7 @@ import random
 import time
 from datetime import datetime
 import numpy as np
+from numpy import cos, sin, sqrt
 import colorsys
 
 import requests
@@ -20,6 +21,8 @@ from library import valid_ensembl_species_variation
 from config import defaults
 
 from Bio import pairwise2
+
+from os import path
 
 log = logging.getLogger(__name__)
 
@@ -318,6 +321,66 @@ def _get_colors(num_colors):
         saturation = (90 + np.random.rand() * 10)/100.
         colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
     return colors
+
+
+def _mmcif_unit_cell(pdb_id):
+    """
+    Loader of mmCIF unit cell parameters.
+
+    :param filename: input CIF file
+    :return: pandas table dataframe
+    """
+
+    cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
+
+    lines = []
+    with open(cif_path) as inlines:
+        for line in inlines:
+            if line.startswith("_cell."):
+                lines.append(line.split('.')[1].rstrip())
+
+    l = [i.split() for i in lines]
+    d = {k: v for k, v in l}
+
+    return d
+
+
+def fractional_to_cartesian(coords, pdb_id, matrix_only=False):
+    """
+
+    :param coords:
+    :param unit_cell:
+    :return:
+    """
+    # Retrieve and parse unit cell parameters
+    d = _mmcif_unit_cell(pdb_id)
+    a2r = np.pi / 180.
+    alpha = a2r * float(d['angle_alpha'])
+    beta = a2r * float(d['angle_beta'])
+    gamma = a2r * float(d['angle_gamma'])
+    a = float(d['length_a'])
+    b = float(d['length_b'])
+    c = float(d['length_c'])
+
+    # unit cell volume
+    v = sqrt(1 -cos(alpha)*cos(alpha) - cos(beta)*cos(beta) - cos(gamma)*cos(gamma) + 2*cos(alpha)*cos(beta)*cos(gamma))
+
+    # Build the transformation matrix
+    tr = np.matrix([
+        [a, b * cos(gamma), c * cos(beta)],
+        [0, b * sin(gamma), c * ((cos(alpha) - cos(beta) * cos(gamma)) / sin(gamma))],
+        [0, 0, c * (v / sin(gamma))]
+    ])
+
+    if matrix_only:
+        return tr
+
+    # Now apply the transformation to the coordiantes
+    coords = np.matrix(coords)  #TODO: type check this?
+    coords = coords * tr
+
+    # return the Nx3 results
+    return np.array(coords)
 
 
 def autoscale_axes(xyz, margin=5):
