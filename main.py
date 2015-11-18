@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
 import logging
-
 import numpy as np
 import pandas as pd
-
 from to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                      sifts_best, select_uniprot_variants)
+                      sifts_best, select_uniprot_variants, select_uniprot_gff)
 from library import to_single_aa
 
 log = logging.getLogger(__name__)
@@ -18,7 +16,8 @@ __all__ = ["merge_tables"]
 
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
-                 validate=True, add_validation=False, add_variants=False):
+                 validate=True, add_validation=False, add_variants=False,
+                 add_annotation=False):
     """Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
     :type add_variants: bool
@@ -161,7 +160,15 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
 
         table = table.reset_index()
-        table = pd.merge(table, variants_table, left_on = "UniProt_dbResNum", right_on = "start", how = "left")
+        table = pd.merge(table, variants_table, left_on="UniProt_dbResNum",
+                         right_on="start", how="left")
+
+    if add_annotation:
+        for identifier in table['UniProt_dbAccessionId'].dropna().unique():
+            uniprot_annotation = select_uniprot_gff(identifier)
+            print(uniprot_annotation)
+            table = pd.merge(table, uniprot_annotation, how='left',
+                             left_on="UniProt_dbResNum", right_index=True)
 
     # remove global information from the table.
     for col in table:
@@ -171,12 +178,13 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             continue
 
         if value.shape[0] == 1:
-            log.info('Global key {} is {}'.format(col, value[0]))
             del table[col]
-
+            if value[0] == '?':
+                continue
+            log.info('Global key {} is {}'.format(col, value[0]))
     return table
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='4b9d', chain='A')
+    X = merge_tables(pdb_id='4b9d', chain='A', add_annotation=True)
     print X.head()
