@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 class Defaults(object):
     def __init__(self, config_file=None):
-        default_config = path.join(path.dirname(__file__), "config.txt")
+        default_config = path.join(path.dirname(__file__), "config_stuart.txt")
         config = ConfigParser()
         config_default = config_file or default_config
         config.read(config_default)
