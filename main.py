@@ -166,7 +166,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
             uniprot_annotation = select_uniprot_gff(identifier)
-            print(uniprot_annotation)
             table = pd.merge(table, uniprot_annotation, how='left',
                              left_on="UniProt_dbResNum", right_index=True)
 
