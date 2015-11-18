@@ -675,7 +675,7 @@ def select_uniprot_variants(identifier):
     """
     # get organism and sequence for the provided ientifier
 
-    uni = _uniprot_info(identifier, cols=['organism', 'sequence'])
+    uni = _uniprot_gff(identifier, cols=['organism', 'sequence'])
     org = ('_'.join(uni.loc[0, 'Organism'].split()[-3:-1])).lower()
     seq = uni.loc[0, 'Sequence']
 
