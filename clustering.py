@@ -17,7 +17,7 @@ from scipy.spatial.qhull import QhullError
 
 from main import merge_tables
 from to_table import _fetch_uniprot_variants
-from utils import _get_colors
+from utils import _get_colors, autoscale_axes
 from mpl_toolkits.mplot3d import Axes3D
 
 
@@ -182,7 +182,7 @@ def merge_clusters_to_table(residue_ids, partition, target_table):
     return merged
 
 
-def compare_clustering(linkages, xyz, title=None):
+def compare_clustering(linkages, xyz, title=None, addn_points=None):
     """
     Generate a plots comparing the cluster analyses provided.
     :param linkages: A list of cluster analyses as produced by `linkage_cluster`
@@ -241,6 +241,17 @@ def compare_clustering(linkages, xyz, title=None):
                                               points[simplex, 2], color=clr[cluster - 1])
                 except QhullError:
                     pass
+            if addn_points is not None:
+                ax.scatter(addn_points[:,0], addn_points[:,1], addn_points[:,2], c='grey', s=5, alpha=0.3)
+                x = np.append(xyz[:, 0], addn_points[:,0])
+                y = np.append(xyz[:, 1], addn_points[:,1])
+                z = np.append(xyz[:, 2], addn_points[:,2])
+                all_points = np.array([x, y, z]).T
+                x, y, z = autoscale_axes(all_points)
+                ax.auto_scale_xyz(x, y, z)
+            else:
+                x, y, z = autoscale_axes(xyz)
+                ax.auto_scale_xyz(x, y, z)
 
         m = '\n(method: {})'.format(method)
         plt.setp(axes[0], title='Screeplot{}'.format(m), xlabel='partition',
@@ -265,7 +276,7 @@ if __name__ == '__main__':
     links = linkage_cluster(d, methods=['average', 'mcl'])
     compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['mcl_program', 'mcl'], threshold=10)
-    compare_clustering(links, points, '3ecr(a) P08397')
+    compare_clustering(links, points, '3ecr(a) P08397', addn_points=unmapped_points)
 
     # Comparing MCL inflation factors and distance to similarity conversion
     sq = squareform(d)
@@ -295,24 +306,24 @@ if __name__ == '__main__':
     # KRT14 from K5/14 dimer example (multichain)
     d, points, resids, unmapped_points = variant_distances(pdb_id='3tnu', chains=['A', 'B'], uniprot_ids=['P02533', 'P13647'])
     links = linkage_cluster(d, methods=['average', 'mcl'], threshold=10)
-    compare_clustering(links, points, '3tnu(a/b) P02533/P13647')
+    compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
 
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example
     d, points, resids, unmapped_points = variant_distances(pdb_id='3my0', chains=['A'], uniprot_ids=['P37023'])
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
-    compare_clustering(links, points, '3my0(a) P37023')
+    compare_clustering(links, points, '3my0(a) P37023', addn_points=unmapped_points)
 
     # Alpha-galactosidase A, Fabry disease example
     d, points, resids, unmapped_points = variant_distances(pdb_id='3s5z', chains=['A'], uniprot_ids=['P06280'])
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
-    compare_clustering(links, points, '3s5z(a) P06280')
+    compare_clustering(links, points, '3s5z(a) P06280', addn_points=unmapped_points)
 
     # Cholinesterase, BChE deficiency example
     d, points, resids, unmapped_points = variant_distances(pdb_id='4tpk', chains=['A'], uniprot_ids=['P06276'])
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
-    compare_clustering(links, points, '4tpk(a) P06276')
+    compare_clustering(links, points, '4tpk(a) P06276', addn_points=unmapped_points)
 
     # UDP-glucose 4-epimerase, EDG example
     d, points, resids, unmapped_points = variant_distances(pdb_id='1ek6', chains=['A'], uniprot_ids=['Q14376'])
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
-    compare_clustering(links, points, '1ek6(a) Q14376')
+    compare_clustering(links, points, '1ek6(a) Q14376', addn_points=unmapped_points)

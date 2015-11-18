@@ -320,6 +320,27 @@ def _get_colors(num_colors):
     return colors
 
 
+def autoscale_axes(xyz, margin=5):
+
+    x = xyz[:, 0]
+    y = xyz[:, 1]
+    z = xyz[:, 2]
+
+    rx = max(x) - min(x)
+    ry = max(y) - min(y)
+    rz = max(z) - min(z)
+
+    max_range = max([rx, ry, rz]) + margin
+
+    pad = []
+    for i in [rx, ry, rz]:
+        pad.append((max_range - i) / 2)
+
+    return [[max(x) + pad[0], min(x) - pad[0]],
+            [max(y) + pad[1], min(y) - pad[1]],
+            [max(z) + pad[2], min(z) - pad[2]]]
+
+
 if __name__ == '__main__':
     # testing routines
     pass
