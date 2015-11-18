@@ -57,6 +57,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                                                                uniprot_id))
     cif_table = select_cif(pdb_id, chains=chain, models=model)
     cif_table['auth_seq_id'] = cif_table.index
+
     try:
         dssp_table = select_dssp(pdb_id, chains=chain)
     except ValueError:
@@ -96,8 +97,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         # mask the X in DSSP since you can't compare those
         mask = mask | (table.dssp_aa == 'X')
         # From three letter to sigle letters or X if not a standard aa
-        table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get,
-                                                args='X')
+        table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get, args='X')
         # Check if the sequences are the same
         if not (table['dssp_aa'][~mask] == table['cif_aa'][~mask]).all():
             raise ValueError('{pdb_id}|{chain} Cif and DSSP files have diffent'
@@ -151,13 +151,14 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                              'different sequences '.format(pdb_id=pdb_id,
                                                            chain=chain))
 
+    # Mapping to the UniProt sequence
+    table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
     if add_variants:
         structure_uniprots = table.UniProt_dbAccessionId
         structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
         structure_uniprot = structure_uniprots.unique()[0]
         variants_table = select_uniprot_variants(structure_uniprot)
         variants_table[["start"]] = variants_table[["start"]].astype(float)
-        table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
 
         table = table.reset_index()
         table = pd.merge(table, variants_table, left_on="UniProt_dbResNum",
@@ -166,6 +167,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
             uniprot_annotation = select_uniprot_gff(identifier)
+            uniprot_annotation.index = uniprot_annotation.index.astype(float)
             table = pd.merge(table, uniprot_annotation, how='left',
                              left_on="UniProt_dbResNum", right_index=True)
 

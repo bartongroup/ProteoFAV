@@ -395,7 +395,39 @@ def _uniprot_ensembl_mapping(identifier, species='human'):
     return pd.DataFrame(rows)
 
 
-def _transcript_variants_ensembl(identifier, missense=True):
+def _uniprot_info(identifier, retry_in=(503, 500), cols=None):
+    """
+    Retrive uniprot information from the database.
+
+    :param identifier: UniProt accession identifier
+    :return: pandas table dataframe
+    """
+
+    if not is_valid(identifier, database='uniprot'):
+        raise ValueError(
+            "{} is not a valid UniProt identifier.".format(identifier))
+
+    if not cols:
+        cols = ('entry name', 'reviewed', 'protein names', 'genes', 'organism',
+                'sequence', 'length')
+    elif isinstance(cols, str):
+        cols = ('entry name', cols)
+
+    params = {'query': 'accession:' + str(identifier),
+              'columns': ",".join(cols),
+              'format': 'tab',
+              'contact': ""}
+    url = defaults.http_uniprot
+    response = get_url_or_retry(url=url, retry_in=retry_in, **params)
+    try:
+        data = pd.read_table(StringIO(response))
+    except ValueError as e:
+        log.errore(e)
+        data = response
+    return data
+
+
+def _transcript_variants_ensembl(identifier, missense=True, species=None):
     """Queries the Ensembl API for transcript variants (mostly dbSNP)
     based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
@@ -403,6 +435,7 @@ def _transcript_variants_ensembl(identifier, missense=True):
     :param missense: if True only fetches missense variants
     :return: pandas table dataframe
     """
+    #TODO not using organism
     ensembl_endpoint = "overlap/translation/"
     if missense:
         params = {'feature': 'transcript_variation',
@@ -414,7 +447,7 @@ def _transcript_variants_ensembl(identifier, missense=True):
     return pd.DataFrame(rows)
 
 
-def _somatic_variants_ensembl(identifier, missense=True):
+def _somatic_variants_ensembl(identifier, missense=True, species=None):
     """Queries the Ensembl API for somatic transcript variants (COSMIC) based on
      Ensembl Protein identifiers (e.g. ENSP00000326864).
 
