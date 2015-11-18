@@ -13,6 +13,7 @@ import logging
 from StringIO import StringIO
 from os import path
 import sys
+from urllib2 import HTTPError
 from lxml import etree
 import pandas as pd
 import requests
@@ -301,30 +302,61 @@ def _uniprot_pdb_sifts_mapping(identifier):
     return pd.DataFrame(rows)
 
 
-def _uniprot_info(identifier, retry_in=(503, 500), cols=None):
-    """Retrive UniProt data from the gff file
+def _uniprot_gff(identifier, retry_in=(503, 500)):
+    """Retrive UniProt data from the GFF file
 
     :param identifier: UniProt accession identifier
-    :return: pandas table dataframe
+    :return: pandas table
     """
-    if not cols:
-        cols = ('entry name', 'reviewed', 'protein names', 'genes', 'organism',
-                'sequence', 'length')
-    elif isinstance(cols, str):
-        cols = ('entry name', cols)
 
-    params = {'query': 'accession:' + str(identifier),
-              'columns': ",".join(cols),
-              'format': 'tab',
-              'contact': ""}
-    url = defaults.http_uniprot
-    response = get_url_or_retry(url=url, retry_in=retry_in, **params)
+    url = defaults.http_uniprot + identifier + ".gff"
+    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
+
     try:
-        data = pd.read_table(StringIO(response))
-    except ValueError as e:
-        log.errore(e)
-        data = response
+        data = pd.read_table(url, skiprows=2, names=cols)
+    except HTTPError as e:
+        log.error(e)
+        data = None
     return data
+
+
+def select_uniprot_gff(identifier, drop_types=('Helix', 'Beta strand', 'Turn',
+                                               'Chain')):
+    """Sumarieses the GFF file for a UniProt acession.
+    :param identifier: UniProt-SP acession
+    :param drop_types: Annotation type to be droped
+    :return: table read to be joined to main table
+    """
+    def annotation_writter(row):
+        """ Establish a set of rules to annotates uniprot GFF
+        :param row: each line in the GFF file
+        :return:
+        """
+        if not row.ids and not row.note:
+            return row.TYPE
+        elif not row.ids:
+            return '{0.TYPE}: {0.note}'.format(row)
+        elif not row.note:
+            return '{0.TYPE} ({0.ids})'.format(row)
+        else:
+            return '{0.TYPE}: {0.note} ({0.ids})'.format(row)
+
+    if not drop_types:
+        drop_types = []
+    data = _uniprot_gff(identifier)
+    try:
+        data = data[~data.TYPE.isin(drop_types)]
+    except TypeError:
+        return None
+    data['note'] = data.GROUP.str.extract(r'Note=(.*?)[;]').fillna('')
+    data['ids'] = data.GROUP.str.extract(r'ID=(.*?)[;]').fillna('')
+
+    rows = []
+    for i, row in data.iterrows():
+        rows.extend({'idx': i, 'annotation': annotation_writter(row)}
+                     for i in range(row.START, row.END + 1))
+    data = pd.DataFrame(rows)
+    return data.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
 
 
 def _uniprot_ensembl_mapping(identifier, species='human'):
@@ -724,7 +756,7 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
         headers = {"Content-Type": "application/json",
                    "Accept": "application/json"}
         data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") \
-                + ', "phenotypes" : 1 }'  # FIXME
+               + ', "phenotypes" : 1 }'  # FIXME
         data = data.replace("'", "\"")
         r = requests.post(url, headers=headers, data=data)
 
