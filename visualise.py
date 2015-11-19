@@ -32,7 +32,8 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         :param mapped_variants:
         :return:
         """
-        start = mapped_variants.PDB_dbResNum[in_group]
+        in_chain = mapped_variants.chain_id == chain
+        start = mapped_variants.PDB_dbResNum[in_group & in_chain]
         variant_residues = list(
             start[pd.notnull(start)].astype(int).astype(str).unique())
         # sanitisation of the selection name for pymol is important
@@ -61,18 +62,18 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
     pymol.cmd.show("ribbon", "all")
     pymol.util.cbc()
 
-    # Get available variants for any chain
+    # Get variants all chains
+    residue_mappings = merge_tables(pdb_id=pdb_id, chain='all',
+                                    add_variants=True)
+    has_variant = residue_mappings.start.notnull()
+
+    # Now create a PyMol selection for the variants on each chain
     chains = pymol.cmd.get_chains(pdb_id)
-
     for chain in chains:
-
-        # Get the variants for this chain
-        residue_mappings = merge_tables(pdb_id=pdb_id, chain=chain,
-                                        add_variants=True)
-        has_variant = residue_mappings.start.notnull()
-        start = residue_mappings.PDB_dbResNum[has_variant]
+        in_chain = residue_mappings.chain_id == chain
+        start = residue_mappings.PDB_dbResNum[has_variant & in_chain]
         variant_residues = list(
-            start[pd.notnull(start)].astype(int).astype(str).unique())
+        start[pd.notnull(start)].astype(int).astype(str).unique())
 
         # Create the selection
         selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues)
@@ -120,7 +121,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         if use_uniprot:
 
             # Extract first uniprot (REFACTOR THIS, also `merge_tables`)
-            structure_uniprots = residue_mappings.UniProt_dbAccessionId
+            structure_uniprots = residue_mappings.UniProt_dbAccessionId[in_chain]
             structure_uniprots = structure_uniprots[
                 structure_uniprots.notnull()]
             structure_uniprot = structure_uniprots.unique()[0]
