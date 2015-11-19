@@ -74,6 +74,10 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
                                     add_variants=True)
     has_variant = residue_mappings.start.notnull()
 
+    if use_ensembl:
+        variant_ids = residue_mappings.id_y[has_variant]
+        traits = ensembl_traits(variant_ids)
+
     # Now create a PyMol selection for the variants on each chain
     chains = pymol.cmd.get_chains(pdb_id)
     for chain in chains:
@@ -83,22 +87,6 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
                         mapped_variants=residue_mappings)
 
         if use_ensembl:
-            variant_ids = residue_mappings.id_y[has_variant]
-
-            # For now, need to iterate with GET requests
-            # until POST can retrieve phenotypes
-            traits = []
-            for variant in variant_ids:
-                phenos = \
-                    _variant_characteristics_from_identifiers(str(variant))[
-                        'phenotypes']
-                if phenos == []:
-                    traits.append([variant, 'No_Available_Phenotype'])
-                else:
-                    for entry in phenos:
-                        trait = entry['trait']
-                        traits.append([variant, trait])
-
             groups = set(zip(*traits)[1])
             for group in groups:
                 variants_in_group = []
@@ -137,5 +125,22 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
                 build_selection(chain, group, in_group, mapped)
 
 
+def ensembl_traits(variant_ids):
+    # For now, need to iterate with GET requests
+    # until POST can retrieve phenotypes
+    traits = []
+    for variant in variant_ids:
+        phenos = \
+            _variant_characteristics_from_identifiers(str(variant))[
+                'phenotypes']
+        if phenos == []:
+            traits.append([variant, 'No_Available_Phenotype'])
+        else:
+            for entry in phenos:
+                trait = entry['trait']
+                traits.append([variant, trait])
+    return traits
+
+
 if __name__ == '__main__':
-    visualise('3tnu', assembly=True, use_uniprot=True)
+    visualise('3tnu', assembly=True, use_ensembl=True, use_uniprot=True)
