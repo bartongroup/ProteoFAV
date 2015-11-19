@@ -13,11 +13,11 @@ Usage
 >>> print(defaults.api_pdbe)
 http://www.ebi.ac.uk/pdbe/api/
 >>> from config import Defaults
->>> local_defaults = Defaults("config_local.txt")
->>> print(local_defaults.db_pdb)
-/Users/tbrittoborges/Downloads
->>> print(local_defaults.contact_email)
-tbrittoborges@dundee.ac.uk
+>>> local_defaults = Defaults("config.txt")
+>>> print(local_defaults.http_uniprot)
+http://www.uniprot.org/uniprot/
+>>> print(local_defaults.sifts_extension)
+.xml.gz
 >>> print(local_defaults.email)
 Traceback (most recent call last):
 ...
