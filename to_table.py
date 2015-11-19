@@ -849,5 +849,21 @@ def _fetch_uniprot_variants(identifier, _format='tab'):
     return table
 
 
+def _rcsb_description(pdb_id, tag, key):
+
+    api = 'http://www.rcsb.org/pdb/rest/'
+    endpoint = 'describeMol'
+    query = '?structureId=' + pdb_id
+
+    url = api + endpoint + query
+
+    tree = etree.fromstring(get_url_or_retry(url))
+    values = []
+    for i in tree.iter(tag):
+        values.append(i.attrib[key])
+
+    return values
+
+
 if __name__ == '__main__':
     X = _sifts_residues('tests/SIFTS/2pah.xml')

@@ -4,7 +4,8 @@ import logging
 import numpy as np
 import pandas as pd
 from to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                      sifts_best, select_uniprot_variants, select_uniprot_gff)
+                      sifts_best, select_uniprot_variants, select_uniprot_gff,
+                      _rcsb_description)
 from library import to_single_aa
 
 log = logging.getLogger(__name__)
@@ -39,6 +40,20 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
                         "uniprot_id or pdb_id")
+
+    if chain == 'all':
+
+        chain_ids = _rcsb_description(pdb_id, tag='chain', key='id')
+
+        table = pd.DataFrame()
+        for current_chain in chain_ids:
+            table = table.append(merge_tables(uniprot_id=uniprot_id, pdb_id=pdb_id, chain=current_chain, model=model,
+                                              validate=validate, add_validation=add_validation,
+                                              add_variants=add_variants, add_annotation=add_annotation,
+                                              remove_redundant=remove_redundant))
+
+        return table
+
 
     if not pdb_id:
         best_pdb = sifts_best(uniprot_id, first=True)
