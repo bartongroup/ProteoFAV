@@ -574,7 +574,7 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
             lines = [lines]
         cif_table = cif_table[cif_table.group_PDB.isin(lines)]
 
-    cif_table = cif_table[cif_table.label_atom_id == 'CA']
+    cif_table = cif_table[cif_table.label_atom_id == 'CA']  # TODO: Make this a parameter?
 
     if not cif_table['auth_seq_id'].duplicated().any():
         return cif_table.set_index(['auth_seq_id'])
