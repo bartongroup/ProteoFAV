@@ -32,10 +32,13 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         :param mapped_variants:
         :return:
         """
+        # Find the residues we want to highlight
         in_chain = mapped_variants.chain_id == chain
         start = mapped_variants.PDB_dbResNum[in_group & in_chain]
         variant_residues = list(start.dropna().astype(int).astype(str).unique())
-        # sanitisation of the selection name for pymol is important
+
+        # Construct PyMol select command
+        # Sanitisation of the selection name for pymol is important
         # or the name existence test will always fail and we'll over write
         # entries from previous chains!
         select_name = re.sub("[\W\d]+", "_", select_name.strip())
@@ -43,15 +46,17 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
             pymol.cmd.select(select_name, 'none')
         selection = 'chain ' + chain + ' and resi ' + '+'.join(
             variant_residues) + ' or ' + select_name
-        # name = group + '_vars'
+
+        # Make the selection
         message = "Creating PyMol selection {} from '{}'".format(select_name,
                                                                  selection)
         logging.debug(message)
         pymol.cmd.select(select_name, selection)
+
         # Apply some styles
         pymol.cmd.show("lines", select_name)
         pymol.util.cnc(select_name)
-        
+
 
     # Open the PDB with pymol
     pymol.finish_launching()
