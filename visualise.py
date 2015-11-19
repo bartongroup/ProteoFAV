@@ -23,7 +23,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
     :return:
     """
 
-    def build_selection(chain, group, in_group, mapped_variants):
+    def build_selection(chain, select_name, in_group, mapped_variants):
         """
 
         :param chain:
@@ -34,22 +34,24 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         """
         in_chain = mapped_variants.chain_id == chain
         start = mapped_variants.PDB_dbResNum[in_group & in_chain]
-        variant_residues = list(
-            start[pd.notnull(start)].astype(int).astype(str).unique())
+        variant_residues = list(start.dropna().astype(int).astype(str).unique())
         # sanitisation of the selection name for pymol is important
         # or the name existence test will always fail and we'll over write
         # entries from previous chains!
-        name = group + '_vars'
-        name = re.sub("[\W\d]+", "_", name.strip())
-        if name not in pymol.cmd.get_names('selections'):
-            pymol.cmd.select(name, 'none')
+        select_name = re.sub("[\W\d]+", "_", select_name.strip())
+        if select_name not in pymol.cmd.get_names('selections'):
+            pymol.cmd.select(select_name, 'none')
         selection = 'chain ' + chain + ' and resi ' + '+'.join(
-            variant_residues) + ' or ' + name
+            variant_residues) + ' or ' + select_name
         # name = group + '_vars'
-        message = "Creating PyMol selection {} from '{}'".format(name,
+        message = "Creating PyMol selection {} from '{}'".format(select_name,
                                                                  selection)
         logging.debug(message)
-        pymol.cmd.select(name, selection)
+        pymol.cmd.select(select_name, selection)
+        # Apply some styles
+        pymol.cmd.show("lines", select_name)
+        pymol.util.cnc(select_name)
+        
 
     # Open the PDB with pymol
     pymol.finish_launching()
@@ -70,22 +72,10 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
     # Now create a PyMol selection for the variants on each chain
     chains = pymol.cmd.get_chains(pdb_id)
     for chain in chains:
+        group = 'chain_' + chain
         in_chain = residue_mappings.chain_id == chain
-        start = residue_mappings.PDB_dbResNum[has_variant & in_chain]
-        variant_residues = list(
-        start[pd.notnull(start)].astype(int).astype(str).unique())
-
-        # Create the selection
-        selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues)
-        name = 'chain_' + chain + '_vars'
-        message = "Creating PyMol selection {} from '{}'".format(name,
-                                                                 selection)
-        logging.debug(message)
-        pymol.cmd.select(name, selection)
-
-        # Apply some styles
-        pymol.cmd.show("lines", name)
-        pymol.util.cnc(name)
+        build_selection(chain, select_name=group, in_group=in_chain & has_variant,
+                        mapped_variants=residue_mappings)
 
         if use_ensembl:
             variant_ids = residue_mappings.id_y[has_variant]
