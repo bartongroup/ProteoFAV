@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
 import logging
-import numpy as np
-import pandas as pd
 from to_table import (select_cif, select_dssp, select_sifts, select_validation,
                       sifts_best, select_uniprot_variants, select_uniprot_gff)
 from library import to_single_aa
@@ -75,7 +73,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         dssp_table.set_index(['icode'], inplace=True)
     # Correction for some dssp index parsed as object instead int
     if dssp_table.index.dtype == 'O' and cif_table.index.dtype != 'O':
-        dssp_table.index = dssp_table.index.astype(np.int)
+        dssp_table.index = dssp_table.index.astype(int)
 
     table = cif_table.join(dssp_table)
 
@@ -106,7 +104,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     sifts_table = select_sifts(pdb_id, chains=chain)
     try:
         sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[
-                                             :, 'PDB_dbResNum'].astype(np.int)
+                                             :, 'PDB_dbResNum'].astype(int)
         sifts_table.set_index(['PDB_dbResNum'], inplace=True)
     except ValueError:
         # Means it has alpha numeric insertion code, use something else as index
@@ -136,7 +134,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     if add_validation:
         validation_table = select_validation(pdb_id, chains=chain)
         validation_table.loc[:, 'val_resnum'] = validation_table.loc[
-                                                :, 'val_resnum'].astype(np.int)
+                                                :, 'val_resnum'].astype(int)
         validation_table.set_index(['val_resnum'], inplace=True)
         table = table.join(validation_table)
         if not table['val_resname'].any():
@@ -163,15 +161,15 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         variants_table[["start"]] = variants_table[["start"]].astype(float)
 
         table = table.reset_index()  # Gives access to niProt_dbResNum
-        table = pd.merge(table, variants_table, left_on="UniProt_dbResNum",
-                         right_on="start", how="left")
+        table = table.merge(table, variants_table, left_on="UniProt_dbResNum",
+                            right_on="start", how="left")
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
             uniprot_annotation = select_uniprot_gff(identifier)
             uniprot_annotation.index = uniprot_annotation.index.astype(float)
-            table = pd.merge(table, uniprot_annotation, how='left',
-                             left_on="UniProt_dbResNum", right_index=True)
+            table = table.merge(uniprot_annotation, how='left',
+                                left_on="UniProt_dbResNum", right_index=True)
 
     # remove global information from the table.
     if remove_redundant:  # TODO: Redundant data could (optionally) be returned separately
