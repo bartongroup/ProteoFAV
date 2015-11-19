@@ -58,22 +58,24 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         pymol.util.cnc(select_name)
 
 
-    # Open the PDB with pymol
+    # Open the PDB as requested with PyMol and apply a few styles
     pymol.finish_launching()
     if assembly:
         pymol.cmd.fetch(pdb_id, type='pdb1')
         pymol.cmd.set('all_states', 'on')
     else:
         pymol.cmd.fetch(pdb_id)
+
     pymol.cmd.hide("everything", "all")
     pymol.cmd.show("ribbon", "all")
     pymol.util.cbc()
 
-    # Get variants all chains
+    # Get variants for all chains
     residue_mappings = merge_tables(pdb_id=pdb_id, chain='all',
                                     add_variants=True)
     has_variant = residue_mappings.start.notnull()
 
+    # If we're going to make selections from ensembl traits get that data now
     if use_ensembl:
         variant_ids = residue_mappings.id_y[has_variant]
         traits = ensembl_traits(variant_ids)
@@ -126,6 +128,11 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
 
 
 def ensembl_traits(variant_ids):
+    """
+
+    :param variant_ids:
+    :return:
+    """
     # For now, need to iterate with GET requests
     # until POST can retrieve phenotypes
     traits = []
