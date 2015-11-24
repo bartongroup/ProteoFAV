@@ -5,6 +5,7 @@ from to_table import (select_cif, select_dssp, select_sifts, select_validation,
                       sifts_best, select_uniprot_variants, select_uniprot_gff,
                       _rcsb_description)
 from library import to_single_aa
+from pandas import DataFrame
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -51,7 +52,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
         chain_ids = _rcsb_description(pdb_id, tag='chain', key='id')
 
-        table = pd.DataFrame()
+        table = DataFrame()
         for current_chain in chain_ids:
             table = table.append(merge_tables(uniprot_id=uniprot_id, pdb_id=pdb_id, chain=current_chain, model=model,
                                               validate=validate, add_validation=add_validation,
