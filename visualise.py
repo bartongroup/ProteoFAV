@@ -32,6 +32,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         :param mapped_variants:
         :return:
         """
+
         # Find the residues we want to highlight
         in_chain = mapped_variants.chain_id == chain
         start = mapped_variants.PDB_dbResNum[in_group & in_chain]
