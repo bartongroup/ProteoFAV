@@ -7,3 +7,4 @@ biopython
 requests
 pandas
 lxml
+#pymol (not in pip; available through brew on Mac)

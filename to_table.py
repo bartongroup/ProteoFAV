@@ -13,7 +13,7 @@ import logging
 from StringIO import StringIO
 from os import path
 import sys
-from urllib2 import HTTPError
+from urlparse import parse_qs
 from lxml import etree
 import pandas as pd
 import requests
@@ -308,15 +308,14 @@ def _uniprot_gff(identifier):
     :param identifier: UniProt accession identifier
     :return: pandas table
     """
-
     url = defaults.http_uniprot + identifier + ".gff"
     cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
 
-    try:
-        data = pd.read_table(url, skiprows=2, names=cols)
-    except HTTPError as e:
-        log.error(e)
-        data = None
+    data = pd.read_table(url, skiprows=2, names=cols)
+    groups = data.GROUP.apply(parse_qs)
+    groups = pd.DataFrame.from_records(groups)
+    data = data.merge(groups, left_index=True, right_index=True)
+
     return data
 
 
@@ -328,29 +327,24 @@ def select_uniprot_gff(identifier, drop_types=('Helix', 'Beta strand', 'Turn',
     :return: table read to be joined to main table
     """
 
-    def annotation_writter(row):
+    def annotation_writter(gff_row):
         """ Establish a set of rules to annotates uniprot GFF
-        :param row: each line in the GFF file
+        :param gff_row: each line in the GFF file
         :return:
         """
-        if not row.ids and not row.note:
-            return row.TYPE
-        elif not row.ids:
-            return '{0.TYPE}: {0.note}'.format(row)
-        elif not row.note:
-            return '{0.TYPE} ({0.ids})'.format(row)
+        if not gff_row.ID and not gff_row.Note:
+            return gff_row.TYPE
+        elif not gff_row.ID:
+            return '{0.TYPE}: {0.Note}'.format(gff_row)
+        elif not gff_row.Note:
+            return '{0.TYPE} ({0.ID})'.format(gff_row)
         else:
-            return '{0.TYPE}: {0.note} ({0.ids})'.format(row)
+            return '{0.TYPE}: {0.Note} ({0.ID})'.format(gff_row)
 
     if not drop_types:
         drop_types = []
     data = _uniprot_gff(identifier)
-    try:
-        data = data[~data.TYPE.isin(drop_types)]
-    except TypeError:
-        return None
-    data['note'] = data.GROUP.str.extract(r'Note=(.*?)[;]').fillna('')
-    data['ids'] = data.GROUP.str.extract(r'ID=(.*?)[;]').fillna('')
+    data = data[~data.TYPE.isin(drop_types)]
 
     lines = []
     for i, row in data.iterrows():
