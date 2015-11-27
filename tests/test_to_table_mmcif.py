@@ -1,12 +1,6 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-Created on 10/06/2015
-
-"""
-
-__version__ = "1.0"
 
 import logging
 import sys

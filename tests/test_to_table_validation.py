@@ -1,10 +1,11 @@
+#!/local/bin/python
+# -*- coding: utf-8 -*-
+
+
+import unittest
 from os import path
 
 from structures.to_table import _pdb_validation_to_table
-
-__author__ = 'tbrittoborges'
-
-import unittest
 
 
 class TestValidationParser(unittest.TestCase):

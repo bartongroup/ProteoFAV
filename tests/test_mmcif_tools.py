@@ -1,13 +1,6 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-__author__ = 'fabiomadeira'
-"""
-Created on 29/07/2015
-
-"""
-
-__version__ = "1.0"
 
 import unittest
 from os import path

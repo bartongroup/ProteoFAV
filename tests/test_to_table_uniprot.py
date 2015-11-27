@@ -1,18 +1,10 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-Created on 10/06/2015
-
-"""
-
-__version__ = "1.0"
 
 import unittest
 
 import utils
-from structures.to_table import _uniprot_info
-from sequences.to_table import _uniprot_info
 from variants.to_table import _uniprot_ensembl_mapping, _uniprot_info
 
 
