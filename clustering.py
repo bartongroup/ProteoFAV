@@ -292,7 +292,7 @@ if __name__ == '__main__':
     d, points, resids, unmapped_points = variant_distances(pdb_id='3ecr', chains=['A'], uniprot_ids=['P08397'])
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points, '3ecr(a) P08397')
-    links = linkage_cluster(d, methods=['average', 'mcl'])
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['mcl_program', 'mcl'], threshold=10)
     compare_clustering(links, points, '3ecr(a) P08397', addn_points=unmapped_points)
@@ -324,7 +324,7 @@ if __name__ == '__main__':
 
     # KRT14 from K5/14 dimer example (multichain)
     d, points, resids, unmapped_points = variant_distances(pdb_id='3tnu', chains=['A', 'B'], uniprot_ids=['P02533', 'P13647'])
-    links = linkage_cluster(d, methods=['average', 'mcl'], threshold=10)
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
 
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example
