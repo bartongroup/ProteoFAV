@@ -180,11 +180,15 @@ def launch_mcl(s, format='partition', inflate=None):
     return clusters
 
 
-def merge_clusters_to_table(residue_ids, partition, target_table):
+def merge_clusters_to_table(residue_ids, partition, target_table, multichain=False):
     df = pd.DataFrame(residue_ids)
     df['Cluster'] = pd.Series(partition)
     target_table.UniProt_dbResNum = target_table.UniProt_dbResNum.astype('float')
-    merged = pd.merge(target_table, df, on = 'UniProt_dbResNum')
+    if multichain:
+        merge_columns = ['UniProt_dbResNum', 'chain_id']
+    else:
+        merge_columns = 'UniProt_dbResNum'
+    merged = pd.merge(target_table, df, on=merge_columns)
     return merged
 
 
