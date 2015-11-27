@@ -29,11 +29,11 @@ __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
 ##############################################################################
 # Private methods
 ##############################################################################
-def to_unique(series):
+def _to_unique(series):
     """Lambda-like expression for returning unique elements of a Series.
     :param series: pandas.Series
     :return: pandas.Series
-    """""
+    """
     return series.unique()
 
 
@@ -338,7 +338,8 @@ def _pdb_validation_to_table(filename, global_parameters=False):
 # Public methods
 ##############################################################################
 def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
-    """Produce table read from mmCIF file
+    """
+    Produce table read from mmCIF file.
 
     :param pdb_id: PDB identifier
     :param models: protein structure entity
@@ -406,7 +407,8 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
 
 
 def select_dssp(pdb_id, chains=None):
-    """Produce table from DSSP file output
+    """
+    Produce table from DSSP file output.
 
     :param pdb_id: PDB identifier
     :param chains: PDB protein chain
@@ -438,7 +440,8 @@ def select_dssp(pdb_id, chains=None):
 
 
 def select_sifts(pdb_id, chains=None):
-    """Produce table ready from SIFTS XML file
+    """
+    Produce table ready from SIFTS XML file.
 
     :param pdb_id: PDB identifier
     :param chains: Protein structure chain
@@ -461,7 +464,8 @@ def select_sifts(pdb_id, chains=None):
 
 
 def select_validation(pdb_id, chains=None):
-    """Produces table from PDB validation XML file
+    """
+    Produces table from PDB validation XML file.
 
     :param pdb_id: PDB identifier
     :param chains: PDB protein chain
@@ -487,7 +491,8 @@ def select_validation(pdb_id, chains=None):
 
 
 def sifts_best(identifier, first=False):
-    """Retrives the best structures from the SIFTS endpoint in the PDBe api
+    """
+    Retrieves the best structures from the SIFTS endpoint in the PDBe api.
 
     :param identifier: Uniprot ID
     :param first: gets the first entry
