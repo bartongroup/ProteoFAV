@@ -51,7 +51,7 @@ def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
         xyz = fractional_to_cartesian(xyz, pdb_id)
         unmapped_xyz = fractional_to_cartesian(unmapped_xyz, pdb_id)
 
-    return pdist(xyz), xyz, merged_real.UniProt_dbResNum, unmapped_xyz
+    return pdist(xyz), xyz, merged_real[['UniProt_dbResNum', 'chain_id']], unmapped_xyz
 
 
 def extract_coords(merged):
