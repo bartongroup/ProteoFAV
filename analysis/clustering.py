@@ -19,7 +19,7 @@ from scipy.spatial import ConvexHull
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial.qhull import QhullError
 
-from main.to_table import merge_tables
+from main import merge_tables
 from variants.to_table import _fetch_uniprot_variants
 from utils import _get_colors, autoscale_axes, fractional_to_cartesian
 
