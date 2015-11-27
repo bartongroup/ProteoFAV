@@ -1,17 +1,12 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-Created on 09/06/2015
 
-"""
-from os import path
 import unittest
 import numpy
+from os import path
 
-from to_table import _dssp
-
-__version__ = "1.0"
+from structures.to_table import _dssp
 
 
 class TestDSSPParser(unittest.TestCase):

@@ -5,7 +5,7 @@ Command line application of the library.
 """
 import argparse
 import logging
-from main import merge_tables
+from main.to_table import merge_tables
 
 log = logging.getLogger(__name__)
 usage = ''

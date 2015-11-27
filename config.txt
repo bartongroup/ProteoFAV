@@ -1,8 +1,9 @@
+# example config file
 [Global]
-db_pdb = /Volumes/tbrittoborges/NOBACK/pdb_files/
-db_mmcif = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/mmcif/
-db_sifts = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/sifts_xml/
-db_dssp = /Volumes/gjb/db/NOBACK/local_databases/dssp/
+db_pdb = pdb_files/
+db_mmcif = mmcif/
+db_sifts = sifts_xml/
+db_dssp = dssp/
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/

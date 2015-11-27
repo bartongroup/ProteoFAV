@@ -1,19 +1,22 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
+
+
 import logging
-from os import path
 import unittest
+from os import path
 from mock import patch
-from to_table import _dssp, _sifts_residues, _mmcif_atom
-from main import merge_tables
+
 from config import Defaults
+from main.to_table import merge_tables
+from structures.to_table import _dssp, _sifts_residues, _mmcif_atom
 
 log = logging.getLogger(__name__)
 
 defaults = Defaults("config.txt")
 
 
-@patch("to_table.defaults", defaults)
+@patch("structures.to_table.defaults", defaults)
 class TestTableMerger(unittest.TestCase):
     """Test table merging methodsthe DSSP parser methods."""
 
