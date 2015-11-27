@@ -1,18 +1,12 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-Created on 09/06/2015
-
-"""
-
-__version__ = "1.0"
 
 import unittest
 from os import path
 
-from to_table import (_sifts_regions, _sifts_residues, _uniprot_pdb_sifts_mapping,
-                      _pdb_uniprot_sifts_mapping)
+from structures.to_table import (_sifts_regions, _sifts_residues, _uniprot_pdb_sifts_mapping,
+                                 _pdb_uniprot_sifts_mapping)
 
 
 class TestSIFTSParser(unittest.TestCase):

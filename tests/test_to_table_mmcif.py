@@ -1,22 +1,15 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-"""
-Created on 10/06/2015
 
-"""
-
-__version__ = "1.0"
-
-import sys
-from os import path, remove
-import unittest
 import logging
+import sys
+import unittest
+from os import path, remove
 
-from to_table import _mmcif_atom
-from mmcif_tools import _mmcif_info_to_dict
-from mmcif_tools import _bio_unit_to_table
-
+from structures.mmcif_tools import _bio_unit_to_table
+from structures.mmcif_tools import _mmcif_info_to_dict
+from structures.to_table import _mmcif_atom
 from utils import is_valid
 
 
