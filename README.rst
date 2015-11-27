@@ -31,5 +31,5 @@ To be decided later...
 
 .. _requirements: https://github.com/biomadeira/ProteoFAV/blob/master/requirements.txt
 .. _issue tracker: https://github.com/biomadeira/ProteoFAV/issues
-.. _docs: https://github.com/biomadeira/ProteoFAV/blob/refactoring/docs/index.rst
+.. _docs: https://github.com/biomadeira/ProteoFAV/blob/master/docs/index.rst
 .. _Pandas: http://pandas.pydata.org/
