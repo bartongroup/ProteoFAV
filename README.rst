@@ -1,7 +1,7 @@
 ProteoFAV
 =========
 
-*ProteFAV: protein feature aggregation and variants*
+**ProteFAV: protein feature aggregation and variants**
 
 
 Exploring the power of `Pandas`_ for working with protein structures, sequences and genetic variants.
