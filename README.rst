@@ -1,5 +1,8 @@
-gjb_struct
-==========
+ProteoFAV
+=========
+
+*ProteFAV: protein feature aggregation and variants*
+
 
 Exploring the power of `Pandas`_ for working with protein structures, sequences and genetic variants.
 
@@ -11,8 +14,6 @@ Working on documenting the package `docs`_...
 
 Dependencies
 ~~~~~~~~~~~~
-
-|Python: versions|
 
 See the necessary `requirements`_.
 
@@ -30,5 +31,5 @@ To be decided later...
 
 .. _requirements: https://github.com/biomadeira/ProteoFAV/blob/master/requirements.txt
 .. _issue tracker: https://github.com/biomadeira/ProteoFAV/issues
-.. _docs: https://github.com/biomadeira/ProteoFAV/docs/index.rst
+.. _docs: https://github.com/biomadeira/ProteoFAV/blob/refactoring/docs/index.rst
 .. _Pandas: http://pandas.pydata.org/
