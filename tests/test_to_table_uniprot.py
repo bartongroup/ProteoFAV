@@ -9,8 +9,9 @@ Created on 10/06/2015
 __version__ = "1.0"
 
 import unittest
-from to_table import _uniprot_ensembl_mapping, _uniprot_info
+
 import utils
+from structures.to_table import _uniprot_ensembl_mapping, _uniprot_info
 
 
 class TestUNIPROTParser(unittest.TestCase):

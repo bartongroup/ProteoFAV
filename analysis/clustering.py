@@ -11,15 +11,14 @@ import numpy as np
 import pandas as pd
 import scipy.cluster.hierarchy as hac
 from mcl.mcl_clustering import mcl
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial import ConvexHull
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial.qhull import QhullError
 
 from main import merge_tables
-from to_table import _fetch_uniprot_variants
+from structures.to_table import _fetch_uniprot_variants
 from utils import _get_colors, autoscale_axes, fractional_to_cartesian
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
 def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):

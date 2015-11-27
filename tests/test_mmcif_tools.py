@@ -9,20 +9,15 @@ Created on 29/07/2015
 
 __version__ = "1.0"
 
-import sys
-from os import path, remove
 import unittest
-import logging
+from os import path
 
-from to_table import _mmcif_atom
-from mmcif_tools import _mmcif_info_to_dict
-from mmcif_tools import _get_mmcif_bio_units
-from mmcif_tools import _bio_unit_parse_operation_expression
-from mmcif_tools import _bio_unit_prepare_operation
-from mmcif_tools import _bio_unit_to_mmcif
-from mmcif_tools import _bio_unit_to_table
-
-import utils
+from structures.mmcif_tools import _bio_unit_parse_operation_expression
+from structures.mmcif_tools import _bio_unit_prepare_operation
+from structures.mmcif_tools import _bio_unit_to_mmcif
+from structures.mmcif_tools import _bio_unit_to_table
+from structures.mmcif_tools import _mmcif_info_to_dict
+from structures.to_table import _mmcif_atom
 
 
 class TestMMCIFTools(unittest.TestCase):

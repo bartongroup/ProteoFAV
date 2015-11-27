@@ -1,5 +1,6 @@
 from os import path
-from to_table import _pdb_validation_to_table
+
+from structures.to_table import _pdb_validation_to_table
 
 __author__ = 'tbrittoborges'
 

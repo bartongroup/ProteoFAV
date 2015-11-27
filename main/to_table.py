@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
 import logging
-from to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                      sifts_best, select_uniprot_variants, select_uniprot_gff)
+
 from library import to_single_aa
+from structures.to_table import (select_cif, select_dssp, select_sifts, select_validation,
+                                 sifts_best, select_uniprot_variants, select_uniprot_gff)
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)

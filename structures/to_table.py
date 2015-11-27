@@ -18,7 +18,7 @@ from lxml import etree
 import pandas as pd
 import requests
 from config import defaults
-from fetcher import fetch_files
+from utils import fetch_files
 from utils import is_valid
 from utils import compare_uniprot_ensembl_sequence
 from utils import get_url_or_retry

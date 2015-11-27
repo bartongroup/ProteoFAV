@@ -9,12 +9,12 @@ Created on 11/06/2015
 __version__ = "1.0"
 
 import unittest
-import pandas as pd
-
 from os import path
 
-from to_table import (_ensembl_variant, _transcript_variants_ensembl,
-                      _somatic_variants_ensembl, select_uniprot_variants)
+import pandas as pd
+
+from structures.to_table import (_ensembl_variant, _transcript_variants_ensembl,
+                                 _somatic_variants_ensembl, select_uniprot_variants)
 from utils import is_valid_ensembl_id
 
 

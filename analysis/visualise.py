@@ -9,8 +9,8 @@ import pandas as pd
 import pymol
 
 from main import merge_tables
-from to_table import _fetch_uniprot_variants
-from to_table import _variant_characteristics_from_identifiers
+from structures.to_table import _fetch_uniprot_variants
+from structures.to_table import _variant_characteristics_from_identifiers
 
 
 def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):

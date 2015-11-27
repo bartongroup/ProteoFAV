@@ -5,11 +5,12 @@
 Created on 09/06/2015
 
 """
-from os import path
 import unittest
+from os import path
+
 import numpy
 
-from to_table import _dssp
+from structures.to_table import _dssp
 
 __version__ = "1.0"
 
