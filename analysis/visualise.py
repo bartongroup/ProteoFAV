@@ -1,16 +1,17 @@
-# coding=utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8
+
+
+import re
+import pymol
+import logging
+import pandas as pd
+
+from main.to_table import merge_tables
+from variants.to_table import (_fetch_uniprot_variants,
+                               _variant_characteristics_from_identifiers)
 
 __author__ = 'smacgowan'
-
-import logging
-import re
-
-import pandas as pd
-import pymol
-
-from main import merge_tables
-from structures.to_table import _fetch_uniprot_variants
-from structures.to_table import _variant_characteristics_from_identifiers
 
 
 def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):

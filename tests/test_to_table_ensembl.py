@@ -13,8 +13,9 @@ from os import path
 
 import pandas as pd
 
-from structures.to_table import (_ensembl_variant, _transcript_variants_ensembl,
-                                 _somatic_variants_ensembl, select_uniprot_variants)
+from structures.to_table import (_ensembl_variant, _somatic_variants_ensembl, select_uniprot_variants)
+from variants.to_table import _transcript_variants_ensembl, _somatic_variants_ensembl, _ensembl_variant, \
+    select_uniprot_variants
 from utils import is_valid_ensembl_id
 
 

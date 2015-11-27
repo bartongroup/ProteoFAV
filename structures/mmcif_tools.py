@@ -1,20 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
 
-__author__ = 'fabiomadeira'
-"""
-Created on 11:06 28/07/15 2015
-
-"""
 
 import shlex
 from collections import OrderedDict
 from os import path
-
 import numpy as np
 import pandas as pd
 
 from structures.to_table import _mmcif_atom
+
+__author__ = 'fabiomadeira'
 
 
 def _mmcif_info_to_dict(filename):
@@ -264,8 +260,8 @@ def _get_mmcif_bio_units(filename, most_likely=True):
                 n_assembly[entry] = assembly[entry][index]
             for entry in assembly_gen:
                 n_assembly_gen[entry] = assembly_gen[entry][index]
-            # for entry in oper_list:
-            #     n_oper_list[entry] = oper_list[entry][index]
+                # for entry in oper_list:
+                #     n_oper_list[entry] = oper_list[entry][index]
 
     else:
         # if only one assembly is available
@@ -435,6 +431,22 @@ def _bio_unit_to_mmcif():
     pass
 
 
+def _generic_mmcif_field_to_table(filename, fieldname='_pdbx_poly_seq_scheme.'):
+    header = []
+    lines = []
+    with open(filename) as handle:
+        for line in handle:
+            if line.startswith(fieldname):
+                break
+        while line.startswith(fieldname):
+            header.append(line.split('.')[1].rstrip())
+            line = handle.next()
+        while not line.startswith('#'):
+            lines.append(line.split())
+            line = handle.next()
+    return pd.DataFrame(lines, columns=header)
+
+
 if __name__ == '__main__':
     # X = _mmcif_info_to_dict("tests/CIF/2pah.cif")
     # print(X['exptl_crystal'])
@@ -456,19 +468,3 @@ if __name__ == '__main__':
     # X.to_csv('3fad_bio.tsv', sep='\t')
     # print(X)
     pass
-
-
-def _generic_mmcif_field_to_table(filename, fieldname='_pdbx_poly_seq_scheme.'):
-    header = []
-    lines = []
-    with open(filename) as handle:
-        for line in handle:
-            if line.startswith(fieldname):
-                break
-        while line.startswith(fieldname):
-            header.append(line.split('.')[1].rstrip())
-            line = handle.next()
-        while not line.startswith('#'):
-            lines.append(line.split())
-            line = handle.next()
-    return pd.DataFrame(lines, columns=header)

@@ -1,11 +1,14 @@
-__author__ = 'smacgowan'
+#!/usr/bin/env python
+# -*- coding: utf-8
 
-# Starting out with the example from http://stackoverflow.com/questions/21638130/tutorial-for-scipy-cluster-hierarchy
+"""
+"Starting out with the example from
+http://stackoverflow.com/questions/21638130/tutorial-for-scipy-cluster-hierarchy
+"""
 
 import csv
 from subprocess import call
 from time import strftime
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -16,9 +19,11 @@ from scipy.spatial import ConvexHull
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial.qhull import QhullError
 
-from main import merge_tables
-from structures.to_table import _fetch_uniprot_variants
+from main.to_table import merge_tables
+from variants.to_table import _fetch_uniprot_variants
 from utils import _get_colors, autoscale_axes, fractional_to_cartesian
+
+__author__ = 'smacgowan'
 
 
 def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
@@ -37,7 +42,8 @@ def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
         variants = _fetch_uniprot_variants(uniprot_id)
         # Merge these
         structure.UniProt_dbResNum = structure.UniProt_dbResNum.astype('float')
-        table = pd.merge(structure, variants, on='UniProt_dbResNum', how='left')  ## TODO: Optionally uniquify variants at residue level
+        table = pd.merge(structure, variants, on='UniProt_dbResNum',
+                         how='left')  ## TODO: Optionally uniquify variants at residue level
         merged = merged.append(table[table.resn.notnull()])
         unmapped = unmapped.append(table[table.resn.isnull()])
 
@@ -183,7 +189,7 @@ def merge_clusters_to_table(residue_ids, partition, target_table):
     df = pd.DataFrame(residue_ids)
     df['Cluster'] = pd.Series(partition)
     target_table.UniProt_dbResNum = target_table.UniProt_dbResNum.astype('float')
-    merged = pd.merge(target_table, df, on = 'UniProt_dbResNum')
+    merged = pd.merge(target_table, df, on='UniProt_dbResNum')
     return merged
 
 
@@ -253,10 +259,10 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                 except QhullError:
                     pass
             if addn_points is not None:
-                ax.scatter(addn_points[:,0], addn_points[:,1], addn_points[:,2], c='grey', s=5, alpha=0.3)
-                x = np.append(xyz[:, 0], addn_points[:,0])
-                y = np.append(xyz[:, 1], addn_points[:,1])
-                z = np.append(xyz[:, 2], addn_points[:,2])
+                ax.scatter(addn_points[:, 0], addn_points[:, 1], addn_points[:, 2], c='grey', s=5, alpha=0.3)
+                x = np.append(xyz[:, 0], addn_points[:, 0])
+                y = np.append(xyz[:, 1], addn_points[:, 1])
+                z = np.append(xyz[:, 2], addn_points[:, 2])
                 all_points = np.array([x, y, z]).T
                 x, y, z = autoscale_axes(all_points)
                 ax.auto_scale_xyz(x, y, z)
@@ -315,7 +321,8 @@ if __name__ == '__main__':
     compare_clustering(links, points, '3ecr(a) P08397')
 
     # KRT14 from K5/14 dimer example (multichain)
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3tnu', chains=['A', 'B'], uniprot_ids=['P02533', 'P13647'])
+    d, points, resids, unmapped_points = variant_distances(pdb_id='3tnu', chains=['A', 'B'],
+                                                           uniprot_ids=['P02533', 'P13647'])
     links = linkage_cluster(d, methods=['average', 'mcl'], threshold=10)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
 
