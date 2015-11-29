@@ -135,6 +135,7 @@ def _sifts_residues(filename, cols=None):
                             # skipping dbSource
                             if k == 'dbSource':
                                 continue
+
                             # renaming all keys with dbSource prefix
                             try:
                                 k = "{}_{}".format(
@@ -144,12 +145,15 @@ def _sifts_residues(filename, cols=None):
 
                         # residueDetail entries
                         elif annotation.tag == residue_detail:
-                            # joining dbSource and property keys
-                            k = "_".join([annotation.attrib["dbSource"],
-                                          annotation.attrib["property"]])
-
-                            # value is the text field in the XML
-                            v = annotation.text
+                            if annotation.attrib["property"] == 'Annotation':
+                                k = 'is ' + annotation.text.lower()
+                                k = k.replace(' ', '_')
+                                v = True
+                            else:
+                                k = "_".join([annotation.attrib["dbSource"],
+                                              annotation.attrib["property"]])
+                                # value is the text field in the XML
+                                v = annotation.text
 
                         # adding to the dictionary
                         try:
@@ -161,6 +165,9 @@ def _sifts_residues(filename, cols=None):
                         except AttributeError:
                             residue_annotation[k] = [residue_annotation[k]]
                             residue_annotation[k].append(v)
+                        except TypeError:
+                            # bool column for annotation
+                            residue_annotation[k] = v
 
                 rows.append(residue_annotation)
     if cols:
