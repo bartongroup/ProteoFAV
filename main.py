@@ -22,6 +22,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                  add_annotation=False, remove_redundant=False):
     """Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
+    :param remove_redundant:
     :type add_variants: bool
     :type add_validation: bool
     :type validate: bool
@@ -175,8 +176,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             table = table.merge(uniprot_annotation, how='left',
                                 left_on="UniProt_dbResNum", right_index=True)
 
-    # remove global information from the table.
-    if remove_redundant:  # TODO: Redundant data could (optionally) be returned separately
+    # non-positional information goes to an attribute
+    if remove_redundant:
         for col in table:
             try:
                 value = table[col].dropna().unique()
@@ -185,9 +186,10 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
             if value.shape[0] == 1:
                 del table[col]
+                setattr(table, value)
                 if value[0] == '?':
                     continue
-                log.info('Global key {} is {}'.format(col, value[0]))
+                log.info('Collumn {} is know an attribute.'.format(col))
     return table
 
 
