@@ -8,7 +8,7 @@ from library import to_single_aa
 from pandas import DataFrame
 from structures.to_table import (select_cif, select_dssp, select_sifts, select_validation,
                                  sifts_best, _rcsb_description)
-from variants.to_table import select_uniprot_gff, select_uniprot_variants
+from variants.to_table import select_uniprot_gff, select_uniprot_variants, _fetch_uniprot_variants
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -19,8 +19,9 @@ __all__ = ["merge_tables"]
 
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
-                 validate=True, add_validation=False, add_variants=False,
-                 add_annotation=False, remove_redundant=False):
+                 validate=True, add_validation=False, add_variants=None,
+                 add_annotation=False, remove_redundant=False,
+                 uniprot_variants=False):
     """Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
     :param remove_redundant:
@@ -61,7 +62,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             table = table.append(merge_tables(uniprot_id=uniprot_id, pdb_id=pdb_id, chain=current_chain, model=model,
                                               validate=validate, add_validation=add_validation,
                                               add_variants=add_variants, add_annotation=add_annotation,
-                                              remove_redundant=remove_redundant))
+                                              remove_redundant=remove_redundant, uniprot_variants=uniprot_variants))
 
         return table
 
@@ -191,6 +192,16 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         table = table.reset_index()  # Gives access to niProt_dbResNum
         table = table.merge(variants_table, left_on="UniProt_dbResNum",
                             right_on="start", how="left")
+
+    if uniprot_variants:
+        # Will get variants only for the first UniProt AC
+        structure_uniprots = table.UniProt_dbAccessionId  ## TODO: Re-factor and handle mutiple UniProts
+        structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
+        structure_uniprot = structure_uniprots.unique()[0]
+        # Retrieve variants and merge onto merged table
+        variants = _fetch_uniprot_variants(structure_uniprot)
+        table = table.merge(variants, on='UniProt_dbResNum', how='left')
+
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
