@@ -23,6 +23,7 @@ from scipy.spatial.qhull import QhullError
 from main import merge_tables
 from variants.to_table import _fetch_uniprot_variants
 from utils import get_colors, autoscale_axes, fractional_to_cartesian
+from analysis.random_annotations import add_random_disease_variants
 
 __author__ = 'smacgowan'
 
@@ -324,6 +325,15 @@ if __name__ == '__main__':
     d, points, resids, unmapped_points = variant_distances(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
+
+    # Now look at the same structure with random variants added
+    n_variants = sum(table.resn.notnull())
+    table = merge_tables(pdb_id='3tnu')
+    table = add_random_disease_variants(table, n_variants, 1)
+    d, points, resids, unmapped_points = variant_distances(table)
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
+    compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
+
 
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example
     table = merge_tables(pdb_id='3my0', chain='A', uniprot_variants=True)
