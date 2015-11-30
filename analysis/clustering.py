@@ -27,26 +27,15 @@ from utils import get_colors, autoscale_axes, fractional_to_cartesian
 __author__ = 'smacgowan'
 
 
-def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
+def variant_distances(table, cartesian=False):
     """
     Find the intervariant distances for a given PDB chain
-    :param pdb_id:
-    :param chain:
-    :param uniprot_id:
+    :param table:
+    :param cartesian:
     :return: The reduced distance matrix produced by `pdist` and the XYZ coordinates of the mapped variants.
     """
-    merged = pd.DataFrame()
-    unmapped = pd.DataFrame()
-    for chain, uniprot_id in zip(chains, uniprot_ids):
-        # Fetch raw data
-        structure = merge_tables(pdb_id=pdb_id, chain=chain)  ## Don't add variants yet!
-        variants = _fetch_uniprot_variants(uniprot_id)
-        # Merge these
-        structure.UniProt_dbResNum = structure.UniProt_dbResNum.astype('float')
-        table = pd.merge(structure, variants, on='UniProt_dbResNum',
-                         how='left')  ## TODO: Optionally uniquify variants at residue level
-        merged = merged.append(table[table.resn.notnull()])
-        unmapped = unmapped.append(table[table.resn.isnull()])
+    merged = table[table.resn.notnull()]
+    unmapped = table[table.resn.isnull()]
 
     # Build array distance matrix
     merged_real, xyz = extract_coords(merged)
@@ -54,6 +43,7 @@ def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
 
     # Convert to fractional coordinates
     if cartesian:
+        pdb_id = table.PDB_dbAccessionId.unique()[0]
         xyz = fractional_to_cartesian(xyz, pdb_id)
         unmapped_xyz = fractional_to_cartesian(unmapped_xyz, pdb_id)
 
@@ -295,7 +285,8 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
 
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3ecr', chains=['A'], uniprot_ids=['P08397'])
+    table = merge_tables(pdb_id='3ecr', chain='A', uniprot_variants=True)
+    d, points, resids, unmapped_points = variant_distances(table)
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
@@ -329,27 +320,31 @@ if __name__ == '__main__':
     compare_clustering(links, points, '3ecr(a) P08397')
 
     # KRT14 from K5/14 dimer example (multichain)
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3tnu', chains=['A', 'B'],
-                                                           uniprot_ids=['P02533', 'P13647'])
+    table = merge_tables(pdb_id='3tnu', uniprot_variants=True)
+    d, points, resids, unmapped_points = variant_distances(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
 
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3my0', chains=['A'], uniprot_ids=['P37023'])
+    table = merge_tables(pdb_id='3my0', chain='A', uniprot_variants=True)
+    d, points, resids, unmapped_points = variant_distances(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3my0(a) P37023', addn_points=unmapped_points)
 
     # Alpha-galactosidase A, Fabry disease example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3s5z', chains=['A'], uniprot_ids=['P06280'])
+    table = merge_tables(pdb_id='3s5z', chain='A', uniprot_variants=True)
+    d, points, resids, unmapped_points = variant_distances(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3s5z(a) P06280', addn_points=unmapped_points)
 
     # Cholinesterase, BChE deficiency example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='4tpk', chains=['A'], uniprot_ids=['P06276'])
+    table = merge_tables(pdb_id='4tpk', chain='A', uniprot_variants=True)
+    d, points, resids, unmapped_points = variant_distances(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '4tpk(a) P06276', addn_points=unmapped_points)
 
     # UDP-glucose 4-epimerase, EDG example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='1ek6', chains=['A'], uniprot_ids=['Q14376'])
+    table = merge_tables(pdb_id='1ek6', chain='A', uniprot_variants=True)
+    d, points, resids, unmapped_points = variant_distances(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '1ek6(a) Q14376', addn_points=unmapped_points)
