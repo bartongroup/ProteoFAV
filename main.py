@@ -65,7 +65,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
         return table
 
-
     if not pdb_id:
         best_pdb = sifts_best(uniprot_id, first=True)
         pdb_id = best_pdb['pdb_id']
@@ -91,7 +90,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         # What happens in case in structures with dozen of chains, ie: 4v9d
         # So we parse all the PDB file
         log.error('{} not found in {} DSSP'.format(chain, pdb_id))
-        # TODO this not good. We should map positionaly from sifts to DSSP
+        # TODO this not good. We should map positionally from sifts to DSSP
         dssp_table = select_dssp(pdb_id)
         cif_seq = cif_table.auth_comp_id.apply(to_single_aa.get)
         dssp_table.reset_index(inplace=True)
@@ -122,7 +121,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         mask = mask | table['cif_aa'].isnull()
         # mask the X in DSSP since you can't compare those
         mask = mask | (table.dssp_aa == 'X')
-        # From three letter to sigle letters or X if not a standard aa
+        # From three letter to single letters or X if not a standard aa
         table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get, args='X')
         # Check if the sequences are the same
         if not (table['dssp_aa'][~mask] == table['cif_aa'][~mask]).all():
@@ -147,7 +146,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     if validate:
         if not table['REF_dbResName'].any():
             raise ValueError('Empty Sifts sequence cannot be validated')
-        # Mask here because Sifts conseve missing residues and other data don't
+        # Mask here because Sifts conserve missing residues and other data don't
         mask = table.cif_aa.isnull()
         table['sifts_aa'] = table['REF_dbResName']
         table['sifts_aa'] = table['sifts_aa'].apply(
@@ -209,7 +208,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
             if value.shape[0] == 1:
                 del table[col]
-                setattr(table, value)
+                setattr(table, col, value)
                 if value[0] == '?':
                     continue
                 log.info('Column {} is now an attribute.'.format(col))
