@@ -29,11 +29,11 @@ __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
 ##############################################################################
 # Private methods
 ##############################################################################
-def to_unique(series):
+def _to_unique(series):
     """Lambda-like expression for returning unique elements of a Series.
     :param series: pandas.Series
     :return: pandas.Series
-    """""
+    """
     return series.unique()
 
 
@@ -135,6 +135,7 @@ def _sifts_residues(filename, cols=None):
                             # skipping dbSource
                             if k == 'dbSource':
                                 continue
+
                             # renaming all keys with dbSource prefix
                             try:
                                 k = "{}_{}".format(
@@ -144,12 +145,15 @@ def _sifts_residues(filename, cols=None):
 
                         # residueDetail entries
                         elif annotation.tag == residue_detail:
-                            # joining dbSource and property keys
-                            k = "_".join([annotation.attrib["dbSource"],
-                                          annotation.attrib["property"]])
-
-                            # value is the text field in the XML
-                            v = annotation.text
+                            if annotation.attrib["property"] == 'Annotation':
+                                k = 'is ' + annotation.text.lower()
+                                k = k.replace(' ', '_')
+                                v = True
+                            else:
+                                k = "_".join([annotation.attrib["dbSource"],
+                                              annotation.attrib["property"]])
+                                # value is the text field in the XML
+                                v = annotation.text
 
                         # adding to the dictionary
                         try:
@@ -161,6 +165,9 @@ def _sifts_residues(filename, cols=None):
                         except AttributeError:
                             residue_annotation[k] = [residue_annotation[k]]
                             residue_annotation[k].append(v)
+                        except TypeError:
+                            # bool column for annotation
+                            residue_annotation[k] = v
 
                 rows.append(residue_annotation)
     if cols:
@@ -338,7 +345,8 @@ def _pdb_validation_to_table(filename, global_parameters=False):
 # Public methods
 ##############################################################################
 def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
-    """Produce table read from mmCIF file
+    """
+    Produce table read from mmCIF file.
 
     :param pdb_id: PDB identifier
     :param models: protein structure entity
@@ -406,7 +414,8 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
 
 
 def select_dssp(pdb_id, chains=None):
-    """Produce table from DSSP file output
+    """
+    Produce table from DSSP file output.
 
     :param pdb_id: PDB identifier
     :param chains: PDB protein chain
@@ -438,7 +447,8 @@ def select_dssp(pdb_id, chains=None):
 
 
 def select_sifts(pdb_id, chains=None):
-    """Produce table ready from SIFTS XML file
+    """
+    Produce table ready from SIFTS XML file.
 
     :param pdb_id: PDB identifier
     :param chains: Protein structure chain
@@ -457,11 +467,18 @@ def select_sifts(pdb_id, chains=None):
         if isinstance(chains, str):
             chains = [chains]
         sift_table = sift_table[sift_table.PDB_dbChainId.isin(chains)]
+
+    # standardise column types
+    for col in sift_table:
+        #  bool columns
+        if col.startswith('is'):
+            sift_table[col].fillna(False)
     return sift_table
 
 
 def select_validation(pdb_id, chains=None):
-    """Produces table from PDB validation XML file
+    """
+    Produces table from PDB validation XML file.
 
     :param pdb_id: PDB identifier
     :param chains: PDB protein chain
@@ -487,7 +504,8 @@ def select_validation(pdb_id, chains=None):
 
 
 def sifts_best(identifier, first=False):
-    """Retrives the best structures from the SIFTS endpoint in the PDBe api
+    """
+    Retrieves the best structures from the SIFTS endpoint in the PDBe api.
 
     :param identifier: Uniprot ID
     :param first: gets the first entry

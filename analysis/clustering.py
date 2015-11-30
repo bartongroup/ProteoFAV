@@ -20,9 +20,9 @@ from scipy.spatial import ConvexHull
 from scipy.spatial.distance import pdist, squareform
 from scipy.spatial.qhull import QhullError
 
-from main.to_table import merge_tables
+from main import merge_tables
 from variants.to_table import _fetch_uniprot_variants
-from utils import _get_colors, autoscale_axes, fractional_to_cartesian
+from utils import get_colors, autoscale_axes, fractional_to_cartesian
 
 __author__ = 'smacgowan'
 
@@ -240,7 +240,7 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
             part2 = part1
             num_clust2 = num_clust1
 
-        clr = _get_colors(max([num_clust1, num_clust2]))
+        clr = get_colors(max([num_clust1, num_clust2]))
 
         for part, i in zip([part1, part2], [2, 3]):
             ax = fig.add_subplot(nrows, 3, i + offset, projection='3d')

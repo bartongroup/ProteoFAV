@@ -7,7 +7,7 @@ import pymol
 import logging
 import pandas as pd
 
-from main.to_table import merge_tables
+from main import merge_tables
 from variants.to_table import (_fetch_uniprot_variants,
                                _variant_characteristics_from_identifiers)
 
