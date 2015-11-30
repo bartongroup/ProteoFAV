@@ -5,8 +5,8 @@
 import logging
 
 from library import to_single_aa
-from structures.to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                                 sifts_best)
+from structures.to_table import (select_cif, select_dssp, select_sifts,
+                                 select_validation, sifts_best)
 from variants.to_table import select_uniprot_gff, select_uniprot_variants
 
 log = logging.getLogger(__name__)
@@ -185,10 +185,11 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                 continue
 
             if value.shape[0] == 1:
+                if value[0] == '?':
+                    # if the only value is a `?` we don't need to keep
+                    continue
                 del table[col]
                 setattr(table, value)
-                if value[0] == '?':
-                    continue
                 log.info('Collumn {} is know an attribute.'.format(col))
     return table
 
