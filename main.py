@@ -44,7 +44,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         raise TypeError("One of the following arguments is expected:"
                         "uniprot_id or pdb_id")
 
-    if chain == 'all':
+    if chain is None:
         # If we want to fetch all chains we can just find out what chains are available in the specified PDB and then
         # recursively call `merge_tables` until we got them all. This should only work for a PDB based query and we
         # need to ensure that fields like 'chain_id' aren't dropped by 'remove_redundant'
