@@ -5,8 +5,9 @@
 import logging
 
 from library import to_single_aa
+from pandas import DataFrame
 from structures.to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                                 sifts_best)
+                                 sifts_best, _rcsb_description)
 from variants.to_table import select_uniprot_gff, select_uniprot_variants
 
 log = logging.getLogger(__name__)
@@ -42,6 +43,28 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
                         "uniprot_id or pdb_id")
+
+    if chain is None:
+        # If we want to fetch all chains we can just find out what chains are available in the specified PDB and then
+        # recursively call `merge_tables` until we got them all. This should only work for a PDB based query and we
+        # need to ensure that fields like 'chain_id' aren't dropped by 'remove_redundant'
+        if not pdb_id:
+            raise TypeError("Must specify PDB when using chain='all'")
+        if remove_redundant:
+            remove_redundant=False
+            log.warning("remove_redundant is ignored when chain='all' and is set to False")
+
+        chain_ids = _rcsb_description(pdb_id, tag='chain', key='id')
+
+        table = DataFrame()
+        for current_chain in chain_ids:
+            table = table.append(merge_tables(uniprot_id=uniprot_id, pdb_id=pdb_id, chain=current_chain, model=model,
+                                              validate=validate, add_validation=add_validation,
+                                              add_variants=add_variants, add_annotation=add_annotation,
+                                              remove_redundant=remove_redundant))
+
+        return table
+
 
     if not pdb_id:
         best_pdb = sifts_best(uniprot_id, first=True)
@@ -166,7 +189,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         variants_table[["start"]] = variants_table[["start"]].astype(float)
 
         table = table.reset_index()  # Gives access to niProt_dbResNum
-        table = table.merge(table, variants_table, left_on="UniProt_dbResNum",
+        table = table.merge(variants_table, left_on="UniProt_dbResNum",
                             right_on="start", how="left")
 
     if add_annotation:
