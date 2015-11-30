@@ -11,7 +11,7 @@ from pandas import Series
 from string import letters
 
 
-def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=0):
+def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1):
 
     # TODO: if I read a variant table, I can get the actual AA composition and dssp and keep these constant
 
@@ -29,7 +29,7 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=0):
     table = merge_table.iloc[rows, columns]
 
     # Now generate random variant residues and phenotypes
-    selection = random_integers(0, n_phenotypes, n_residues)
+    selection = random_integers(0, n_phenotypes - 1, n_residues)
     disease = [letters[i] for i in selection]
     aa1 = array(list('ACDEFGHIKLMNPQRSTVWY'))
     mut = choice(aa1, n_residues, replace=True)  # TODO: set p to match a variant distribution
