@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import scipy.cluster.hierarchy as hac
 from mcl.mcl_clustering import mcl
+from mpl_toolkits.mplot3d import Axes3D  ## Required
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial import ConvexHull
 from scipy.spatial.distance import pdist, squareform
@@ -56,7 +57,7 @@ def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
         xyz = fractional_to_cartesian(xyz, pdb_id)
         unmapped_xyz = fractional_to_cartesian(unmapped_xyz, pdb_id)
 
-    return pdist(xyz), xyz, merged_real.UniProt_dbResNum, unmapped_xyz
+    return pdist(xyz), xyz, merged_real[['UniProt_dbResNum', 'chain_id']], unmapped_xyz
 
 
 def extract_coords(merged):
@@ -185,11 +186,15 @@ def launch_mcl(s, format='partition', inflate=None):
     return clusters
 
 
-def merge_clusters_to_table(residue_ids, partition, target_table):
+def merge_clusters_to_table(residue_ids, partition, target_table, multichain=False):
     df = pd.DataFrame(residue_ids)
     df['Cluster'] = pd.Series(partition)
     target_table.UniProt_dbResNum = target_table.UniProt_dbResNum.astype('float')
-    merged = pd.merge(target_table, df, on='UniProt_dbResNum')
+    if multichain:
+        merge_columns = ['UniProt_dbResNum', 'chain_id']
+    else:
+        merge_columns = 'UniProt_dbResNum'
+    merged = pd.merge(target_table, df, on=merge_columns)
     return merged
 
 
@@ -243,9 +248,9 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                 ax.scatter(xyz[part == cluster, 0], xyz[part == cluster, 1],
                            xyz[part == cluster, 2], c=clr[cluster - 1])
                 # Compute and plot the Point Cloud Complex Hull
-                try:
-                    points = xyz[part == cluster]
-                    if len(points) >= 4:
+                points = xyz[part == cluster]
+                if len(points) >= 4:
+                    try:
                         hull = ConvexHull(points)
                         for simplex in hull.simplices:
                             simplex = np.append(simplex, simplex[0])  # Closes facet
@@ -256,13 +261,16 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                             tri.set_color(clr[cluster - 1])
                             tri.set_edgecolor('k')
                             ax.add_collection3d(tri)
-                except QhullError:
-                    pass
+                    except QhullError:
+                        pass
+                else:
+                    points = np.vstack([points, points[0]])  # Gives triangle for 3-points
+                    ax.plot(points[:, 0], points[:, 1], points[:, 2], color=clr[cluster - 1])
             if addn_points is not None:
-                ax.scatter(addn_points[:, 0], addn_points[:, 1], addn_points[:, 2], c='grey', s=5, alpha=0.3)
-                x = np.append(xyz[:, 0], addn_points[:, 0])
-                y = np.append(xyz[:, 1], addn_points[:, 1])
-                z = np.append(xyz[:, 2], addn_points[:, 2])
+                ax.scatter(addn_points[:,0], addn_points[:,1], addn_points[:,2], c='grey', s=5, alpha=0.3)
+                x = np.append(xyz[:, 0], addn_points[:,0])
+                y = np.append(xyz[:, 1], addn_points[:,1])
+                z = np.append(xyz[:, 2], addn_points[:,2])
                 all_points = np.array([x, y, z]).T
                 x, y, z = autoscale_axes(all_points)
                 ax.auto_scale_xyz(x, y, z)
@@ -290,7 +298,7 @@ if __name__ == '__main__':
     d, points, resids, unmapped_points = variant_distances(pdb_id='3ecr', chains=['A'], uniprot_ids=['P08397'])
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points, '3ecr(a) P08397')
-    links = linkage_cluster(d, methods=['average', 'mcl'])
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['mcl_program', 'mcl'], threshold=10)
     compare_clustering(links, points, '3ecr(a) P08397', addn_points=unmapped_points)
@@ -323,7 +331,7 @@ if __name__ == '__main__':
     # KRT14 from K5/14 dimer example (multichain)
     d, points, resids, unmapped_points = variant_distances(pdb_id='3tnu', chains=['A', 'B'],
                                                            uniprot_ids=['P02533', 'P13647'])
-    links = linkage_cluster(d, methods=['average', 'mcl'], threshold=10)
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
 
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example

@@ -24,7 +24,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
     :return:
     """
 
-    def build_selection(chain, group, in_group, mapped_variants):
+    def build_selection(chain, select_name, in_group, mapped_variants):
         """
 
         :param chain:
@@ -33,77 +33,64 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         :param mapped_variants:
         :return:
         """
-        start = mapped_variants.PDB_dbResNum[in_group]
-        variant_residues = list(
-            start[pd.notnull(start)].astype(int).astype(str).unique())
-        # sanitisation of the selection name for pymol is important
+
+        # Find the residues we want to highlight
+        in_chain = mapped_variants.chain_id == chain
+        start = mapped_variants.PDB_dbResNum[in_group & in_chain]
+        variant_residues = list(start.dropna().astype(int).astype(str).unique())
+
+        # Construct PyMol select command
+        # Sanitisation of the selection name for pymol is important
         # or the name existence test will always fail and we'll over write
         # entries from previous chains!
-        name = group + '_vars'
-        name = re.sub("[\W\d]+", "_", name.strip())
-        if name not in pymol.cmd.get_names('selections'):
-            pymol.cmd.select(name, 'none')
+        select_name = re.sub("[\W\d]+", "_", select_name.strip())
+        if select_name not in pymol.cmd.get_names('selections'):
+            pymol.cmd.select(select_name, 'none')
         selection = 'chain ' + chain + ' and resi ' + '+'.join(
-            variant_residues) + ' or ' + name
-        # name = group + '_vars'
-        message = "Creating PyMol selection {} from '{}'".format(name,
+            variant_residues) + ' or ' + select_name
+
+        # Make the selection
+        message = "Creating PyMol selection {} from '{}'".format(select_name,
                                                                  selection)
         logging.debug(message)
-        pymol.cmd.select(name, selection)
+        pymol.cmd.select(select_name, selection)
 
-    # Open the PDB with pymol
+        # Apply some styles
+        pymol.cmd.show("lines", select_name)
+        pymol.util.cnc(select_name)
+
+
+    # Open the PDB as requested with PyMol and apply a few styles
     pymol.finish_launching()
     if assembly:
         pymol.cmd.fetch(pdb_id, type='pdb1')
         pymol.cmd.set('all_states', 'on')
     else:
         pymol.cmd.fetch(pdb_id)
+
     pymol.cmd.hide("everything", "all")
     pymol.cmd.show("ribbon", "all")
     pymol.util.cbc()
 
-    # Get available variants for any chain
+    # Get variants for all chains
+    residue_mappings = merge_tables(pdb_id=pdb_id, chain='all',
+                                    add_variants=True)
+    has_variant = residue_mappings.start.notnull()
+
+    # If we're going to make selections from ensembl traits get that data now
+    if use_ensembl:
+        variant_ids = residue_mappings.id_y[has_variant]
+        traits = ensembl_traits(variant_ids)
+
+    # Now create a PyMol selection for the variants on each chain
     chains = pymol.cmd.get_chains(pdb_id)
-
     for chain in chains:
-
-        # Get the variants for this chain
-        residue_mappings = merge_tables(pdb_id=pdb_id, chain=chain,
-                                        add_variants=True)
-        has_variant = residue_mappings.start.notnull()
-        start = residue_mappings.PDB_dbResNum[has_variant]
-        variant_residues = list(
-            start[pd.notnull(start)].astype(int).astype(str).unique())
-
-        # Create the selection
-        selection = 'chain ' + chain + ' and resi ' + '+'.join(variant_residues)
-        name = 'chain_' + chain + '_vars'
-        message = "Creating PyMol selection {} from '{}'".format(name,
-                                                                 selection)
-        logging.debug(message)
-        pymol.cmd.select(name, selection)
-
-        # Apply some styles
-        pymol.cmd.show("lines", name)
-        pymol.util.cnc(name)
+        group = 'chain_' + chain
+        in_chain = residue_mappings.chain_id == chain
+        build_selection(chain, select_name=group, in_group=in_chain & has_variant,
+                        mapped_variants=residue_mappings)
 
         if use_ensembl:
-            variant_ids = residue_mappings.id_y[has_variant]
-
-            # For now, need to iterate with GET requests
-            # until POST can retrieve phenotypes
-            traits = []
-            for variant in variant_ids:
-                phenos = \
-                    _variant_characteristics_from_identifiers(str(variant))[
-                        'phenotypes']
-                if phenos == []:
-                    traits.append([variant, 'No_Available_Phenotype'])
-                else:
-                    for entry in phenos:
-                        trait = entry['trait']
-                        traits.append([variant, trait])
-
             groups = set(zip(*traits)[1])
             for group in groups:
                 variants_in_group = []
@@ -121,7 +108,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         if use_uniprot:
 
             # Extract first uniprot (REFACTOR THIS, also `merge_tables`)
-            structure_uniprots = residue_mappings.UniProt_dbAccessionId
+            structure_uniprots = residue_mappings.UniProt_dbAccessionId[in_chain]
             structure_uniprots = structure_uniprots[
                 structure_uniprots.notnull()]
             structure_uniprot = structure_uniprots.unique()[0]
@@ -142,5 +129,27 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
                 build_selection(chain, group, in_group, mapped)
 
 
+def ensembl_traits(variant_ids):
+    """
+
+    :param variant_ids:
+    :return:
+    """
+    # For now, need to iterate with GET requests
+    # until POST can retrieve phenotypes
+    traits = []
+    for variant in variant_ids:
+        phenos = \
+            _variant_characteristics_from_identifiers(str(variant))[
+                'phenotypes']
+        if phenos == []:
+            traits.append([variant, 'No_Available_Phenotype'])
+        else:
+            for entry in phenos:
+                trait = entry['trait']
+                traits.append([variant, trait])
+    return traits
+
+
 if __name__ == '__main__':
-    visualise('3tnu', assembly=True, use_uniprot=True)
+    visualise('3tnu', assembly=True, use_ensembl=True, use_uniprot=True)

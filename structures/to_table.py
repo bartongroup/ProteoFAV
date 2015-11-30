@@ -23,7 +23,7 @@ from utils import is_valid
 log = logging.getLogger(__name__)
 
 __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
-           "sifts_best"]
+           "sifts_best", "_rcsb_description"]
 
 
 ##############################################################################
@@ -516,6 +516,22 @@ def sifts_best(identifier, first=False):
     url = defaults.api_pdbe + sifts_endpoint + str(identifier)
     response = get_url_or_retry(url, json=True)
     return response if not first else response[identifier][0]
+
+
+def _rcsb_description(pdb_id, tag, key):
+
+    api = 'http://www.rcsb.org/pdb/rest/'
+    endpoint = 'describeMol'
+    query = '?structureId=' + pdb_id
+
+    url = api + endpoint + query
+
+    tree = etree.fromstring(get_url_or_retry(url))
+    values = []
+    for i in tree.iter(tag):
+        values.append(i.attrib[key])
+
+    return values
 
 
 if __name__ == '__main__':
