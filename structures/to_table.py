@@ -23,7 +23,7 @@ from utils import is_valid
 log = logging.getLogger(__name__)
 
 __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
-           "sifts_best"]
+           "sifts_best", "_rcsb_description"]
 
 
 ##############################################################################
