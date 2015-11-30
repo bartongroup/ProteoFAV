@@ -58,4 +58,7 @@ def add_random_disease_variants(merge_table, n_residues, n_phenotypes):
     :param n_phenotypes:
     :return:
     """
-    pass
+    variants = random_uniprot_patho_table(merge_table, n_residues, n_phenotypes)
+    table = merge_table.merge(variants)
+    return table
+
