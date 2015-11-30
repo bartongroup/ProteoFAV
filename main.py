@@ -189,7 +189,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                 setattr(table, value)
                 if value[0] == '?':
                     continue
-                log.info('Collumn {} is know an attribute.'.format(col))
+                log.info('Column {} is now an attribute.'.format(col))
     return table
 
 
