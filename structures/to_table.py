@@ -467,6 +467,12 @@ def select_sifts(pdb_id, chains=None):
         if isinstance(chains, str):
             chains = [chains]
         sift_table = sift_table[sift_table.PDB_dbChainId.isin(chains)]
+
+    # stardatise column types
+    for col in sift_table:
+        #  bool columns
+        if col.startswith('is'):
+            sift_table[col].fillna(False)
     return sift_table
 
 
