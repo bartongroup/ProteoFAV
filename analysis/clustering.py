@@ -329,8 +329,7 @@ def elements_per_cluster(part):
 
 
 def bootstrap(table, methods, n_residues, n_phenotypes,
-              statistics=[np.mean, np.median, np.std, min, max, len],
-              samples=10):
+              samples=10, alpha=0.05, **kwargs):
     """
 
     :param table:
@@ -345,7 +344,7 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
 
         # Compute the clustering
         d, points, resids, unmapped_points = variant_distances(test_table)
-        links = linkage_cluster(d, methods)
+        links = linkage_cluster(d, methods, **kwargs)
         part = links[0][0]
 
         # Get the statistics
@@ -356,8 +355,12 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
 
         stats.append(summary)
 
-    return stats
+    thresholds = []
+    for i in zip(*stats):
+        i = np.sort(i)
+        thresholds.append((i[int((alpha / 2.0) * samples)], i[int((1 - alpha / 2.0) * samples)]))
 
+    return thresholds
 
 
 if __name__ == '__main__':
