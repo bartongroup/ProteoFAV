@@ -284,6 +284,82 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
     # plt.show()
 
 
+##############################################################################
+# Cluster statistic functions
+##############################################################################
+
+
+def n_clusters(part):
+    """
+    Determine the number of clusters from a partition list.
+
+    :param part: A partition list
+    :type part: List
+    :return: The number of clusters in the partition list
+    """
+    part.sort
+
+    if part[0] == 0:
+        return part[-1] + 1
+    else:
+        return part[-1]
+
+
+def elements_per_cluster(part):
+    """
+    Determine the number of elements in each cluster from a partition list
+
+    :param part: A partition list
+    :type part: List
+    :return:
+    """
+    offset = 1  # Need this if 1-indexed
+    if 0 in part:
+        offset = 0
+
+    members = []
+    for i in xrange(n_clusters(part)):
+        members.append(part.count(i + offset))
+    return members
+
+
+##############################################################################
+# Cluster bootstrapping
+##############################################################################
+
+
+def bootstrap(table, methods, n_residues, n_phenotypes,
+              statistics=[np.mean, np.median, np.std, min, max, len],
+              samples=10):
+    """
+
+    :param table:
+    :param methods:
+    :param statistics:
+    :return:
+    """
+    stats = []
+    for i in xrange(samples):
+        # Build random data
+        test_table = add_random_disease_variants(table, n_residues, n_phenotypes)
+
+        # Compute the clustering
+        d, points, resids, unmapped_points = variant_distances(test_table)
+        links = linkage_cluster(d, methods)
+        part = links[0][0]
+
+        # Get the statistics
+        sizes = elements_per_cluster(part)
+        summary = []
+        for stat in statistics:
+            summary.append(stat(sizes))
+
+        stats.append(summary)
+
+    return stats
+
+
+
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
     table = merge_tables(pdb_id='3ecr', chain='A', uniprot_variants=True)
