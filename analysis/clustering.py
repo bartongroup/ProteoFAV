@@ -323,6 +323,14 @@ def elements_per_cluster(part):
     return members
 
 
+def part_stats(part, statistics=[np.mean, np.median, np.std, min, max, len]):
+    sizes = elements_per_cluster(part)
+    summary = []
+    for stat in statistics:
+        summary.append(stat(sizes))
+    return summary
+
+
 ##############################################################################
 # Cluster bootstrapping
 ##############################################################################
@@ -348,11 +356,7 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
         part = links[0][0]
 
         # Get the statistics
-        sizes = elements_per_cluster(part)
-        summary = []
-        for stat in statistics:
-            summary.append(stat(sizes))
-
+        summary = part_stats(part, **kwargs)
         stats.append(summary)
 
     thresholds = []
