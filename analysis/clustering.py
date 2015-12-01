@@ -297,7 +297,7 @@ def n_clusters(part):
     :type part: List
     :return: The number of clusters in the partition list
     """
-    part.sort
+    part.sort()
 
     if part[0] == 0:
         return part[-1] + 1
