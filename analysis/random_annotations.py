@@ -39,7 +39,10 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1):
     table['mut'] = mut
     table['disease'] = disease
     table = table.reset_index()
-    del table['PDB_dbResNum']
+    try:
+        del table['PDB_dbResNum']  ## This is breaking sometimes with KeyError
+    except KeyError:
+        pass  # Should this be logged?
     table = table.rename(columns={'aa': 'resn'})
 
     # TODO: Fix any entries where resn == mut
