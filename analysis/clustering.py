@@ -338,7 +338,7 @@ def part_stats(part, statistics=[np.mean, np.median, np.std, min, max, len]):
 
 
 def bootstrap(table, methods, n_residues, n_phenotypes,
-              samples=10, alpha=0.05, **kwargs):
+              samples=10, **kwargs):
     """
 
     :param table:
@@ -346,7 +346,7 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
     :param statistics:
     :return:
     """
-    stats = []
+    partitions = []
     for i in xrange(samples):
         # Build random data
         test_table = add_random_disease_variants(table, n_residues, n_phenotypes)
@@ -354,17 +354,23 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
         # Compute the clustering
         d, points, resids, unmapped_points = variant_distances(test_table)
         links = linkage_cluster(d, methods, **kwargs)
-        part = links[0][0]
+        partitions.append(links[0][0])
 
-        # Get the statistics
-        summary = part_stats(part, **kwargs)
-        stats.append(summary)
+    return partitions
 
+
+def bootstrap_stats(partitions, statistics=(np.mean, np.median, np.std, min, max, len)):
+    stats = []
+    for part in partitions:
+        stats.append(part_stats(part, statistics))
+    return stats
+
+
+def tail_thresholds(alpha, samples, stats):
     thresholds = []
     for i in zip(*stats):
         i = np.sort(i)
         thresholds.append((i[int((alpha / 2.0) * samples)], i[int((1 - alpha / 2.0) * samples)]))
-
     return thresholds
 
 
