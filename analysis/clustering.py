@@ -8,6 +8,7 @@ http://stackoverflow.com/questions/21638130/tutorial-for-scipy-cluster-hierarchy
 
 import csv
 from subprocess import call
+import os
 from time import strftime
 import matplotlib.pyplot as plt
 import numpy as np
@@ -163,7 +164,7 @@ def launch_mcl(s, format='partition', inflate=None):
     if inflate:
         mcl_call.append('-I')
         mcl_call.append(str(inflate))
-    call(mcl_call)
+    call(mcl_call, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
     clusters = read_mcl_clusters('mcl_results.txt')
     if format == 'partition':
         part = ['unassigned'] * len(s)
