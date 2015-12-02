@@ -374,6 +374,18 @@ def tail_thresholds(alpha, samples, stats):
     return thresholds
 
 
+##############################################################################
+# Convenience wrappers
+##############################################################################
+
+
+def cluster_table(table, mask, **kwargs):
+    d, points, resids, unmapped_points = variant_distances(table)
+    links = linkage_cluster(d, **kwargs)
+    part = links[0][0]
+    return part
+
+
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
     table = merge_tables(pdb_id='3ecr', chain='A', uniprot_variants=True)
