@@ -7,8 +7,9 @@ Functions to help with random selection of PDB atoms/residues and significance t
 
 from numpy.random import choice, random_integers
 from numpy import array
-from pandas import Series
+from pandas import Series, DataFrame
 from string import letters
+from random import shuffle
 
 
 def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1):
@@ -58,7 +59,29 @@ def add_random_disease_variants(merge_table, n_residues, n_phenotypes):
     :param n_phenotypes:
     :return:
     """
-    variants = random_uniprot_patho_table(merge_table, n_residues, n_phenotypes)
-    table = merge_table.merge(variants, how='left')
-    return table
+    # If we have more than one chain then we need to use split/apply/combine
+    n_chains = len(merge_table.chain_id.dropna().unique())
+    if n_chains == 1:
+        variants = random_uniprot_patho_table(merge_table, n_residues, n_phenotypes)
+        table = merge_table.merge(variants, how='left')
+        return table
+
+    else:
+        # Randomly distribute the number of variants to each chain
+        n_vars_per_chain = []
+        remaining = n_residues
+        for _ in xrange(n_chains - 1):
+            n_vars_per_chain.append(random_integers(0, remaining, 1))
+            remaining = remaining - n_vars_per_chain[-1]
+        n_vars_per_chain.append(remaining)
+        shuffle(n_vars_per_chain)
+
+        # Now split, apply, combine by iteration so we can vary the number of residues
+        grouped = merge_table.groupby('chain_id')  # TODO: This drops any where chain_id is NaN, fix or log
+        newtable = DataFrame()
+        for i, (name, group) in enumerate(grouped):
+            newtable = newtable.append(add_random_disease_variants(group, n_vars_per_chain[i], n_phenotypes))
+        return newtable
+
+
 
