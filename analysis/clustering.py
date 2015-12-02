@@ -29,7 +29,7 @@ from analysis.random_annotations import add_random_disease_variants
 __author__ = 'smacgowan'
 
 
-def variant_distances(table, cartesian=False):
+def atom_dist(table, cartesian=False):
     """
     Find the intervariant distances for a given PDB chain
     :param table:
@@ -352,7 +352,7 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
         test_table = add_random_disease_variants(table, n_residues, n_phenotypes)
 
         # Compute the clustering
-        d, points, resids, unmapped_points = variant_distances(test_table)
+        d, points, resids, unmapped_points = atom_dist(test_table)
         links = linkage_cluster(d, methods, **kwargs)
         partitions.append(links[0][0])
 
@@ -380,7 +380,7 @@ def tail_thresholds(alpha, samples, stats):
 
 
 def cluster_table(table, mask, **kwargs):
-    d, points, resids, unmapped_points = variant_distances(table)
+    d, points, resids, unmapped_points = atom_dist(table)
     links = linkage_cluster(d, **kwargs)
     part = links[0][0]
     return part
@@ -389,7 +389,7 @@ def cluster_table(table, mask, **kwargs):
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
     table = merge_tables(pdb_id='3ecr', chain='A', uniprot_variants=True)
-    d, points, resids, unmapped_points = variant_distances(table)
+    d, points, resids, unmapped_points = atom_dist(table)
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
@@ -424,7 +424,7 @@ if __name__ == '__main__':
 
     # KRT14 from K5/14 dimer example (multichain)
     table = merge_tables(pdb_id='3tnu', uniprot_variants=True)
-    d, points, resids, unmapped_points = variant_distances(table)
+    d, points, resids, unmapped_points = atom_dist(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
 
@@ -432,31 +432,31 @@ if __name__ == '__main__':
     n_variants = sum(table.resn.notnull())
     table = merge_tables(pdb_id='3tnu')
     table = add_random_disease_variants(table, n_variants, 1)
-    d, points, resids, unmapped_points = variant_distances(table)
+    d, points, resids, unmapped_points = atom_dist(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
 
 
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example
     table = merge_tables(pdb_id='3my0', chain='A', uniprot_variants=True)
-    d, points, resids, unmapped_points = variant_distances(table)
+    d, points, resids, unmapped_points = atom_dist(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3my0(a) P37023', addn_points=unmapped_points)
 
     # Alpha-galactosidase A, Fabry disease example
     table = merge_tables(pdb_id='3s5z', chain='A', uniprot_variants=True)
-    d, points, resids, unmapped_points = variant_distances(table)
+    d, points, resids, unmapped_points = atom_dist(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3s5z(a) P06280', addn_points=unmapped_points)
 
     # Cholinesterase, BChE deficiency example
     table = merge_tables(pdb_id='4tpk', chain='A', uniprot_variants=True)
-    d, points, resids, unmapped_points = variant_distances(table)
+    d, points, resids, unmapped_points = atom_dist(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '4tpk(a) P06276', addn_points=unmapped_points)
 
     # UDP-glucose 4-epimerase, EDG example
     table = merge_tables(pdb_id='1ek6', chain='A', uniprot_variants=True)
-    d, points, resids, unmapped_points = variant_distances(table)
+    d, points, resids, unmapped_points = atom_dist(table)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '1ek6(a) Q14376', addn_points=unmapped_points)
