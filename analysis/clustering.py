@@ -337,7 +337,29 @@ def partition_to_sizes(part):
     return sizes
 
 
-def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, len)):
+def top_k_clusters(sizes, k=2):
+    """
+
+    :param part:
+    :return:
+    """
+    sizes.sort(reverse=True)
+    n_members = sum(sizes[:k])
+
+    return n_members
+
+
+def n_isolated(sizes):
+    """
+
+    :param sizes:
+    :return:
+    """
+    return sizes.count(1)
+
+
+def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, len,
+                                         top_k_clusters, n_isolated), names=False):
     """
 
     :param part:
