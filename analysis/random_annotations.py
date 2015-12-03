@@ -17,7 +17,7 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1):
     # TODO: if I read a variant table, I can get the actual AA composition and dssp and keep these constant
 
     # We are going to pick residues from the supplied merge_table, so first get rid of unobserved residues
-    merge_table = merge_table[merge_table.aa.notnull()]
+    merge_table = merge_table[merge_table.aa.notnull()].reset_index()
 
     # Pick out the columns we want
     columns = []
@@ -38,11 +38,6 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1):
     # And add them to table and make it exactly like a real uniprot_variant table
     table['mut'] = mut
     table['disease'] = disease
-    table = table.reset_index()
-    try:
-        del table['PDB_dbResNum']  ## This is breaking sometimes with KeyError
-    except KeyError:
-        pass  # Should this be logged?
     table = table.rename(columns={'aa': 'resn'})
 
     # TODO: Fix any entries where resn == mut
