@@ -10,6 +10,7 @@ for better error handling. Both levels are convered by test cases.
 
 import logging
 from StringIO import StringIO
+from collections import Iterable
 from os import path
 
 import pandas as pd
@@ -344,16 +345,30 @@ def _pdb_validation_to_table(filename, global_parameters=False):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
+def selector(table, attribute, value):
+    """
+
+    :param table:
+    :param attribute:
+    :param value:
+    :return:
+    """
+    return table[attribute].isin(value)
+
+
+def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
+               method='CA'):
     """
     Produce table read from mmCIF file.
 
+    :param method:
     :param pdb_id: PDB identifier
     :param models: protein structure entity
     :param chains: protein structure chain
     :param lines: choice of ATOM, HETEROATOMS or both.
     :return: Table read to be joined
     """
+    # cant hardcode the atoms
 
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
 
@@ -431,7 +446,9 @@ def select_dssp(pdb_id, chains=None):
         dssp_table = _dssp(dssp_path)
     except StopIteration:
         raise IOError('{} is unreadable.'.format(dssp_path))
-    if chains:
+    if chains is None:
+        pass
+    else:
         if isinstance(chains, str):
             chains = [chains]
         sel = dssp_table.chain_id.isin(chains)
@@ -463,17 +480,19 @@ def select_sifts(pdb_id, chains=None):
         sift_path = fetch_files(pdb_id, sources='sifts',
                                 directory=defaults.db_sifts)[0]
         sift_table = _sifts_residues(sift_path)
-    if chains:
-        if isinstance(chains, str):
+    # stardatise column types
+        for col in sift_table:
+            #  bool columns
+            if col.startswith('is'):
+                sift_table[col].fillna(False)
+    if chains is None:
+        return sift_table
+    else:
+        # TODO extend or encapsulates from here
+        if isinstance(chains, str) or not isinstance(chains, Iterable):
             chains = [chains]
         sift_table = sift_table[sift_table.PDB_dbChainId.isin(chains)]
-
-    # stardatise column types
-    for col in sift_table:
-        #  bool columns
-        if col.startswith('is'):
-            sift_table[col].fillna(False)
-    return sift_table
+        return sift_table
 
 
 def select_validation(pdb_id, chains=None):
