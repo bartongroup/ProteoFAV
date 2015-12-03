@@ -9,6 +9,7 @@ http://stackoverflow.com/questions/21638130/tutorial-for-scipy-cluster-hierarchy
 import csv
 from subprocess import call
 import os
+import sys
 from time import strftime
 import matplotlib.pyplot as plt
 import numpy as np
@@ -368,8 +369,11 @@ def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, l
     """
     sizes = partition_to_sizes(part)
     results = [stat(sizes) for stat in statistics]
-
-    return results
+    if not names:
+        return results
+    else:
+        stat_functions = [stat.__name__ for stat in statistics]
+        return stat_functions, results
 
 
 ##############################################################################
@@ -399,20 +403,31 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
     return partitions
 
 
-def bootstrap_stats(partitions, statistics=(np.mean, np.median, np.std, min, max, len)):
+def bootstrap_stats(partitions, **kwargs):
     """
 
     :param partitions:
     :param statistics:
     :return:
     """
-    stats = [cluster_size_stats(part, statistics) for part in partitions]
+    stats = [cluster_size_stats(part, **kwargs) for part in partitions]
 
     return stats
 
 
 def boot_pvalue(sample_stats, test):
-    return sum(map(test, sample_stats)) / float(len(sample_stats))
+    """
+
+    :param sample_stats:
+    :param test:
+    :return:
+    """
+    n_samples = len(sample_stats)
+    p_value = sum(map(test, sample_stats)) / float(n_samples)
+    if p_value == 0.:
+        p_value = '< ' + str(1. / n_samples)
+
+    return p_value
 
 
 def tail_thresholds(alpha, samples, stats):
@@ -436,11 +451,54 @@ def tail_thresholds(alpha, samples, stats):
 ##############################################################################
 
 
-def cluster_table(table, mask, **kwargs):
+def cluster_table(table, mask, method, n_samples=0, **kwargs):
+    """
+
+    :param table:
+    :param mask:
+    :param test_significance:
+    :param kwargs:
+    :return:
+    """
+    # Perform clustering
     d, points, resids, unmapped_points = atom_dist(table, mask)
-    links = linkage_cluster(d, **kwargs)
+    links = linkage_cluster(d, methods=method, **kwargs)
     part = links[0][0]
-    return part
+
+    # If required, test significance using bootstrap
+    if n_samples > 0:
+        n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
+        n_phenotypes = len(table.disease.dropna().unique())
+        clean_table = table.drop_duplicates(subset='UniProt_dbResNum').drop(['resn', 'mut', 'disease'], axis=1)
+        clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
+
+        # Bootstrap
+        sample_clusters = []
+        for i in xrange(n_samples):
+            sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
+            sample_mask = sample_table.resn.notnull()
+            sample_clusters.append(cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs))
+            pc_complete = (i + 1) / float(n_samples) * 100
+            if pc_complete % 10 == 0:
+                sys.stdout.write("\r%d%%" % (pc_complete))
+                sys.stdout.flush()
+
+        bs_stats = bootstrap_stats(sample_clusters)
+        names, obs_stats = cluster_size_stats(part, names=True)
+
+        p_values = []
+        for obs, sampled in zip(obs_stats, zip(*bs_stats)):
+            left = boot_pvalue(sampled, lambda x: x <= obs)
+            right = boot_pvalue(sampled, lambda x: x >= obs)
+            p_values.append((left, right))
+
+        p_values = dict(zip(names, p_values))
+
+        return {'part': part, 'p': p_values}
+
+
+    else:
+        return part
 
 
 if __name__ == '__main__':
