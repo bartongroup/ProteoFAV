@@ -58,28 +58,55 @@ def add_random_disease_variants(merge_table, n_residues, n_phenotypes):
     :return:
     """
     # If we have more than one chain then we need to use split/apply/combine
+    n_prots = len(merge_table.UniProt_dbAccessionId.dropna().unique())
     n_chains = len(merge_table.chain_id.dropna().unique())
-    if n_chains == 1:
+    if n_prots == 1 and n_chains == 1:
         variants = random_uniprot_patho_table(merge_table, n_residues, n_phenotypes)
         table = merge_table.merge(variants, how='left')
         return table
 
-    else:
-        # Randomly distribute the number of variants to each chain
-        n_vars_per_chain = []
+    elif n_chains == 1:
+        # This means we have one chain that maps to multiple UniProts so we can
+        # randomly distribute the number of variants to each unique protein
+        n_vars_per_prot = []
         remaining = n_residues
-        for _ in xrange(n_chains - 1):
-            n_vars_per_chain.append(random_integers(0, remaining, 1))
-            remaining = remaining - n_vars_per_chain[-1]
-        n_vars_per_chain.append(remaining)
-        shuffle(n_vars_per_chain)
+        for _ in xrange(n_prots - 1):
+            n_vars_per_prot.append(random_integers(0, remaining, 1))
+            remaining = remaining - n_vars_per_prot[-1]
+        n_vars_per_prot.append(remaining)
+        shuffle(n_vars_per_prot)
 
         # Now split, apply, combine by iteration so we can vary the number of residues
-        grouped = merge_table.groupby('chain_id')  # TODO: This drops any where chain_id is NaN, fix or log
-        newtable = DataFrame()
+        grouped = merge_table.groupby('UniProt_dbAccessionId')  # TODO: This drops any where uniprot is NaN, fix or log
+        table = DataFrame()
         for i, (name, group) in enumerate(grouped):
-            newtable = newtable.append(add_random_disease_variants(group, n_vars_per_chain[i], n_phenotypes))
-        return newtable
+            table = table.append(add_random_disease_variants(group, n_vars_per_prot[i], n_phenotypes))
+        return table
+
+    elif n_prots == 1:
+        # This means there is one protein represented by multiple chains. Depending
+        # on the degree of overlaping UniProt coverage we have to avoid doubling the
+        # total number of variants.
+
+        mask = merge_table.chain_id.notnull()
+        n_dupe = sum(merge_table[mask].duplicated(subset='UniProt_dbResNum', keep=False)) / n_chains
+        pc_duplicated = float(n_dupe) / len(merge_table[mask].UniProt_dbResNum.dropna().unique())
+        adjustment = (1. / n_chains) * pc_duplicated
+        adj_n_residues = int(round(n_residues * adjustment))
+
+        # Now fetch variants and merge as usual
+        discrepancy = 2
+        while abs(discrepancy) > 1:
+            variants = random_uniprot_patho_table(merge_table, adj_n_residues, n_phenotypes)
+            table = merge_table.merge(variants, how='left')
+            discrepancy = sum(table.resn.notnull()) - n_residues
+            adj_n_residues = adj_n_residues - (discrepancy / 2)
+
+        return table
+
+    else:
+        print 'Structure has multiple chains and uniprot IDs, exiting.'
+
 
 
 
