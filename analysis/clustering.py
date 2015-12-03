@@ -320,7 +320,7 @@ def n_clusters(part):
         return part[-1]
 
 
-def elements_per_cluster(part):
+def partition_to_sizes(part):
     """
     Determine the number of elements in each cluster from a partition list
 
@@ -332,16 +332,22 @@ def elements_per_cluster(part):
     if 0 in part:
         offset = 0
 
-    members = [part.count(i + offset) for i in xrange(n_clusters(part))]
+    sizes = [part.count(i + offset) for i in xrange(n_clusters(part))]
 
-    return members
+    return sizes
 
 
-def part_stats(part, statistics=[np.mean, np.median, np.std, min, max, len]):
-    sizes = elements_per_cluster(part)
-    summary = [stat(sizes) for stat in statistics]
+def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, len)):
+    """
 
-    return summary
+    :param part:
+    :param statistics:
+    :return:
+    """
+    sizes = partition_to_sizes(part)
+    results = [stat(sizes) for stat in statistics]
+
+    return results
 
 
 ##############################################################################
@@ -378,7 +384,7 @@ def bootstrap_stats(partitions, statistics=(np.mean, np.median, np.std, min, max
     :param statistics:
     :return:
     """
-    stats = [part_stats(part, statistics) for part in partitions]
+    stats = [cluster_size_stats(part, statistics) for part in partitions]
 
     return stats
 
@@ -389,7 +395,7 @@ def boot_pvalue(sample_stats, test):
 
 def tail_thresholds(alpha, samples, stats):
     """
-    
+
     :param alpha:
     :param samples:
     :param stats:
