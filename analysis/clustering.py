@@ -381,6 +381,10 @@ def bootstrap_stats(partitions, statistics=(np.mean, np.median, np.std, min, max
     return stats
 
 
+def boot_pvalue(sample_stats, test):
+    return sum(map(test, sample_stats)) / float(len(sample_stats))
+
+
 def tail_thresholds(alpha, samples, stats):
     thresholds = []
     for i in zip(*stats):
