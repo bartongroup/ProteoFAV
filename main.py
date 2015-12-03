@@ -200,15 +200,17 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         structure_uniprot = structure_uniprots.unique()[0]
         # Retrieve variants and merge onto merged table
         variants = _fetch_uniprot_variants(structure_uniprot)
-        table = table.merge(variants, on='UniProt_dbResNum', how='left')
+        table = table.reset_index().merge(variants, on='UniProt_dbResNum', how='left')
+        table.set_index(['PDB_dbResNum'], inplace=True)
 
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
             uniprot_annotation = select_uniprot_gff(identifier)
             uniprot_annotation.index = uniprot_annotation.index.astype(float)
-            table = table.merge(uniprot_annotation, how='left',
-                                left_on="UniProt_dbResNum", right_index=True)
+            table = table.reset_index().merge(uniprot_annotation, how='left',
+                                on="UniProt_dbResNum")
+            table.set_index(['PDB_dbResNum'], inplace=True)
 
     # non-positional information goes to an attribute
     if remove_redundant:
