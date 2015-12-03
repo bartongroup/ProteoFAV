@@ -148,11 +148,10 @@ def read_mcl_clusters(file='mcl_results.txt'):
     :param file: The name of an MCL results file
     :return: A list containing the nodes found in each cluster
     """
-    clusters = []
     with open('mcl_results.txt', 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter='\t')
-        for row in reader:
-            clusters.append(row)
+        clusters = [row for row in reader]
+
     return clusters
 
 
@@ -333,17 +332,15 @@ def elements_per_cluster(part):
     if 0 in part:
         offset = 0
 
-    members = []
-    for i in xrange(n_clusters(part)):
-        members.append(part.count(i + offset))
+    members = [part.count(i + offset) for i in xrange(n_clusters(part))]
+
     return members
 
 
 def part_stats(part, statistics=[np.mean, np.median, np.std, min, max, len]):
     sizes = elements_per_cluster(part)
-    summary = []
-    for stat in statistics:
-        summary.append(stat(sizes))
+    summary = [stat(sizes) for stat in statistics]
+
     return summary
 
 
@@ -375,9 +372,14 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
 
 
 def bootstrap_stats(partitions, statistics=(np.mean, np.median, np.std, min, max, len)):
-    stats = []
-    for part in partitions:
-        stats.append(part_stats(part, statistics))
+    """
+
+    :param partitions:
+    :param statistics:
+    :return:
+    """
+    stats = [part_stats(part, statistics) for part in partitions]
+
     return stats
 
 
@@ -386,10 +388,18 @@ def boot_pvalue(sample_stats, test):
 
 
 def tail_thresholds(alpha, samples, stats):
+    """
+    
+    :param alpha:
+    :param samples:
+    :param stats:
+    :return:
+    """
     thresholds = []
     for i in zip(*stats):
         i = np.sort(i)
         thresholds.append((i[int((alpha / 2.0) * samples)], i[int((1 - alpha / 2.0) * samples)]))
+
     return thresholds
 
 
