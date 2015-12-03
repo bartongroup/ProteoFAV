@@ -24,7 +24,7 @@ from utils import is_valid
 log = logging.getLogger(__name__)
 
 __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
-           "sifts_best"]
+           "sifts_best", "_rcsb_description"]
 
 
 ##############################################################################
@@ -345,19 +345,7 @@ def _pdb_validation_to_table(filename, global_parameters=False):
 ##############################################################################
 # Public methods
 ##############################################################################
-def selector(table, attribute, value):
-    """
-
-    :param table:
-    :param attribute:
-    :param value:
-    :return:
-    """
-    return table[attribute].isin(value)
-
-
-def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
-               method='CA'):
+def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
     """
     Produce table read from mmCIF file.
 
@@ -446,9 +434,7 @@ def select_dssp(pdb_id, chains=None):
         dssp_table = _dssp(dssp_path)
     except StopIteration:
         raise IOError('{} is unreadable.'.format(dssp_path))
-    if chains is None:
-        pass
-    else:
+    if chains:
         if isinstance(chains, str):
             chains = [chains]
         sel = dssp_table.chain_id.isin(chains)
@@ -535,6 +521,22 @@ def sifts_best(identifier, first=False):
     url = defaults.api_pdbe + sifts_endpoint + str(identifier)
     response = get_url_or_retry(url, json=True)
     return response if not first else response[identifier][0]
+
+
+def _rcsb_description(pdb_id, tag, key):
+
+    api = 'http://www.rcsb.org/pdb/rest/'
+    endpoint = 'describeMol'
+    query = '?structureId=' + pdb_id
+
+    url = api + endpoint + query
+
+    tree = etree.fromstring(get_url_or_retry(url))
+    values = []
+    for i in tree.iter(tag):
+        values.append(i.attrib[key])
+
+    return values
 
 
 if __name__ == '__main__':
