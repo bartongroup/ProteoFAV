@@ -36,36 +36,44 @@ def atom_dist(table, mask, cartesian=False):
     :param cartesian:
     :return: The reduced distance matrix produced by `pdist` and the XYZ coordinates of the mapped variants.
     """
-    merged = table[mask]
-    unmapped = table[~mask]
+    included = table[mask]
+    excluded = table[~mask]
 
     # Build array distance matrix
-    merged_real, xyz = extract_coords(merged)
-    _, unmapped_xyz = extract_coords(unmapped)
+    included, included_xyz = extract_coords(included)
+    excluded, excluded_xyz = extract_coords(excluded)
 
     # Convert to fractional coordinates
     if cartesian:
         pdb_id = table.PDB_dbAccessionId.unique()[0]
-        xyz = fractional_to_cartesian(xyz, pdb_id)
-        unmapped_xyz = fractional_to_cartesian(unmapped_xyz, pdb_id)
+        included_xyz = fractional_to_cartesian(included_xyz, pdb_id)
+        excluded_xyz = fractional_to_cartesian(excluded_xyz, pdb_id)
 
-    return pdist(xyz), xyz, merged_real[['UniProt_dbResNum', 'chain_id']], unmapped_xyz
-
-
-def extract_coords(merged):
-    merged_real = merged[np.isfinite(merged['Cartn_x'])]
-    xyz = np.array([merged_real.Cartn_x, merged_real.Cartn_y, merged_real.Cartn_z])
-    xyz = np.transpose(xyz)
-    return merged_real, xyz
+    return pdist(included_xyz), included_xyz, included[['UniProt_dbResNum', 'chain_id']], excluded_xyz
 
 
-def invert_distances(d, method, threshold=float('inf')):
+def extract_coords(table):
+    """
+
+    :param table:
+    :return:
+    """
+    real_cartn_mask = np.isfinite(table['Cartn_x'])
+    table = table[real_cartn_mask]
+    coord_array = np.array([table.Cartn_x, table.Cartn_y, table.Cartn_z])
+    coord_array = np.transpose(coord_array)
+    return table, coord_array
+
+
+def invert_distances(d, method='max_minus_d', threshold=float('inf'), **kwargs):
     """
 
     :param d: A reduced distance matrix, such as produced by `pdist` or the expanded, squarematrix form.
     :param method: The distance-to-similarity conversion to employ before MCL analysis. Choose from: 'max_minus_d' or 'reciprocal'
     :param threshold: The threshold to discard distances (i.e. remove edges) before conversion to similarities
     :return:
+
+    NB. **kwargs is just so that this can be called with extraneous arguments.
     """
     if method == 'max_minus_d':
         d[d > threshold] = d.max()
@@ -76,11 +84,10 @@ def invert_distances(d, method, threshold=float('inf')):
     return s
 
 
-def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_d', threshold=float('inf'),
-                    inflate=None):
+def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
     """
 
-    :param a: A reduced distance matrix, such as produced by `pdist`
+    :param d: A reduced distance matrix, such as produced by `pdist`
     :param methods: A list of strings indicating the cluster methods to employ. Choose from: 'single', 'complete', 'average' and 'mcl'
     :param invert_method: See `invert_distances`
     :param threshold: See `invert_distances`
@@ -89,37 +96,35 @@ def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_
     linkages = []
     for method in methods:
         if not method.startswith('mcl'):
-            z = hac.linkage(a, method=method)
+            z = hac.linkage(d, method=method)
             linkages.append([z, method])
         else:
-            sq = squareform(a)
-            s = invert_distances(sq, invert_method, threshold)
+            sq = squareform(d)
+            s = invert_distances(sq, **kwargs)
             if method.startswith('mcl_program'):
-                clusters = launch_mcl(s, inflate=inflate)
+                clusters = launch_mcl(s, **kwargs)
                 linkages.append([clusters, method])
             else:
-                if not inflate:
+                if not 'inflate' in kwargs:
                     inflate_factor = 2
                 else:
-                    inflate_factor = inflate
+                    inflate_factor = kwargs['inflate']
                 M, clusters = mcl(s, max_loop=50, inflate_factor=inflate_factor)
                 linkages.append([[M, clusters], method])
 
     return linkages
 
 
-def cluster_dict_to_partitions(clusters):
+def cluster_dict_to_partitions(cluster_dict):
     """
     Convert the cluster output format from the MCL function to a partition list; like that produced by `fcluster`
-    :param clusters: A dictionary where the keys indicate clusters and the list elements indicate node membership
+    :param cluster_dict: A dictionary where the keys indicate cluster_dict and the list elements indicate node membership
     :return: A list where the positioning indexes correspond to node numbers and the values correspond to its cluster
     """
-    d = {i: k for k, v in clusters.items() for i in v}
-    part1 = []
-    for k in sorted(d.keys()):
-        part1.append(d[k] + 1)
-    part1 = np.array(part1)
-    return part1
+    new_dict = {e: k for k, v in cluster_dict.items() for e in v}
+    part = [new_dict[k] + 1 for k in sorted(new_dict.keys())]
+    part = np.array(part)
+    return part
 
 
 def write_mcl_input(s):
@@ -128,8 +133,8 @@ def write_mcl_input(s):
     :param s: A similarity matrix
     :return: Writes a CSV file in the current directory
     """
-    with open('mcl_interactions.csv', 'wb') as csvfile:
-        writer = csv.writer(csvfile, delimiter=' ')
+    with open('mcl_interactions.csv', 'wb') as file:
+        writer = csv.writer(file, delimiter=' ')
         length = len(s)
         for i in xrange(length):
             for j in xrange(length):
@@ -151,20 +156,30 @@ def read_mcl_clusters(file='mcl_results.txt'):
     return clusters
 
 
-def launch_mcl(s, format='partition', inflate=None):
+def launch_mcl(s, format='partition', inflate=None, silent=True, **kwargs):
     """
     Perform MCL analysis using an external MCL implementation.
     :param s: A similarity matrix
     :param format: 'partition' returns the clusters in the same format produced by `fcluster` on a linkage object;
     any other value leaves the clusters in the format provided by the MCL program
     :return: The clusters found by the MCL program
+
+    NB. **kwargs is just so that this can be called with extraneous arguments.
     """
+    # Write the MCL input graph to a file
     write_mcl_input(s)
+
+    # Build and submit the call
     mcl_call = ['mcl', 'mcl_interactions.csv', '--abc', '-o', 'mcl_results.txt']
     if inflate:
         mcl_call.append('-I')
         mcl_call.append(str(inflate))
-    call(mcl_call, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+    if silent:
+        call(mcl_call, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+    else:
+        call(mcl_call)
+
+    # Read and parse results
     clusters = read_mcl_clusters('mcl_results.txt')
     if format == 'partition':
         part = ['unassigned'] * len(s)
@@ -174,8 +189,8 @@ def launch_mcl(s, format='partition', inflate=None):
                 part[int(j)] = cluster_id
             cluster_id += 1
         return part
-
-    return clusters
+    else:
+        return clusters
 
 
 def merge_clusters_to_table(residue_ids, partition, target_table, multichain=False):
