@@ -189,7 +189,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         variants_table = select_uniprot_variants(structure_uniprot)
         variants_table[["start"]] = variants_table[["start"]].astype(float)
 
-        table = table.reset_index()  # Gives access to niProt_dbResNum
+        table = table.reset_index()  # Gives access to UniProt_dbResNum
         table = table.merge(variants_table, left_on="UniProt_dbResNum",
                             right_on="start", how="left")
 
