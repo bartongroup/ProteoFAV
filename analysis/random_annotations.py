@@ -12,20 +12,47 @@ from string import letters
 from random import shuffle
 
 
-def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1):
+def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
+                               residue_proportions=None, repeats_allowed=True):
+    """
+
+    :param merge_table:
+    :param n_residues:
+    :param n_phenotypes:
+    :param residue_proportions: A Pandas Series denoting the number of each residue required.
+    E.g as produced by Series.value_counts on an amino acid column
+    :return:
+    """
 
     # TODO: if I read a variant table, I can get the actual AA composition and dssp and keep these constant
 
     # We are going to pick residues from the supplied merge_table, so first get rid of unobserved residues
     merge_table = merge_table[merge_table.aa.notnull()].reset_index()
 
-    # Pick out the columns we want
+    # Create a random selection
+    shuffled_table = merge_table.reindex(permutation(merge_table.index))  ## TODO: Were rand indexes better as allowed repeats
+    if repeats_allowed:
+        # Copy all rows 21 times so that we have p > 0 of all possible variants on the same residue
+        row_replicator = range(len(shuffled_table)) * 21
+        shuffled_table = shuffled_table.iloc[row_replicator, :].reset_index()
+        shuffled_table = shuffled_table.reindex(permutation(shuffled_table.index))
+
+    # By now index has been reset as neccessary so can pick columns
     columns = []
     for col in ['UniProt_dbResNum', 'aa']:
-        columns.append(merge_table.columns.get_loc(col))
+        columns.append(shuffled_table.columns.get_loc(col))
 
-    # Create a random selection
-    table = merge_table.reindex(permutation(merge_table.index)).iloc[:n_residues, columns]
+    if residue_proportions is None:
+        table = shuffled_table.iloc[:n_residues, columns]
+    else:
+        table = DataFrame()
+        n_residues = sum(residue_proportions)  ## TODO: Fix this!
+        for acid, number in residue_proportions.iteritems():
+            mask = shuffled_table.aa == acid
+            rows = range(number)
+            if number > sum(mask):
+                rows = [rows * number][:number]
+            table = table.append(shuffled_table[mask].iloc[rows, columns])
 
     # Now generate random variant residues and phenotypes
     selection = random_integers(0, n_phenotypes - 1, n_residues)
