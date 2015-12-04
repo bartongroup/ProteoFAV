@@ -5,7 +5,7 @@ Created on 25/11/2015
 Functions to help with random selection of PDB atoms/residues and significance testing via bootstrapping.
 """
 
-from numpy.random import choice, random_integers
+from numpy.random import choice, random_integers, permutation
 from numpy import array
 from pandas import Series, DataFrame
 from string import letters
@@ -25,9 +25,7 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1):
         columns.append(merge_table.columns.get_loc(col))
 
     # Create a random selection
-    nrow = len(merge_table)
-    rows = random_integers(0, nrow - 1, n_residues)
-    table = merge_table.iloc[rows, columns]
+    table = merge_table.reindex(permutation(merge_table.index)).iloc[:n_residues, columns]
 
     # Now generate random variant residues and phenotypes
     selection = random_integers(0, n_phenotypes - 1, n_residues)
