@@ -10,7 +10,6 @@ for better error handling. Both levels are convered by test cases.
 
 import logging
 from StringIO import StringIO
-from collections import Iterable
 from os import path
 
 import pandas as pd
@@ -25,7 +24,7 @@ log = logging.getLogger(__name__)
 
 __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
            "sifts_best", "_rcsb_description"]
-
+UNIFIED_COL = ['auth_seq_id', 'pdbx_PDB_model_num', 'auth_asym_id']
 
 ##############################################################################
 # Private methods
@@ -346,12 +345,12 @@ def _pdb_validation_to_table(filename, global_parameters=False):
 # Public methods
 ##############################################################################
 def table_selector(table, column, value):
-    """
+    """Generic table selector
 
-    :param table:
-    :param column:
-    :param value:
-    :return:
+    :param table: a pandas DataFrame
+    :param column: a column in the DataFrame
+    :param value: the query
+    :return: the DataFrame filtered for
     """
     if value == 'first':
         value = table[column].iloc[0]
@@ -370,14 +369,11 @@ def table_selector(table, column, value):
     return table
 
 
-def residues_as_cetroid(table, atoms=None):
-    return
-
-def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
-               atoms='CA'):
+def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
     """Produce table read from mmCIF file.
 
     :param atoms: Which atom should represent the structure
+    :param pdb_id: PDB identifier
     :param pdb_id: PDB identifier
     :param models: protein structure entity
     :param chains: protein structure chain
@@ -413,12 +409,14 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
     if atoms == 'centroid':
         cif_table = residues_as_cetroid(cif_table)
     elif atoms == 'backbone_centroid':
-        cif_table = residues_as_cetroid(cif_table, atoms=('CA', 'N', 'C', 'O'))
+        cif_table = table_selector(
+                cif_table, 'label_atom_id', ('CA', 'N', 'C', 'O'))
+        cif_table = residues_as_cetroid(cif_table)
     elif atoms:
         cif_table = table_selector(cif_table, 'label_atom_id', atoms)
 
-    # standart case
-    if not cif_table['auth_seq_id'].duplicated().any():
+    # majority case
+    if not cif_table[UNIFIED_COL].duplicated().any():
         return cif_table.set_index(['auth_seq_id'])
 
     # from here we treat the corner cases for duplicated ids
@@ -438,9 +436,17 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
     # otherwise try using the pdbe_label_seq_id
     elif not cif_table['pdbe_label_seq_id'].duplicated().any():
         return cif_table.set_index(['pdbe_label_seq_id'])
-
+    # TODO verify for alternative id even with multiple chains/models
     log.error('Failed to find unique index for {}'.format(cif_path))
     return cif_table.set_index(['auth_seq_id'])
+
+
+def residues_as_cetroid(table):
+    columns_to_agg = {col: "first" if table[col].dtype == 'object' else 'mean'
+                      for col in table.columns
+                      if col not in UNIFIED_COL}
+    columns_to_agg['auth_atom_id'] = 'unique'
+    return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
 
 
 def select_dssp(pdb_id, chains=None):
@@ -461,15 +467,10 @@ def select_dssp(pdb_id, chains=None):
         dssp_table = _dssp(dssp_path)
     except StopIteration:
         raise IOError('{} is unreadable.'.format(dssp_path))
+
     if chains:
-        if isinstance(chains, str):
-            chains = [chains]
-        sel = dssp_table.chain_id.isin(chains)
-        if not dssp_table[sel].empty:
-            dssp_table = dssp_table[sel]
-        else:
-            raise ValueError('{} structure DSSP file does not have chains {}'
-                             ''.format(pdb_id, ' '.join(chains)))
+        dssp_table = table_selector(dssp_table, 'chain_id', chains)
+
     if chains and dssp_table.icode.duplicated().any():
         log.info('DSSP file for {} has not unique index'.format(pdb_id))
 
@@ -501,11 +502,7 @@ def select_sifts(pdb_id, chains=None):
     if chains is None:
         return sift_table
     else:
-        # TODO extend or encapsulates from here
-        if isinstance(chains, str) or not isinstance(chains, Iterable):
-            chains = [chains]
-        sift_table = sift_table[sift_table.PDB_dbChainId.isin(chains)]
-        return sift_table
+        return table_selector(sift_table, 'PDB_dbChainId', chains)
 
 
 def select_validation(pdb_id, chains=None):
@@ -526,9 +523,7 @@ def select_validation(pdb_id, chains=None):
         val_table = _pdb_validation_to_table(val_path)
 
     if chains:
-        if isinstance(chains, str):
-            chains = [chains]
-        val_table = val_table[val_table.chain.isin(chains)]
+        val_table = table_selector(val_table, 'chain', chains)
     if not val_table.empty:
         val_table.columns = ["val_" + name for name in val_table.columns]
         return val_table
@@ -566,4 +561,4 @@ def _rcsb_description(pdb_id, tag, key):
 
 
 if __name__ == '__main__':
-    pass
+    X = select_cif('2pah', atoms='backbone_centroid')
