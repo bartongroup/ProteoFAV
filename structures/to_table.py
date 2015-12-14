@@ -56,7 +56,7 @@ def _dssp(filename):
     if dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
-            filename))
+                filename))
     return dssp_table
 
 
@@ -140,7 +140,7 @@ def _sifts_residues(filename, cols=None):
                             # renaming all keys with dbSource prefix
                             try:
                                 k = "{}_{}".format(
-                                    annotation.attrib["dbSource"], k)
+                                        annotation.attrib["dbSource"], k)
                             except KeyError:
                                 k = "{}_{}".format("REF", k)
 
@@ -283,7 +283,7 @@ def _pdb_uniprot_sifts_mapping(identifier):
 
     if not is_valid(identifier, 'pdbe'):
         raise ValueError(
-            "{} is not a valid PDB identifier.".format(identifier))
+                "{} is not a valid PDB identifier.".format(identifier))
 
     sifts_endpoint = "mappings/uniprot/"
     url = defaults.api_pdbe + sifts_endpoint + identifier
@@ -345,21 +345,47 @@ def _pdb_validation_to_table(filename, global_parameters=False):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
+def table_selector(table, column, value):
     """
-    Produce table read from mmCIF file.
 
-    :param method:
+    :param table:
+    :param column:
+    :param value:
+    :return:
+    """
+    if value == 'first':
+        value = table[column].iloc[0]
+        table = table[table[column] == value]
+
+    elif not hasattr(value, '__iter__') or isinstance(value, str):
+        table = table[table[column] == value]
+
+    else:
+        table = table[table[column].isin(value)]
+
+    if table.empty:
+        raise ValueError('Column {} does not contain {} value(s)'.format(
+                column, value))
+
+    return table
+
+
+def residues_as_cetroid(table, atoms=None):
+    return
+
+def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',),
+               atoms='CA'):
+    """Produce table read from mmCIF file.
+
+    :param atoms: Which atom should represent the structure
     :param pdb_id: PDB identifier
     :param models: protein structure entity
     :param chains: protein structure chain
     :param lines: choice of ATOM, HETEROATOMS or both.
     :return: Table read to be joined
     """
-    # cant hardcode the atoms
-
+    # load the table
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
-
     try:
         cif_table = _mmcif_atom(cif_path)
     except IOError:
@@ -367,48 +393,49 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
                                directory=defaults.db_mmcif)[0]
         cif_table = _mmcif_atom(cif_path)
 
+    # select the models
     if models:
-        if models == 'first':
-            models = cif_table.pdbx_PDB_model_num.iloc[0]
+        try:
+            cif_table = table_selector(cif_table, 'pdbx_PDB_model_num', models)
+        except AttributeError:
+            err = 'Structure {} has only one model, which was kept'.format
+            log.info(err(pdb_id))
 
-        if isinstance(models, int):
-            models = [models]
-            try:
-                cif_table = cif_table[(
-                    cif_table.pdbx_PDB_model_num.isin(models))]
-            except AttributeError:
-                err = 'Structure {} has only one model, which was kept'.format
-                log.info(err(pdb_id))
-
+    # select chains
     if chains:
-        if isinstance(chains, str):
-            chains = [chains]
-        cif_table = cif_table[cif_table.auth_asym_id.isin(chains)]
-        if cif_table.empty:
-            raise TypeError('Structure {} does not contain {} chain'.format(
-                pdb_id, ' '.join(chains)))
+        cif_table = table_selector(cif_table, 'auth_asym_id', chains)
 
+    # select lines
     if lines:
-        if isinstance(lines, str):
-            lines = [lines]
-        cif_table = cif_table[cif_table.group_PDB.isin(lines)]
+        cif_table = table_selector(cif_table, 'group_PDB', lines)
 
-    cif_table = cif_table[cif_table.label_atom_id == 'CA']
+    # select which atom line will represent
+    if atoms == 'centroid':
+        cif_table = residues_as_cetroid(cif_table)
+    elif atoms == 'backbone_centroid':
+        cif_table = residues_as_cetroid(cif_table, atoms=('CA', 'N', 'C', 'O'))
+    elif atoms:
+        cif_table = table_selector(cif_table, 'label_atom_id', atoms)
 
+    # standart case
     if not cif_table['auth_seq_id'].duplicated().any():
         return cif_table.set_index(['auth_seq_id'])
 
+    # from here we treat the corner cases for duplicated ids
+    # in case of alternative id, use the ones with maximum occupancy
     elif len(cif_table.label_alt_id.unique()) > 1:
         idx = cif_table.groupby(['auth_seq_id']).occupancy.idxmax()
         cif_table = cif_table.ix[idx]
         return cif_table.set_index(['auth_seq_id'])
 
+    # in case of insertion code, add it to the index
     elif len(cif_table.pdbx_PDB_ins_code.unique()) > 1:
         cif_table.pdbx_PDB_ins_code.replace("?", "", inplace=True)
-        cif_table.auth_seq_id = cif_table.auth_seq_id.astype(str) + \
-                                cif_table.pdbx_PDB_ins_code
+        cif_table.auth_seq_id = (cif_table.auth_seq_id.astype(str) +
+                                 cif_table.pdbx_PDB_ins_code)
         return cif_table.set_index(['auth_seq_id'])
 
+    # otherwise try using the pdbe_label_seq_id
     elif not cif_table['pdbe_label_seq_id'].duplicated().any():
         return cif_table.set_index(['pdbe_label_seq_id'])
 
@@ -466,7 +493,7 @@ def select_sifts(pdb_id, chains=None):
         sift_path = fetch_files(pdb_id, sources='sifts',
                                 directory=defaults.db_sifts)[0]
         sift_table = _sifts_residues(sift_path)
-    # stardatise column types
+        # stardatise column types
         for col in sift_table:
             #  bool columns
             if col.startswith('is'):
@@ -524,7 +551,6 @@ def sifts_best(identifier, first=False):
 
 
 def _rcsb_description(pdb_id, tag, key):
-
     api = 'http://www.rcsb.org/pdb/rest/'
     endpoint = 'describeMol'
     query = '?structureId=' + pdb_id
