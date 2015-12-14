@@ -50,7 +50,9 @@ def atom_dist(table, mask, cartesian=False):
         included_xyz = fractional_to_cartesian(included_xyz, pdb_id)
         excluded_xyz = fractional_to_cartesian(excluded_xyz, pdb_id)
 
-    return pdist(included_xyz), included_xyz, included[['UniProt_dbResNum', 'chain_id']], excluded_xyz
+    d = pdist(included_xyz)
+
+    return d, included_xyz, included[['UniProt_dbResNum', 'chain_id']], excluded_xyz
 
 
 def extract_coords(table):
