@@ -5,6 +5,7 @@ Created on 25/11/2015
 Functions to help with random selection of PDB atoms/residues and significance testing via bootstrapping.
 """
 
+import logging
 from numpy.random import choice, random_integers, permutation
 from numpy import array
 from pandas import Series, DataFrame
@@ -13,24 +14,28 @@ from random import shuffle
 
 
 def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
-                               residue_proportions=None, repeats_allowed=True):
+                               proportions=None, repeats_allowed=True, force=False):
     """
 
     :param merge_table:
     :param n_residues:
     :param n_phenotypes:
-    :param residue_proportions: A Pandas Series denoting the number of each residue required.
-    E.g as produced by Series.value_counts on an amino acid column
+    :param proportions: A Pandas Series denoting the number of each residue classification required
+    as produced by Series.value_counts on an amino acid column OR a Pandas DataFrame containing
+    a cross tabulation of two attributes giving the proportion of each residue class required as
+    produced by `pandas.crosstab`.
     :return:
     """
 
     # TODO: if I read a variant table, I can get the actual AA composition and dssp and keep these constant
+    # TODO: currently different chains are handled by the `add_random_disease_variants` wrapper, is this ideal?
 
     # We are going to pick residues from the supplied merge_table, so first get rid of unobserved residues
     merge_table = merge_table[merge_table.aa.notnull()].reset_index()
 
     # Create a random selection
     shuffled_table = merge_table.reindex(permutation(merge_table.index))  ## TODO: Were rand indexes better as allowed repeats
+
     if repeats_allowed:
         # Copy all rows 21 times so that we have p > 0 of all possible variants on the same residue
         row_replicator = range(len(shuffled_table)) * 21
@@ -42,17 +47,76 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
     for col in ['UniProt_dbResNum', 'aa']:
         columns.append(shuffled_table.columns.get_loc(col))
 
-    if residue_proportions is None:
+    if proportions is None:
         table = shuffled_table.iloc[:n_residues, columns]
-    else:
+
+    elif type(proportions) == Series:
         table = DataFrame()
-        n_residues = sum(residue_proportions)  ## TODO: Fix this!
-        for acid, number in residue_proportions.iteritems():
-            mask = shuffled_table.aa == acid
-            rows = range(number)
-            if number > sum(mask):
-                rows = [rows * number][:number]
-            table = table.append(shuffled_table[mask].iloc[rows, columns])
+        n_residues = sum(proportions)  ## TODO: Fix this!
+        column_name = proportions.name
+        for value, count in proportions.iteritems():
+            mask = shuffled_table[[column_name]] == value
+            rows = range(count)
+            try:
+                table = table.append(shuffled_table[mask].iloc[rows, columns])
+            except IndexError:
+                msg = 'Fewer residues with {}: {} available than requested including repeats!'
+                logging.error(msg.format(column_name, value))
+                if force:
+                    msg = 'Falling back to giving all variants on this residue type.'
+                    logging.warning(msg)
+                    table = table.append(shuffled_table[mask].iloc[:, columns])
+                    n_residues = n_residues - count + sum(mask)
+                else:
+                    msg = 'Could not generate variants with requested proportions. Try changing proportions or use force=True.'
+                    logging.error(msg)
+                    raise
+
+
+            # If number drawn forces replicates, report it
+            n_choices = sum(merge_table[column_name] == value)
+            if count > n_choices:
+                msg = 'FORCED REPEATS: Fewer residues with {}: {} available than requested.'
+                logging.warning(msg.format(column_name, value))
+            elif count / float(n_choices) > 0.8 :
+                msg = 'RESTRICTED SELECTION: More than 80% of available residues with {}: {} requested.'
+                logging.warning(msg.format(column_name, value))
+
+    elif type(proportions) == DataFrame:
+        # TODO: need to handle NaNs in `ss`
+        # In this case it is a cross tab and we want the proportions fixed for each pair
+        table = DataFrame()
+        n_residues = proportions.sum().sum()  ## TODO: Fix this!
+        column_name = proportions.columns.name
+        row_name = proportions.index.name
+        for column, series in proportions.iteritems():
+            for row, count in series.iteritems():
+                mask = (shuffled_table[column_name] == column) & (shuffled_table[row_name] == row)
+                rows = range(count)
+                try:
+                    table = table.append(shuffled_table[mask].iloc[rows, columns])
+                except IndexError:
+                    msg = 'Fewer residues with {}: {} and {}: {} available than requested including repeats!'
+                    logging.error(msg.format(column_name, column, row_name, row))
+                    if force:
+                        msg = 'Falling back to giving all variants on this residue type.'
+                        logging.warning(msg)
+                        table = table.append(shuffled_table[mask].iloc[:, columns])
+                        n_residues = n_residues - count + sum(mask)
+                    else:
+                        msg = 'Could not generate variants with requested proportions. Try changing proportions or use force=True.'
+                        logging.error(msg)
+                        raise
+
+                # If number drawn forces replicates, report it
+                orig_mask = (merge_table[column_name] == column) & (merge_table[row_name] == row)
+                n_choices = sum(orig_mask)
+                if count > n_choices:
+                    msg = 'FORCED REPEATS: Fewer residues with {}: {} and {}: {} available than requested.'
+                    logging.warning(msg.format(column_name, column, row_name, row))
+                elif count / float(n_choices) > 0.8 :
+                    msg = 'RESTRICTED SELECTION: More than 80% of available residues with {}: {} and {}: {} requested.'
+                    logging.warning(msg.format(column_name, column, row_name, row))
 
     # Now generate random variant residues and phenotypes
     selection = random_integers(0, n_phenotypes - 1, n_residues)
