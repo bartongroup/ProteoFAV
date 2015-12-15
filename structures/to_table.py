@@ -546,7 +546,7 @@ def sifts_best(identifier, first=False):
 
 
 def _rcsb_description(pdb_id, tag, key):
-    api = 'http://www.rcsb.org/pdb/rest/'
+    api = defaults.api_rcsb
     endpoint = 'describeMol'
     query = '?structureId=' + pdb_id
 
