@@ -75,12 +75,13 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
 
             # If number drawn forces replicates, report it
             n_choices = sum(merge_table[column_name] == value)
+            ratio = count / float(n_choices)
             if count > n_choices:
                 msg = 'FORCED REPEATS: Fewer residues with {}: {} available than requested.'
                 logging.warning(msg.format(column_name, value))
-            elif count / float(n_choices) > 0.8 :
-                msg = 'RESTRICTED SELECTION: More than 80% of available residues with {}: {} requested.'
-                logging.warning(msg.format(column_name, value))
+            elif ratio > 0.8:
+                msg = 'RESTRICTED SELECTION: {}% of available residues with {}: {} requested.'
+                logging.warning(msg.format(round(ratio * 100), column_name, value))
 
     elif type(proportions) == DataFrame:
         # TODO: need to handle NaNs in `ss`
@@ -111,12 +112,13 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
                 # If number drawn forces replicates, report it
                 orig_mask = (merge_table[column_name] == column) & (merge_table[row_name] == row)
                 n_choices = sum(orig_mask)
+                ratio = count / float(n_choices)
                 if count > n_choices:
                     msg = 'FORCED REPEATS: Fewer residues with {}: {} and {}: {} available than requested.'
                     logging.warning(msg.format(column_name, column, row_name, row))
-                elif count / float(n_choices) > 0.8 :
-                    msg = 'RESTRICTED SELECTION: More than 80% of available residues with {}: {} and {}: {} requested.'
-                    logging.warning(msg.format(column_name, column, row_name, row))
+                elif ratio > 0.8:
+                    msg = 'RESTRICTED SELECTION: {}% of available residues with {}: {} and {}: {} requested.'
+                    logging.warning(msg.format(round(ratio * 100), column_name, column, row_name, row))
 
     # Now generate random variant residues and phenotypes
     selection = random_integers(0, n_phenotypes - 1, n_residues)
