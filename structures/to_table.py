@@ -14,6 +14,7 @@ from os import path
 
 import pandas as pd
 from lxml import etree
+from scipy.spatial import cKDTree
 
 from config import defaults
 from utils import fetch_files
@@ -341,6 +342,35 @@ def _pdb_validation_to_table(filename, global_parameters=False):
     return df
 
 
+def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
+    """
+    Just a simple testing distance measure.
+
+    :param df: pd.Dataframe
+    :param distance: distance threshold in Angstrom
+    :param ignore_consecutive: number of consecutive residues that will be ignored
+      (in both directions)
+    :return: new pd.Dataframe
+    """
+
+    ig = ignore_consecutive
+
+    # using KDTree
+    tree = cKDTree(df[['Cartn_y', 'Cartn_y', 'Cartn_z']])
+    nearby = []
+    for i in df.index:
+        query_point = df.loc[i, ['Cartn_y', 'Cartn_y', 'Cartn_z']]
+        idx = tree.query_ball_point(query_point, r=distance, p=2)
+        idx = df.index[idx]
+        # ignoring nearby residues (not likely to be true contacts)
+        # TODO: need to assess this
+        idx = [j for j in idx if (j <= i - ig or j >= i + ig)]
+        nearby.append(idx)
+
+    df['contacts'] = nearby
+    return df
+
+
 ##############################################################################
 # Public methods
 ##############################################################################
@@ -562,3 +592,7 @@ def _rcsb_description(pdb_id, tag, key):
 
 if __name__ == '__main__':
     X = select_cif('2pah', atoms='backbone_centroid')
+    X = select_cif('2pah', chains='A', atoms='CA')
+    C = _get_contacts_from_table(X)
+
+
