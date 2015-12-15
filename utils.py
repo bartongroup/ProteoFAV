@@ -487,6 +487,26 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     return result
 
 
+def confirm_column_types(table):
+    """
+    Check a table's column types against a defined column name/type dictionary
+    and correct them if neccessary.
+
+    :param table: A pandas data frame produced by a to_* function
+    :return: A pandas data frame of the same data with correct column types
+    """
+    column_types_long = {'CATH_dbAccessionId':      'string',
+                         'InterPro_dbAccessionId':  'string',
+                         'NCBI_dbAccessionId':      'string',
+                         'PDB_dbAccessionId':       'string',
+                         'PFAM__dbAccessionId':     'string',
+                         'UniProt_dbAccessionId':   'string'
+                         }
+
+    column_types_short = {'*_dbAccessionId':    'string',
+                          '*_dbChainId':        'string'}
+
+
 if __name__ == '__main__':
     # testing routines
     pass
