@@ -141,10 +141,10 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         table.pdbx_PDB_ins_code = table.pdbx_PDB_ins_code.replace('?', '')
         table['index'] = table.auth_seq_id.astype(str) + \
                          table.pdbx_PDB_ins_code
-        table.set_index(['index'], inplace=True)
+        table.set_index(['index'], inplace=True)  ## TODO: Shouldn't the index be strictly defined no matter what?
 
     # Sift data in used as base to keep not observed residues info.
-    table = sifts_table.join(table)
+    table = sifts_table.join(table)  ## TODO: this is inconsistent with other joins; should table be left?
     if validate:
         if not table['REF_dbResName'].any():
             raise ValueError('Empty Sifts sequence cannot be validated')
