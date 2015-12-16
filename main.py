@@ -6,7 +6,7 @@ import logging
 
 from library import to_single_aa
 from structures.to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                                 sifts_best)
+                                 sifts_best, UNIFIED_COL)
 from variants.to_table import select_uniprot_gff, select_uniprot_variants
 
 log = logging.getLogger(__name__)
@@ -61,7 +61,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         # What happens in case in structures with dozen of chains, ie: 4v9d
         # So we parse all the PDB file
         log.error('{} not found in {} DSSP'.format(chain, pdb_id))
-        # TODO this not good. We should map positionaly from sifts to DSSP
         dssp_table = select_dssp(pdb_id)
         cif_seq = cif_table.auth_comp_id.apply(to_single_aa.get)
         dssp_table.reset_index(inplace=True)
@@ -89,9 +88,9 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         if lower_cased_aa.any():
             table.loc[lower_cased_aa, 'dssp_aa'] = "C"
         table['cif_aa'] = table['label_comp_id']
-        mask = mask | table['cif_aa'].isnull()
+        mask |= table['cif_aa'].isnull()
         # mask the X in DSSP since you can't compare those
-        mask = mask | (table.dssp_aa == 'X')
+        mask |= table.dssp_aa == 'X'
         # From three letter to sigle letters or X if not a standard aa
         table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get, args='X')
         # Check if the sequences are the same
@@ -108,8 +107,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         # Means it has alpha numeric insertion code, use something else as index
         sifts_table.set_index(['PDB_dbResNum'], inplace=True)
         table.pdbx_PDB_ins_code = table.pdbx_PDB_ins_code.replace('?', '')
-        table['index'] = table.auth_seq_id.astype(str) + \
-                         table.pdbx_PDB_ins_code
+        table['index'] = table.auth_seq_id.astype(str) + table.pdbx_PDB_ins_code
         table.set_index(['index'], inplace=True)
 
     # Sift data in used as base to keep not observed residues info.
