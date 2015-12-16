@@ -14,6 +14,7 @@ from os import path
 
 import pandas as pd
 from lxml import etree
+from scipy.spatial import cKDTree
 
 from config import defaults
 from utils import fetch_files
@@ -24,7 +25,7 @@ log = logging.getLogger(__name__)
 
 __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
            "sifts_best", "_rcsb_description"]
-
+UNIFIED_COL = ['auth_seq_id', 'pdbx_PDB_model_num', 'auth_asym_id']
 
 ##############################################################################
 # Private methods
@@ -55,7 +56,7 @@ def _dssp(filename):
     if dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
-            filename))
+                filename))
     return dssp_table
 
 
@@ -139,7 +140,7 @@ def _sifts_residues(filename, cols=None):
                             # renaming all keys with dbSource prefix
                             try:
                                 k = "{}_{}".format(
-                                    annotation.attrib["dbSource"], k)
+                                        annotation.attrib["dbSource"], k)
                             except KeyError:
                                 k = "{}_{}".format("REF", k)
 
@@ -282,7 +283,7 @@ def _pdb_uniprot_sifts_mapping(identifier):
 
     if not is_valid(identifier, 'pdbe'):
         raise ValueError(
-            "{} is not a valid PDB identifier.".format(identifier))
+                "{} is not a valid PDB identifier.".format(identifier))
 
     sifts_endpoint = "mappings/uniprot/"
     url = defaults.api_pdbe + sifts_endpoint + identifier
@@ -341,22 +342,76 @@ def _pdb_validation_to_table(filename, global_parameters=False):
     return df
 
 
+def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
+    """
+    Just a simple testing distance measure.
+
+    :param df: pd.Dataframe
+    :param distance: distance threshold in Angstrom
+    :param ignore_consecutive: number of consecutive residues that will be ignored
+      (in both directions)
+    :return: new pd.Dataframe
+    """
+
+    ig = ignore_consecutive
+
+    # using KDTree
+    tree = cKDTree(df[['Cartn_y', 'Cartn_y', 'Cartn_z']])
+    nearby = []
+    for i in df.index:
+        query_point = df.loc[i, ['Cartn_y', 'Cartn_y', 'Cartn_z']]
+        idx = tree.query_ball_point(query_point, r=distance, p=2)
+        idx = df.index[idx]
+        # ignoring nearby residues (not likely to be true contacts)
+        # TODO: need to assess this
+        idx = [j for j in idx if (j <= i - ig or j >= i + ig)]
+        nearby.append(idx)
+
+    df['contacts'] = nearby
+    return df
+
+
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
-    """
-    Produce table read from mmCIF file.
+def table_selector(table, column, value):
+    """Generic table selector
 
+    :param table: a pandas DataFrame
+    :param column: a column in the DataFrame
+    :param value: the query
+    :return: the DataFrame filtered for
+    """
+    if value == 'first':
+        value = table[column].iloc[0]
+        table = table[table[column] == value]
+
+    elif not hasattr(value, '__iter__') or isinstance(value, str):
+        table = table[table[column] == value]
+
+    else:
+        table = table[table[column].isin(value)]
+
+    if table.empty:
+        raise ValueError('Column {} does not contain {} value(s)'.format(
+                column, value))
+
+    return table
+
+
+def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
+    """Produce table read from mmCIF file.
+
+    :param atoms: Which atom should represent the structure
+    :param pdb_id: PDB identifier
     :param pdb_id: PDB identifier
     :param models: protein structure entity
     :param chains: protein structure chain
     :param lines: choice of ATOM, HETEROATOMS or both.
     :return: Table read to be joined
     """
-
+    # load the table
     cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
-
     try:
         cif_table = _mmcif_atom(cif_path)
     except IOError:
@@ -364,53 +419,64 @@ def select_cif(pdb_id, models='first', chains=None, lines=('ATOM',)):
                                directory=defaults.db_mmcif)[0]
         cif_table = _mmcif_atom(cif_path)
 
+    # select the models
     if models:
-        if models == 'first':
-            models = cif_table.pdbx_PDB_model_num.iloc[0]
+        try:
+            cif_table = table_selector(cif_table, 'pdbx_PDB_model_num', models)
+        except AttributeError:
+            err = 'Structure {} has only one model, which was kept'.format
+            log.info(err(pdb_id))
 
-        if isinstance(models, int):
-            models = [models]
-            try:
-                cif_table = cif_table[(
-                    cif_table.pdbx_PDB_model_num.isin(models))]
-            except AttributeError:
-                err = 'Structure {} has only one model, which was kept'.format
-                log.info(err(pdb_id))
-
+    # select chains
     if chains:
-        if isinstance(chains, str):
-            chains = [chains]
-        cif_table = cif_table[cif_table.auth_asym_id.isin(chains)]
-        if cif_table.empty:
-            raise TypeError('Structure {} does not contain {} chain'.format(
-                pdb_id, ' '.join(chains)))
+        cif_table = table_selector(cif_table, 'auth_asym_id', chains)
 
+    # select lines
     if lines:
-        if isinstance(lines, str):
-            lines = [lines]
-        cif_table = cif_table[cif_table.group_PDB.isin(lines)]
+        cif_table = table_selector(cif_table, 'group_PDB', lines)
 
-    cif_table = cif_table[cif_table.label_atom_id == 'CA']
+    # select which atom line will represent
+    if atoms == 'centroid':
+        cif_table = residues_as_cetroid(cif_table)
+    elif atoms == 'backbone_centroid':
+        cif_table = table_selector(
+                cif_table, 'label_atom_id', ('CA', 'N', 'C', 'O'))
+        cif_table = residues_as_cetroid(cif_table)
+    elif atoms:
+        cif_table = table_selector(cif_table, 'label_atom_id', atoms)
 
-    if not cif_table['auth_seq_id'].duplicated().any():
+    # majority case
+    if not cif_table[UNIFIED_COL].duplicated().any():
         return cif_table.set_index(['auth_seq_id'])
 
+    # from here we treat the corner cases for duplicated ids
+    # in case of alternative id, use the ones with maximum occupancy
     elif len(cif_table.label_alt_id.unique()) > 1:
         idx = cif_table.groupby(['auth_seq_id']).occupancy.idxmax()
         cif_table = cif_table.ix[idx]
         return cif_table.set_index(['auth_seq_id'])
 
+    # in case of insertion code, add it to the index
     elif len(cif_table.pdbx_PDB_ins_code.unique()) > 1:
         cif_table.pdbx_PDB_ins_code.replace("?", "", inplace=True)
-        cif_table.auth_seq_id = cif_table.auth_seq_id.astype(str) + \
-                                cif_table.pdbx_PDB_ins_code
+        cif_table.auth_seq_id = (cif_table.auth_seq_id.astype(str) +
+                                 cif_table.pdbx_PDB_ins_code)
         return cif_table.set_index(['auth_seq_id'])
 
+    # otherwise try using the pdbe_label_seq_id
     elif not cif_table['pdbe_label_seq_id'].duplicated().any():
         return cif_table.set_index(['pdbe_label_seq_id'])
-
+    # TODO verify for alternative id even with multiple chains/models
     log.error('Failed to find unique index for {}'.format(cif_path))
     return cif_table.set_index(['auth_seq_id'])
+
+
+def residues_as_cetroid(table):
+    columns_to_agg = {col: "first" if table[col].dtype == 'object' else 'mean'
+                      for col in table.columns
+                      if col not in UNIFIED_COL}
+    columns_to_agg['auth_atom_id'] = 'unique'
+    return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
 
 
 def select_dssp(pdb_id, chains=None):
@@ -431,15 +497,10 @@ def select_dssp(pdb_id, chains=None):
         dssp_table = _dssp(dssp_path)
     except StopIteration:
         raise IOError('{} is unreadable.'.format(dssp_path))
+
     if chains:
-        if isinstance(chains, str):
-            chains = [chains]
-        sel = dssp_table.chain_id.isin(chains)
-        if not dssp_table[sel].empty:
-            dssp_table = dssp_table[sel]
-        else:
-            raise ValueError('{} structure DSSP file does not have chains {}'
-                             ''.format(pdb_id, ' '.join(chains)))
+        dssp_table = table_selector(dssp_table, 'chain_id', chains)
+
     if chains and dssp_table.icode.duplicated().any():
         log.info('DSSP file for {} has not unique index'.format(pdb_id))
 
@@ -463,17 +524,15 @@ def select_sifts(pdb_id, chains=None):
         sift_path = fetch_files(pdb_id, sources='sifts',
                                 directory=defaults.db_sifts)[0]
         sift_table = _sifts_residues(sift_path)
-    if chains:
-        if isinstance(chains, str):
-            chains = [chains]
-        sift_table = sift_table[sift_table.PDB_dbChainId.isin(chains)]
-
-    # standardise column types
-    for col in sift_table:
-        #  bool columns
-        if col.startswith('is'):
-            sift_table[col].fillna(False)
-    return sift_table
+        # stardatise column types
+        for col in sift_table:
+            #  bool columns
+            if col.startswith('is'):
+                sift_table[col].fillna(False)
+    if chains is None:
+        return sift_table
+    else:
+        return table_selector(sift_table, 'PDB_dbChainId', chains)
 
 
 def select_validation(pdb_id, chains=None):
@@ -494,9 +553,7 @@ def select_validation(pdb_id, chains=None):
         val_table = _pdb_validation_to_table(val_path)
 
     if chains:
-        if isinstance(chains, str):
-            chains = [chains]
-        val_table = val_table[val_table.chain.isin(chains)]
+        val_table = table_selector(val_table, 'chain', chains)
     if not val_table.empty:
         val_table.columns = ["val_" + name for name in val_table.columns]
         return val_table
@@ -519,8 +576,7 @@ def sifts_best(identifier, first=False):
 
 
 def _rcsb_description(pdb_id, tag, key):
-
-    api = 'http://www.rcsb.org/pdb/rest/'
+    api = defaults.api_rcsb
     endpoint = 'describeMol'
     query = '?structureId=' + pdb_id
 
@@ -535,4 +591,8 @@ def _rcsb_description(pdb_id, tag, key):
 
 
 if __name__ == '__main__':
-    pass
+    X = select_cif('2pah', atoms='backbone_centroid')
+    X = select_cif('2pah', chains='A', atoms='CA')
+    C = _get_contacts_from_table(X)
+
+

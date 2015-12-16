@@ -24,14 +24,15 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                  uniprot_variants=False):
     """Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
-    :param remove_redundant:
+    :type remove_redundant: bool
+    :type add_annotation: bool
     :type add_variants: bool
     :type add_validation: bool
     :type validate: bool
-    :type model: str
+    :type model: str or None
     :type chain: str or None
     :type pdb_id: str or None
-    :type uniprot_id: str
+    :type uniprot_id: str or None
     :rtype: pandas.DataFrame
     :param add_validation: join the PDB validation table?
     :param uniprot_id: gives sifts best representative for this UniProt entry
@@ -73,15 +74,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         chain = best_pdb['chain_id']
         log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain,
                                                                uniprot_id))
-    if not chain:
-        try:
-            best_pdb = sifts_best(uniprot_id)[pdb_id]
-        except KeyError:
-            err = "Structure {} not found in best structures".format
-            log.error(err(pdb_id))
-        chain = best_pdb['chain_id']
-        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain,
-                                                               uniprot_id))
+
     cif_table = select_cif(pdb_id, chains=chain, models=model)
     cif_table['auth_seq_id'] = cif_table.index
 
@@ -221,11 +214,12 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                 continue
 
             if value.shape[0] == 1:
-                del table[col]
-                setattr(table, value)
                 if value[0] == '?':
+                    # if the only value is a `?` we don't need to keep
                     continue
-                log.info('Column {} is now an attribute.'.format(col))
+                del table[col]
+                setattr(table, col,value)
+                log.info('Collumn {} is know an attribute.'.format(col))
     return table
 
 
