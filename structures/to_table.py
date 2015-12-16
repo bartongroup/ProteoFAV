@@ -445,29 +445,26 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
     elif atoms:
         cif_table = table_selector(cif_table, 'label_atom_id', atoms)
 
-    # majority case
-    if not cif_table[UNIFIED_COL].duplicated().any():
-        return cif_table.set_index(['auth_seq_id'])
-
     # from here we treat the corner cases for duplicated ids
     # in case of alternative id, use the ones with maximum occupancy
-    elif len(cif_table.label_alt_id.unique()) > 1:
+    if len(cif_table.label_alt_id.unique()) > 1:
         idx = cif_table.groupby(['auth_seq_id']).occupancy.idxmax()
         cif_table = cif_table.ix[idx]
-        return cif_table.set_index(['auth_seq_id'])
 
     # in case of insertion code, add it to the index
-    elif len(cif_table.pdbx_PDB_ins_code.unique()) > 1:
-        cif_table.pdbx_PDB_ins_code.replace("?", "", inplace=True)
-        cif_table.auth_seq_id = (cif_table.auth_seq_id.astype(str) +
-                                 cif_table.pdbx_PDB_ins_code)
-        return cif_table.set_index(['auth_seq_id'])
+    if len(cif_table.pdbx_PDB_ins_code.unique()) > 1:
+        cif_table['pdbx_PDB_ins_code'].replace("?", "", inplace=True)
+        cif_table['auth_seq_id'] = (cif_table['auth_seq_id'].astype(str) +
+                                    cif_table['pdbx_PDB_ins_code'])
 
     # otherwise try using the pdbe_label_seq_id
-    elif not cif_table['pdbe_label_seq_id'].duplicated().any():
-        return cif_table.set_index(['pdbe_label_seq_id'])
-    # TODO verify for alternative id even with multiple chains/models
-    log.error('Failed to find unique index for {}'.format(cif_path))
+    if 'pdbe_label_seq_id' in cif_table:
+        if cif_table['pdbe_label_seq_id'].duplicated().any():
+            cif_table['auth_seq_id'] = cif_table['pdbe_label_seq_id']
+
+    # id is the atom identifier and it is need for all atoms tables.
+    if not cif_table[UNIFIED_COL + ['id']].duplicated().any():
+        log.error('Failed to find unique index for {}'.format(cif_path))
     return cif_table.set_index(['auth_seq_id'])
 
 
