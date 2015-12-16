@@ -8,6 +8,8 @@ http://stackoverflow.com/questions/21638130/tutorial-for-scipy-cluster-hierarchy
 
 import csv
 from subprocess import call
+import os
+import sys
 from time import strftime
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,57 +25,58 @@ from scipy.spatial.qhull import QhullError
 from main import merge_tables
 from variants.to_table import _fetch_uniprot_variants
 from utils import get_colors, autoscale_axes, fractional_to_cartesian
+from analysis.random_annotations import add_random_disease_variants
 
 __author__ = 'smacgowan'
 
 
-def variant_distances(pdb_id, chains, uniprot_ids, cartesian=False):
+def atom_dist(table, mask, cartesian=False):
     """
     Find the intervariant distances for a given PDB chain
-    :param pdb_id:
-    :param chain:
-    :param uniprot_id:
+    :param table:
+    :param cartesian:
     :return: The reduced distance matrix produced by `pdist` and the XYZ coordinates of the mapped variants.
     """
-    merged = pd.DataFrame()
-    unmapped = pd.DataFrame()
-    for chain, uniprot_id in zip(chains, uniprot_ids):
-        # Fetch raw data
-        structure = merge_tables(pdb_id=pdb_id, chain=chain)  ## Don't add variants yet!
-        variants = _fetch_uniprot_variants(uniprot_id)
-        # Merge these
-        structure.UniProt_dbResNum = structure.UniProt_dbResNum.astype('float')
-        table = pd.merge(structure, variants, on='UniProt_dbResNum',
-                         how='left')  ## TODO: Optionally uniquify variants at residue level
-        merged = merged.append(table[table.resn.notnull()])
-        unmapped = unmapped.append(table[table.resn.isnull()])
+    included = table[mask]
+    excluded = table[~mask]
 
     # Build array distance matrix
-    merged_real, xyz = extract_coords(merged)
-    _, unmapped_xyz = extract_coords(unmapped)
+    included, included_xyz = extract_coords(included)
+    excluded, excluded_xyz = extract_coords(excluded)
 
     # Convert to fractional coordinates
     if cartesian:
-        xyz = fractional_to_cartesian(xyz, pdb_id)
-        unmapped_xyz = fractional_to_cartesian(unmapped_xyz, pdb_id)
+        pdb_id = table.PDB_dbAccessionId.unique()[0]
+        included_xyz = fractional_to_cartesian(included_xyz, pdb_id)
+        excluded_xyz = fractional_to_cartesian(excluded_xyz, pdb_id)
 
-    return pdist(xyz), xyz, merged_real[['UniProt_dbResNum', 'chain_id']], unmapped_xyz
+    d = pdist(included_xyz)
 
-
-def extract_coords(merged):
-    merged_real = merged[np.isfinite(merged['Cartn_x'])]
-    xyz = np.array([merged_real.Cartn_x, merged_real.Cartn_y, merged_real.Cartn_z])
-    xyz = np.transpose(xyz)
-    return merged_real, xyz
+    return d, included_xyz, included[['UniProt_dbResNum', 'chain_id']], excluded_xyz
 
 
-def invert_distances(d, method, threshold=float('inf')):
+def extract_coords(table):
+    """
+
+    :param table:
+    :return:
+    """
+    real_cartn_mask = np.isfinite(table['Cartn_x'])
+    table = table[real_cartn_mask]
+    coord_array = np.array([table.Cartn_x, table.Cartn_y, table.Cartn_z])
+    coord_array = np.transpose(coord_array)
+    return table, coord_array
+
+
+def invert_distances(d, method='max_minus_d', threshold=float('inf'), **kwargs):
     """
 
     :param d: A reduced distance matrix, such as produced by `pdist` or the expanded, squarematrix form.
     :param method: The distance-to-similarity conversion to employ before MCL analysis. Choose from: 'max_minus_d' or 'reciprocal'
     :param threshold: The threshold to discard distances (i.e. remove edges) before conversion to similarities
     :return:
+
+    NB. **kwargs is just so that this can be called with extraneous arguments.
     """
     if method == 'max_minus_d':
         d[d > threshold] = d.max()
@@ -84,11 +87,10 @@ def invert_distances(d, method, threshold=float('inf')):
     return s
 
 
-def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_d', threshold=float('inf'),
-                    inflate=None):
+def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
     """
 
-    :param a: A reduced distance matrix, such as produced by `pdist`
+    :param d: A reduced distance matrix, such as produced by `pdist`
     :param methods: A list of strings indicating the cluster methods to employ. Choose from: 'single', 'complete', 'average' and 'mcl'
     :param invert_method: See `invert_distances`
     :param threshold: See `invert_distances`
@@ -97,37 +99,35 @@ def linkage_cluster(a, methods=['single', 'complete'], invert_method='max_minus_
     linkages = []
     for method in methods:
         if not method.startswith('mcl'):
-            z = hac.linkage(a, method=method)
+            z = hac.linkage(d, method=method)
             linkages.append([z, method])
         else:
-            sq = squareform(a)
-            s = invert_distances(sq, invert_method, threshold)
+            sq = squareform(d)
+            s = invert_distances(sq, **kwargs)
             if method.startswith('mcl_program'):
-                clusters = launch_mcl(s, inflate=inflate)
+                clusters = launch_mcl(s, **kwargs)
                 linkages.append([clusters, method])
             else:
-                if not inflate:
+                if not 'inflate' in kwargs:
                     inflate_factor = 2
                 else:
-                    inflate_factor = inflate
+                    inflate_factor = kwargs['inflate']
                 M, clusters = mcl(s, max_loop=50, inflate_factor=inflate_factor)
                 linkages.append([[M, clusters], method])
 
     return linkages
 
 
-def cluster_dict_to_partitions(clusters):
+def cluster_dict_to_partitions(cluster_dict):
     """
     Convert the cluster output format from the MCL function to a partition list; like that produced by `fcluster`
-    :param clusters: A dictionary where the keys indicate clusters and the list elements indicate node membership
+    :param cluster_dict: A dictionary where the keys indicate cluster_dict and the list elements indicate node membership
     :return: A list where the positioning indexes correspond to node numbers and the values correspond to its cluster
     """
-    d = {i: k for k, v in clusters.items() for i in v}
-    part1 = []
-    for k in sorted(d.keys()):
-        part1.append(d[k] + 1)
-    part1 = np.array(part1)
-    return part1
+    new_dict = {e: k for k, v in cluster_dict.items() for e in v}
+    part = [new_dict[k] + 1 for k in sorted(new_dict.keys())]
+    part = np.array(part)
+    return part
 
 
 def write_mcl_input(s):
@@ -136,8 +136,8 @@ def write_mcl_input(s):
     :param s: A similarity matrix
     :return: Writes a CSV file in the current directory
     """
-    with open('mcl_interactions.csv', 'wb') as csvfile:
-        writer = csv.writer(csvfile, delimiter=' ')
+    with open('mcl_interactions.csv', 'wb') as file:
+        writer = csv.writer(file, delimiter=' ')
         length = len(s)
         for i in xrange(length):
             for j in xrange(length):
@@ -151,28 +151,37 @@ def read_mcl_clusters(file='mcl_results.txt'):
     :param file: The name of an MCL results file
     :return: A list containing the nodes found in each cluster
     """
-    clusters = []
     with open('mcl_results.txt', 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter='\t')
-        for row in reader:
-            clusters.append(row)
+        clusters = [row for row in reader]
+
     return clusters
 
 
-def launch_mcl(s, format='partition', inflate=None):
+def launch_mcl(s, format='partition', inflate=None, silent=True, **kwargs):
     """
     Perform MCL analysis using an external MCL implementation.
     :param s: A similarity matrix
     :param format: 'partition' returns the clusters in the same format produced by `fcluster` on a linkage object;
     any other value leaves the clusters in the format provided by the MCL program
     :return: The clusters found by the MCL program
+
+    NB. **kwargs is just so that this can be called with extraneous arguments.
     """
+    # Write the MCL input graph to a file
     write_mcl_input(s)
+
+    # Build and submit the call
     mcl_call = ['mcl', 'mcl_interactions.csv', '--abc', '-o', 'mcl_results.txt']
     if inflate:
         mcl_call.append('-I')
         mcl_call.append(str(inflate))
-    call(mcl_call)
+    if silent:
+        call(mcl_call, stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+    else:
+        call(mcl_call)
+
+    # Read and parse results
     clusters = read_mcl_clusters('mcl_results.txt')
     if format == 'partition':
         part = ['unassigned'] * len(s)
@@ -182,8 +191,8 @@ def launch_mcl(s, format='partition', inflate=None):
                 part[int(j)] = cluster_id
             cluster_id += 1
         return part
-
-    return clusters
+    else:
+        return clusters
 
 
 def merge_clusters_to_table(residue_ids, partition, target_table, multichain=False):
@@ -293,9 +302,212 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
     # plt.show()
 
 
+##############################################################################
+# Cluster statistic functions
+##############################################################################
+
+
+def n_clusters(part):
+    """
+    Determine the number of clusters from a partition list.
+
+    :param part: A partition list
+    :type part: List
+    :return: The number of clusters in the partition list
+    """
+    part.sort()
+
+    if part[0] == 0:
+        return part[-1] + 1
+    else:
+        return part[-1]
+
+
+def partition_to_sizes(part):
+    """
+    Determine the number of elements in each cluster from a partition list
+
+    :param part: A partition list
+    :type part: List
+    :return:
+    """
+    offset = 1  # Need this if 1-indexed
+    if 0 in part:
+        offset = 0
+
+    sizes = [part.count(i + offset) for i in xrange(n_clusters(part))]
+
+    return sizes
+
+
+def top_k_clusters(sizes, k=2):
+    """
+
+    :param part:
+    :return:
+    """
+    sizes.sort(reverse=True)
+    n_members = sum(sizes[:k])
+
+    return n_members
+
+
+def n_isolated(sizes):
+    """
+
+    :param sizes:
+    :return:
+    """
+    return sizes.count(1)
+
+
+def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, len,
+                                         top_k_clusters, n_isolated), names=False):
+    """
+
+    :param part:
+    :param statistics:
+    :return:
+    """
+    sizes = partition_to_sizes(part)
+    results = [stat(sizes) for stat in statistics]
+    if not names:
+        return results
+    else:
+        stat_functions = [stat.__name__ for stat in statistics]
+        return stat_functions, results
+
+
+##############################################################################
+# Cluster bootstrapping
+##############################################################################
+
+
+def bootstrap(table, methods, n_residues, n_phenotypes,
+              samples=10, **kwargs):
+    """
+
+    :param table:
+    :param methods:
+    :param statistics:
+    :return:
+    """
+    partitions = []
+    for i in xrange(samples):
+        # Build random data
+        test_table = add_random_disease_variants(table, n_residues, n_phenotypes)
+
+        # Compute the clustering
+        d, points, resids, unmapped_points = atom_dist(test_table)
+        links = linkage_cluster(d, methods, **kwargs)
+        partitions.append(links[0][0])
+
+    return partitions
+
+
+def bootstrap_stats(partitions, **kwargs):
+    """
+
+    :param partitions:
+    :param statistics:
+    :return:
+    """
+    stats = [cluster_size_stats(part, **kwargs) for part in partitions]
+
+    return stats
+
+
+def boot_pvalue(sample_stats, test):
+    """
+
+    :param sample_stats:
+    :param test:
+    :return:
+    """
+    n_samples = len(sample_stats)
+    p_value = sum(map(test, sample_stats)) / float(n_samples)
+    if p_value == 0.:
+        p_value = '< ' + str(1. / n_samples)
+
+    return p_value
+
+
+def tail_thresholds(alpha, samples, stats):
+    """
+
+    :param alpha:
+    :param samples:
+    :param stats:
+    :return:
+    """
+    thresholds = []
+    for i in zip(*stats):
+        i = np.sort(i)
+        thresholds.append((i[int((alpha / 2.0) * samples)], i[int((1 - alpha / 2.0) * samples)]))
+
+    return thresholds
+
+
+##############################################################################
+# Convenience wrappers
+##############################################################################
+
+
+def cluster_table(table, mask, method, n_samples=0, **kwargs):
+    """
+
+    :param table:
+    :param mask:
+    :param test_significance:
+    :param kwargs:
+    :return:
+    """
+    # Perform clustering
+    d, points, resids, unmapped_points = atom_dist(table, mask)
+    links = linkage_cluster(d, methods=method, **kwargs)
+    part = links[0][0]
+
+    # If required, test significance using bootstrap
+    if n_samples > 0:
+        n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
+        n_phenotypes = len(table.disease.dropna().unique())
+        clean_table = table.drop_duplicates(subset='UniProt_dbResNum').drop(['resn', 'mut', 'disease'], axis=1)
+        clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
+
+        # Bootstrap
+        sample_clusters = []
+        for i in xrange(n_samples):
+            sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
+            sample_mask = sample_table.resn.notnull()
+            sample_clusters.append(cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs))
+            pc_complete = (i + 1) / float(n_samples) * 100
+            if pc_complete % 10 == 0:
+                sys.stdout.write("\r%d%%" % (pc_complete))
+                sys.stdout.flush()
+
+        bs_stats = bootstrap_stats(sample_clusters)
+        names, obs_stats = cluster_size_stats(part, names=True)
+
+        p_values = []
+        for obs, sampled in zip(obs_stats, zip(*bs_stats)):
+            left = boot_pvalue(sampled, lambda x: x <= obs)
+            right = boot_pvalue(sampled, lambda x: x >= obs)
+            p_values.append((left, right))
+
+        p_values = dict(zip(names, p_values))
+
+        return {'part': part, 'p': p_values}
+
+
+    else:
+        return part
+
+
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3ecr', chains=['A'], uniprot_ids=['P08397'])
+    table = merge_tables(pdb_id='3ecr', chain='A', uniprot_variants=True)
+    mask = table.resn.notnull()
+    d, points, resids, unmapped_points = atom_dist(table, mask)
     links = linkage_cluster(d, methods=['single', 'complete'])
     compare_clustering(links, points, '3ecr(a) P08397')
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
@@ -329,27 +541,46 @@ if __name__ == '__main__':
     compare_clustering(links, points, '3ecr(a) P08397')
 
     # KRT14 from K5/14 dimer example (multichain)
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3tnu', chains=['A', 'B'],
-                                                           uniprot_ids=['P02533', 'P13647'])
+    table = merge_tables(pdb_id='3tnu', chain='all', uniprot_variants=True)
+    mask = table.resn.notnull()
+    d, points, resids, unmapped_points = atom_dist(table, mask)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
 
+    # Now look at the same structure with random variants added
+    n_variants = sum(table.resn.notnull())
+    table = merge_tables(pdb_id='3tnu', chain='all')
+    table = add_random_disease_variants(table, n_variants, 1)
+    mask = table.resn.notnull()
+    d, points, resids, unmapped_points = atom_dist(table, mask)
+    links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
+    compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
+
+
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3my0', chains=['A'], uniprot_ids=['P37023'])
+    table = merge_tables(pdb_id='3my0', chain='A', uniprot_variants=True)
+    mask = table.resn.notnull()
+    d, points, resids, unmapped_points = atom_dist(table, mask)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3my0(a) P37023', addn_points=unmapped_points)
 
     # Alpha-galactosidase A, Fabry disease example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='3s5z', chains=['A'], uniprot_ids=['P06280'])
+    table = merge_tables(pdb_id='3s5z', chain='A', uniprot_variants=True)
+    mask = table.resn.notnull()
+    d, points, resids, unmapped_points = atom_dist(table, mask)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '3s5z(a) P06280', addn_points=unmapped_points)
 
     # Cholinesterase, BChE deficiency example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='4tpk', chains=['A'], uniprot_ids=['P06276'])
+    table = merge_tables(pdb_id='4tpk', chain='A', uniprot_variants=True)
+    mask = table.resn.notnull()
+    d, points, resids, unmapped_points = atom_dist(table, mask)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '4tpk(a) P06276', addn_points=unmapped_points)
 
     # UDP-glucose 4-epimerase, EDG example
-    d, points, resids, unmapped_points = variant_distances(pdb_id='1ek6', chains=['A'], uniprot_ids=['Q14376'])
+    table = merge_tables(pdb_id='1ek6', chain='A', uniprot_variants=True)
+    mask = table.resn.notnull()
+    d, points, resids, unmapped_points = atom_dist(table, mask)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=10)
     compare_clustering(links, points, '1ek6(a) Q14376', addn_points=unmapped_points)

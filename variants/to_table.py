@@ -30,13 +30,10 @@ def _fetch_uniprot_variants(identifier, _format='tab'):
     url += '&format=' + _format
     url += '&columns=feature(NATURAL+VARIANT)'
 
-    r = requests.get(url)
-    if not r.ok:
-        r.raise_for_status()
-        sys.exit()
+    result = get_url_or_retry(url)
 
     # Complicated parsing
-    records = r.content.replace('Natural variant\n', '').split('.; ')
+    records = result.replace('Natural variant\n', '').split('.; ')
     variants = [['UniProt_dbResNum', 'resn', 'mut', 'disease']]
     for record in records:
 
