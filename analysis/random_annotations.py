@@ -8,7 +8,7 @@ Functions to help with random selection of PDB atoms/residues and significance t
 import logging
 from numpy.random import choice, random_integers, permutation
 from numpy import array
-from pandas import Series, DataFrame
+from pandas import Series, DataFrame, crosstab
 from string import letters
 from random import shuffle
 
@@ -196,8 +196,16 @@ def add_random_disease_variants(merge_table, n_residues, n_phenotypes):
         return table
 
     else:
-        print 'Structure has multiple chains and uniprot IDs, exiting.'
+        grouped = merge_table.groupby(['UniProt_dbAccessionId', 'chain_id'])
 
+        # Work out the divisor for even distribution
+        cross = crosstab(merge_table.UniProt_dbAccessionId, merge_table.chain_id)
+        num = cross._get_numeric_data()
+        num[num > 0] = 1
+        divisor = cross.sum().sum()
 
-
-
+        n_residues = int(round(n_residues / divisor))
+        table = DataFrame()
+        for name, group in grouped:
+            table = table.append(add_random_disease_variants(group, n_residues, n_phenotypes))
+        return table
