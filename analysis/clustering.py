@@ -541,7 +541,7 @@ if __name__ == '__main__':
     compare_clustering(links, points, '3ecr(a) P08397')
 
     # KRT14 from K5/14 dimer example (multichain)
-    table = merge_tables(pdb_id='3tnu', uniprot_variants=True)
+    table = merge_tables(pdb_id='3tnu', chain='all', uniprot_variants=True)
     mask = table.resn.notnull()
     d, points, resids, unmapped_points = atom_dist(table, mask)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
@@ -549,7 +549,7 @@ if __name__ == '__main__':
 
     # Now look at the same structure with random variants added
     n_variants = sum(table.resn.notnull())
-    table = merge_tables(pdb_id='3tnu')
+    table = merge_tables(pdb_id='3tnu', chain='all')
     table = add_random_disease_variants(table, n_variants, 1)
     mask = table.resn.notnull()
     d, points, resids, unmapped_points = atom_dist(table, mask)

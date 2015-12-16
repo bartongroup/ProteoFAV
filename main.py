@@ -127,14 +127,14 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     try:
         sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[
                                              :, 'PDB_dbResNum'].astype(int)
-        sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+        sifts_table.set_index(['PDB_dbResNum'], inplace=True)  ## TODO: Shouldn't the index be strictly defined no matter what?
     except ValueError:
         # Means it has alpha numeric insertion code, use something else as index
         sifts_table.set_index(['PDB_dbResNum'], inplace=True)
         table.pdbx_PDB_ins_code = table.pdbx_PDB_ins_code.replace('?', '')
         table['index'] = table.auth_seq_id.astype(str) + \
                          table.pdbx_PDB_ins_code
-        table.set_index(['index'], inplace=True)  ## TODO: Shouldn't the index be strictly defined no matter what?
+        table.set_index(['index'], inplace=True)  ## See Above
 
     # Sift data in used as base to keep not observed residues info.
     table = sifts_table.join(table)  ## TODO: this is inconsistent with other joins; should table be left?
