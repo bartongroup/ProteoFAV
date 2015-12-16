@@ -5,9 +5,11 @@
 import logging
 
 from library import to_single_aa
+from pandas import DataFrame
 from structures.to_table import (select_cif, select_dssp, select_sifts, select_validation,
-                                 sifts_best, UNIFIED_COL)
-from variants.to_table import select_uniprot_gff, select_uniprot_variants
+                                 sifts_best, _rcsb_description)
+
+from variants.to_table import select_uniprot_gff, select_uniprot_variants, _fetch_uniprot_variants
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -18,8 +20,9 @@ __all__ = ["merge_tables"]
 
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
-                 validate=True, add_validation=False, add_variants=False,
-                 add_annotation=False, remove_redundant=False):
+                 validate=True, add_validation=False, add_variants=None,
+                 add_annotation=False, remove_redundant=False,
+                 uniprot_variants=False):
     """Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
     :type remove_redundant: bool
@@ -43,6 +46,28 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
                         "uniprot_id or pdb_id")
+
+    if chain == 'all':
+        # If we want to fetch all chains we can just find out what chains are available in the specified PDB and then
+        # recursively call `merge_tables` until we got them all. This should only work for a PDB based query and we
+        # need to ensure that fields like 'chain_id' aren't dropped by 'remove_redundant'
+        if not pdb_id:
+            raise TypeError("Must specify PDB when using chain='all'")
+        if remove_redundant:
+            remove_redundant=False
+            log.warning("remove_redundant is ignored when chain='all' and is set to False")
+
+        chain_ids = _rcsb_description(pdb_id, tag='chain', key='id')
+
+        table = DataFrame()
+        for current_chain in chain_ids:
+            table = table.append(merge_tables(uniprot_id=uniprot_id, pdb_id=pdb_id, chain=current_chain, model=model,
+                                              validate=validate, add_validation=add_validation,
+                                              add_variants=add_variants, add_annotation=add_annotation,
+                                              remove_redundant=remove_redundant, uniprot_variants=uniprot_variants))
+
+        return table
+
 
     if not pdb_id:
         best_pdb = sifts_best(uniprot_id, first=True)
@@ -102,16 +127,17 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     try:
         sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[
                                              :, 'PDB_dbResNum'].astype(int)
-        sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+        sifts_table.set_index(['PDB_dbResNum'], inplace=True)  ## TODO: Shouldn't the index be strictly defined no matter what?
     except ValueError:
         # Means it has alpha numeric insertion code, use something else as index
         sifts_table.set_index(['PDB_dbResNum'], inplace=True)
         table.pdbx_PDB_ins_code = table.pdbx_PDB_ins_code.replace('?', '')
+
         table['index'] = table.auth_seq_id.astype(str) + table.pdbx_PDB_ins_code
-        table.set_index(['index'], inplace=True)
+        table.set_index(['index'], inplace=True)  ## See Above
 
     # Sift data in used as base to keep not observed residues info.
-    table = sifts_table.join(table)
+    table = sifts_table.join(table)  ## TODO: this is inconsistent with other joins; should table be left?
     if validate:
         if not table['REF_dbResName'].any():
             raise ValueError('Empty Sifts sequence cannot be validated')
@@ -156,16 +182,28 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         variants_table = select_uniprot_variants(structure_uniprot)
         variants_table[["start"]] = variants_table[["start"]].astype(float)
 
-        table = table.reset_index()  # Gives access to niProt_dbResNum
-        table = table.merge(table, variants_table, left_on="UniProt_dbResNum",
+        table = table.reset_index()  # Gives access to UniProt_dbResNum
+        table = table.merge(variants_table, left_on="UniProt_dbResNum",
                             right_on="start", how="left")
+
+    if uniprot_variants:
+        # Will get variants only for the first UniProt AC
+        structure_uniprots = table.UniProt_dbAccessionId  ## TODO: Re-factor and handle mutiple UniProts
+        structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
+        structure_uniprot = structure_uniprots.unique()[0]
+        # Retrieve variants and merge onto merged table
+        variants = _fetch_uniprot_variants(structure_uniprot)
+        table = table.reset_index().merge(variants, on='UniProt_dbResNum', how='left')
+        table.set_index(['PDB_dbResNum'], inplace=True)
+
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
             uniprot_annotation = select_uniprot_gff(identifier)
             uniprot_annotation.index = uniprot_annotation.index.astype(float)
-            table = table.merge(uniprot_annotation, how='left',
-                                left_on="UniProt_dbResNum", right_index=True)
+            table = table.reset_index().merge(uniprot_annotation, how='left',
+                                on="UniProt_dbResNum")
+            table.set_index(['PDB_dbResNum'], inplace=True)
 
     # non-positional information goes to an attribute
     if remove_redundant:
