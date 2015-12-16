@@ -78,7 +78,8 @@ class TestTableMerger(unittest.TestCase):
         # self.assertEqual(data.shape[1], n_cols,
         #                  "Incorrect number of cols in camIV table in CA mode:"
         #                  "{} instead {}.".format(data.shape[1], n_cols))
-        # this test is very instable to number of columsn return by cif TODO
+        # this test is very unstable to number of columns return by cif
+        # TODO: improve this
 
     def test_camIV_list_mode(self):
         pass
@@ -100,7 +101,8 @@ class TestTableMerger(unittest.TestCase):
         """
         Test case in a structure with alt locations.
         """
-        # (81, 'P63094', 51, '3c16', 'C', 52, ValueError("invalid literal for long() with base 10: '63A'",))
+        # (81, 'P63094', 51, '3c16', 'C', 52,
+        # ValueError("invalid literal for long() with base 10: '63A'",))
         data = self.merge_table(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
         self.sifts_path = path.join(path.dirname(__file__), "SIFTS/4ibw.xml")
@@ -152,7 +154,8 @@ class TestTableMerger(unittest.TestCase):
 
     def test_merge_4myi_A_fail(self):
         self.data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
-        self.assertRaises(ValueError)  # DSSP and Cif unalligned
+        # DSSP and Cif unaligned
+        self.assertRaises(ValueError)
 
 
 if __name__ == '__main__':

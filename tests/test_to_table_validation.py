@@ -28,7 +28,7 @@ class TestValidationParser(unittest.TestCase):
         data = self.parser(self.path_2pah)
         self.assertFalse(data.empty, 'Parser returned an empty DataFrame')
         self.assertEqual(data.shape, (653, 26), 'Parser returned a DataFrame '
-                                                'with unespected shape')
+                                                'with unexpected shape')
         self.assertEqual(data.chain.unique().tolist(), ['A', 'B'])
         self.assertEqual(data.loc[626, 'resname'], 'THR')
 
