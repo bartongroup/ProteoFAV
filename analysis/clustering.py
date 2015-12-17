@@ -426,6 +426,7 @@ def boot_pvalue(sample_stats, test):
     """
     n_samples = len(sample_stats)
     p_value = sum(map(test, sample_stats)) / float(n_samples)
+    p_value = round(p_value * n_samples) / n_samples
     if p_value == 0.:
         p_value = '< ' + str(1. / n_samples)
 
