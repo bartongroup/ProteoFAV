@@ -5,7 +5,7 @@
 Functions that handle the reading data files and extracting their information
 as a pandas.DataFrame. Also include wrapper functions that select and index
 the information. Prefers the use o the wrapper instead the private functions
-for better error handling. Both levels are convered by test cases.
+for better error handling. Both levels are covered by test cases.
 """
 
 import logging
@@ -27,11 +27,14 @@ __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
            "sifts_best", "_rcsb_description"]
 UNIFIED_COL = ['auth_seq_id', 'pdbx_PDB_model_num', 'auth_asym_id']
 
+
 ##############################################################################
 # Private methods
 ##############################################################################
 def _to_unique(series):
-    """Lambda-like expression for returning unique elements of a Series.
+    """
+    Lambda-like expression for returning unique elements of a Series.
+
     :param series: pandas.Series
     :return: pandas.Series
     """
@@ -39,7 +42,8 @@ def _to_unique(series):
 
 
 def _dssp(filename):
-    """Parses DSSP file output to a pandas DataFrame.
+    """
+    Parses DSSP file output to a pandas DataFrame.
 
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
@@ -48,11 +52,9 @@ def _dssp(filename):
     cols_widths = ((0, 5), (6, 11), (11, 12), (13, 14), (16, 17), (35, 38),
                    (103, 109), (109, 115))
     # simplified headers for the table
-    dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi",
-                   "psi")
+    dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi", "psi")
     dssp_table = pd.read_fwf(filename, skiprows=28, names=dssp_header,
-                             colspecs=cols_widths, index_col=0,
-                             compression=None)
+                             colspecs=cols_widths, index_col=0, compression=None)
     if dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
@@ -61,7 +63,8 @@ def _dssp(filename):
 
 
 def _mmcif_atom(filename, delimiter=None):
-    """Parse mmCIF ATOM and HETEROATOM lines to a pandas DataFrame.
+    """
+    Parse mmCIF ATOM and HETEROATOM lines to a pandas DataFrame.
 
     :param filename: input CIF file path
     :return: pandas table dataframe
@@ -81,20 +84,17 @@ def _mmcif_atom(filename, delimiter=None):
 
     if delimiter is None:
         return pd.read_table(StringIO(lines),
-                             delim_whitespace=True,
-                             low_memory=False,
-                             names=_header_mmcif,
-                             compression=None)
+                             delim_whitespace=True, low_memory=False,
+                             names=_header_mmcif, compression=None)
     else:
         return pd.read_table(StringIO(lines),
-                             sep=str(delimiter),
-                             low_memory=False,
-                             names=_header_mmcif,
-                             compression=None)
+                             sep=str(delimiter), low_memory=False,
+                             names=_header_mmcif, compression=None)
 
 
 def _sifts_residues(filename, cols=None):
-    """Parses the residue fields of a SIFTS XML file to a pandas DataFrame
+    """
+    Parses the residue fields of a SIFTS XML file to a pandas DataFrame.
 
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
@@ -176,14 +176,16 @@ def _sifts_residues(filename, cols=None):
     else:
         data = pd.DataFrame(rows)
     data.columns = [
-        col if not col.startswith("PDBe")  # this should come from reference
+        # this should come from reference
+        col if not col.startswith("PDBe")
         else col.replace(reference, "REF")
         for col in data.columns]
     return data
 
 
 def _sifts_regions(filename):
-    """Parse ther region field of the SIFTS XML file to a pandas dataframe
+    """
+    Parse the region field of the SIFTS XML file to a pandas dataframe.
 
     :param filename: input SIFTS xml file path
     :return: pandas table dataframe
@@ -274,8 +276,9 @@ def _sifts_regions(filename):
 
 
 def _pdb_uniprot_sifts_mapping(identifier):
-    """Queries the PDBe API for SIFTS mapping between PDB - UniProt. One to many
-     relationship expected.
+    """
+    Queries the PDBe API for SIFTS mapping between PDB - UniProt.
+    One to many relationship expected.
 
     :param identifier: PDB id
     :return: pandas table dataframe
@@ -297,7 +300,8 @@ def _pdb_uniprot_sifts_mapping(identifier):
 
 
 def _uniprot_pdb_sifts_mapping(identifier):
-    """Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
+    """
+    Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
     One to many relationship expected.
 
     :param identifier: UniProt ID
@@ -314,8 +318,9 @@ def _uniprot_pdb_sifts_mapping(identifier):
 
 
 def _pdb_validation_to_table(filename, global_parameters=False):
-    """Parse the PDB's validation validation file to a pandas DataFrame. Private
-     method, prefer its higher level wrapper.
+    """
+    Parse the PDB's validation validation file to a pandas DataFrame.
+    Private method, prefer its higher level wrapper.
 
     :type global_parameters: bool
     :param filename: path to file
@@ -340,6 +345,29 @@ def _pdb_validation_to_table(filename, global_parameters=False):
         row.update(not_in)
     df = pd.DataFrame(rows, columns=header)
     return df
+
+
+def _rcsb_description(pdb_id, tag, key):
+    """
+    Gets description from RCSB PDB api.
+
+    :param pdb_id: PDB id
+    :param tag: name tag as defined in the api
+    :param key: key name as defined in the api
+    :return: list of values
+    """
+    api = defaults.api_rcsb
+    endpoint = 'describeMol'
+    query = '?structureId=' + pdb_id
+
+    url = api + endpoint + query
+
+    tree = etree.fromstring(get_url_or_retry(url))
+    values = []
+    for i in tree.iter(tag):
+        values.append(i.attrib[key])
+
+    return values
 
 
 def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
@@ -375,7 +403,8 @@ def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
 # Public methods
 ##############################################################################
 def table_selector(table, column, value):
-    """Generic table selector
+    """
+    Generic table selector.
 
     :param table: a pandas DataFrame
     :param column: a column in the DataFrame
@@ -400,14 +429,15 @@ def table_selector(table, column, value):
 
 
 def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
-    """Produce table read from mmCIF file.
+    """
+    Produce table read from mmCIF file.
 
     :param atoms: Which atom should represent the structure
     :param pdb_id: PDB identifier
     :param pdb_id: PDB identifier
     :param models: protein structure entity
     :param chains: protein structure chain
-    :param lines: choice of ATOM, HETEROATOMS or both.
+    :param lines: choice of ATOM, HETATMS or both (list).
     :return: Table read to be joined
     """
     # load the table
@@ -445,33 +475,36 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
     elif atoms:
         cif_table = table_selector(cif_table, 'label_atom_id', atoms)
 
-    # majority case
-    if not cif_table[UNIFIED_COL].duplicated().any():
-        return cif_table.set_index(['auth_seq_id'])
-
     # from here we treat the corner cases for duplicated ids
     # in case of alternative id, use the ones with maximum occupancy
-    elif len(cif_table.label_alt_id.unique()) > 1:
+    if len(cif_table.label_alt_id.unique()) > 1:
         idx = cif_table.groupby(['auth_seq_id']).occupancy.idxmax()
         cif_table = cif_table.ix[idx]
-        return cif_table.set_index(['auth_seq_id'])
 
     # in case of insertion code, add it to the index
-    elif len(cif_table.pdbx_PDB_ins_code.unique()) > 1:
-        cif_table.pdbx_PDB_ins_code.replace("?", "", inplace=True)
-        cif_table.auth_seq_id = (cif_table.auth_seq_id.astype(str) +
-                                 cif_table.pdbx_PDB_ins_code)
-        return cif_table.set_index(['auth_seq_id'])
+    if len(cif_table.pdbx_PDB_ins_code.unique()) > 1:
+        cif_table['pdbx_PDB_ins_code'].replace("?", "", inplace=True)
+        cif_table['auth_seq_id'] = (cif_table['auth_seq_id'].astype(str) +
+                                    cif_table['pdbx_PDB_ins_code'])
 
     # otherwise try using the pdbe_label_seq_id
-    elif not cif_table['pdbe_label_seq_id'].duplicated().any():
-        return cif_table.set_index(['pdbe_label_seq_id'])
-    # TODO verify for alternative id even with multiple chains/models
-    log.error('Failed to find unique index for {}'.format(cif_path))
+    if 'pdbe_label_seq_id' in cif_table:
+        if cif_table['pdbe_label_seq_id'].duplicated().any():
+            cif_table['auth_seq_id'] = cif_table['pdbe_label_seq_id']
+
+    # id is the atom identifier and it is need for all atoms tables.
+    if not cif_table[UNIFIED_COL + ['id']].duplicated().any():
+        log.error('Failed to find unique index for {}'.format(cif_path))
     return cif_table.set_index(['auth_seq_id'])
 
 
 def residues_as_cetroid(table):
+    """
+    Gets the residues' atoms and their centroids (mean).
+
+    :param table: main dataframe
+    :return: compressed dataframe
+    """
     columns_to_agg = {col: "first" if table[col].dtype == 'object' else 'mean'
                       for col in table.columns
                       if col not in UNIFIED_COL}
@@ -524,7 +557,7 @@ def select_sifts(pdb_id, chains=None):
         sift_path = fetch_files(pdb_id, sources='sifts',
                                 directory=defaults.db_sifts)[0]
         sift_table = _sifts_residues(sift_path)
-        # stardatise column types
+        # standardise column types
         for col in sift_table:
             #  bool columns
             if col.startswith('is'):
@@ -575,24 +608,7 @@ def sifts_best(identifier, first=False):
     return response if not first else response[identifier][0]
 
 
-def _rcsb_description(pdb_id, tag, key):
-    api = defaults.api_rcsb
-    endpoint = 'describeMol'
-    query = '?structureId=' + pdb_id
-
-    url = api + endpoint + query
-
-    tree = etree.fromstring(get_url_or_retry(url))
-    values = []
-    for i in tree.iter(tag):
-        values.append(i.attrib[key])
-
-    return values
-
-
 if __name__ == '__main__':
     X = select_cif('2pah', atoms='backbone_centroid')
     X = select_cif('2pah', chains='A', atoms='CA')
     C = _get_contacts_from_table(X)
-
-

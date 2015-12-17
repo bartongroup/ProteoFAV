@@ -1,7 +1,8 @@
-mock
 # This requirements file lists all third-party dependencies for this project.
 #
 # Run 'pip install -r requirements.txt' to install these dependencies
+scipy
+mock
 numpy
 biopython
 requests

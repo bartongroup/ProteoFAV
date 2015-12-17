@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+
 import logging
 import os
 import re
 import sys
-import random
 import time
 import urllib
 import gzip
@@ -134,7 +134,7 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None,
     elif response.status_code in retry_in:
         time.sleep(wait)
         return get_url_or_retry(
-            url, retry_in, wait, json, header, **params)
+                url, retry_in, wait, json, header, **params)
     else:
         print(response.url)
         log.error(response.status_code)
@@ -168,7 +168,7 @@ def is_valid(identifier, database=None, url=None):
         # not the best approach
         try:
             raise IDNotValidError('{} not found at {}: (url check:{}'.format(
-                identifier, database, r.url))
+                    identifier, database, r.url))
         except IDNotValidError:
             return False
     else:
@@ -306,7 +306,7 @@ def map_sequence_indexes(from_seq, to_seq):
 
 
 # TODO: documentation
-def apply_sequence_index_map(indexes, map):
+def apply_sequence_index_map(indexes, imap):
     """
 
     :param indexes:
@@ -317,7 +317,7 @@ def apply_sequence_index_map(indexes, map):
     # perform the raw translation
     translation = []
     for i in indexes:
-        equivalent = map.get(i)
+        equivalent = imap.get(i)
         translation.append(equivalent)
 
     return translation
@@ -325,7 +325,8 @@ def apply_sequence_index_map(indexes, map):
 
 def get_colors(num_colors):
     """
-    See http://stackoverflow.com/questions/470690/how-to-automatically-generate-n-distinct-colors
+    See
+    http://stackoverflow.com/questions/470690/how-to-automatically-generate-n-distinct-colors
 
     :param num_colors: number of color
     :return: a list of colors
@@ -391,7 +392,8 @@ def fractional_to_cartesian(coords, pdb_id, matrix_only=False):
     # build the transformation matrix
     tr = np.matrix([
         [a, b * np.cos(gamma), c * np.cos(beta)],
-        [0, b * np.sin(gamma), c * ((np.cos(alpha) - np.cos(beta) * np.cos(gamma)) / np.sin(gamma))],
+        [0, b * np.sin(gamma),
+         c * ((np.cos(alpha) - np.cos(beta) * np.cos(gamma)) / np.sin(gamma))],
         [0, 0, c * (v / np.sin(gamma))]
     ])
 
@@ -399,7 +401,8 @@ def fractional_to_cartesian(coords, pdb_id, matrix_only=False):
         return tr
 
     # now apply the transformation to the coordinates
-    coords = np.matrix(coords)  # TODO: type check this?
+    # TODO: type check this?
+    coords = np.matrix(coords)
     coords = coords * tr
 
     # return the Nx3 results
@@ -490,21 +493,21 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
 def confirm_column_types(table):
     """
     Check a table's column types against a defined column name/type dictionary
-    and correct them if neccessary.
+    and correct them if necessary.
 
     :param table: A pandas data frame produced by a to_* function
     :return: A pandas data frame of the same data with correct column types
     """
-    column_types_long = {'CATH_dbAccessionId':      'string',
-                         'InterPro_dbAccessionId':  'string',
-                         'NCBI_dbAccessionId':      'string',
-                         'PDB_dbAccessionId':       'string',
-                         'PFAM__dbAccessionId':     'string',
-                         'UniProt_dbAccessionId':   'string'
+    column_types_long = {'CATH_dbAccessionId': 'string',
+                         'InterPro_dbAccessionId': 'string',
+                         'NCBI_dbAccessionId': 'string',
+                         'PDB_dbAccessionId': 'string',
+                         'PFAM__dbAccessionId': 'string',
+                         'UniProt_dbAccessionId': 'string'
                          }
 
-    column_types_short = {'*_dbAccessionId':    'string',
-                          '*_dbChainId':        'string'}
+    column_types_short = {'*_dbAccessionId': 'string',
+                          '*_dbChainId': 'string'}
 
 
 if __name__ == '__main__':

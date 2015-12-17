@@ -47,7 +47,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         if select_name not in pymol.cmd.get_names('selections'):
             pymol.cmd.select(select_name, 'none')
         selection = 'chain ' + chain + ' and resi ' + '+'.join(
-            variant_residues) + ' or ' + select_name
+                variant_residues) + ' or ' + select_name
 
         # Make the selection
         message = "Creating PyMol selection {} from '{}'".format(select_name,
@@ -58,7 +58,6 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
         # Apply some styles
         pymol.cmd.show("lines", select_name)
         pymol.util.cnc(select_name)
-
 
     # Open the PDB as requested with PyMol and apply a few styles
     pymol.finish_launching()

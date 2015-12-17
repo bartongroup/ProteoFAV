@@ -10,8 +10,6 @@ import pandas as pd
 
 from structures.to_table import _mmcif_atom
 
-__author__ = 'fabiomadeira'
-
 
 def _mmcif_info_to_dict(filename):
     """
@@ -163,24 +161,29 @@ def _bio_unit_prepare_operation(operations, index1, index2):
             if index2 != -1:
                 op2[i][3] = float(operations["vector[{}]".format(str(i + 1))][index2])
             for j in range(3):
-                op1[i][j] = float(operations["matrix[{}][{}]".format(str(i + 1), str(j + 1))][index1])
+                op1[i][j] = float(operations["matrix[{}][{}]".format(str(i + 1),
+                                                                     str(j + 1))][index1])
                 if index2 != -1:
-                    op2[i][j] = float(operations["matrix[{}][{}]".format(str(i + 1), str(j + 1))][index2])
+                    op2[i][j] = float(operations["matrix[{}][{}]".format(str(i + 1),
+                                                                         str(j + 1))][index2])
     else:
         for i in range(3):
             op1[i][3] = float(operations["vector[{}]".format(str(i + 1))])
             if index2 != -1:
                 op2[i][3] = float(operations["vector[{}]".format(str(i + 1))])
             for j in range(3):
-                op1[i][j] = float(operations["matrix[{}][{}]".format(str(i + 1), str(j + 1))])
+                op1[i][j] = float(operations["matrix[{}][{}]".format(str(i + 1),
+                                                                     str(j + 1))])
                 if index2 != -1:
-                    op2[i][j] = float(operations["matrix[{}][{}]".format(str(i + 1), str(j + 1))])
+                    op2[i][j] = float(operations["matrix[{}][{}]".format(str(i + 1),
+                                                                         str(j + 1))])
 
     # handles non-Cartesian product expressions
     if index2 == -1:
         return op1
 
-    operation = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]], dtype=np.float_)
+    operation = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]],
+                         dtype=np.float_)
 
     # handles Cartesian product expressions (4x4 matrix multiplication)
     for row in range(4):
@@ -366,7 +369,8 @@ def _bio_unit_to_table(filename, most_likely=True, method=1):
             # iterate over every atom in the atom_site reference table
             for r in range(len(atom_site_ref['id'])):
 
-                # if the chain_id of the current atom is not in the chain_id list, skip to the next atom
+                # if the chain_id of the current atom is not in the chain_id list,
+                # skip to the next atom
                 if asym_id_list.find(atom_site_ref["label_asym_id"][r]) == -1:
                     continue
 
@@ -432,6 +436,13 @@ def _bio_unit_to_mmcif():
 
 
 def _generic_mmcif_field_to_table(filename, fieldname='_pdbx_poly_seq_scheme.'):
+    """
+    Generic method that gets a particular field to pandas table.
+
+    :param filename: input mmcif structure
+    :param fieldname: name of the field to be parsed
+    :return: dataframe
+    """
     header = []
     lines = []
     with open(filename) as handle:

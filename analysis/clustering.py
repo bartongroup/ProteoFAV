@@ -32,10 +32,12 @@ __author__ = 'smacgowan'
 
 def atom_dist(table, mask, cartesian=False):
     """
-    Find the intervariant distances for a given PDB chain
+    Find the intervariant distances for a given PDB chain.
+
     :param table:
     :param cartesian:
-    :return: The reduced distance matrix produced by `pdist` and the XYZ coordinates of the mapped variants.
+    :return: The reduced distance matrix produced by `pdist` and the XYZ
+     coordinates of the mapped variants.
     """
     included = table[mask]
     excluded = table[~mask]
@@ -71,9 +73,12 @@ def extract_coords(table):
 def invert_distances(d, method='max_minus_d', threshold=float('inf'), **kwargs):
     """
 
-    :param d: A reduced distance matrix, such as produced by `pdist` or the expanded, squarematrix form.
-    :param method: The distance-to-similarity conversion to employ before MCL analysis. Choose from: 'max_minus_d' or 'reciprocal'
-    :param threshold: The threshold to discard distances (i.e. remove edges) before conversion to similarities
+    :param d: A reduced distance matrix, such as produced by `pdist` or the
+     expanded, squarematrix form.
+    :param method: The distance-to-similarity conversion to employ before MCL analysis.
+      Choose from: 'max_minus_d' or 'reciprocal'
+    :param threshold: The threshold to discard distances (i.e. remove edges)
+     before conversion to similarities
     :return:
 
     NB. **kwargs is just so that this can be called with extraneous arguments.
@@ -91,7 +96,8 @@ def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
     """
 
     :param d: A reduced distance matrix, such as produced by `pdist`
-    :param methods: A list of strings indicating the cluster methods to employ. Choose from: 'single', 'complete', 'average' and 'mcl'
+    :param methods: A list of strings indicating the cluster methods to employ.
+      Choose from: 'single', 'complete', 'average' and 'mcl'
     :param invert_method: See `invert_distances`
     :param threshold: See `invert_distances`
     :return:
@@ -120,9 +126,13 @@ def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
 
 def cluster_dict_to_partitions(cluster_dict):
     """
-    Convert the cluster output format from the MCL function to a partition list; like that produced by `fcluster`
-    :param cluster_dict: A dictionary where the keys indicate cluster_dict and the list elements indicate node membership
-    :return: A list where the positioning indexes correspond to node numbers and the values correspond to its cluster
+    Convert the cluster output format from the MCL function to a partition list;
+     like that produced by `fcluster`
+
+    :param cluster_dict: A dictionary where the keys indicate cluster_dict and the
+     list elements indicate node membership
+    :return: A list where the positioning indexes correspond to node numbers and the
+     values correspond to its cluster
     """
     new_dict = {e: k for k, v in cluster_dict.items() for e in v}
     part = [new_dict[k] + 1 for k in sorted(new_dict.keys())]
@@ -133,6 +143,7 @@ def cluster_dict_to_partitions(cluster_dict):
 def write_mcl_input(s):
     """
     Re-format a similarity matrix into a list of edge weights and write to a file.
+
     :param s: A similarity matrix
     :return: Writes a CSV file in the current directory
     """
@@ -148,10 +159,11 @@ def write_mcl_input(s):
 def read_mcl_clusters(file='mcl_results.txt'):
     """
     Parse a results file produced by the MCL program.
+
     :param file: The name of an MCL results file
     :return: A list containing the nodes found in each cluster
     """
-    with open('mcl_results.txt', 'rb') as csvfile:
+    with open(file, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter='\t')
         clusters = [row for row in reader]
 
@@ -161,8 +173,10 @@ def read_mcl_clusters(file='mcl_results.txt'):
 def launch_mcl(s, format='partition', inflate=None, silent=True, **kwargs):
     """
     Perform MCL analysis using an external MCL implementation.
+
     :param s: A similarity matrix
-    :param format: 'partition' returns the clusters in the same format produced by `fcluster` on a linkage object;
+    :param format: 'partition' returns the clusters in the same format produced
+      by `fcluster` on a linkage object;
     any other value leaves the clusters in the format provided by the MCL program
     :return: The clusters found by the MCL program
 
@@ -210,6 +224,7 @@ def merge_clusters_to_table(residue_ids, partition, target_table, multichain=Fal
 def compare_clustering(linkages, xyz, title=None, addn_points=None):
     """
     Generate a plots comparing the cluster analyses provided.
+
     :param linkages: A list of cluster analyses as produced by `linkage_cluster`
     :param xyz: The coordinates of the original clustered points
     :return:
@@ -265,7 +280,8 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                             simplex = np.append(simplex, simplex[0])  # Closes facet
                             ax.plot(points[simplex, 0], points[simplex, 1],
                                     points[simplex, 2], color=clr[cluster - 1])
-                            tri = Poly3DCollection([zip(points[simplex, 0], points[simplex, 1], points[simplex, 2])],
+                            tri = Poly3DCollection([zip(points[simplex, 0], points[simplex, 1],
+                                                        points[simplex, 2])],
                                                    alpha=0.2)
                             tri.set_color(clr[cluster - 1])
                             tri.set_edgecolor('k')
@@ -276,10 +292,11 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                     points = np.vstack([points, points[0]])  # Gives triangle for 3-points
                     ax.plot(points[:, 0], points[:, 1], points[:, 2], color=clr[cluster - 1])
             if addn_points is not None:
-                ax.scatter(addn_points[:,0], addn_points[:,1], addn_points[:,2], c='grey', s=5, alpha=0.3)
-                x = np.append(xyz[:, 0], addn_points[:,0])
-                y = np.append(xyz[:, 1], addn_points[:,1])
-                z = np.append(xyz[:, 2], addn_points[:,2])
+                ax.scatter(addn_points[:, 0], addn_points[:, 1], addn_points[:, 2], c='grey', s=5,
+                           alpha=0.3)
+                x = np.append(xyz[:, 0], addn_points[:, 0])
+                y = np.append(xyz[:, 1], addn_points[:, 1])
+                z = np.append(xyz[:, 2], addn_points[:, 2])
                 all_points = np.array([x, y, z]).T
                 x, y, z = autoscale_axes(all_points)
                 ax.auto_scale_xyz(x, y, z)
@@ -325,7 +342,7 @@ def n_clusters(part):
 
 def partition_to_sizes(part):
     """
-    Determine the number of elements in each cluster from a partition list
+    Determine the number of elements in each cluster from a partition list.
 
     :param part: A partition list
     :type part: List
@@ -489,7 +506,8 @@ def cluster_table(table, mask, method, n_samples=0, **kwargs):
     if n_samples > 0:
         n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
         n_phenotypes = len(table.disease.dropna().unique())
-        clean_table = table.drop_duplicates(subset='UniProt_dbResNum').drop(['resn', 'mut', 'disease'], axis=1)
+        clean_table = table.drop_duplicates(subset='UniProt_dbResNum').drop(
+                ['resn', 'mut', 'disease'], axis=1)
         clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
 
         # Bootstrap
@@ -497,7 +515,8 @@ def cluster_table(table, mask, method, n_samples=0, **kwargs):
         for i in xrange(n_samples):
             sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
             sample_mask = sample_table.resn.notnull()
-            sample_clusters.append(cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs))
+            sample_clusters.append(
+                cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs))
             pc_complete = (i + 1) / float(n_samples) * 100
             if pc_complete % 10 == 0:
                 sys.stdout.write("\r%d%%" % (pc_complete))
@@ -515,7 +534,6 @@ def cluster_table(table, mask, method, n_samples=0, **kwargs):
         p_values = dict(zip(names, p_values))
 
         return {'part': part, 'p': p_values}
-
 
     else:
         return part
@@ -573,7 +591,6 @@ if __name__ == '__main__':
     d, points, resids, unmapped_points = atom_dist(table, mask)
     links = linkage_cluster(d, methods=['average', 'mcl_program'], threshold=15)
     compare_clustering(links, points, '3tnu(a/b) P02533/P13647', addn_points=unmapped_points)
-
 
     # Serine/threonine-protein kinase receptor R3, Telangiectasia example
     table = merge_tables(pdb_id='3my0', chain='A', uniprot_variants=True)
