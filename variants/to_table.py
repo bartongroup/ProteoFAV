@@ -20,14 +20,16 @@ __all__ = ["select_uniprot_gff", "select_uniprot_variants"]
 ##############################################################################
 # Private methods
 ##############################################################################
-def _fetch_uniprot_variants(identifier, _format='tab'):
-    """Request human curated variants from UniProt
+def _fetch_uniprot_variants(identifier, format='tab'):
+    """
+    Request human curated variants from UniProt.
 
-    :param identifier:
-    :return:
+    :param identifier: UniProt ID
+    :param format: request output from the webserver
+    :return: pandas dataframe
     """
     url = defaults.http_uniprot + '?query=accession:' + identifier
-    url += '&format=' + _format
+    url += '&format=' + format
     url += '&columns=feature(NATURAL+VARIANT)'
 
     result = get_url_or_retry(url)
@@ -65,10 +67,11 @@ def _fetch_uniprot_variants(identifier, _format='tab'):
 
 
 def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
-    """Retrieves variant annotation from ENSEMBL
+    """
+    Retrieves variant annotation from ENSEMBL.
 
-    :param variant_ids: Enseble Variant identifier
-    :param use_vep: wether to use predicted variants fro VEP
+    :param variant_ids: Ensembl Variant identifier
+    :param use_vep: whether to use predicted variants from VEP
     :return:
     """
 
@@ -107,7 +110,8 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
 
 
 def _transcript_variants_ensembl(identifier, missense=True, species=None):
-    """Queries the Ensembl API for transcript variants (mostly dbSNP)
+    """
+    Queries the Ensembl API for transcript variants (mostly dbSNP)
     based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
@@ -127,8 +131,9 @@ def _transcript_variants_ensembl(identifier, missense=True, species=None):
 
 
 def _somatic_variants_ensembl(identifier, missense=True, species=None):
-    """Queries the Ensembl API for somatic transcript variants (COSMIC) based on
-     Ensembl Protein identifiers (e.g. ENSP00000326864).
+    """
+    Queries the Ensembl API for somatic transcript variants (COSMIC) based on
+    Ensembl Protein identifiers (e.g. ENSP00000326864).
 
     :param identifier: Ensembl Protein ID
     :param missense: if True only fetches missense variants
@@ -146,7 +151,8 @@ def _somatic_variants_ensembl(identifier, missense=True, species=None):
 
 
 def _ensembl_variant(identifier, species='human'):
-    """Queries the Ensembl API for variant IDs (e.g rs376845802 or COSM302853).
+    """
+    Queries the Ensembl API for variant IDs (e.g rs376845802 or COSM302853).
 
     :param identifier: variant ID
     :param species: Ensembl species
@@ -180,7 +186,8 @@ def _ensembl_variant(identifier, species='human'):
 
 
 def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
-    """    Gets the sequence for an Ensembl identifier.
+    """
+    Gets the sequence for an Ensembl identifier.
 
     :param identifier: Ensembl ID
     :param species: Ensembl species
@@ -198,7 +205,8 @@ def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
 
 
 def _uniprot_ensembl_mapping(identifier, species='human'):
-    """Uses the UniProt mapping service to try and get Ensembl IDs for the
+    """
+    Uses the UniProt mapping service to try and get Ensembl IDs for the
     UniProt accession identifier provided
 
     :param identifier: UniProt accession identifier
@@ -242,7 +250,7 @@ def _uniprot_info(identifier, retry_in=(503, 500), cols=None):
 
     if not is_valid(identifier, database='uniprot'):
         raise ValueError(
-            "{} is not a valid UniProt identifier.".format(identifier))
+                "{} is not a valid UniProt identifier.".format(identifier))
 
     if not cols:
         cols = ('entry name', 'reviewed', 'protein names', 'genes', 'organism',
@@ -265,7 +273,8 @@ def _uniprot_info(identifier, retry_in=(503, 500), cols=None):
 
 
 def _uniprot_gff(identifier):
-    """Retrive UniProt data from the GFF file
+    """
+    Retrieve UniProt data from the GFF file
 
     :param identifier: UniProt accession identifier
     :return: pandas table
@@ -284,16 +293,20 @@ def _uniprot_gff(identifier):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_uniprot_gff(identifier, drop_types=('Helix', 'Beta strand', 'Turn',
-                                               'Chain')):
-    """Sumarieses the GFF file for a UniProt acession.
-    :param identifier: UniProt-SP acession
-    :param drop_types: Annotation type to be droped
+def select_uniprot_gff(identifier,
+                       drop_types=('Helix', 'Beta strand', 'Turn', 'Chain')):
+    """
+    Summarises the GFF file for a UniProt accession.
+
+    :param identifier: UniProt-SP accession
+    :param drop_types: Annotation type to be dropped
     :return: table read to be joined to main table
     """
 
     def annotation_writter(gff_row):
-        """ Establish a set of rules to annotates uniprot GFF
+        """
+        Establish a set of rules to annotates uniprot GFF.
+
         :param gff_row: each line in the GFF file
         :return:
         """
@@ -320,12 +333,13 @@ def select_uniprot_gff(identifier, drop_types=('Helix', 'Beta strand', 'Turn',
 
 
 def select_uniprot_variants(identifier):
-    """Sumarise variants for a protein in the UniProt
+    """
+    Summarise variants for a protein in the UniProt
 
     :param identifier: UniProt ID
     :return: table with variants, rows are residues
     """
-    # get organism and sequence for the provided ientifier
+    # get organism and sequence for the provided identifier
 
     uni = _uniprot_info(identifier, cols=['organism', 'sequence'])
     org = ('_'.join(uni.loc[0, 'Organism'].split()[-3:-1])).lower()
@@ -359,7 +373,6 @@ def select_uniprot_variants(identifier):
         muts = _somatic_variants_ensembl(ens_pros[i], missense=True)
 
         # TODO: From... TO... mutated residues as different columns in the table
-
         tables.append(vars[['translation', 'id', 'start', 'residues']])
         tables.append(muts[['translation', 'id', 'start', 'residues']])
 

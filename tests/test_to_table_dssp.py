@@ -79,6 +79,7 @@ class TestDSSPParser(unittest.TestCase):
         self.assertEqual(self.data.ix[6402].psi, 360)
         self.assertNotEqual(self.data.ix[6402].psi, 800)
 
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDSSPParser)
     unittest.TextTestRunner(verbosity=2).run(suite)

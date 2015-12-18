@@ -222,6 +222,7 @@ class TestENSEMBLParser(unittest.TestCase):
         self.assertTrue(data['start'][0] == 295)
         self.assertTrue(data['residues'][0] == "E/A")
 
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestENSEMBLParser)
     unittest.TextTestRunner(verbosity=2).run(suite)

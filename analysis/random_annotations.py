@@ -1,8 +1,10 @@
-__author__ = 'smacgowan'
+#!/usr/bin/env python
+# -*- coding: utf-8
 
 """
 Created on 25/11/2015
-Functions to help with random selection of PDB atoms/residues and significance testing via bootstrapping.
+Functions to help with random selection of PDB atoms/residues and significance
+testing via bootstrapping.
 """
 
 import logging
@@ -11,6 +13,8 @@ from numpy import array
 from pandas import Series, DataFrame, crosstab
 from string import letters
 from random import shuffle
+
+__author__ = 'smacgowan'
 
 
 def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
@@ -27,14 +31,18 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
     :return:
     """
 
-    # TODO: if I read a variant table, I can get the actual AA composition and dssp and keep these constant
-    # TODO: currently different chains are handled by the `add_random_disease_variants` wrapper, is this ideal?
+    # TODO: if I read a variant table, I can get the actual AA composition and dssp and
+    # keep these constant
+    # TODO: currently different chains are handled by the `add_random_disease_variants`
+    # wrapper, is this ideal?
 
-    # We are going to pick residues from the supplied merge_table, so first get rid of unobserved residues
+    # We are going to pick residues from the supplied merge_table, so first get rid of
+    # unobserved residues
     merge_table = merge_table[merge_table.aa.notnull()].reset_index()
 
     # Create a random selection
-    shuffled_table = merge_table.reindex(permutation(merge_table.index))  ## TODO: Were rand indexes better as allowed repeats
+    ## TODO: Were rand indexes better as allowed repeats
+    shuffled_table = merge_table.reindex(permutation(merge_table.index))
 
     if repeats_allowed:
         # Copy all rows 21 times so that we have p > 0 of all possible variants on the same residue
@@ -68,7 +76,8 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
                     table = table.append(shuffled_table[mask].iloc[:, columns])
                     n_residues = n_residues - count + sum(mask)
                 else:
-                    msg = 'Could not generate variants with requested proportions. Try changing proportions or use force=True.'
+                    msg = 'Could not generate variants with requested proportions. Try changing ' \
+                          'proportions or use force=True.'
                     logging.error(msg)
                     raise
 
@@ -97,7 +106,8 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
                 try:
                     table = table.append(shuffled_table[mask].iloc[rows, columns])
                 except IndexError:
-                    msg = 'Fewer residues with {}: {} and {}: {} available than requested including repeats!'
+                    msg = 'Fewer residues with {}: {} and {}: {} available than requested ' \
+                          'including repeats!'
                     logging.error(msg.format(column_name, column, row_name, row))
                     if force:
                         msg = 'Falling back to giving all variants on this residue type.'
@@ -105,7 +115,8 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
                         table = table.append(shuffled_table[mask].iloc[:, columns])
                         n_residues = n_residues - count + sum(mask)
                     else:
-                        msg = 'Could not generate variants with requested proportions. Try changing proportions or use force=True.'
+                        msg = 'Could not generate variants with requested proportions. ' \
+                              'Try changing proportions or use force=True.'
                         logging.error(msg)
                         raise
 
@@ -114,17 +125,20 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
                 n_choices = sum(orig_mask)
                 ratio = count / float(n_choices)
                 if count > n_choices:
-                    msg = 'FORCED REPEATS: Fewer residues with {}: {} and {}: {} available than requested.'
+                    msg = 'FORCED REPEATS: Fewer residues with {}: {} and {}: {} available ' \
+                          'than requested.'
                     logging.warning(msg.format(column_name, column, row_name, row))
                 elif ratio > 0.8:
-                    msg = 'RESTRICTED SELECTION: {}% of available residues with {}: {} and {}: {} requested.'
+                    msg = 'RESTRICTED SELECTION: {}% of available residues with {}: {} ' \
+                          'and {}: {} requested.'
                     logging.warning(msg.format(round(ratio * 100), column_name, column, row_name, row))
 
     # Now generate random variant residues and phenotypes
     selection = random_integers(0, n_phenotypes - 1, n_residues)
     disease = [letters[i] for i in selection]
     aa1 = array(list('ACDEFGHIKLMNPQRSTVWY'))
-    mut = choice(aa1, n_residues, replace=True)  # TODO: set p to match a variant distribution
+    # TODO: set p to match a variant distribution
+    mut = choice(aa1, n_residues, replace=True)
 
     # And add them to table and make it exactly like a real uniprot_variant table
     table['mut'] = mut
@@ -136,8 +150,6 @@ def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
     # vars.mut[eq] = 'K'  ## has warning but works
 
     return table
-
-
 
 
 def add_random_disease_variants(merge_table, n_residues, n_phenotypes):
@@ -168,10 +180,12 @@ def add_random_disease_variants(merge_table, n_residues, n_phenotypes):
         shuffle(n_vars_per_prot)
 
         # Now split, apply, combine by iteration so we can vary the number of residues
-        grouped = merge_table.groupby('UniProt_dbAccessionId')  # TODO: This drops any where uniprot is NaN, fix or log
+        # TODO: This drops any where uniprot is NaN, fix or log
+        grouped = merge_table.groupby('UniProt_dbAccessionId')
         table = DataFrame()
         for i, (name, group) in enumerate(grouped):
-            table = table.append(add_random_disease_variants(group, n_vars_per_prot[i], n_phenotypes))
+            table = table.append(add_random_disease_variants(group, n_vars_per_prot[i],
+                                                             n_phenotypes))
         return table
 
     elif n_prots == 1:
