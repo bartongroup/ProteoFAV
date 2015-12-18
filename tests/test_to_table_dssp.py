@@ -6,7 +6,8 @@ import unittest
 import numpy
 from os import path
 
-from structures.to_table import _dssp
+from library import scop_3to1
+from structures.to_table import _dssp, import_dssp_chains_ids
 
 
 class TestDSSPParser(unittest.TestCase):
@@ -17,12 +18,14 @@ class TestDSSPParser(unittest.TestCase):
         self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
         self.dssp_ins_code = path.join(path.dirname(__file__), "DSSP/3mg7.dssp")
         self.residues_parser = _dssp
+        self.fix_dssp_ignoring_chains_ids = import_dssp_chains_ids
 
     def tearDown(self):
         """Remove testing framework."""
 
         self.example_dssp = None
         self.residues_parser = None
+        self.fix_dssp_ignoring_chains_ids = None
 
     def test_to_table_dssp_residues(self):
         """
@@ -44,16 +47,21 @@ class TestDSSPParser(unittest.TestCase):
         self.assertEqual(data.loc[8, 'ss'], 'E')
         self.assertEqual(data.loc[1, 'acc'], 179)
 
-    # def test_to_table_dssp_3j3q(self):
-    #     pass
-    #
-    # def test_to_table_dssp_4v60(self):
-    #     pass
-    #
-    # def test_to_table_dssp_3kic(self):
-    #     pass
-    #     # test if the number of residues per chain is correct
-    #     # check if all chains are there
+    def test_fix_dssp_ignoring_chains_ids_has_as_many_chains(self):
+        fix = self.fix_dssp_ignoring_chains_ids
+        chains_4v9d = (
+            'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN', 'AO',
+            'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AY', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH',
+            'BI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO', 'BP', 'BQ', 'BR', 'BS', 'BT', 'BU', 'CC',
+            'CD', 'CE', 'CF', 'CG', 'CH', 'CI', 'CJ', 'CK', 'CL', 'CM', 'CN', 'CO', 'CP', 'CQ',
+            'CR', 'CS', 'CT', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ', 'C0', 'C1', 'C2', 'C3', 'C4',
+            'DC', 'DD', 'DE', 'DF', 'DG', 'DH', 'DI', 'DJ', 'DK', 'DL', 'DM', 'DN', 'DO', 'DP',
+            'DQ', 'DR', 'DS', 'DT', 'DU', 'DV' , 'DW', 'DX', 'DY', 'DZ', 'D0', 'D1', 'D2', 'D3',
+            'D4')
+        table = fix('4v9d')
+        dssp_has_seq = table.aa.isin(scop_3to1.values())
+        print table.loc[dssp_has_seq, 'chain_id'].unique()
+        self.assertItemsEqual(table.loc[dssp_has_seq, 'chain_id'].unique(), chains_4v9d)
 
     def test_to_table_dssp_3mg7(self):
         """

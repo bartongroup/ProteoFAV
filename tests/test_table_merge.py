@@ -137,23 +137,24 @@ class TestTableMerger(unittest.TestCase):
         self.assertFalse(self.data.empty)
 
     def test_merge_4v9d_BD_excessive_chains(self):
-        self.data = self.merge_table(pdb_id='4v9d', chain='BD', validate=True)
-        self.assertFalse(self.data.empty)
+        data = self.merge_table(pdb_id='4v9d', chain='BD', validate=True)
+        self.assertFalse(data.empty)
 
     def test_merge_4abo_A_DSSP_missing_first_residue(self):
-        self.data = self.merge_table(pdb_id='4abo', chain='A', validate=True)
-        self.assertFalse(self.data.empty)
+        data = self.merge_table(pdb_id='4abo', chain='A', validate=True)
+        self.assertFalse(data.empty)
 
     def test_merge_4why_K_DSSP_index_as_object(self):
-        self.data = self.merge_table(pdb_id='4why', chain='K', validate=True)
-        self.assertFalse(self.data.empty)
+        data = self.merge_table(pdb_id='4why', chain='K', validate=True)
+        self.assertFalse(data.empty)
 
     def test_merge_2pm7_D_missing_residue_DSSP(self):
-        self.data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
-        self.assertFalse(self.data.empty)
+        data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
+        self.assertFalse(data.empty)
 
     def test_merge_4myi_A_fail(self):
-        self.data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
+        # TODO can we save it?
+        data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
         # DSSP and Cif unaligned
         self.assertRaises(ValueError)
 

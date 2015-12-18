@@ -64,7 +64,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             log.warning("remove_redundant is ignored when chain='all' and is set to False")
 
         chain_ids = _rcsb_description(pdb_id, tag='chain', key='id')
-
+        # TODO transition to chain = None strategy
         table = DataFrame()
         for current_chain in chain_ids:
             table = table.append(merge_tables(uniprot_id=uniprot_id, pdb_id=pdb_id,
@@ -82,27 +82,12 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         best_pdb = sifts_best(uniprot_id, first=True)
         pdb_id = best_pdb['pdb_id']
         chain = best_pdb['chain_id']
-        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain,
-                                                               uniprot_id))
+        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
 
     cif_table = select_cif(pdb_id, chains=chain, models=model)
     cif_table['auth_seq_id'] = cif_table.index
 
-    try:
-        dssp_table = select_dssp(pdb_id, chains=chain)
-    except ValueError:
-        # This indicates we could find the correct PDB chain.
-        # What happens in case in structures with dozen of chains, ie: 4v9d
-        # So we parse all the PDB file
-        log.error('{} not found in {} DSSP'.format(chain, pdb_id))
-        dssp_table = select_dssp(pdb_id)
-        cif_seq = cif_table.auth_comp_id.apply(to_single_aa.get)
-        dssp_table.reset_index(inplace=True)
-        dssp_seq = "".join(dssp_table.aa)
-        i = dssp_seq.find("".join(cif_seq))
-        dssp_table = dssp_table.iloc[i: i + len(cif_seq), :]
-        dssp_table.set_index(['icode'], inplace=True)
-    # Correction for some dssp index parsed as object instead int
+    dssp_table = select_dssp(pdb_id, chains=chain)
     if dssp_table.index.dtype == 'O' and cif_table.index.dtype != 'O':
         dssp_table.index = dssp_table.index.astype(int)
 
@@ -129,13 +114,12 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get, args='X')
         # Check if the sequences are the same
         if not (table['dssp_aa'][~mask] == table['cif_aa'][~mask]).all():
-            raise ValueError('{pdb_id}|{chain} Cif and DSSP files have different'
-                             ' sequences.'.format(pdb_id=pdb_id, chain=chain))
+            err = '{}|{} Cif and DSSP files have different sequences.'
+            raise ValueError(err.format(pdb_id, chain))
 
     sifts_table = select_sifts(pdb_id, chains=chain)
     try:
-        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[
-                                             :, 'PDB_dbResNum'].astype(int)
+        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(int)
         # TODO: Shouldn't the index be strictly defined no matter what?
         sifts_table.set_index(['PDB_dbResNum'], inplace=True)
     except ValueError:
@@ -156,32 +140,27 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         # Mask here because Sifts conserve missing residues and other data don't
         mask = table.cif_aa.isnull()
         table['sifts_aa'] = table['REF_dbResName']
-        table['sifts_aa'] = table['sifts_aa'].apply(
-                to_single_aa.get, args='X')
+        table['sifts_aa'] = table['sifts_aa'].apply(to_single_aa.get, args='X')
         mask = mask | table['sifts_aa'].isnull()
 
         # Check if the sequences are the same
         if not (table['cif_aa'][~mask] == table['sifts_aa'][~mask]).all():
-            raise ValueError('{pdb_id}|{chain} Cif and Sifts files have '
-                             'different sequences '.format(pdb_id=pdb_id,
-                                                           chain=chain))
+            err = '{}|{} Cif and Sifts files have different sequences '
+            raise ValueError(err.format(pdb_id, chain))
     if add_validation:
         validation_table = select_validation(pdb_id, chains=chain)
-        validation_table.loc[:, 'val_resnum'] = validation_table.loc[
-                                                :, 'val_resnum'].astype(int)
+        validation_table.loc[:, 'val_resnum'] = validation_table.loc[:, 'val_resnum'].astype(int)
         validation_table.set_index(['val_resnum'], inplace=True)
         table = table.join(validation_table)
         if not table['val_resname'].any():
-            raise ValueError('The validation file has empty sequence and cannot'
-                             ' be validated')
+            raise ValueError('The validation file has empty sequence and cannot  be validated')
         mask = table['cif_aa'].isnull()
         table['val_aa'] = table['val_resname']
         table['val_aa'] = table['val_aa'].apply(to_single_aa.get, args='X')
         mask = mask | table['val_aa'].isnull()
         if not (table['cif_aa'][~mask] == table['val_aa'][~mask]).all():
-            raise ValueError('{pdb_id}|{chain} Cif and validation files have '
-                             'different sequences '.format(pdb_id=pdb_id,
-                                                           chain=chain))
+            err = '{}|{} Cif and validation files have different sequences '
+            raise ValueError(err.format(pdb_id, chain))
 
     # Mapping to the UniProt sequence
     table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
@@ -233,10 +212,10 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                     continue
                 del table[col]
                 setattr(table, col, value)
-                log.info('Column {} is know an attribute.'.format(col))
+                log.info('Column {} is now an attribute.'.format(col))
     return table
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='4b9d', chain='A', add_annotation=True)
+    X = merge_tables(pdb_id='4v9d', chain='BD')
     print(X.head())

@@ -17,15 +17,14 @@ from lxml import etree
 from scipy.spatial import cKDTree
 
 from config import defaults
-from utils import fetch_files
-from utils import get_url_or_retry
-from utils import is_valid
+from utils import fetch_files, get_url_or_retry, is_valid
+from library import scop_3to1
 
 log = logging.getLogger(__name__)
 
 __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
            "sifts_best", "_rcsb_description"]
-UNIFIED_COL = ['auth_seq_id', 'pdbx_PDB_model_num', 'auth_asym_id']
+UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 
 
 ##############################################################################
@@ -493,7 +492,7 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
             cif_table['auth_seq_id'] = cif_table['pdbe_label_seq_id']
 
     # id is the atom identifier and it is need for all atoms tables.
-    if not cif_table[UNIFIED_COL + ['id']].duplicated().any():
+    if cif_table[UNIFIED_COL + ['id']].duplicated().any():
         log.error('Failed to find unique index for {}'.format(cif_path))
     return cif_table.set_index(['auth_seq_id'])
 
@@ -512,6 +511,26 @@ def residues_as_cetroid(table):
     return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
 
 
+def import_dssp_chains_ids(pdb_id):
+    """Imports mmCIF chain identifier to DSSP.
+
+    :param pdb_id:
+    :return: DSSP table with corrected chain ids.
+    """
+    dssp_table = select_dssp(pdb_id)
+    cif_table = select_cif(pdb_id)
+    cif_seq = cif_table.auth_comp_id.apply(scop_3to1.get)
+    dssp_has_seq = dssp_table.aa.isin(scop_3to1.values())
+    dssp_seq = dssp_table.aa[dssp_has_seq]
+    # Import only if the sequences are identical
+    if not (cif_seq == dssp_seq).all():
+        err = ('Inconsitent DSSP / mmCIF sequence for {} protein structure cannot be fixed'
+               'by import_dssp_chains_ids')
+        raise ValueError(err.format(pdb_id))
+    dssp_table.loc[dssp_has_seq, 'chain_id'] = cif_table.auth_asym_id
+    return dssp_table
+
+
 def select_dssp(pdb_id, chains=None):
     """
     Produce table from DSSP file output.
@@ -525,14 +544,24 @@ def select_dssp(pdb_id, chains=None):
     try:
         dssp_table = _dssp(dssp_path)
     except IOError:
-        dssp_path = fetch_files(pdb_id, sources='dssp',
-                                directory=defaults.db_dssp)[0]
+        dssp_path = fetch_files(pdb_id, sources='dssp', directory=defaults.db_dssp)[0]
         dssp_table = _dssp(dssp_path)
     except StopIteration:
         raise IOError('{} is unreadable.'.format(dssp_path))
 
     if chains:
-        dssp_table = table_selector(dssp_table, 'chain_id', chains)
+        try:
+            dssp_table = table_selector(dssp_table, 'chain_id', chains)
+        except ValueError:
+            # Could not find the correct PDB chain. It happens for protein structures with complex
+            # chain identifier, as 4v9d.
+            dssp_table = import_dssp_chains_ids(pdb_id)
+            dssp_table = table_selector(dssp_table, 'chain_id', chains)
+
+    if dssp_table.index.name == 'icode':
+        if dssp_table.index.duplicated().any():
+            log.info('DSSP file for {} has not unique index'.format(pdb_id))
+        return dssp_table
 
     if chains and dssp_table.icode.duplicated().any():
         log.info('DSSP file for {} has not unique index'.format(pdb_id))
@@ -576,13 +605,11 @@ def select_validation(pdb_id, chains=None):
     :param chains: PDB protein chain
     :return: pandas dataframe
     """
-    val_path = path.join(defaults.db_pdb,
-                         pdb_id + defaults.validation_extension)
+    val_path = path.join(defaults.db_pdb, pdb_id + defaults.validation_extension)
     try:
         val_table = _pdb_validation_to_table(val_path)
     except IOError:
-        val_path = fetch_files(pdb_id, sources='validation',
-                               directory=defaults.db_pdb)[0]
+        val_path = fetch_files(pdb_id, sources='validation', directory=defaults.db_pdb)[0]
         val_table = _pdb_validation_to_table(val_path)
 
     if chains:
@@ -609,6 +636,4 @@ def sifts_best(identifier, first=False):
 
 
 if __name__ == '__main__':
-    X = select_cif('2pah', atoms='backbone_centroid')
-    X = select_cif('2pah', chains='A', atoms='CA')
-    C = _get_contacts_from_table(X)
+    X = select_dssp('4v9d', chains='BD')
