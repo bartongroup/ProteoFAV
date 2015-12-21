@@ -498,16 +498,166 @@ def confirm_column_types(table):
     :param table: A pandas data frame produced by a to_* function
     :return: A pandas data frame of the same data with correct column types
     """
-    column_types_long = {'CATH_dbAccessionId': 'string',
-                         'InterPro_dbAccessionId': 'string',
-                         'NCBI_dbAccessionId': 'string',
-                         'PDB_dbAccessionId': 'string',
-                         'PFAM__dbAccessionId': 'string',
-                         'UniProt_dbAccessionId': 'string'
-                         }
+    # There are fewer pandas `dtypes` than the corresponding numpy type classes, but all numpy types can be
+    # accommodated.
+    #
+    # NaNs and Upcasting:
+    # The upcasting of dtypes on columns that contain NaNs has been an issue and can lead to inconsistencies between
+    # the column types of different tables that contain equivalent data. E.g., a `merged_table` from a PDB entry may
+    # have NaNs in UniProt_dbResNum and so is cast to float64 whilst a UniProt variants table will have no NaNs in
+    # this field and so remains int64 by default. The main issue here is that it creates additional work for merging
+    # these tables as the keys must be of the same type. It's also a problem if you want to test elements say for
+    # example you expect to be testing integer equality but the values have been coerced to floats.
+    #
+    # Ideally then we need to ensure that all equivalent column types are by default the least generic dtype that can
+    # contain all possible values that can be seen in the column, i.e. if NaNs are possible then even when not present,
+    # a column of integers that can contain NaNs should always be at least float.
+    #
+    # dtypes and element types:
+    # It seems that coercion to certain dtypes alters the element types too. For instance, int64 -> float64 will make
+    # an equivalent change to individual value types. However, the original element types can be preserved with the
+    # generic `object` dtype, so this will be used in preference for integer columns that can contain NaNs.
+
+    column_types_long = {
+        # SIFTs mappings
+        'CATH_dbAccessionId': 'string',
+        'CATH_dbChainId': 'string',
+        'CATH_dbCoordSys': 'string',
+        'CATH_dbResName': 'string',
+        'CATH_dbResNum': 'string',
+        'InterPro_dbAccessionId': 'string',
+        'InterPro_dbCoordSys': 'string',
+        'InterPro_dbEvidence': 'string',
+        'InterPro_dbResName': 'string',
+        'InterPro_dbResNum': 'string',
+        'NCBI_dbAccessionId': 'string',
+        'NCBI_dbCoordSys': 'string',
+        'NCBI_dbResName': 'string',
+        'NCBI_dbResNum': 'string',
+        'PDB_dbAccessionId': 'string',
+        'PDB_dbChainId': 'string',
+        'PDB_dbCoordSys': 'string',
+        'PDB_dbResName': 'string',
+        'PDB_dbResNum': 'string',
+        'Pfam_dbAccessionId': 'string',
+        'Pfam_dbCoordSys': 'string',
+        'Pfam_dbResName': 'string',
+        'Pfam_dbResNum': 'string',
+        'REF_codeSecondaryStructure': 'string',
+        'REF_dbCoordSys': 'string',
+        'REF_dbResName': 'string',
+        'REF_dbResNum': 'string',
+        'REF_nameSecondaryStructure': 'string',
+        'UniProt_dbAccessionId': 'string',
+        'UniProt_dbCoordSys': 'string',
+        'UniProt_dbResName': 'string',
+        'UniProt_dbResNum': 'string',
+        # mmCIF fields
+        'auth_asym_id': 'string',
+        'auth_atom_id': 'string',
+        'auth_comp_id': 'string',
+        'auth_seq_id': 'string',
+        'B_iso_or_equiv': 'float',
+        'B_iso_or_equiv_esd': 'float',
+        'Cartn_x': 'float',
+        'Cartn_x_esd': 'float',
+        'Cartn_y': 'float',
+        'Cartn_y_esd': 'float',
+        'Cartn_z': 'float',
+        'Cartn_z_esd': 'float',
+        'label_alt_id': '',
+        'label_asym_id': '',
+        'label_atom_id': '',
+        'label_comp_id': '',
+        'label_entity_id': '',
+        'label_seq_id': 'integer',
+        'occupancy': 'float',
+        'occupancy_esd': 'float',
+        'pdbe_label_seq_id': 'integer',
+        'pdbx_formal_charge': 'integer',
+        'pdbx_PDB_ins_code': '',
+        'pdbx_PDB_model_num': 'integer',
+        # DSSP
+        'chain_id': '',
+        'aa': 'string',
+        'ss': 'string',
+        'acc': 'float',
+        'phi': 'float',
+        'psi': 'float',
+        'aa': 'string',
+        # Merged table
+        'dssp_aa': 'string',
+        'cif_aa': 'string',
+        'sifts_aa': 'string',
+        # UniProt variant table
+        'resn': 'string',
+        'mut': 'string',
+        'disease': 'string'
+    }
 
     column_types_short = {'*_dbAccessionId': 'string',
-                          '*_dbChainId': 'string'}
+                          '*_dbChainId': 'string',
+                          '*_dbCoordSys': 'string',
+                          '*_dbResName': 'string',
+                          '*_dbResNum': 'string',  # Note this, NOT integer, affects taking slices
+
+                          'Cartn_[xyz]': 'float',
+                          'Cartn_[xyz]_esd': 'float',
+                          'occupancy': 'float',
+                          'occupancy_esd': 'float',
+                          'B_iso_or_equiv': 'float',
+                          'B_iso_or_equiv_esd': 'float',
+
+                          'aa': 'string',
+                          'ss': 'string',
+                          'acc': 'float',
+                          'phi': 'float',
+                          'psi': 'float',
+
+                          'dssp_aa': 'string',
+                          'cif_aa': 'string',
+                          'sifts_aa': 'string',
+
+                          'resn': 'string',
+                          'mut': 'string',
+                          'disease': 'string'
+                          }
+
+    type_dtypes = {
+        'string': 'object',
+        'float': 'float64',
+        'int': 'int64',
+        'bool': 'bool',
+        'O': 'object'
+    }
+
+    type_dtypes_if_nan = {
+        'string': 'object',
+        'float': 'float64',
+        'int': 'object',
+        'bool': 'object',
+        'O': 'object'
+    }
+
+    for column in table:
+        type_should_be = column_types_long.get(column)
+
+        can_be_nan = True  # TODO: Either this should be a test or just get rid of the if block
+        if can_be_nan:
+            dtype_should_be = type_dtypes_if_nan.get(type_should_be)
+        else:
+            dtype_should_be = type_dtypes.get(type_should_be)
+
+        if dtype_should_be is None:
+            logging.warning('Column `{}` not recognised'.format(column))
+            continue
+
+        current_dtype = table[column].dtype
+        if current_dtype != dtype_should_be:
+            logging.debug('Coercing `{}` to `{}`'.format(column, dtype_should_be))
+            table[column] = table[column].astype(dtype_should_be)
+
+    return table
 
 
 if __name__ == '__main__':
