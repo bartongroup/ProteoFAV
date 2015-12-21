@@ -595,34 +595,6 @@ def confirm_column_types(table):
         'disease': 'string'
     }
 
-    column_types_short = {'*_dbAccessionId': 'string',
-                          '*_dbChainId': 'string',
-                          '*_dbCoordSys': 'string',
-                          '*_dbResName': 'string',
-                          '*_dbResNum': 'string',  # Note this, NOT integer, affects taking slices
-
-                          'Cartn_[xyz]': 'float',
-                          'Cartn_[xyz]_esd': 'float',
-                          'occupancy': 'float',
-                          'occupancy_esd': 'float',
-                          'B_iso_or_equiv': 'float',
-                          'B_iso_or_equiv_esd': 'float',
-
-                          'aa': 'string',
-                          'ss': 'string',
-                          'acc': 'float',
-                          'phi': 'float',
-                          'psi': 'float',
-
-                          'dssp_aa': 'string',
-                          'cif_aa': 'string',
-                          'sifts_aa': 'string',
-
-                          'resn': 'string',
-                          'mut': 'string',
-                          'disease': 'string'
-                          }
-
     type_dtypes = {
         'string': 'object',
         'float': 'float64',
