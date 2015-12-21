@@ -611,9 +611,18 @@ def confirm_column_types(table):
         'O': 'object'
     }
 
+    column_replacements = {
+        'Cartn_x_esd': ['?', np.nan],
+        'Cartn_y_esd': ['?', np.nan],
+        'Cartn_z_esd': ['?', np.nan],
+        'occupancy_esd': ['?', np.nan],
+        'B_iso_or_equiv_esd': ['?', np.nan]
+    }
+
     for column in table:
         type_should_be = column_types_long.get(column)
 
+        # Get dtype from column type depending on whether can contain NaN
         can_be_nan = True  # TODO: Either this should be a test or just get rid of the if block
         if can_be_nan:
             dtype_should_be = type_dtypes_if_nan.get(type_should_be)
@@ -624,6 +633,13 @@ def confirm_column_types(table):
             logging.warning('Column `{}` not recognised'.format(column))
             continue
 
+        # Element replacements as required
+        if column in column_replacements:
+            to_replace, replacement = column_replacements.get(column)
+            logging.debug('Replacing {} with {} in column {}'.format(to_replace, replacement, column))
+            table[column] = table[column].replace(to_replace, replacement)
+
+        # Coerce column if neccessary
         current_dtype = table[column].dtype
         if current_dtype != dtype_should_be:
             logging.debug('Coercing `{}` to `{}`'.format(column, dtype_should_be))
