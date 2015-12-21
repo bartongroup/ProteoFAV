@@ -565,20 +565,23 @@ def confirm_column_types(table):
         'Cartn_y_esd': 'float',
         'Cartn_z': 'float',
         'Cartn_z_esd': 'float',
-        'label_alt_id': '',
-        'label_asym_id': '',
-        'label_atom_id': '',
-        'label_comp_id': '',
-        'label_entity_id': '',
+        'label_alt_id': 'string',
+        'label_asym_id': 'string',
+        'label_atom_id': 'string',
+        'label_comp_id': 'string',
+        'label_entity_id': 'string',
         'label_seq_id': 'integer',
         'occupancy': 'float',
         'occupancy_esd': 'float',
         'pdbe_label_seq_id': 'integer',
         'pdbx_formal_charge': 'integer',
-        'pdbx_PDB_ins_code': '',
+        'pdbx_PDB_ins_code': 'string',
         'pdbx_PDB_model_num': 'integer',
+        'type_symbol': 'string',
+        'group_PDB': 'string',
+        'id': 'string',
         # DSSP
-        'chain_id': '',
+        'chain_id': 'string',
         'aa': 'string',
         'ss': 'string',
         'acc': 'float',
@@ -592,21 +595,29 @@ def confirm_column_types(table):
         # UniProt variant table
         'resn': 'string',
         'mut': 'string',
-        'disease': 'string'
+        'disease': 'string',
+        # UniProt variants table 2
+        'translation': 'string',
+        'id': 'string',
+        'start': 'string',
+        'residues': 'string',
+        # Derived boolean columns
+        'is_expression_tag': 'bool',
+        'is_not_observed': 'bool'
     }
 
-    type_dtypes = {
+    type_to_dtype = {
         'string': 'object',
         'float': 'float64',
-        'int': 'int64',
+        'integer': 'int64',
         'bool': 'bool',
         'O': 'object'
     }
 
-    type_dtypes_if_nan = {
+    type_to_dtype_if_contains_nan = {
         'string': 'object',
         'float': 'float64',
-        'int': 'object',
+        'integer': 'object',
         'bool': 'object',
         'O': 'object'
     }
