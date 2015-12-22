@@ -191,7 +191,6 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         grouped_table = table.groupby('UniProt_dbAccessionId')
         new_table = DataFrame()
         for structure_uniprot, part_table in grouped_table:
-            # Retrieve variants and merge onto merged table
             variants_table = select_uniprot_variants(structure_uniprot)
             variants_table[["start"]] = variants_table[["start"]].astype(float)
             part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
@@ -202,13 +201,18 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         table = new_table.append(no_mapped_uniprot)[col_order]
 
     if uniprot_variants:
-        # Will get variants only for the first UniProt AC
-        # TODO: Re-factor and handle mutiple UniProts
-        structure_uniprot = structure_uniprots.unique()[0]
-        # Retrieve variants and merge onto merged table
-        variants = _fetch_uniprot_variants(structure_uniprot)
-        table = table.reset_index().merge(variants, on='UniProt_dbResNum', how='left')
-        table.set_index(['PDB_dbResNum'], inplace=True)
+        grouped_table = table.groupby('UniProt_dbAccessionId')
+        new_table = DataFrame()
+        for structure_uniprot, part_table in grouped_table:
+            variants = _fetch_uniprot_variants(structure_uniprot)
+            part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
+            merged_table = part_table.merge(variants, on='UniProt_dbResNum', how='left')
+            if new_table.empty:
+                col_order = merged_table.columns.tolist()  # Get the column order once
+            new_table = new_table.append(merged_table)
+        table = new_table.append(no_mapped_uniprot)[col_order]
+
+    table.set_index(['PDB_dbResNum'], inplace=True)
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
