@@ -178,6 +178,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                 col_order = merged_table.columns.tolist()  # Get the column order once
             new_table = new_table.append(merged_table)
         table = new_table.append(no_mapped_uniprot)[col_order]
+        table.set_index(['PDB_dbResNum'], inplace=True)
 
     if uniprot_variants:
         grouped_table = table.groupby('UniProt_dbAccessionId')
@@ -190,8 +191,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                 col_order = merged_table.columns.tolist()  # Get the column order once
             new_table = new_table.append(merged_table)
         table = new_table.append(no_mapped_uniprot)[col_order]
-
-    table.set_index(['PDB_dbResNum'], inplace=True)
+        table.set_index(['PDB_dbResNum'], inplace=True)
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
