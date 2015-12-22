@@ -373,6 +373,7 @@ def select_uniprot_variants(identifier):
         muts = _somatic_variants_ensembl(ens_pros[i], missense=True)
 
         # TODO: From... TO... mutated residues as different columns in the table
+        # TODO: Shouldn't the default behaviour return all the columns?
         if not vars.empty:
             tables.append(vars[['translation', 'id', 'start', 'residues']])
         if not muts.empty:
