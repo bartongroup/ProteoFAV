@@ -373,8 +373,11 @@ def select_uniprot_variants(identifier):
         muts = _somatic_variants_ensembl(ens_pros[i], missense=True)
 
         # TODO: From... TO... mutated residues as different columns in the table
-        tables.append(vars[['translation', 'id', 'start', 'residues']])
-        tables.append(muts[['translation', 'id', 'start', 'residues']])
+        # TODO: Shouldn't the default behaviour return all the columns?
+        if not vars.empty:
+            tables.append(vars[['translation', 'id', 'start', 'residues']])
+        if not muts.empty:
+            tables.append(muts[['translation', 'id', 'start', 'residues']])
 
     # to_unique = lambda series: series.unique()
     # return table.groupby('start').apply(to_unique)

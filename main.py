@@ -162,31 +162,35 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             err = '{}|{} Cif and validation files have different sequences '
             raise ValueError(err.format(pdb_id, chain))
 
-    # Mapping to the UniProt sequence
+    # Table preparations before adding variants
     table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
-    if add_variants:
-        # Will get variants only for the first UniProt AC
-        structure_uniprots = table.UniProt_dbAccessionId
-        structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
-        structure_uniprot = structure_uniprots.unique()[0]
-        # Retrieve variants and merge onto merged table
-        variants_table = select_uniprot_variants(structure_uniprot)
-        variants_table[["start"]] = variants_table[["start"]].astype(float)
+    no_mapped_uniprot = table[table.UniProt_dbAccessionId.isnull()]
 
-        table = table.reset_index()
-        # Gives access to UniProt_dbResNum
-        table = table.merge(variants_table, left_on="UniProt_dbResNum",
-                            right_on="start", how="left")
+    if add_variants:
+        grouped_table = table.groupby('UniProt_dbAccessionId')
+        new_table = DataFrame()
+        for structure_uniprot, part_table in grouped_table:
+            variants_table = select_uniprot_variants(structure_uniprot)
+            variants_table[["start"]] = variants_table[["start"]].astype(float)
+            part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
+            merged_table = part_table.merge(variants_table, left_on="UniProt_dbResNum", right_on="start", how="left")
+            if new_table.empty:
+                col_order = merged_table.columns.tolist()  # Get the column order once
+            new_table = new_table.append(merged_table)
+        table = new_table.append(no_mapped_uniprot)[col_order]
+        table.set_index(['PDB_dbResNum'], inplace=True)
 
     if uniprot_variants:
-        # Will get variants only for the first UniProt AC
-        # TODO: Re-factor and handle mutiple UniProts
-        structure_uniprots = table.UniProt_dbAccessionId
-        structure_uniprots = structure_uniprots[structure_uniprots.notnull()]
-        structure_uniprot = structure_uniprots.unique()[0]
-        # Retrieve variants and merge onto merged table
-        variants = _fetch_uniprot_variants(structure_uniprot)
-        table = table.reset_index().merge(variants, on='UniProt_dbResNum', how='left')
+        grouped_table = table.groupby('UniProt_dbAccessionId')
+        new_table = DataFrame()
+        for structure_uniprot, part_table in grouped_table:
+            variants = _fetch_uniprot_variants(structure_uniprot)
+            part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
+            merged_table = part_table.merge(variants, on='UniProt_dbResNum', how='left')
+            if new_table.empty:
+                col_order = merged_table.columns.tolist()  # Get the column order once
+            new_table = new_table.append(merged_table)
+        table = new_table.append(no_mapped_uniprot)[col_order]
         table.set_index(['PDB_dbResNum'], inplace=True)
 
     if add_annotation:

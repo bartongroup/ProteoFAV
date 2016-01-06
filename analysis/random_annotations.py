@@ -9,7 +9,7 @@ testing via bootstrapping.
 
 import logging
 from numpy.random import choice, random_integers, permutation
-from numpy import array
+from numpy import array, isfinite
 from pandas import Series, DataFrame, crosstab
 from string import letters
 from random import shuffle
@@ -160,6 +160,13 @@ def add_random_disease_variants(merge_table, n_residues, n_phenotypes):
     :param n_phenotypes:
     :return:
     """
+    # If there are already variants on the table, we need to drop them and remove duplicate atoms
+    if 'resn' in merge_table.columns:
+        n_residues = sum(merge_table.resn.notnull() & isfinite(merge_table['Cartn_x']))
+        n_phenotypes = len(merge_table.disease.dropna().unique())
+        merge_table = merge_table.drop_duplicates(subset='UniProt_dbResNum').drop(['resn', 'mut', 'disease'], axis=1)
+        merge_table = merge_table[isfinite(merge_table['Cartn_x'])]
+
     # If we have more than one chain then we need to use split/apply/combine
     n_prots = len(merge_table.UniProt_dbAccessionId.dropna().unique())
     n_chains = len(merge_table.chain_id.dropna().unique())

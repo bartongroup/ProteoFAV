@@ -378,8 +378,25 @@ def n_isolated(sizes):
     return sizes.count(1)
 
 
+def n_50_clusters(sizes):
+    """
+
+    :param sizes:
+    :return: Minimum number of clusters that contains half the observations.
+    """
+    n_half = sum(sizes) / 2  ## TODO: Not perfect for odd numbers
+    sizes.sort()
+    n_obs = 0
+    n_clusters = 0
+    while n_obs < n_half:
+        n_obs += sizes.pop()
+        n_clusters += 1
+    return n_clusters
+
+
 def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, len,
-                                         top_k_clusters, n_isolated), names=False):
+                                         top_k_clusters, n_isolated, n_50_clusters),
+                       names=False):
     """
 
     :param part:
@@ -443,6 +460,7 @@ def boot_pvalue(sample_stats, test):
     """
     n_samples = len(sample_stats)
     p_value = sum(map(test, sample_stats)) / float(n_samples)
+    p_value = round(p_value * n_samples) / n_samples
     if p_value == 0.:
         p_value = '< ' + str(1. / n_samples)
 
