@@ -19,9 +19,8 @@ from mcl.mcl_clustering import mcl
 from mpl_toolkits.mplot3d import Axes3D  ## Required
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial import ConvexHull
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist, squareform, euclidean
 from scipy.spatial.qhull import QhullError
-
 from main import merge_tables
 from variants.to_table import _fetch_uniprot_variants
 from utils import get_colors, autoscale_axes, fractional_to_cartesian
@@ -416,6 +415,86 @@ def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, l
     else:
         stat_functions = [stat.__name__ for stat in statistics]
         return stat_functions, results
+
+
+def centroids(partition, observations):
+    """
+    Return cluster centroids.
+
+    :param part: Partition vector
+    :type part: List
+    :param obs: Observation array
+    :type obs: NumPy array
+    :return: A dictionary containing the cluster centroids.
+    """
+    cluster_ids = list(set(partition))
+    cluster_ids.sort()
+    cluster_centroids = {}
+    for cid in cluster_ids:
+        members = member_indexes(partition, cid)
+        member_observations = observations[members, :]
+        cluster_centroids[cid] = np.mean(member_observations, axis=0)
+    return cluster_centroids
+
+
+def member_indexes(partition, cluster_id):
+    return [i for i, x in enumerate(partition) if x == cluster_id]
+
+
+def davies_bouldin(partition, observations):
+    """
+    Return the Davies-Bouldin index for the given clustering.
+
+    :param part: Partition vector
+    :type part: List
+    :param obs: Observation array
+    :type obs: NumPy array
+    :return: The Davies-Bouldin index
+    """
+
+    n = n_clusters(partition)
+    cluster_ids = list(set(partition))
+    cluster_ids.sort()
+    cluster_centroids = centroids(partition, observations)
+    terms = []
+    for i in cluster_ids:
+        ci = cluster_centroids[i]
+        i_indexes = member_indexes(partition, i)
+        sigma_i = np.mean([euclidean(u, ci) for u in observations[i_indexes, :]])
+        Sij = []
+        for j in cluster_ids:
+            if i != j:
+                cj = cluster_centroids[j]
+                d = euclidean(ci, cj)
+                j_indexes = member_indexes(partition, j)
+                sigma_j = np.mean([euclidean(u, cj) for u in observations[j_indexes, :]])
+                Sij.append((sigma_i + sigma_j) / d)
+        if len(Sij) > 0:
+            terms.append(max(Sij))
+    return sum(terms) / n
+
+
+def dunn(partition, observations):
+    """
+    Return the Dunn index for a clustering.
+
+    :param part: Partition vector
+    :type part: List
+    :param obs: Observation array
+    :type obs: NumPy array
+    :return: The Dunn index
+    """
+    cluster_ids = list(set(partition))
+    cluster_ids.sort()
+    min_inter = min(pdist(centroids(partition, observations).values()))
+    intras = []
+    for cid in cluster_ids:
+        member_ids = member_indexes(partition, cid)
+        d = pdist(observations[member_ids, :])
+        if len(d) != 0:  ## Handles singleton clusters
+            intras.append(max(d))
+    max_intra = max(intras)
+    return(min_inter / max_intra)
 
 
 ##############################################################################
