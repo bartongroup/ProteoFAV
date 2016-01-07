@@ -498,6 +498,44 @@ def dunn(partition, observations):
 
 
 ##############################################################################
+# Cluster geometry
+##############################################################################
+
+
+def cluster_hull_volumes(partition, points):
+    """
+
+    :param partition:
+    :param points:
+    :return:
+
+    See http://stackoverflow.com/questions/24733185/volume-of-convex-hull-with-qhull-from-scipy
+    for some discussion (and some of the code used here).
+    """
+    def tetrahedron_volume(a, b, c, d):
+        return np.abs(np.einsum('ij,ij->i', a-d, np.cross(b-d, c-d))) / 6
+
+    def convex_hull_volume_bis(pts):
+        ch = ConvexHull(pts)
+
+        simplices = np.column_stack((np.repeat(ch.vertices[0], ch.nsimplex),
+                                     ch.simplices))
+        tets = ch.points[simplices]
+        return np.sum(tetrahedron_volume(tets[:, 0], tets[:, 1],
+                                         tets[:, 2], tets[:, 3]))
+
+    cluster_ids = list(set(partition))
+    cluster_ids.sort()
+    volumes = {}
+    for cid in cluster_ids:
+        member_ids = member_indexes(partition, cid)
+        member_pts = points[member_ids, :]
+        if len(member_pts) >= 4:  ## Ignore 'plane' clusters, TODO: handle duplicates
+            volumes[cid] = convex_hull_volume_bis(member_pts)
+    return volumes
+
+
+##############################################################################
 # Cluster bootstrapping
 ##############################################################################
 
