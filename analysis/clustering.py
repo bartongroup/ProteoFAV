@@ -573,7 +573,8 @@ def tail_thresholds(alpha, samples, stats):
 ##############################################################################
 
 
-def cluster_table(table, mask, method, n_samples=0, **kwargs):
+def cluster_table(table, mask, method, n_samples=0, return_samples=False,
+                  **kwargs):
     """
 
     :param table:
@@ -597,28 +598,49 @@ def cluster_table(table, mask, method, n_samples=0, **kwargs):
 
         # Bootstrap
         sample_clusters = []
+        sample_davies_bouldins = []
+        sample_dunns = []
         for i in xrange(n_samples):
             sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
             sample_mask = sample_table.resn.notnull()
-            sample_clusters.append(
-                cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs))
+            sample_part = cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs)
+            sample_clusters.append(sample_part)
             pc_complete = (i + 1) / float(n_samples) * 100
             if pc_complete % 10 == 0:
                 sys.stdout.write("\r%d%%" % (pc_complete))
                 sys.stdout.flush()
 
+            # Metrics that need the original points
+            sample_points = np.array(sample_table[sample_mask][['Cartn_x', 'Cartn_y', 'Cartn_z']])
+            sample_davies_bouldins.append(davies_bouldin(sample_part, sample_points))
+            sample_dunns.append(dunn(sample_part, sample_points))
+
         bs_stats = bootstrap_stats(sample_clusters)
         names, obs_stats = cluster_size_stats(part, names=True)
 
+        # Add other metrics
+        obs_stats.append(davies_bouldin(part, points))
+        obs_stats.append(dunn(part, points))
+        names.append('Davies-Bouldin')
+        names.append('Dunn_index')
+        for i in xrange(n_samples):
+            bs_stats[i].append(sample_davies_bouldins[i])
+            bs_stats[i].append(sample_dunns[i])
+
         p_values = []
         for obs, sampled in zip(obs_stats, zip(*bs_stats)):
-            left = boot_pvalue(sampled, lambda x: x <= obs)
-            right = boot_pvalue(sampled, lambda x: x >= obs)
-            p_values.append((left, right))
+            left = boot_pvalue(sampled, lambda x: x < obs)
+            mid = boot_pvalue(sampled, lambda x: x == obs)
+            right = boot_pvalue(sampled, lambda x: x > obs)
+            p_values.append((left, mid, right))
 
         p_values = dict(zip(names, p_values))
+        stats = dict(zip(names, obs_stats))
 
-        return {'part': part, 'p': p_values}
+        if return_samples:
+            return {'part': part, 'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats}
+        else:
+            return {'part': part, 'p': p_values, 'stats': stats}
 
     else:
         return part
