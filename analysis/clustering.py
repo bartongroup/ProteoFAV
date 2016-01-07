@@ -324,7 +324,7 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
 ##############################################################################
 
 
-def n_clusters(part):
+def n_clusters(partition):
     """
     Determine the number of clusters from a partition list.
 
@@ -332,6 +332,7 @@ def n_clusters(part):
     :type part: List
     :return: The number of clusters in the partition list
     """
+    part = list(partition)  # Copy to avoid sorting outside scope
     part.sort()
 
     if part[0] == 0:
