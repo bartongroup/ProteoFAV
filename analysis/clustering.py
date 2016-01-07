@@ -568,6 +568,18 @@ def tail_thresholds(alpha, samples, stats):
     return thresholds
 
 
+def plot_sample_distributions(results, names):
+    for i in xrange(len(names)):
+        plt.subplot(3, 4, i + 1)
+        plt.title(names[i])
+        data = zip(*results['sample_stats'])[i]
+        if isinstance(data[0], int):
+            plt.hist(data, color='c', bins=range(min(data), max(data) + 1, 1))
+        else:
+            plt.hist(data, color='c')
+        plt.axvline(results['obs_stats'][names[i]], color='b', linestyle='dashed', linewidth=2)
+
+
 ##############################################################################
 # Convenience wrappers
 ##############################################################################
