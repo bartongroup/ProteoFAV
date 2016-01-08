@@ -28,6 +28,8 @@ def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:hum
 
 if __name__ == '__main__':
 
+    logging.disable(logging.DEBUG)
+
     # Get suitable list of proteins and their structure / variant data
     protein_set = query_uniprot()[:50]  # Results from default query terms
     structure_tables = []
