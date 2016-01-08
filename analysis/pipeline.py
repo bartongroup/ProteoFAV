@@ -46,7 +46,6 @@ if __name__ == '__main__':
         deduped = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
-        if n_variants >= 10:  # For now, only look at structures with this number of variants
         try:
             log.info('Running cluster analysis for {}.'.format(prot))
             results.append((prot, analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
