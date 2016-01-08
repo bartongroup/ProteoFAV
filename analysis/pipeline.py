@@ -32,7 +32,11 @@ if __name__ == '__main__':
     protein_set = query_uniprot()[:50]  # Results from default query terms
     structure_tables = []
     for prot in protein_set:
-        structure_tables.append((prot, main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)))
+        # TODO: Figure a way to complete analysis for as many proteins as possible
+        try:
+            structure_tables.append((prot, main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)))
+        except:
+            log.warning('Cannot get structure table for {}... skipping.'.format(prot))
 
     # Run analysis
     results = []
@@ -41,10 +45,15 @@ if __name__ == '__main__':
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
         if n_variants >= 10:  # For now, only look at structures with this number of variants
+        try:
+            log.info('Running cluster analysis for {}.'.format(prot))
             results.append((prot, analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
                                                                     n_samples=50, threshold=7.5,
                                                                     return_samples=True))
                            )
+        except:
+            log.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
+
     # Create results plots
 
     names = ['mean', 'median', 'std', 'min', 'max', 'len', 'top_k_clusters', 'n_isolated', 'n_50_clusters']
