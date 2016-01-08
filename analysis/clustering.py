@@ -503,7 +503,12 @@ def dunn(partition, observations):
         d = pdist(observations[member_ids, :])
         if len(d) != 0:  ## Handles singleton clusters
             intras.append(max(d))
-    max_intra = max(intras)
+
+    if len(intras) == 0:
+        return np.nan
+    else:
+        max_intra = max(intras)
+
     return(min_inter / max_intra)
 
 
@@ -540,6 +545,8 @@ def cluster_hull_volumes(partition, points):
         member_pts = points[member_ids, :]
         if len(member_pts) >= 4:  ## Ignore 'plane' clusters, TODO: handle duplicates
             volumes[cid] = convex_hull_volume_bis(member_pts)
+        else:
+            volumes[cid] = 0
     return volumes
 
 
@@ -617,6 +624,8 @@ def plot_sample_distributions(results, names):
         plt.subplot(3, 4, i + 1)
         plt.title(names[i])
         data = zip(*results['sample_stats'])[i]
+        if np.nan in data:
+            data = [x for x in data if not np.isnan(x)]
         if all(isinstance(x, int) for x in data):
             plt.hist(data, color='c', bins=range(min(data), max(data) + 1, 1))
         else:
