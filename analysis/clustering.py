@@ -637,7 +637,7 @@ def plot_sample_distributions(results, names):
 # Convenience wrappers
 ##############################################################################
 def cluster_table(table, mask, method, n_samples=0, return_samples=False,
-                  **kwargs):
+                  show_progress=False, **kwargs):
     """
 
     :param table:
@@ -669,10 +669,11 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
             sample_mask = sample_table.resn.notnull()
             sample_part = cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs)
             sample_clusters.append(sample_part)
-            pc_complete = (i + 1) / float(n_samples) * 100
-            if pc_complete % 10 == 0:
-                sys.stdout.write("\r%d%%" % (pc_complete))
-                sys.stdout.flush()
+            if show_progress:
+                pc_complete = (i + 1) / float(n_samples) * 100
+                if pc_complete % 10 == 0:
+                    sys.stdout.write("\r%d%%" % (pc_complete))
+                    sys.stdout.flush()
 
             # Metrics that need the original points
             sample_points = np.array(sample_table[sample_mask][['Cartn_x', 'Cartn_y', 'Cartn_z']])
