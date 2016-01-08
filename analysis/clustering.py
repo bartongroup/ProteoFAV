@@ -611,7 +611,7 @@ def plot_sample_distributions(results, names):
         plt.subplot(3, 4, i + 1)
         plt.title(names[i])
         data = zip(*results['sample_stats'])[i]
-        if isinstance(data[0], int):
+        if all(isinstance(x, int) for x in data):
             plt.hist(data, color='c', bins=range(min(data), max(data) + 1, 1))
         else:
             plt.hist(data, color='c')
