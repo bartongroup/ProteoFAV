@@ -650,6 +650,7 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         sample_clusters = []
         sample_davies_bouldins = []
         sample_dunns = []
+        sample_largest_cluster_volume = []
         for i in xrange(n_samples):
             sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
             sample_mask = sample_table.resn.notnull()
@@ -664,6 +665,11 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
             sample_points = np.array(sample_table[sample_mask][['Cartn_x', 'Cartn_y', 'Cartn_z']])
             sample_davies_bouldins.append(davies_bouldin(sample_part, sample_points))
             sample_dunns.append(dunn(sample_part, sample_points))
+            volumes = cluster_hull_volumes(sample_part, sample_points).values()
+            if len(volumes) > 0:
+                sample_largest_cluster_volume.append(max(volumes))
+            else:
+                sample_largest_cluster_volume.append(0)
 
         bs_stats = bootstrap_stats(sample_clusters)
         names, obs_stats = cluster_size_stats(part, names=True)
@@ -671,11 +677,14 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         # Add other metrics
         obs_stats.append(davies_bouldin(part, points))
         obs_stats.append(dunn(part, points))
+        obs_stats.append(max(cluster_hull_volumes(part, points).values()))
         names.append('Davies-Bouldin')
         names.append('Dunn_index')
+        names.append('largest_cluster_volume')
         for i in xrange(n_samples):
             bs_stats[i].append(sample_davies_bouldins[i])
             bs_stats[i].append(sample_dunns[i])
+            bs_stats[i].append(sample_largest_cluster_volume[i])
 
         p_values = []
         for obs, sampled in zip(obs_stats, zip(*bs_stats)):
