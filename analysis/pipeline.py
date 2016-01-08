@@ -1,6 +1,6 @@
 
 
-import clustering
+import analysis.clustering
 import requests
 import main
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
         if n_variants >= 10:  # For now, only look at structures with this number of variants
-            results.append((prot, clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
-                                                           n_samples=50, threshold=7.5,
-                                                           return_samples=True))
+            results.append((prot, analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
+                                                                    n_samples=50, threshold=7.5,
+                                                                    return_samples=True))
                            )
