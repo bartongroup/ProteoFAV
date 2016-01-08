@@ -1,9 +1,14 @@
 
 
 import analysis.clustering
+import logging
 import requests
 import main
+import matplotlib.pyplot as plt
+import time
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:human', 'database:(type:pdb)')):
     """
@@ -40,3 +45,22 @@ if __name__ == '__main__':
                                                                     n_samples=50, threshold=7.5,
                                                                     return_samples=True))
                            )
+    # Create results plots
+
+    names = ['mean', 'median', 'std', 'min', 'max', 'len', 'top_k_clusters', 'n_isolated', 'n_50_clusters']
+    names.append('Davies-Bouldin')
+    names.append('Dunn_index')
+    names.append('largest_cluster_volume')
+
+    for prot, stats in results:
+        try:
+            log.info('Plotting results for {}.'.format(prot))
+            analysis.clustering.plot_sample_distributions(stats, names)
+            plt.suptitle(prot)
+            plt.tight_layout()
+            plot_file = 'cluster_figs/sample_stats/cluster_stats_' + prot + '_' + time.strftime("%Y%m%d_%H%M%S") + '.png'
+            plt.savefig(plot_file, format='png')
+            plt.close()
+        except:
+            log.warning('Cannot provide plot for {}... skipping.'.format(prot))
+
