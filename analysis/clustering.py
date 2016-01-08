@@ -631,6 +631,7 @@ def plot_sample_distributions(results, names):
         else:
             plt.hist(data, color='c')
         plt.axvline(results['obs_stats'][names[i]], color='b', linestyle='dashed', linewidth=2)
+        plt.xticks(rotation=45)
 
 
 ##############################################################################
