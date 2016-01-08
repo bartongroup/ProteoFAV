@@ -29,6 +29,9 @@ from analysis.random_annotations import add_random_disease_variants
 __author__ = 'smacgowan'
 
 
+##############################################################################
+# Distance Matrix Helpers
+##############################################################################
 def atom_dist(table, mask, cartesian=False):
     """
     Find the intervariant distances for a given PDB chain.
@@ -42,8 +45,8 @@ def atom_dist(table, mask, cartesian=False):
     excluded = table[~mask]
 
     # Build array distance matrix
-    included, included_xyz = extract_coords(included)
-    excluded, excluded_xyz = extract_coords(excluded)
+    included, included_xyz = select_valid_coordinates(included)
+    excluded, excluded_xyz = select_valid_coordinates(excluded)
 
     # Convert to fractional coordinates
     if cartesian:
@@ -56,7 +59,7 @@ def atom_dist(table, mask, cartesian=False):
     return d, included_xyz, included[['UniProt_dbResNum', 'chain_id']], excluded_xyz
 
 
-def extract_coords(table):
+def select_valid_coordinates(table):
     """
 
     :param table:
@@ -69,7 +72,7 @@ def extract_coords(table):
     return table, coord_array
 
 
-def invert_distances(d, method='max_minus_d', threshold=float('inf'), **kwargs):
+def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), **kwargs):
     """
 
     :param d: A reduced distance matrix, such as produced by `pdist` or the
@@ -91,54 +94,9 @@ def invert_distances(d, method='max_minus_d', threshold=float('inf'), **kwargs):
     return s
 
 
-def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
-    """
-
-    :param d: A reduced distance matrix, such as produced by `pdist`
-    :param methods: A list of strings indicating the cluster methods to employ.
-      Choose from: 'single', 'complete', 'average' and 'mcl'
-    :param invert_method: See `invert_distances`
-    :param threshold: See `invert_distances`
-    :return:
-    """
-    linkages = []
-    for method in methods:
-        if not method.startswith('mcl'):
-            z = hac.linkage(d, method=method)
-            linkages.append([z, method])
-        else:
-            sq = squareform(d)
-            s = invert_distances(sq, **kwargs)
-            if method.startswith('mcl_program'):
-                clusters = launch_mcl(s, **kwargs)
-                linkages.append([clusters, method])
-            else:
-                if not 'inflate' in kwargs:
-                    inflate_factor = 2
-                else:
-                    inflate_factor = kwargs['inflate']
-                M, clusters = mcl(s, max_loop=50, inflate_factor=inflate_factor)
-                linkages.append([[M, clusters], method])
-
-    return linkages
-
-
-def cluster_dict_to_partitions(cluster_dict):
-    """
-    Convert the cluster output format from the MCL function to a partition list;
-     like that produced by `fcluster`
-
-    :param cluster_dict: A dictionary where the keys indicate cluster_dict and the
-     list elements indicate node membership
-    :return: A list where the positioning indexes correspond to node numbers and the
-     values correspond to its cluster
-    """
-    new_dict = {e: k for k, v in cluster_dict.items() for e in v}
-    part = [new_dict[k] + 1 for k in sorted(new_dict.keys())]
-    part = np.array(part)
-    return part
-
-
+##############################################################################
+# MCL Program Interface
+##############################################################################
 def write_mcl_input(s):
     """
     Re-format a similarity matrix into a list of edge weights and write to a file.
@@ -208,6 +166,25 @@ def launch_mcl(s, format='partition', inflate=None, silent=True, **kwargs):
         return clusters
 
 
+##############################################################################
+# Cluster results formatting
+##############################################################################
+def cluster_dict_to_partitions(cluster_dict):
+    """
+    Convert the cluster output format from the MCL function to a partition list;
+     like that produced by `fcluster`
+
+    :param cluster_dict: A dictionary where the keys indicate cluster_dict and the
+     list elements indicate node membership
+    :return: A list where the positioning indexes correspond to node numbers and the
+     values correspond to its cluster
+    """
+    new_dict = {e: k for k, v in cluster_dict.items() for e in v}
+    part = [new_dict[k] + 1 for k in sorted(new_dict.keys())]
+    part = np.array(part)
+    return part
+
+
 def merge_clusters_to_table(residue_ids, partition, target_table, multichain=False):
     df = pd.DataFrame(residue_ids)
     df['Cluster'] = pd.Series(partition)
@@ -218,6 +195,41 @@ def merge_clusters_to_table(residue_ids, partition, target_table, multichain=Fal
         merge_columns = 'UniProt_dbResNum'
     merged = pd.merge(target_table, df, on=merge_columns)
     return merged
+
+
+##############################################################################
+# Comparing clustering routines
+##############################################################################
+def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
+    """
+
+    :param d: A reduced distance matrix, such as produced by `pdist`
+    :param methods: A list of strings indicating the cluster methods to employ.
+      Choose from: 'single', 'complete', 'average' and 'mcl'
+    :param invert_method: See `dist_to_sim`
+    :param threshold: See `dist_to_sim`
+    :return:
+    """
+    linkages = []
+    for method in methods:
+        if not method.startswith('mcl'):
+            z = hac.linkage(d, method=method)
+            linkages.append([z, method])
+        else:
+            sq = squareform(d)
+            s = dist_to_sim(sq, **kwargs)
+            if method.startswith('mcl_program'):
+                clusters = launch_mcl(s, **kwargs)
+                linkages.append([clusters, method])
+            else:
+                if not 'inflate' in kwargs:
+                    inflate_factor = 2
+                else:
+                    inflate_factor = kwargs['inflate']
+                M, clusters = mcl(s, max_loop=50, inflate_factor=inflate_factor)
+                linkages.append([[M, clusters], method])
+
+    return linkages
 
 
 def compare_clustering(linkages, xyz, title=None, addn_points=None):
@@ -321,8 +333,6 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
 ##############################################################################
 # Cluster statistic functions
 ##############################################################################
-
-
 def n_clusters(partition):
     """
     Determine the number of clusters from a partition list.
@@ -500,8 +510,6 @@ def dunn(partition, observations):
 ##############################################################################
 # Cluster geometry
 ##############################################################################
-
-
 def cluster_hull_volumes(partition, points):
     """
 
@@ -538,8 +546,6 @@ def cluster_hull_volumes(partition, points):
 ##############################################################################
 # Cluster bootstrapping
 ##############################################################################
-
-
 def bootstrap(table, methods, n_residues, n_phenotypes,
               samples=10, **kwargs):
     """
@@ -621,8 +627,6 @@ def plot_sample_distributions(results, names):
 ##############################################################################
 # Convenience wrappers
 ##############################################################################
-
-
 def cluster_table(table, mask, method, n_samples=0, return_samples=False,
                   **kwargs):
     """
@@ -721,7 +725,7 @@ if __name__ == '__main__':
     sq = squareform(d)
     links = []
     for inf_fact in [2., 6.]:
-        s = invert_distances(sq, method='max_minus_d', threshold=10)
+        s = dist_to_sim(sq, method='max_minus_d', threshold=10)
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nmax_minus_d(t=10)'])
     compare_clustering(links, points, '3ecr(a) P08397')
@@ -729,7 +733,7 @@ if __name__ == '__main__':
     # No min. distance for connected threshold (saturated network)
     links = []
     for inf_fact in [2., 6.]:
-        s = invert_distances(sq, method='max_minus_d')
+        s = dist_to_sim(sq, method='max_minus_d')
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nmax_minus_d(t=inf)'])
     compare_clustering(links, points, '3ecr(a) P08397')
@@ -737,7 +741,7 @@ if __name__ == '__main__':
     # Using reciprocal distance for similarity
     links = []
     for inf_fact in [2., 6.]:
-        s = invert_distances(sq, method='reciprocal')
+        s = dist_to_sim(sq, method='reciprocal')
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nreciprocal'])
     compare_clustering(links, points, '3ecr(a) P08397')
