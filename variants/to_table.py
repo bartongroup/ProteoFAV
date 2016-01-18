@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
+import json
 import sys
 import requests
 import logging
@@ -293,6 +292,56 @@ def _uniprot_gff(identifier):
 ##############################################################################
 # Public methods
 ##############################################################################
+def raise_if_not_ok(response):
+    if not response.ok:
+        response.raise_for_status()
+
+
+def icgc_missense_variant(ensembl_gene_id):
+    """Fetch a gene missense variants from ICGC data portal.
+
+    :param ensembl_gene_id: ensembl gene accession
+    :type ensembl_gene_id: str
+    :return: DataFrame with one mutation per row.
+    :rtype : pandas.DataFrame
+
+    :Example:
+
+
+        >>> table = icgc_missense_variant('ENSG00000012048')
+        >>> table.loc[0, ['id', 'mutation', 'type', 'start']]
+        id                          MU601299
+        mutation                         G>A
+        type        single base substitution
+        start                       41245683
+        Name: 0, dtype: object
+
+
+    .. note:: ICGC doc https://dcc.icgc.org/docs/#!/genes/findMutations_get_8
+
+    """
+    base_url = "https://dcc.icgc.org/api/v1/genes/" + ensembl_gene_id + "/mutations/"
+    headers = {'content-type': 'application/json'}
+    filt = json.dumps({"mutation": {"consequenceType": {"is": ['missense_variant']}}})
+    params = {"filters": filt}
+
+    # First counts the number of mutation entries
+    counts_resp = requests.get(base_url + "counts/", headers=headers, params=params)
+    raise_if_not_ok(counts_resp)
+    total = counts_resp.json()['Total']
+
+    # then iterate the pages of entries, max 100 entries per page
+    hits = []
+    params['size'] = 100
+    for i in range(total // 100 + 1):
+        params['from'] = i * 100 + 1
+        mutation_resp = requests.get(base_url, headers=headers, params=params)
+        raise_if_not_ok(mutation_resp)
+        hits.extend(mutation_resp.json()['hits'])
+
+    return pd.DataFrame(hits)
+
+
 def select_uniprot_gff(identifier,
                        drop_types=('Helix', 'Beta strand', 'Turn', 'Chain')):
     """
