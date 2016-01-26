@@ -20,8 +20,10 @@ def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:hum
     url = 'http://www.uniprot.org/uniprot'
     params = {'query': ' AND '.join(search_terms),
               'format': 'tab', 'columns': 'id'}
+    logging.info('Querying UniProt DB...')
     r = requests.get(url, params=params)
     uniprots = r.content.split('\n')[1:]
+    logging.info('Retreived {} UniProt IDs matching query.'.format(len(uniprots)))
 
     return uniprots
 
@@ -32,6 +34,7 @@ if __name__ == '__main__':
 
     # Get suitable list of proteins and their structure / variant data
     protein_set = query_uniprot()[:50]  # Results from default query terms
+    logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
         # TODO: Figure a way to complete analysis for as many proteins as possible
