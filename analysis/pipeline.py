@@ -78,6 +78,7 @@ if __name__ == '__main__':
             analysis.clustering.plot_sample_distributions(stats, names)
             plt.suptitle(prot)
             plt.tight_layout()
+            plot_file = 'cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
             plt.savefig(plot_file, format='png')
             plt.close()
         except:
