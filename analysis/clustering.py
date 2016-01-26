@@ -711,8 +711,15 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         p_values = dict(zip(names, p_values))
         stats = dict(zip(names, obs_stats))
 
+        ## For complete cluster size distribution
+        sample_cluster_sizes = []
+        for i in sample_clusters:
+            sample_cluster_sizes.append(partition_to_sizes(i))
+        sample_cluster_sizes = [e for sublist in sample_cluster_sizes for e in sublist]  # Flatten
+
         if return_samples:
-            return {'part': part, 'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats}
+            return {'part': part, 'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats,
+                    'sample_size_dist': sample_cluster_sizes}
         else:
             return {'part': part, 'p': p_values, 'stats': stats}
 
