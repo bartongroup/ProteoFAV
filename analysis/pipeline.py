@@ -5,6 +5,7 @@ import logging
 import requests
 import main
 import matplotlib.pyplot as plt
+import os.path
 import time
 
 log = logging.getLogger(__name__)
@@ -37,11 +38,16 @@ if __name__ == '__main__':
     logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
-        # TODO: Figure a way to complete analysis for as many proteins as possible
-        try:
-            structure_tables.append((prot, main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)))
-        except:
-            log.warning('Cannot get structure table for {}... skipping.'.format(prot))
+        plot_file = 'cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
+        if not os.path.isfile(plot_file):
+            # TODO: Figure a way to complete analysis for as many proteins as possible
+            logging.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
+            try:
+                structure_tables.append((prot, main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)))
+            except:
+                log.warning('Cannot get structure table for {}... skipping.'.format(prot))
+        else:
+            log.info('Results for {} already exist.'.format(prot))
 
     # Run analysis
     results = []
@@ -71,7 +77,6 @@ if __name__ == '__main__':
             analysis.clustering.plot_sample_distributions(stats, names)
             plt.suptitle(prot)
             plt.tight_layout()
-            plot_file = 'cluster_figs/sample_stats/cluster_stats_' + prot + '_' + time.strftime("%Y%m%d_%H%M%S") + '.png'
             plt.savefig(plot_file, format='png')
             plt.close()
         except:
