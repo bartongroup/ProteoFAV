@@ -35,7 +35,7 @@ if __name__ == '__main__':
     logging.getLogger("requests").setLevel(logging.WARNING)
 
     # Get suitable list of proteins and their structure / variant data
-    protein_set = query_uniprot()[:50]  # Results from default query terms
+    protein_set = query_uniprot()[:100]  # Results from default query terms
     logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
