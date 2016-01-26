@@ -39,8 +39,8 @@ if __name__ == '__main__':
     logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
-        plot_file = 'cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
         if not os.path.isfile(plot_file):
+        plot_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
             # TODO: Figure a way to complete analysis for as many proteins as possible
             logging.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
             try:
@@ -78,7 +78,7 @@ if __name__ == '__main__':
             analysis.clustering.plot_sample_distributions(stats, names)
             plt.suptitle(prot)
             plt.tight_layout()
-            plot_file = 'cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
+            plot_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
             plt.savefig(plot_file, format='png')
             plt.close()
         except:
