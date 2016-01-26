@@ -20,6 +20,8 @@ from config import defaults
 from utils import fetch_files, get_url_or_retry, is_valid
 from library import scop_3to1
 
+from requests import HTTPError
+
 log = logging.getLogger(__name__)
 
 __all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
@@ -631,7 +633,14 @@ def sifts_best(identifier, first=False):
 
     sifts_endpoint = "mappings/best_structures/"
     url = defaults.api_pdbe + sifts_endpoint + str(identifier)
-    response = get_url_or_retry(url, json=True)
+    try:
+        response = get_url_or_retry(url, json=True)
+    except HTTPError, e:
+        if e.response.status_code == 404:
+            logging.error('No SIFTS mapping found for {}'.format(identifier))
+            return None
+        else:
+            raise
     return response if not first else response[identifier][0]
 
 
