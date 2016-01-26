@@ -58,7 +58,12 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         # until we got them all. This should only work for a PDB based query and we
         # need to ensure that fields like 'chain_id' aren't dropped by 'remove_redundant'
         if not pdb_id:
-            raise TypeError("Must specify PDB when using chain='all'")
+            best_pdb = sifts_best(uniprot_id, first=True)
+            pdb_id = best_pdb['pdb_id']
+            if best_pdb is None:
+                logging.error('Could not process {}'.format(uniprot_id))
+                return None
+            log.info("Best structure: {} for {} ".format(pdb_id, uniprot_id))
         if remove_redundant:
             remove_redundant = False
             log.warning("remove_redundant is ignored when chain='all' and is set to False")
@@ -80,6 +85,9 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
     if not pdb_id:
         best_pdb = sifts_best(uniprot_id, first=True)
+        if best_pdb is None:
+            logging.error('Could not process {}'.format(uniprot_id))
+            return None
         pdb_id = best_pdb['pdb_id']
         chain = best_pdb['chain_id']
         log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
