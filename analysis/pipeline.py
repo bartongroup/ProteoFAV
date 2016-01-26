@@ -58,9 +58,9 @@ if __name__ == '__main__':
         n_variants = sum(mask)
         try:
             log.info('Running cluster analysis for {}.'.format(prot))
-            results.append((prot, analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
-                                                                    n_samples=50, threshold=7.5,
-                                                                    return_samples=True))
+            results.append((prot, n_variants, analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
+                                                                                n_samples=50, threshold=7.5,
+                                                                                return_samples=True))
                            )
         except:
             log.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     names.append('Dunn_index')
     names.append('largest_cluster_volume')
 
-    for prot, stats in results:
+    for prot, n_variants, stats in results:
         try:
             log.info('Plotting results for {}.'.format(prot))
             analysis.clustering.plot_sample_distributions(stats, names)
@@ -83,4 +83,13 @@ if __name__ == '__main__':
             plt.close()
         except:
             log.warning('Cannot provide plot for {}... skipping.'.format(prot))
+
+    # Write some summary stats
+    results_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/results.txt'
+    with open(results_file, 'w+') as summary:
+        summary.write('# p-values indicate the proportion of random samples are smaller/equal/larger than observed.\n')
+        summary.write('UniProtID\tN_variants\tmax_cluster_size\tp(small/equal/large)\n')
+        for i in results:
+            summary.write('\t'.join([i[0], str(i[1]), str(i[2]['obs_stats']['max']),
+                                     str(i[2]['p']['max']) + '\n']))
 
