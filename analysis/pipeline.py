@@ -1,6 +1,7 @@
 
 
 import analysis.clustering
+import cPickle as pickle
 import logging
 import requests
 import main
@@ -39,16 +40,21 @@ if __name__ == '__main__':
     logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
-        plot_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
-        if not os.path.isfile(plot_file):
+        table_file_name = 'structure_table_' + prot + '.pkl'
+        if not os.path.isfile(table_file_name):
             # TODO: Figure a way to complete analysis for as many proteins as possible
             logging.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
             try:
-                structure_tables.append((prot, main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)))
+                structure_table = main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)
+                structure_tables.append((prot, structure_table))
+                with open(table_file_name) as output:
+                    pickle.dump(structure_table, table_file_name, -1)
             except:
                 log.warning('Cannot get structure table for {}... skipping.'.format(prot))
         else:
-            log.info('Results for {} already exist.'.format(prot))
+            structure_table = pickle.load(open(table_file_name, 'rb'))
+            structure_tables.append((prot, structure_table))
+            log.info('Reloaded structure table for {}.'.format(prot))
 
     # Run analysis
     results = []
@@ -56,14 +62,21 @@ if __name__ == '__main__':
         deduped = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
-        try:
-            log.info('Running cluster analysis for {}.'.format(prot))
-            results.append((prot, n_variants, analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
-                                                                                n_samples=50, threshold=7.5,
-                                                                                return_samples=True))
-                           )
-        except:
-            log.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
+        cluster_file_name = 'cluster_results_' + prot + '.pkl'
+        if not os.path.isfile(cluster_file_name):
+            try:
+                log.info('Running cluster analysis for {}.'.format(prot))
+                cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'], n_samples=50,
+                                                                  threshold=7.5, return_samples=True)
+                with open(cluster_file_name) as output:
+                    pickle.dump(cluster_table, table_file_name, -1)
+                results.append((prot, n_variants, cluster_table))
+            except:
+                log.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
+        else:
+            cluster_table = pickle.load(open(cluster_file_name, 'rb'))
+            results.append((prot, n_variants, cluster_table))
+            log.info('Reloaded clustering results for {}.'.format(prot))
 
     # Create results plots
 
@@ -73,16 +86,19 @@ if __name__ == '__main__':
     names.append('largest_cluster_volume')
 
     for prot, n_variants, stats in results:
-        try:
-            log.info('Plotting results for {}.'.format(prot))
-            analysis.clustering.plot_sample_distributions(stats, names)
-            plt.suptitle(prot)
-            plt.tight_layout()
-            plot_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
-            plt.savefig(plot_file, format='png')
-            plt.close()
-        except:
-            log.warning('Cannot provide plot for {}... skipping.'.format(prot))
+        plot_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
+        if not os.path.isfile(plot_file):
+            try:
+                log.info('Plotting results for {}.'.format(prot))
+                analysis.clustering.plot_sample_distributions(stats, names)
+                plt.suptitle(prot)
+                plt.tight_layout()
+                plt.savefig(plot_file, format='png')
+                plt.close()
+            except:
+                log.warning('Cannot provide plot for {}... skipping.'.format(prot))
+        else:
+            log.info('Results already plotted for {}... skipping.'.format(prot))
 
     # Write some summary stats
     results_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/results.txt'
