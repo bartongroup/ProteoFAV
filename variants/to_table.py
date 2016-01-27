@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import json
+import os.path
+import cPickle as pickle
 import sys
 import requests
 import logging
@@ -27,11 +29,20 @@ def _fetch_uniprot_variants(identifier, format='tab'):
     :param format: request output from the webserver
     :return: pandas dataframe
     """
-    url = defaults.http_uniprot + '?query=accession:' + identifier
-    url += '&format=' + format
-    url += '&columns=feature(NATURAL+VARIANT)'
+    # Check if query has already been saved
 
-    result = get_url_or_retry(url)
+    query_file_name = defaults.db_variants + 'uniprot_variants_' + identifier + '.pkl'
+    if not os.path.isfile(query_file_name):
+        url = defaults.http_uniprot + '?query=accession:' + identifier
+        url += '&format=' + format
+        url += '&columns=feature(NATURAL+VARIANT)'
+        result = get_url_or_retry(url)
+        with open(query_file_name, 'wb') as output:
+            pickle.dump(result, output, -1)
+    else:
+        # Read stored response
+        log.debug('Reloading stored response.')
+        result = pickle.load(open(query_file_name, 'rb'))
 
     # Complicated parsing
     records = result.replace('Natural variant\n', '').split('.; ')
