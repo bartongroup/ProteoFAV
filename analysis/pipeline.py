@@ -1,4 +1,8 @@
 
+import logging
+logging.basicConfig(filename='variant_clustering.log', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 import sys
 sys.path.extend(['/Users/smacgowan/PycharmProjects/ProteoFAV'])
 
@@ -13,9 +17,6 @@ import os
 import time
 from config import defaults
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-
 def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:human', 'database:(type:pdb)')):
     """
     Query the UniProt API for proteins that have particualar characteristics.
@@ -26,10 +27,10 @@ def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:hum
     url = 'http://www.uniprot.org/uniprot'
     params = {'query': ' AND '.join(search_terms),
               'format': 'tab', 'columns': 'id'}
-    logging.info('Querying UniProt DB...')
+    logger.info('Querying UniProt DB...')
     r = requests.get(url, params=params)
     uniprots = r.content.split('\n')[1:]
-    logging.info('Retreived {} UniProt IDs matching query.'.format(len(uniprots)))
+    logger.info('Retreived {} UniProt IDs matching query.'.format(len(uniprots)))
 
     return uniprots
 
@@ -49,34 +50,39 @@ if __name__ == '__main__':
         os.makedirs(args.RESULTS_DIR)
 
     # Logging setup and log pipeline configuration
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    logger.addHandler(console)
+
     logging.getLogger("requests").setLevel(logging.WARNING)
-    logging.basicConfig(filename=os.path.join(args.RESULTS_DIR, 'variant_clustering.log'), level=logging.DEBUG)
-    logging.info('Starting disease variant clustering pipeline.')
+    logger.info('Starting disease variant clustering pipeline.')
     for arg, value in sorted(vars(args).items()):
-        logging.info("Pipeline argument %s: %r", arg, value)
+        logger.info("Pipeline argument %s: %r", arg, value)
 
 
     # Get suitable list of proteins and their structure / variant data
     protein_set = query_uniprot()[:10]  # Results from default query terms
-    logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
+    logger.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
         table_pickle_name = 'structure_table_' + prot + '.pkl'
         table_file_name = os.path.join(defaults.db_analysis, table_pickle_name)
         if not os.path.isfile(table_file_name):
             # TODO: Figure a way to complete analysis for as many proteins as possible
-            logging.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
+            logger.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
             try:
                 structure_table = main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)
                 structure_tables.append((prot, structure_table))
                 with open(table_file_name, 'wb') as output:
                     pickle.dump(structure_table, output, -1)
             except:
-                log.warning('Cannot get structure table for {}... skipping.'.format(prot))
+                logger.warning('Cannot get structure table for {}... skipping.'.format(prot))
         else:
             structure_table = pickle.load(open(table_file_name, 'rb'))
             structure_tables.append((prot, structure_table))
-            log.info('Reloaded structure table for {}.'.format(prot))
+            logger.info('Reloaded structure table for {}.'.format(prot))
 
     # Run analysis
     results = []
@@ -88,18 +94,18 @@ if __name__ == '__main__':
         cluster_file_name = os.path.join(defaults.db_analysis, cluster_pickle_name)
         if not os.path.isfile(cluster_file_name):
             try:
-                log.info('Running cluster analysis for {}.'.format(prot))
+                logger.info('Running cluster analysis for {}.'.format(prot))
                 cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
                                                                   n_samples=50, return_samples=True, **vars(args))
                 with open(cluster_file_name, 'wb') as output:
                     pickle.dump(cluster_table, output, -1)
                 results.append((prot, n_variants, cluster_table))
             except:
-                log.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
+                logger.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
         else:
             cluster_table = pickle.load(open(cluster_file_name, 'rb'))
             results.append((prot, n_variants, cluster_table))
-            log.info('Reloaded clustering results for {}.'.format(prot))
+            logger.info('Reloaded clustering results for {}.'.format(prot))
 
     # Create results plots
 
@@ -113,16 +119,16 @@ if __name__ == '__main__':
         plot_file = os.path.join(args.RESULTS_DIR, plot_file_name)
         if not os.path.isfile(plot_file):
             try:
-                log.info('Plotting results for {}.'.format(prot))
+                logger.info('Plotting results for {}.'.format(prot))
                 analysis.clustering.plot_sample_distributions(stats, names)
                 plt.suptitle(prot)
                 plt.tight_layout()
                 plt.savefig(plot_file, format='png')
                 plt.close()
             except:
-                log.warning('Cannot provide plot for {}... skipping.'.format(prot))
+                logger.warning('Cannot provide plot for {}... skipping.'.format(prot))
         else:
-            log.info('Results already plotted for {}... skipping.'.format(prot))
+            logger.info('Results already plotted for {}... skipping.'.format(prot))
 
     # Write some summary stats
     results_file = os.path.join(args.RESULTS_DIR, 'results_summary.txt')
