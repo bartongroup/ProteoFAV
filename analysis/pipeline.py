@@ -9,7 +9,7 @@ import logging
 import requests
 import main
 import matplotlib.pyplot as plt
-import os.path
+import os
 import time
 from config import defaults
 
@@ -43,11 +43,14 @@ if __name__ == '__main__':
     parser.add_argument('--threshold', dest='threshold', type=float, default=7.5,
                         help='Distance threshold to break edges of positional similarity graph')
 
+    # Setup results dir
     args = parser.parse_args()
+    if not os.path.isdir(args.RESULTS_DIR):
+        os.makedirs(args.RESULTS_DIR)
 
     # Logging setup and log pipeline configuration
     logging.getLogger("requests").setLevel(logging.WARNING)
-    logging.basicConfig(filename='variant_clustering.log',level=logging.DEBUG)
+    logging.basicConfig(filename=os.path.join(args.RESULTS_DIR, 'variant_clustering.log'), level=logging.DEBUG)
     logging.info('Starting disease variant clustering pipeline.')
     for arg, value in sorted(vars(args).items()):
         logging.info("Pipeline argument %s: %r", arg, value)
@@ -58,7 +61,8 @@ if __name__ == '__main__':
     logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
-        table_file_name = defaults.db_analysis + 'structure_table_' + prot + '.pkl'
+        table_pickle_name = 'structure_table_' + prot + '.pkl'
+        table_file_name = os.path.join(defaults.db_analysis, table_pickle_name)
         if not os.path.isfile(table_file_name):
             # TODO: Figure a way to complete analysis for as many proteins as possible
             logging.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
@@ -80,7 +84,8 @@ if __name__ == '__main__':
         deduped = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
-        cluster_file_name = defaults.db_analysis + 'cluster_results_' + prot + '.pkl'
+        cluster_pickle_name = 'cluster_results_' + prot + '.pkl'
+        cluster_file_name = os.path.join(defaults.db_analysis, cluster_pickle_name)
         if not os.path.isfile(cluster_file_name):
             try:
                 log.info('Running cluster analysis for {}.'.format(prot))
@@ -104,7 +109,8 @@ if __name__ == '__main__':
     names.append('largest_cluster_volume')
 
     for prot, n_variants, stats in results:
-        plot_file = defaults.db_analysis + 'cluster_metrics_' + prot + '.png'
+        plot_file_name = 'cluster_metrics_' + prot + '.png'
+        plot_file = os.path.join(args.RESULTS_DIR, plot_file_name)
         if not os.path.isfile(plot_file):
             try:
                 log.info('Plotting results for {}.'.format(prot))
@@ -119,7 +125,7 @@ if __name__ == '__main__':
             log.info('Results already plotted for {}... skipping.'.format(prot))
 
     # Write some summary stats
-    results_file = '/Users/smacgowan/PycharmProjects/ProteoFAV/analysis/cluster_figs/sample_stats/results.txt'
+    results_file = os.path.join(args.RESULTS_DIR, 'results_summary.txt')
     with open(results_file, 'w+') as summary:
         summary.write('# p-values indicate the proportion of random samples are smaller/equal/larger than observed.\n')
         summary.write('UniProtID\tN_variants\tmax_cluster_size\tp(small/equal/large)\n')
