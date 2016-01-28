@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     # Parameters
     parser = argparse.ArgumentParser(description='Execute disease variant structure clustering pipeline')
-    parser.add_argument('RESULTS_DIR', dest=results_dir, type=str, help='Directory to save results')
+    parser.add_argument('RESULTS_DIR', type=str, help='Directory to save results')
     parser.add_argument('--IF', dest='inflate', type=float, help='MCL inflation factor. Will use default if ommitted')
     parser.add_argument('--threshold', dest='threshold', type=float, default=7.5,
                         help='Distance threshold to break edges of positional similarity graph')
