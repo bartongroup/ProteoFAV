@@ -1,9 +1,10 @@
-
 import logging
+
 logging.basicConfig(filename='variant_clustering.log', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 import sys
+
 sys.path.extend(['/Users/smacgowan/PycharmProjects/ProteoFAV'])
 
 import analysis.clustering
@@ -16,6 +17,7 @@ import matplotlib.pyplot as plt
 import os
 import time
 from config import defaults
+
 
 def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:human', 'database:(type:pdb)')):
     """
@@ -61,7 +63,6 @@ if __name__ == '__main__':
     logger.info('Starting disease variant clustering pipeline.')
     for arg, value in sorted(vars(args).items()):
         logger.info("Pipeline argument %s: %r", arg, value)
-
 
     # Get suitable list of proteins
     protein_set = query_uniprot()[:10]  # Results from default query terms
@@ -149,4 +150,3 @@ if __name__ == '__main__':
         for i in results:
             summary.write('\t'.join([i[0], str(i[1]), str(i[2]['obs_stats']['max']),
                                      str(i[2]['p']['max']) + '\n']))
-
