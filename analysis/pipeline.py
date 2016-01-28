@@ -62,9 +62,11 @@ if __name__ == '__main__':
         logger.info("Pipeline argument %s: %r", arg, value)
 
 
-    # Get suitable list of proteins and their structure / variant data
+    # Get suitable list of proteins
     protein_set = query_uniprot()[:10]  # Results from default query terms
     logger.info('Processing {} UniProt IDs'.format(len(protein_set)))
+
+    # Get structure and uniprot variant table
     structure_tables = []
     for prot in protein_set:
         table_pickle_name = 'structure_table_' + prot + '.pkl'
@@ -108,12 +110,10 @@ if __name__ == '__main__':
             logger.info('Reloaded clustering results for {}.'.format(prot))
 
     # Create results plots
-
     names = ['mean', 'median', 'std', 'min', 'max', 'len', 'top_k_clusters', 'n_isolated', 'n_50_clusters']
     names.append('Davies-Bouldin')
     names.append('Dunn_index')
     names.append('largest_cluster_volume')
-
     for prot, n_variants, stats in results:
         plot_file_name = 'cluster_metrics_' + prot + '.png'
         plot_file = os.path.join(args.RESULTS_DIR, plot_file_name)
