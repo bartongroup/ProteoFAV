@@ -43,6 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--IF', dest='inflate', type=float, help='MCL inflation factor. Will use default if ommitted')
     parser.add_argument('--threshold', dest='threshold', type=float, default=7.5,
                         help='Distance threshold to break edges of positional similarity graph')
+    parser.add_argument('--retry_failed', dest='retry_failed', action='store_true')
 
     # Setup results dir
     args = parser.parse_args()
@@ -66,21 +67,31 @@ if __name__ == '__main__':
     protein_set = query_uniprot()[:10]  # Results from default query terms
     logger.info('Processing {} UniProt IDs'.format(len(protein_set)))
 
-    # Get structure and uniprot variant table
+    # Get structure and uniprot variant table. Will be reloaded if previously pickled,
+    # skipped if a previous attempt failed and 'retry_failed' is not set and retrieved
+    # in any other case
     structure_tables = []
     for prot in protein_set:
+        table_failed_placeholder = os.path.join(defaults.db_analysis, 'structure_table_' + prot + '.failed')
         table_pickle_name = 'structure_table_' + prot + '.pkl'
         table_file_name = os.path.join(defaults.db_analysis, table_pickle_name)
         if not os.path.isfile(table_file_name):
-            # TODO: Figure a way to complete analysis for as many proteins as possible
-            logger.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
-            try:
-                structure_table = main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)
-                structure_tables.append((prot, structure_table))
-                with open(table_file_name, 'wb') as output:
-                    pickle.dump(structure_table, output, -1)
-            except:
-                logger.warning('Cannot get structure table for {}... skipping.'.format(prot))
+            if not os.path.isfile(table_failed_placeholder) or args.retry_failed:
+                # TODO: Figure a way to complete analysis for as many proteins as possible
+                logger.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
+                try:
+                    structure_table = main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)
+                    structure_tables.append((prot, structure_table))
+                    with open(table_file_name, 'wb') as output:
+                        pickle.dump(structure_table, output, -1)
+                    if os.path.isfile(table_failed_placeholder):
+                        os.remove(table_failed_placeholder)
+                except:
+                    logger.warning('Cannot get structure table for {}... skipping.'.format(prot))
+                    with open(table_failed_placeholder, 'w') as output:
+                        output.write('Last attempted at {}\n'.format(time.strftime('%a %d %b - %H:%M:%S')))
+            else:
+                logger.info('Structure table for {} recorded as unavailable... skipping.'.format(prot))
         else:
             structure_table = pickle.load(open(table_file_name, 'rb'))
             structure_tables.append((prot, structure_table))
