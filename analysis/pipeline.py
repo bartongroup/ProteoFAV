@@ -98,15 +98,27 @@ if __name__ == '__main__':
             structure_tables.append((prot, structure_table))
             logger.info('Reloaded structure table for {}.'.format(prot))
 
-    # Run analysis
+    # Cluster analysis -------------------------------------------------------------------------------------------------
+
+    # Cluster analyses are stored according to the parameter sets used
+    cluster_parameters_whitelist = ['inflate', 'threshold']
+    cluster_parameters = []
+    for k, v in vars(args).iteritems():
+        if k in cluster_parameters_whitelist:
+            cluster_parameters.append(str(k))
+            cluster_parameters.append(str(v))
+    cluster_pickle_folder = os.path.join(defaults.db_analysis, 'clusters_' + '_'.join(cluster_parameters))
+    if not os.path.isdir(cluster_pickle_folder):
+        os.makedirs(cluster_pickle_folder)
+
     results = []
     for prot, table in structure_tables:
         deduped = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
-        cluster_failed_placeholder = os.path.join(defaults.db_analysis, 'cluster_results_' + prot + '.failed')
+        cluster_failed_placeholder = os.path.join(cluster_pickle_folder, 'cluster_results_' + prot + '.failed')
         cluster_pickle_name = 'cluster_results_' + prot + '.pkl'
-        cluster_file_name = os.path.join(defaults.db_analysis, cluster_pickle_name)
+        cluster_file_name = os.path.join(cluster_pickle_folder, cluster_pickle_name)
         if not os.path.isfile(cluster_file_name):
             if not os.path.isfile(cluster_failed_placeholder) or args.retry_failed:
                 try:
