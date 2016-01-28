@@ -167,8 +167,21 @@ if __name__ == '__main__':
     # Write some summary stats
     results_file = os.path.join(args.RESULTS_DIR, 'results_summary.txt')
     with open(results_file, 'w+') as summary:
+        # Results Header
+        names_pvalues = []
+        for var in names:
+            names_pvalues.append('p(s/e/l)' + var)
         summary.write('# p-values indicate the proportion of random samples are smaller/equal/larger than observed.\n')
-        summary.write('UniProtID\tN_variants\tmax_cluster_size\tp(small/equal/large)\n')
+        summary.write('UniProtID\tN_variants\t' + '\t'.join(names) + '\t' + '\t'.join(names_pvalues))
+
         for i in results:
-            summary.write('\t'.join([i[0], str(i[1]), str(i[2]['obs_stats']['max']),
-                                     str(i[2]['p']['max']) + '\n']))
+            uniprot_id = i[0]
+            n_variants = str(i[1])
+
+            pvalues = []
+            observed_stats = []
+            for var in names:
+                observed_stats.append(str(i[2]['obs_stats'][var]))
+                pvalues.append(str(i[2]['p'][var]))
+
+            summary.write('\t'.join([uniprot_id, n_variants] + observed_stats + pvalues + ['\n']))
