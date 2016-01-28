@@ -1,6 +1,7 @@
 
 
 import analysis.clustering
+import argparse
 import cPickle as pickle
 import logging
 import requests
@@ -33,11 +34,25 @@ def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:hum
 
 if __name__ == '__main__':
 
-    logging.disable(logging.DEBUG)
+    # Parameters
+    parser = argparse.ArgumentParser(description='Execute disease variant structure clustering pipeline')
+    parser.add_argument('RESULTS_DIR', dest=results_dir, type=str, help='Directory to save results')
+    parser.add_argument('--IF', dest='inflate', type=float, help='MCL inflation factor. Will use default if ommitted')
+    parser.add_argument('--threshold', dest='threshold', type=float, default=7.5,
+                        help='Distance threshold to break edges of positional similarity graph')
+
+    args = parser.parse_args()
+
+    # Logging setup and log pipeline configuration
     logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.basicConfig(filename='variant_clustering.log',level=logging.DEBUG)
+    logging.info('Starting disease variant clustering pipeline.')
+    for arg, value in sorted(vars(args).items()):
+        logging.info("Pipeline argument %s: %r", arg, value)
+
 
     # Get suitable list of proteins and their structure / variant data
-    protein_set = query_uniprot()[:100]  # Results from default query terms
+    protein_set = query_uniprot()[:10]  # Results from default query terms
     logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
@@ -67,8 +82,8 @@ if __name__ == '__main__':
         if not os.path.isfile(cluster_file_name):
             try:
                 log.info('Running cluster analysis for {}.'.format(prot))
-                cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'], n_samples=50,
-                                                                  threshold=7.5, return_samples=True)
+                cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
+                                                                  n_samples=50, return_samples=True, **vars(args))
                 with open(cluster_file_name, 'wb') as output:
                     pickle.dump(cluster_table, output, -1)
                 results.append((prot, n_variants, cluster_table))
