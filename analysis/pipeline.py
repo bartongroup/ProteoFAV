@@ -8,6 +8,7 @@ import main
 import matplotlib.pyplot as plt
 import os.path
 import time
+from config import defaults
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -40,15 +41,15 @@ if __name__ == '__main__':
     logging.info('Processing {} UniProt IDs'.format(len(protein_set)))
     structure_tables = []
     for prot in protein_set:
-        table_file_name = 'structure_table_' + prot + '.pkl'
+        table_file_name = defaults.db_analysis + 'structure_table_' + prot + '.pkl'
         if not os.path.isfile(table_file_name):
             # TODO: Figure a way to complete analysis for as many proteins as possible
             logging.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
             try:
                 structure_table = main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)
                 structure_tables.append((prot, structure_table))
-                with open(table_file_name) as output:
-                    pickle.dump(structure_table, table_file_name, -1)
+                with open(table_file_name, 'wb') as output:
+                    pickle.dump(structure_table, output, -1)
             except:
                 log.warning('Cannot get structure table for {}... skipping.'.format(prot))
         else:
@@ -62,14 +63,14 @@ if __name__ == '__main__':
         deduped = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
-        cluster_file_name = 'cluster_results_' + prot + '.pkl'
+        cluster_file_name = defaults.db_analysis + 'cluster_results_' + prot + '.pkl'
         if not os.path.isfile(cluster_file_name):
             try:
                 log.info('Running cluster analysis for {}.'.format(prot))
                 cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'], n_samples=50,
                                                                   threshold=7.5, return_samples=True)
-                with open(cluster_file_name) as output:
-                    pickle.dump(cluster_table, table_file_name, -1)
+                with open(cluster_file_name, 'wb') as output:
+                    pickle.dump(cluster_table, output, -1)
                 results.append((prot, n_variants, cluster_table))
             except:
                 log.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     names.append('largest_cluster_volume')
 
     for prot, n_variants, stats in results:
-        plot_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/cluster_stats_' + prot + '.png'
+        plot_file = defaults.db_analysis + 'cluster_metrics_' + prot + '.png'
         if not os.path.isfile(plot_file):
             try:
                 log.info('Plotting results for {}.'.format(prot))
