@@ -117,7 +117,7 @@ if __name__ == '__main__':
             log.info('Results already plotted for {}... skipping.'.format(prot))
 
     # Write some summary stats
-    results_file = '/Users/smacgowan/PycharmProjects/gjb_struct/analysis/cluster_figs/sample_stats/results.txt'
+    results_file = '/Users/smacgowan/PycharmProjects/ProteoFAV/analysis/cluster_figs/sample_stats/results.txt'
     with open(results_file, 'w+') as summary:
         summary.write('# p-values indicate the proportion of random samples are smaller/equal/larger than observed.\n')
         summary.write('UniProtID\tN_variants\tmax_cluster_size\tp(small/equal/large)\n')
