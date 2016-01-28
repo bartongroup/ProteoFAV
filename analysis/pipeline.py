@@ -1,4 +1,6 @@
 
+import sys
+sys.path.extend(['/Users/smacgowan/PycharmProjects/ProteoFAV'])
 
 import analysis.clustering
 import argparse
