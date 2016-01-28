@@ -104,18 +104,24 @@ if __name__ == '__main__':
         deduped = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
+        cluster_failed_placeholder = os.path.join(defaults.db_analysis, 'cluster_results_' + prot + '.failed')
         cluster_pickle_name = 'cluster_results_' + prot + '.pkl'
         cluster_file_name = os.path.join(defaults.db_analysis, cluster_pickle_name)
         if not os.path.isfile(cluster_file_name):
-            try:
-                logger.info('Running cluster analysis for {}.'.format(prot))
-                cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
-                                                                  n_samples=50, return_samples=True, **vars(args))
-                with open(cluster_file_name, 'wb') as output:
-                    pickle.dump(cluster_table, output, -1)
-                results.append((prot, n_variants, cluster_table))
-            except:
-                logger.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
+            if not os.path.isfile(cluster_failed_placeholder) or args.retry_failed:
+                try:
+                    logger.info('Running cluster analysis for {}.'.format(prot))
+                    cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
+                                                                      n_samples=50, return_samples=True, **vars(args))
+                    with open(cluster_file_name, 'wb') as output:
+                        pickle.dump(cluster_table, output, -1)
+                    results.append((prot, n_variants, cluster_table))
+                except:
+                    logger.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
+                    with open(cluster_failed_placeholder, 'w') as output:
+                        output.write('Last attempted at {}\n'.format(time.strftime('%a %d %b - %H:%M:%S')))
+            else:
+                logger.info('Clustering for {} recorded as failed... skipping.'.format(prot))
         else:
             cluster_table = pickle.load(open(cluster_file_name, 'rb'))
             results.append((prot, n_variants, cluster_table))
@@ -127,18 +133,22 @@ if __name__ == '__main__':
     names.append('Dunn_index')
     names.append('largest_cluster_volume')
     for prot, n_variants, stats in results:
+        plot_failed_placeholder = os.path.join(defaults.db_analysis, 'plot_file_' + prot + '.failed')
         plot_file_name = 'cluster_metrics_' + prot + '.png'
         plot_file = os.path.join(args.RESULTS_DIR, plot_file_name)
         if not os.path.isfile(plot_file):
-            try:
-                logger.info('Plotting results for {}.'.format(prot))
-                analysis.clustering.plot_sample_distributions(stats, names)
-                plt.suptitle(prot)
-                plt.tight_layout()
-                plt.savefig(plot_file, format='png')
-                plt.close()
-            except:
-                logger.warning('Cannot provide plot for {}... skipping.'.format(prot))
+            if not os.path.isfile(plot_failed_placeholder) or args.retry_failed:
+                try:
+                    logger.info('Plotting results for {}.'.format(prot))
+                    analysis.clustering.plot_sample_distributions(stats, names)
+                    plt.suptitle(prot)
+                    plt.tight_layout()
+                    plt.savefig(plot_file, format='png')
+                    plt.close()
+                except:
+                    logger.warning('Cannot provide plot for {}... skipping.'.format(prot))
+                    with open(plot_failed_placeholder, 'w') as output:
+                        output.write('Last attempted at {}\n'.format(time.strftime('%a %d %b - %H:%M:%S')))
         else:
             logger.info('Results already plotted for {}... skipping.'.format(prot))
 
