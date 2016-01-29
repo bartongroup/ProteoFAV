@@ -72,8 +72,9 @@ if __name__ == '__main__':
     if not args.proteins:
         protein_set = query_uniprot()[:10]  # Results from default query terms
     else:
-        protein_set = args.proteins
-        logger.info('Processing {} UniProt IDs'.format(len(protein_set)))
+        protein_set = [x.strip() for x in args.proteins]
+
+    logger.info('Processing {} UniProt IDs'.format(len(protein_set)))
 
     # Get structure and variant data -----------------------------------------------------------------------------------
 
