@@ -7,35 +7,16 @@ import sys
 
 sys.path.extend(['/Users/smacgowan/PycharmProjects/ProteoFAV'])
 
+from analysis.query_uniprot import query_uniprot
 import analysis.clustering
 import argparse
 import cPickle as pickle
 import logging
-import requests
 import main
 import matplotlib.pyplot as plt
 import os
 import time
 from config import defaults
-
-
-def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:human', 'database:(type:pdb)')):
-    """
-    Query the UniProt API for proteins that have particualar characteristics.
-
-    :param search_terms: A tuple of UniProt Query search terms.
-    :return: A list of UniProt IDs
-    """
-    url = 'http://www.uniprot.org/uniprot'
-    params = {'query': ' AND '.join(search_terms),
-              'format': 'tab', 'columns': 'id'}
-    logger.info('Querying UniProt DB...')
-    r = requests.get(url, params=params)
-    uniprots = r.content.split('\n')[1:]
-    logger.info('Retreived {} UniProt IDs matching query.'.format(len(uniprots)))
-
-    return uniprots
-
 
 if __name__ == '__main__':
 
