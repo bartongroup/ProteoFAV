@@ -17,12 +17,14 @@ import matplotlib.pyplot as plt
 import os
 import time
 from config import defaults
+from utils import is_valid_file, create_directory
 
 if __name__ == '__main__':
 
     # Parameters
     parser = argparse.ArgumentParser(description='Execute disease variant structure clustering pipeline')
     parser.add_argument('RESULTS_DIR', type=str, help='Directory to save results')
+    parser.add_argument('--proteins', type=lambda x: is_valid_file(parser, x), help='File containing UniProt IDs')
     parser.add_argument('--IF', dest='inflate', type=float, help='MCL inflation factor. Will use default if ommitted')
     parser.add_argument('--threshold', dest='threshold', type=float, default=7.5,
                         help='Distance threshold to break edges of positional similarity graph')
@@ -48,8 +50,11 @@ if __name__ == '__main__':
     # Get UniProt IDs --------------------------------------------------------------------------------------------------
 
     # Get suitable list of proteins
-    protein_set = query_uniprot()[:10]  # Results from default query terms
-    logger.info('Processing {} UniProt IDs'.format(len(protein_set)))
+    if not args.proteins:
+        protein_set = query_uniprot()[:10]  # Results from default query terms
+    else:
+        protein_set = args.proteins
+        logger.info('Processing {} UniProt IDs'.format(len(protein_set)))
 
     # Get structure and variant data -----------------------------------------------------------------------------------
 

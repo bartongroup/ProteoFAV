@@ -25,6 +25,14 @@ socket.setdefaulttimeout(15)
 log = logging.getLogger(__name__)
 
 
+def is_valid_file(parser, arg):
+    try:
+        return open(arg, 'r')  # return an open file handle
+    except:
+        parser.error("Not a valid file: %s" % arg)
+
+
+
 class IDNotValidError(Exception):
     """
     Base class for database related exceptions.
