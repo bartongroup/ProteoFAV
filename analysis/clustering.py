@@ -665,52 +665,9 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
                                                                                   n_samples, n_variants, show_progress,
                                                                                   **kwargs)
 
-        # Metrics that need original points
-        sample_davies_bouldins = []
-        sample_dunns = []
-        sample_largest_cluster_volume = []
-        for sample_part, sample_table, sample_mask in zip(sample_clusters, sample_tables, sample_masks):
-            # Metrics that need the original points
-            sample_points = np.array(sample_table[sample_mask][['Cartn_x', 'Cartn_y', 'Cartn_z']])
-            sample_davies_bouldins.append(davies_bouldin(sample_part, sample_points))
-            sample_dunns.append(dunn(sample_part, sample_points))
-            volumes = cluster_hull_volumes(sample_part, sample_points).values()
-            if len(volumes) > 0:
-                sample_largest_cluster_volume.append(max(volumes))
-            else:
-                sample_largest_cluster_volume.append(0)
-
-        # Partition metrics
-        bs_stats = bootstrap_stats(sample_clusters)
-        names, obs_stats = cluster_size_stats(part, names=True)
-
-        # Add other metrics
-        obs_stats.append(davies_bouldin(part, points))
-        obs_stats.append(dunn(part, points))
-        obs_stats.append(max(cluster_hull_volumes(part, points).values()))
-        names.append('Davies-Bouldin')
-        names.append('Dunn_index')
-        names.append('largest_cluster_volume')
-        for i in xrange(n_samples):
-            bs_stats[i].append(sample_davies_bouldins[i])
-            bs_stats[i].append(sample_dunns[i])
-            bs_stats[i].append(sample_largest_cluster_volume[i])
-
-        p_values = []
-        for obs, sampled in zip(obs_stats, zip(*bs_stats)):
-            left = boot_pvalue(sampled, lambda x: x < obs)
-            mid = boot_pvalue(sampled, lambda x: x == obs)
-            right = boot_pvalue(sampled, lambda x: x > obs)
-            p_values.append((left, mid, right))
-
-        p_values = dict(zip(names, p_values))
-        stats = dict(zip(names, obs_stats))
-
-        ## For complete cluster size distribution
-        sample_cluster_sizes = []
-        for i in sample_clusters:
-            sample_cluster_sizes.append(partition_to_sizes(i))
-        sample_cluster_sizes = [e for sublist in sample_cluster_sizes for e in sublist]  # Flatten
+        bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(n_samples, part, points,
+                                                                                            sample_clusters,
+                                                                                            sample_masks, sample_tables)
 
         if return_samples:
             return {'part': part, 'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats,
@@ -720,6 +677,52 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
 
     else:
         return part
+
+
+def collect_cluster_sample_statistics(n_samples, part, points, sample_clusters, sample_masks, sample_tables):
+    # Metrics that need original points
+    sample_davies_bouldins = []
+    sample_dunns = []
+    sample_largest_cluster_volume = []
+    for sample_part, sample_table, sample_mask in zip(sample_clusters, sample_tables, sample_masks):
+        # Metrics that need the original points
+        sample_points = np.array(sample_table[sample_mask][['Cartn_x', 'Cartn_y', 'Cartn_z']])
+        sample_davies_bouldins.append(davies_bouldin(sample_part, sample_points))
+        sample_dunns.append(dunn(sample_part, sample_points))
+        volumes = cluster_hull_volumes(sample_part, sample_points).values()
+        if len(volumes) > 0:
+            sample_largest_cluster_volume.append(max(volumes))
+        else:
+            sample_largest_cluster_volume.append(0)
+
+    # Partition metrics
+    bs_stats = bootstrap_stats(sample_clusters)
+    names, obs_stats = cluster_size_stats(part, names=True)
+    # Add other metrics
+    obs_stats.append(davies_bouldin(part, points))
+    obs_stats.append(dunn(part, points))
+    obs_stats.append(max(cluster_hull_volumes(part, points).values()))
+    names.append('Davies-Bouldin')
+    names.append('Dunn_index')
+    names.append('largest_cluster_volume')
+    for i in xrange(n_samples):
+        bs_stats[i].append(sample_davies_bouldins[i])
+        bs_stats[i].append(sample_dunns[i])
+        bs_stats[i].append(sample_largest_cluster_volume[i])
+    p_values = []
+    for obs, sampled in zip(obs_stats, zip(*bs_stats)):
+        left = boot_pvalue(sampled, lambda x: x < obs)
+        mid = boot_pvalue(sampled, lambda x: x == obs)
+        right = boot_pvalue(sampled, lambda x: x > obs)
+        p_values.append((left, mid, right))
+    p_values = dict(zip(names, p_values))
+    stats = dict(zip(names, obs_stats))
+    ## For complete cluster size distribution
+    sample_cluster_sizes = []
+    for i in sample_clusters:
+        sample_cluster_sizes.append(partition_to_sizes(i))
+    sample_cluster_sizes = [e for sublist in sample_cluster_sizes for e in sublist]  # Flatten
+    return bs_stats, p_values, sample_cluster_sizes, stats
 
 
 ##############################################################################
