@@ -23,7 +23,7 @@ from scipy.spatial.distance import pdist, squareform, euclidean
 from scipy.spatial.qhull import QhullError
 from main import merge_tables
 from variants.to_table import _fetch_uniprot_variants
-from utils import get_colors, autoscale_axes, fractional_to_cartesian
+from utils import get_colors, autoscale_axes, fractional_to_cartesian, delete_file
 from analysis.random_annotations import add_random_disease_variants
 
 __author__ = 'smacgowan'
@@ -152,8 +152,13 @@ def launch_mcl(s, format='partition', inflate=None, silent=True, **kwargs):
     else:
         call(mcl_call)
 
-    # Read and parse results
+    # Read results
     clusters = read_mcl_clusters('mcl_results.txt')
+
+    # Cleanup
+    delete_file('mcl_results.txt')
+    delete_file('mcl_interactions.csv')
+
     if format == 'partition':
         part = ['unassigned'] * len(s)
         cluster_id = 0

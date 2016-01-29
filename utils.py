@@ -39,6 +39,14 @@ def is_valid_file(parser, arg):
         parser.error("Not a valid file: %s" % arg)
 
 
+def delete_file(filename):
+    """
+
+    :param filename: File to delete
+    :return: None
+    """
+    os.remove(filename)
+
 
 class IDNotValidError(Exception):
     """
