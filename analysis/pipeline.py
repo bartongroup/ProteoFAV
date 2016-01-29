@@ -64,9 +64,13 @@ if __name__ == '__main__':
     for arg, value in sorted(vars(args).items()):
         logger.info("Pipeline argument %s: %r", arg, value)
 
+    # Get UniProt IDs --------------------------------------------------------------------------------------------------
+
     # Get suitable list of proteins
     protein_set = query_uniprot()[:10]  # Results from default query terms
     logger.info('Processing {} UniProt IDs'.format(len(protein_set)))
+
+    # Get structure and variant data -----------------------------------------------------------------------------------
 
     # Get structure and uniprot variant table. Will be reloaded if previously pickled,
     # skipped if a previous attempt failed and 'retry_failed' is not set and retrieved
