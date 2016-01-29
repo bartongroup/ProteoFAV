@@ -26,8 +26,15 @@ log = logging.getLogger(__name__)
 
 
 def is_valid_file(parser, arg):
+    """
+    Check if arg is a valid file and throw a parsing error if not.
+
+    :param parser: argparse.ArgumentParser
+    :param arg: argument
+    :return: Open file handle
+    """
     try:
-        return open(arg, 'r')  # return an open file handle
+        return open(arg, 'r')
     except:
         parser.error("Not a valid file: %s" % arg)
 
