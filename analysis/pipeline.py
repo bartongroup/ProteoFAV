@@ -16,7 +16,6 @@ import main
 import matplotlib.pyplot as plt
 import os
 import time
-from config import defaults
 from utils import is_valid_file, create_directory
 
 if __name__ == '__main__':
