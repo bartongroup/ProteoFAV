@@ -660,22 +660,16 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
                 ['resn', 'mut', 'disease'], axis=1)
         clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
 
-        # Bootstrap
-        sample_clusters = []
+        # Bootstrap samples
+        sample_clusters, sample_masks, sample_tables = bootstrap_residue_clusters(clean_table, method, n_phenotypes,
+                                                                                  n_samples, n_variants, show_progress,
+                                                                                  **kwargs)
+
+        # Metrics that need original points
         sample_davies_bouldins = []
         sample_dunns = []
         sample_largest_cluster_volume = []
-        for i in xrange(n_samples):
-            sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
-            sample_mask = sample_table.resn.notnull()
-            sample_part = cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs)
-            sample_clusters.append(sample_part)
-            if show_progress:
-                pc_complete = (i + 1) / float(n_samples) * 100
-                if pc_complete % 10 == 0:
-                    sys.stdout.write("\r%d%%" % (pc_complete))
-                    sys.stdout.flush()
-
+        for sample_part, sample_table, sample_mask in zip(sample_clusters, sample_tables, sample_masks):
             # Metrics that need the original points
             sample_points = np.array(sample_table[sample_mask][['Cartn_x', 'Cartn_y', 'Cartn_z']])
             sample_davies_bouldins.append(davies_bouldin(sample_part, sample_points))
@@ -686,6 +680,7 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
             else:
                 sample_largest_cluster_volume.append(0)
 
+        # Partition metrics
         bs_stats = bootstrap_stats(sample_clusters)
         names, obs_stats = cluster_size_stats(part, names=True)
 
@@ -725,6 +720,29 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
 
     else:
         return part
+
+
+##############################################################################
+# Bootstrapping
+##############################################################################
+def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_variants, show_progress, **kwargs):
+    sample_clusters = []
+    sample_tables = []
+    sample_masks = []
+    for i in xrange(n_samples):
+        sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
+        sample_mask = sample_table.resn.notnull()
+        sample_part = cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs)
+        sample_clusters.append(sample_part)
+        sample_tables.append(sample_table)
+        sample_masks.append(sample_mask)
+        if show_progress:
+            pc_complete = (i + 1) / float(n_samples) * 100
+            if pc_complete % 10 == 0:
+                sys.stdout.write("\r%d%%" % (pc_complete))
+                sys.stdout.flush()
+
+    return sample_clusters, sample_masks, sample_tables
 
 
 if __name__ == '__main__':
