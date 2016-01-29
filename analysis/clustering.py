@@ -638,7 +638,7 @@ def plot_sample_distributions(results, names):
 # Convenience wrappers
 ##############################################################################
 def cluster_table(table, mask, method, n_samples=0, return_samples=False,
-                  show_progress=False, **kwargs):
+                  show_progress=False, sites_only=True, **kwargs):
     """
 
     :param table:
@@ -647,8 +647,18 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
     :param kwargs:
     :return:
     """
+
+    # # Apply mask
+    # table = table[mask]
+    # mask = np.array([True] * len(table))  #TODO: Remove the need for this hack needed for `atom_dist`
+
+    # Dedupe table by UniProt and chain if only clustering sites
+    if sites_only:
+        table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
+        # mask = np.array([True] * len(table))  #TODO: See above
+
     # Perform clustering
-    d, points, resids, unmapped_points = atom_dist(table, mask)
+    d, points, resids, unmapped_points = atom_dist(table, table.resn.notnull())
     links = linkage_cluster(d, methods=method, **kwargs)
     part = links[0][0]
 
@@ -656,8 +666,8 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
     if n_samples > 0:
         n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
         n_phenotypes = len(table.disease.dropna().unique())
-        clean_table = table.drop_duplicates(subset='UniProt_dbResNum').drop(
-                ['resn', 'mut', 'disease'], axis=1)
+        clean_table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id']).drop(['resn', 'mut', 'disease'],
+                                                                                          axis=1)
         clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
 
         # Bootstrap samples
@@ -734,7 +744,7 @@ def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_v
     sample_masks = []
     for i in xrange(n_samples):
         sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
-        sample_mask = sample_table.resn.notnull()
+        sample_mask = sample_table.resn.notnull()  #TODO: Mask shouldn't be hard coded...
         sample_part = cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs)
         sample_clusters.append(sample_part)
         sample_tables.append(sample_table)
