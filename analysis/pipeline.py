@@ -173,19 +173,32 @@ if __name__ == '__main__':
     with open(results_file, 'w+') as summary:
         # Results Header
         names_pvalues = []
+        names_psmall = []
+        names_plarge = []
         for var in names:
-            names_pvalues.append('p(s/e/l)' + var)
+            names_pvalues.append('p(s/e/l)_' + var)
+            names_psmall.append('p_small_' + var)
+            names_plarge.append('p_large_' + var)
         summary.write('# p-values indicate the proportion of random samples are smaller/equal/larger than observed.\n')
-        summary.write('UniProtID\tN_variants\t' + '\t'.join(names) + '\t' + '\t'.join(names_pvalues))
+        summary.write('UniProtID\tN_variants\t' + '\t'.join(names) + '\t' + '\t'.join(names_psmall) + '\t' +
+                      '\t'.join(names_plarge) + '\t' + '\t'.join(names_pvalues) + '\n')
 
         for i in results:
             uniprot_id = i[0]
             n_variants = str(i[1])
 
-            pvalues = []
+            p_values = []
+            p_small = []
+            p_large = []
             observed_stats = []
             for var in names:
                 observed_stats.append(str(i[2]['obs_stats'][var]))
-                pvalues.append(str(i[2]['p'][var]))
+                p_tuple = i[2]['p'][var]
+                p_values.append(str(p_tuple))
 
-            summary.write('\t'.join([uniprot_id, n_variants] + observed_stats + pvalues + ['\n']))
+                p_num = [0 if isinstance(x, str) else x for x in p_tuple]
+                p_small.append(str(sum(p_num[:2])))
+                p_large.append(str(sum(p_num[1:])))
+
+
+            summary.write('\t'.join([uniprot_id, n_variants] + observed_stats + p_small + p_large + p_values) + '\n')
