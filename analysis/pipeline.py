@@ -47,6 +47,25 @@ if __name__ == '__main__':
     for arg, value in sorted(vars(args).items()):
         logger.info("Pipeline argument %s: %r", arg, value)
 
+    # Setup directory structure ----------------------------------------------------------------------------------------
+    # Cluster analyses are stored according to the parameter sets used
+    cluster_parameters_whitelist = ['inflate', 'threshold']
+    cluster_parameters = []
+    for k, v in vars(args).iteritems():
+        if k in cluster_parameters_whitelist:
+            cluster_parameters.append(str(k))
+            cluster_parameters.append(str(v))
+    cluster_dir = os.path.join('pickled', 'clusters_' + '_'.join(cluster_parameters))
+
+    # Create required folders
+    if not os.path.isdir('pickled'):
+        create_directory('pickled')
+
+    structure_table_dir = os.path.join('pickled', 'structure_tables')
+    for datadir in [structure_table_dir, cluster_dir]:
+        if not os.path.isdir(datadir):
+            create_directory(datadir)
+
     # Get UniProt IDs --------------------------------------------------------------------------------------------------
 
     # Get suitable list of proteins
@@ -63,9 +82,9 @@ if __name__ == '__main__':
     # in any other case
     structure_tables = []
     for prot in protein_set:
-        table_failed_placeholder = os.path.join(defaults.db_analysis, 'structure_table_' + prot + '.failed')
+        table_failed_placeholder = os.path.join(structure_table_dir, 'structure_table_' + prot + '.failed')
         table_pickle_name = 'structure_table_' + prot + '.pkl'
-        table_file_name = os.path.join(defaults.db_analysis, table_pickle_name)
+        table_file_name = os.path.join(structure_table_dir, table_pickle_name)
         if not os.path.isfile(table_file_name):
             if not os.path.isfile(table_failed_placeholder) or args.retry_failed:
                 # TODO: Figure a way to complete analysis for as many proteins as possible
@@ -89,26 +108,14 @@ if __name__ == '__main__':
             logger.info('Reloaded structure table for {}.'.format(prot))
 
     # Cluster analysis -------------------------------------------------------------------------------------------------
-
-    # Cluster analyses are stored according to the parameter sets used
-    cluster_parameters_whitelist = ['inflate', 'threshold']
-    cluster_parameters = []
-    for k, v in vars(args).iteritems():
-        if k in cluster_parameters_whitelist:
-            cluster_parameters.append(str(k))
-            cluster_parameters.append(str(v))
-    cluster_pickle_folder = os.path.join(defaults.db_analysis, 'clusters_' + '_'.join(cluster_parameters))
-    if not os.path.isdir(cluster_pickle_folder):
-        os.makedirs(cluster_pickle_folder)
-
     results = []
     for prot, table in structure_tables:
         deduped = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
-        cluster_failed_placeholder = os.path.join(cluster_pickle_folder, 'cluster_results_' + prot + '.failed')
+        cluster_failed_placeholder = os.path.join(cluster_dir, 'cluster_results_' + prot + '.failed')
         cluster_pickle_name = 'cluster_results_' + prot + '.pkl'
-        cluster_file_name = os.path.join(cluster_pickle_folder, cluster_pickle_name)
+        cluster_file_name = os.path.join(cluster_dir, cluster_pickle_name)
         if not os.path.isfile(cluster_file_name):
             if not os.path.isfile(cluster_failed_placeholder) or args.retry_failed:
                 try:
@@ -135,7 +142,7 @@ if __name__ == '__main__':
     names.append('Dunn_index')
     names.append('largest_cluster_volume')
     for prot, n_variants, stats in results:
-        plot_failed_placeholder = os.path.join(defaults.db_analysis, 'plot_file_' + prot + '.failed')
+        plot_failed_placeholder = os.path.join(args.RESULTS_DIR, 'plot_file_' + prot + '.failed')
         plot_file_name = 'cluster_metrics_' + prot + '.png'
         plot_file = os.path.join(args.RESULTS_DIR, plot_file_name)
         if not os.path.isfile(plot_file):
