@@ -72,7 +72,7 @@ def select_valid_coordinates(table):
     return table, coord_array
 
 
-def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), **kwargs):
+def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), gamma=1./3, **kwargs):
     """
 
     :param d: A reduced distance matrix, such as produced by `pdist` or the
@@ -88,9 +88,17 @@ def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), **kwargs):
     if method == 'max_minus_d':
         d[d > threshold] = d.max()
         s = d.max() - d
+
     if method == 'reciprocal':
         d = d + 1
         s = 1. / d
+
+    if method == 'exp_decay':
+        s = np.exp(-d * gamma)
+
+    if method == 'alt_reciprocal':
+        s = 1. / (d / d.max())
+
     return s
 
 
