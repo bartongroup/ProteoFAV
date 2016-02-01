@@ -782,6 +782,32 @@ def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_v
     return sample_clusters, sample_masks, sample_tables
 
 
+##############################################################################
+# Data handling
+##############################################################################
+def add_clusters_to_points(cluster_partition, clustered_points):
+    """
+
+    :param cluster_partition:
+    :param clustered_points:
+    :return:
+    """
+    points = pd.DataFrame(clustered_points)
+    points.loc[:, 'cluster_id'] = pd.Series(cluster_partition, index=points.index)
+    points = points.rename(columns={0: 'Cartn_x', 1: 'Cartn_y', 2: 'Cartn_z'})
+    return points
+
+
+def add_clusters_to_table(labelled_points, clustered_table):
+    """
+
+    :param cluster_partition:
+    :param clustered_table:
+    :return:
+    """
+    return pd.merge(clustered_table, labelled_points, how='left')
+
+
 if __name__ == '__main__':
     # Porphobilinogen deaminase example
     table = merge_tables(pdb_id='3ecr', chain='A', uniprot_variants=True)
