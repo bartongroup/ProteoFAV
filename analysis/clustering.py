@@ -752,6 +752,17 @@ def collect_cluster_sample_statistics(n_samples, part, points, sample_clusters, 
 # Bootstrapping
 ##############################################################################
 def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_variants, show_progress, **kwargs):
+    """
+
+    :param clean_table: A structure table
+    :param method: Method to use for clustering.
+    :param n_phenotypes: Number of phenotypes for `add_random_disease_variants`.
+    :param n_samples: Number of random samples to produce and assess.
+    :param n_variants: Number of variants for `add_random_disease_variants`.
+    :param show_progress: Show a progress bar.
+    :param kwargs: Arguments passed to `cluster_table`.
+    :return:
+    """
     sample_clusters = []
     sample_tables = []
     sample_masks = []
