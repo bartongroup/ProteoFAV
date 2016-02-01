@@ -687,9 +687,12 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
 
         # Bootstrap samples
-        sample_clusters, sample_masks, sample_tables = bootstrap_residue_clusters(clean_table, method, n_phenotypes,
-                                                                                  n_samples, n_variants, show_progress,
-                                                                                  **kwargs)
+        sample_clusters, sample_masks, sample_tables, annotated_tables = bootstrap_residue_clusters(clean_table, method,
+                                                                                                    n_phenotypes,
+                                                                                                    n_samples,
+                                                                                                    n_variants,
+                                                                                                    show_progress,
+                                                                                                    **kwargs)
 
         bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(n_samples, part, points,
                                                                                             sample_clusters,
@@ -702,7 +705,11 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
             return {'part': part, 'p': p_values, 'stats': stats}
 
     else:
-        return part
+
+        labelled_points = add_clusters_to_points(part, points)
+        annotated_table = add_clusters_to_table(labelled_points, table)
+
+        return part, annotated_table
 
 
 def collect_cluster_sample_statistics(n_samples, part, points, sample_clusters, sample_masks, sample_tables):
@@ -769,20 +776,22 @@ def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_v
     sample_clusters = []
     sample_tables = []
     sample_masks = []
+    annotated_tables = []
     for i in xrange(n_samples):
         sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
         sample_mask = sample_table.resn.notnull()  #TODO: Mask shouldn't be hard coded...
-        sample_part = cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs)
+        sample_part, annotated_table = cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs)
         sample_clusters.append(sample_part)
         sample_tables.append(sample_table)
         sample_masks.append(sample_mask)
+        annotated_tables.append(annotated_table)
         if show_progress:
             pc_complete = (i + 1) / float(n_samples) * 100
             if pc_complete % 10 == 0:
                 sys.stdout.write("\r%d%%" % (pc_complete))
                 sys.stdout.flush()
 
-    return sample_clusters, sample_masks, sample_tables
+    return sample_clusters, sample_masks, sample_tables, annotated_tables
 
 
 ##############################################################################
