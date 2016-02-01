@@ -81,6 +81,7 @@ def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), gamma=1./3, **k
       Choose from: 'max_minus_d' or 'reciprocal'
     :param threshold: The threshold to discard distances (i.e. remove edges)
      before conversion to similarities
+    :param gamma: The gamma coefficient in the exponential decay transform (s = e^(-d * gamma)
     :return:
 
     NB. **kwargs is just so that this can be called with extraneous arguments.
@@ -94,6 +95,8 @@ def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), gamma=1./3, **k
         s = 1. / d
 
     if method == 'exp_decay':
+        if gamma <= 0:
+            raise ValueError('Invalid gamma: must be >= 0')
         s = np.exp(-d * gamma)
 
     if method == 'alt_reciprocal':
