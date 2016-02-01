@@ -88,7 +88,8 @@ if __name__ == '__main__':
         if not os.path.isfile(table_file_name):
             if not os.path.isfile(table_failed_placeholder) or args.retry_failed:
                 # TODO: Figure a way to complete analysis for as many proteins as possible
-                logger.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot), len(protein_set)))
+                logger.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot) + 1,
+                                                                           len(protein_set)))
                 try:
                     structure_table = main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)
                     structure_tables.append((prot, structure_table))
