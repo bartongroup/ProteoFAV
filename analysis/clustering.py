@@ -703,12 +703,16 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
                                                       similarity,
                                                       **kwargs)
 
+        # Drop unneccesary data
+        column_whitelist = ['Cartn_x', 'Cartn_y', 'Cartn_z', 'cluster_id']
+        annotated_tables[:] = [i.loc[i.cluster_id.notnull(), column_whitelist] for i in annotated_tables]
+
         bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(part, points,
                                                                                             annotated_tables)
 
         if return_samples:
             return {'part': part, 'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats,
-                    'sample_size_dist': sample_cluster_sizes}
+                    'sample_size_dist': sample_cluster_sizes, 'random_samples': annotated_tables}
         else:
             return {'part': part, 'p': p_values, 'stats': stats}
 
@@ -724,10 +728,8 @@ def collect_cluster_sample_statistics(part, points, annotated_tables):
 
     # Parse the clustered tables
     sample_clusters = []
-    sample_masks = []
     sample_tables = []
     for i in annotated_tables:
-        sample_masks.append(i.resn.notnull())
         cluster_ids = i.cluster_id.dropna()
         sample_part = list(pd.Series(cluster_ids, dtype=int))
         sample_clusters.append(sample_part)
@@ -737,9 +739,9 @@ def collect_cluster_sample_statistics(part, points, annotated_tables):
     sample_davies_bouldins = []
     sample_dunns = []
     sample_largest_cluster_volume = []
-    for sample_part, sample_table, sample_mask in zip(sample_clusters, sample_tables, sample_masks):
+    for sample_part, sample_table in zip(sample_clusters, sample_tables):
         # Metrics that need the original points
-        sample_points = np.array(sample_table[sample_mask][['Cartn_x', 'Cartn_y', 'Cartn_z']])
+        sample_points = np.array(sample_table[['Cartn_x', 'Cartn_y', 'Cartn_z']])
         sample_davies_bouldins.append(davies_bouldin(sample_part, sample_points))
         sample_dunns.append(dunn(sample_part, sample_points))
         volumes = cluster_hull_volumes(sample_part, sample_points).values()
