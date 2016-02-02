@@ -688,27 +688,11 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
 
     # If required, test significance using bootstrap
     if n_samples > 0:
-        n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
-        n_phenotypes = len(table.disease.dropna().unique())
-        clean_table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id']).drop(['resn', 'mut', 'disease'],
-                                                                                          axis=1)
-        clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
-
-        # Bootstrap samples
-        annotated_tables = bootstrap_residue_clusters(clean_table, method,
-                                                      n_phenotypes,
-                                                      n_samples,
-                                                      n_variants,
-                                                      show_progress,
-                                                      similarity,
-                                                      **kwargs)
-
-        # Drop unneccesary data
-        column_whitelist = ['Cartn_x', 'Cartn_y', 'Cartn_z', 'cluster_id']
-        annotated_tables[:] = [i.loc[i.cluster_id.notnull(), column_whitelist] for i in annotated_tables]
-
-        bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(part, points,
-                                                                                            annotated_tables)
+        annotated_tables, bs_stats, p_values, sample_cluster_sizes, stats = test_cluster_significance(part, points,
+                                                                                                      method,
+                                                                                                      similarity, table,
+                                                                                                      show_progress,
+                                                                                                      n_samples, kwargs)
 
         if return_samples:
             return {'part': part, 'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats,
@@ -722,6 +706,28 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         annotated_table = add_clusters_to_table(labelled_points, table)
 
         return part, annotated_table
+
+
+def test_cluster_significance(part, points, method, similarity, table, show_progress, n_samples, kwargs):
+    n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
+    n_phenotypes = len(table.disease.dropna().unique())
+    clean_table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id']).drop(['resn', 'mut', 'disease'],
+                                                                                      axis=1)
+    clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
+    # Bootstrap samples
+    annotated_tables = bootstrap_residue_clusters(clean_table, method,
+                                                  n_phenotypes,
+                                                  n_samples,
+                                                  n_variants,
+                                                  show_progress,
+                                                  similarity,
+                                                  **kwargs)
+    # Drop unneccesary data
+    column_whitelist = ['Cartn_x', 'Cartn_y', 'Cartn_z', 'cluster_id']
+    annotated_tables[:] = [i.loc[i.cluster_id.notnull(), column_whitelist] for i in annotated_tables]
+    bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(part, points,
+                                                                                        annotated_tables)
+    return annotated_tables, bs_stats, p_values, sample_cluster_sizes, stats
 
 
 def collect_cluster_sample_statistics(part, points, annotated_tables):
