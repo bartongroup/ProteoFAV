@@ -703,20 +703,8 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
                                                       similarity,
                                                       **kwargs)
 
-        sample_clusters = []
-        sample_masks = []
-        sample_tables = []
-        for i in annotated_tables:
-            sample_masks.append(i.resn.notnull())
-            cluster_ids = i.cluster_id.dropna()
-            sample_part = list(pd.Series(cluster_ids, dtype=int))
-            sample_clusters.append(sample_part)
-            sample_tables.append(i.drop('cluster_id', axis=1))
-
-
         bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(n_samples, part, points,
-                                                                                            sample_clusters,
-                                                                                            sample_masks, sample_tables)
+                                                                                            annotated_tables)
 
         if return_samples:
             return {'part': part, 'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats,
@@ -732,7 +720,19 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         return part, annotated_table
 
 
-def collect_cluster_sample_statistics(n_samples, part, points, sample_clusters, sample_masks, sample_tables):
+def collect_cluster_sample_statistics(n_samples, part, points, annotated_tables):
+
+    # Parse the clustered tables
+    sample_clusters = []
+    sample_masks = []
+    sample_tables = []
+    for i in annotated_tables:
+        sample_masks.append(i.resn.notnull())
+        cluster_ids = i.cluster_id.dropna()
+        sample_part = list(pd.Series(cluster_ids, dtype=int))
+        sample_clusters.append(sample_part)
+        sample_tables.append(i.drop('cluster_id', axis=1))
+
     # Metrics that need original points
     sample_davies_bouldins = []
     sample_dunns = []
