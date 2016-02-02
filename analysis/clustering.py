@@ -751,13 +751,13 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
     sample_davies_bouldins = [davies_bouldin(part, points) for part, points in parsed_samples]
     sample_dunns = [dunn(part, points) for part, points in parsed_samples]
     sample_largest_cluster_volume = [max(cluster_hull_volumes(part, points)) for part, points in parsed_samples]
-    bs_stats = bootstrap_stats(zip(*parsed_samples)[0])  # Partition metrics
+    random_sample_cluster_statistics = bootstrap_stats(zip(*parsed_samples)[0])  # Partition metrics
 
     # Combine the random sample cluster statistics
     for i in xrange(len(sample_tables)):
-        bs_stats[i].append(sample_davies_bouldins[i])
-        bs_stats[i].append(sample_dunns[i])
-        bs_stats[i].append(sample_largest_cluster_volume[i])
+        random_sample_cluster_statistics[i].append(sample_davies_bouldins[i])
+        random_sample_cluster_statistics[i].append(sample_dunns[i])
+        random_sample_cluster_statistics[i].append(sample_largest_cluster_volume[i])
 
     # Collect the observed cluster statistics
     observed_stats = {}
@@ -767,7 +767,7 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
 
     # Calculate p for randomly seeing a value smaller, equal to or larger than observed statistic
     p_values = []
-    for obs, sampled in zip(obs_stats, zip(*bs_stats)):
+    for obs, sampled in zip(obs_stats, zip(*random_sample_cluster_statistics)):
         left = boot_pvalue(sampled, lambda x: x < obs)
         mid = boot_pvalue(sampled, lambda x: x == obs)
         right = boot_pvalue(sampled, lambda x: x > obs)
@@ -781,7 +781,7 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
         sample_cluster_sizes.append(partition_to_sizes(i))
     sample_cluster_sizes = [e for sublist in sample_cluster_sizes for e in sublist]  # Flatten
 
-    return bs_stats, p_values, sample_cluster_sizes, stats
+    return random_sample_cluster_statistics, p_values, sample_cluster_sizes, stats
 
 
 def cluster_spatial_statistics(test_part, test_points):
