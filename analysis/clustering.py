@@ -672,6 +672,15 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
     :return:
     """
 
+    # Create string describing clustering for metadata
+    cluster_parameters_whitelist = ['method', 'threshold', 'similarity']
+    cluster_parameters = []
+    for k, v in locals().iteritems():
+        if k in cluster_parameters_whitelist:
+            cluster_parameters.append(str(k))
+            cluster_parameters.append(str(v))
+    cluster_meta_tag = '_'.join(cluster_parameters)
+
     # # Apply mask
     # table = table[mask]
     # mask = np.array([True] * len(table))  #TODO: Remove the need for this hack needed for `atom_dist`
@@ -704,6 +713,7 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
 
         labelled_points = add_clusters_to_points(part, points)
         annotated_table = add_clusters_to_table(labelled_points, table)
+        annotated_table.loc[annotated_table.cluster_id.notnull(), 'cluster_info'] = cluster_meta_tag  ## New column until pandas reliably stores metadata
 
         return part, annotated_table
 
