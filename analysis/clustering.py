@@ -100,6 +100,7 @@ def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), gamma=1./3, **k
         s = np.exp(-d * gamma)
 
     if method == 'alt_reciprocal':
+        ##d[d > threshold] = float('inf')  #TODO: Any threshold here hides cluster structure. Why?
         s = 1. / (d / d.max())
 
     return s
