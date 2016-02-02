@@ -216,7 +216,8 @@ def merge_clusters_to_table(residue_ids, partition, target_table, multichain=Fal
 ##############################################################################
 # Comparing clustering routines
 ##############################################################################
-def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
+def linkage_cluster(d, methods=['single', 'complete'], similarity='max_minus_d',
+                    **kwargs):
     """
 
     :param d: A reduced distance matrix, such as produced by `pdist`
@@ -233,7 +234,7 @@ def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
             linkages.append([z, method])
         else:
             sq = squareform(d)
-            s = dist_to_sim(sq, **kwargs)
+            s = dist_to_sim(sq, method=similarity, **kwargs)
             if method.startswith('mcl_program'):
                 clusters = launch_mcl(s, **kwargs)
                 linkages.append([clusters, method])
@@ -654,7 +655,8 @@ def plot_sample_distributions(results, names):
 # Convenience wrappers
 ##############################################################################
 def cluster_table(table, mask, method, n_samples=0, return_samples=False,
-                  show_progress=False, sites_only=True, **kwargs):
+                  show_progress=False, sites_only=True, similarity='max_minus_d',
+                  **kwargs):
     """
 
     :param table:
@@ -675,7 +677,7 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
 
     # Perform clustering
     d, points, resids, unmapped_points = atom_dist(table, table.resn.notnull())
-    links = linkage_cluster(d, methods=method, **kwargs)
+    links = linkage_cluster(d, methods=method, similarity=similarity, **kwargs)
     part = links[0][0]
 
     # If required, test significance using bootstrap
@@ -692,6 +694,7 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
                                                       n_samples,
                                                       n_variants,
                                                       show_progress,
+                                                      similarity,
                                                       **kwargs)
 
         sample_clusters = []
@@ -772,7 +775,8 @@ def collect_cluster_sample_statistics(n_samples, part, points, sample_clusters, 
 ##############################################################################
 # Bootstrapping
 ##############################################################################
-def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_variants, show_progress, **kwargs):
+def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_variants, show_progress, similarity,
+                               **kwargs):
     """
 
     :param clean_table: A structure table
@@ -788,7 +792,8 @@ def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_v
     for i in xrange(n_samples):
         sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
         sample_mask = sample_table.resn.notnull()
-        sample_part, annotated_table = cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs)
+        sample_part, annotated_table = cluster_table(sample_table, sample_mask, method, n_samples=0,
+                                                     similarity=similarity, **kwargs)
         annotated_tables.append(annotated_table)
         if show_progress:
             pc_complete = (i + 1) / float(n_samples) * 100

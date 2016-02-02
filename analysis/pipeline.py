@@ -27,6 +27,8 @@ if __name__ == '__main__':
     parser.add_argument('--IF', dest='inflate', type=float, help='MCL inflation factor. Will use default if ommitted')
     parser.add_argument('--threshold', dest='threshold', type=float, default=7.5,
                         help='Distance threshold to break edges of positional similarity graph')
+    parser.add_argument('--similarity', dest='similarity', type=str, default='max_minus_d',
+                        help='Method to transform interatomic distances into a graph')
     parser.add_argument('--retry_failed', dest='retry_failed', action='store_true')
 
     # Setup results dir
@@ -48,7 +50,7 @@ if __name__ == '__main__':
 
     # Setup directory structure ----------------------------------------------------------------------------------------
     # Cluster analyses are stored according to the parameter sets used
-    cluster_parameters_whitelist = ['inflate', 'threshold']
+    cluster_parameters_whitelist = ['inflate', 'threshold', 'similarity']
     cluster_parameters = []
     for k, v in vars(args).iteritems():
         if k in cluster_parameters_whitelist:
