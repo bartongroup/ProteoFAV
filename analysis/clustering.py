@@ -698,23 +698,22 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
     links = linkage_cluster(d, methods=method, similarity=similarity, **kwargs)
     part = links[0][0]
 
+    # Format the results
+    labelled_points = add_clusters_to_points(part, points)
+    annotated_table = add_clusters_to_table(labelled_points, table)
+    annotated_table.loc[annotated_table.cluster_id.notnull(), 'cluster_info'] = cluster_meta_tag  ## New column until pandas reliably stores metadata
+
     # If required, test significance using bootstrap
     if n_samples > 0:
-        significance_results = test_cluster_significance(part, points, method, similarity, table, show_progress,
+        significance_results = test_cluster_significance(annotated_table, method, similarity, table, show_progress,
                                                          n_samples, return_samples)
         significance_results.update({'part': part})
         return significance_results
-
     else:
-
-        labelled_points = add_clusters_to_points(part, points)
-        annotated_table = add_clusters_to_table(labelled_points, table)
-        annotated_table.loc[annotated_table.cluster_id.notnull(), 'cluster_info'] = cluster_meta_tag  ## New column until pandas reliably stores metadata
-
         return part, annotated_table
 
 
-def test_cluster_significance(part, points, method, similarity, table, show_progress, n_samples, return_samples,
+def test_cluster_significance(test_table, method, similarity, table, show_progress, n_samples, return_samples,
                               **kwargs):
     n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
     n_phenotypes = len(table.disease.dropna().unique())
@@ -732,6 +731,8 @@ def test_cluster_significance(part, points, method, similarity, table, show_prog
     # Drop unneccesary data
     column_whitelist = ['Cartn_x', 'Cartn_y', 'Cartn_z', 'cluster_id']
     annotated_tables[:] = [i.loc[i.cluster_id.notnull(), column_whitelist] for i in annotated_tables]
+
+    part, points = clustered_table_to_partition_and_points(test_table)
     bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(part, points,
                                                                                         annotated_tables)
 
