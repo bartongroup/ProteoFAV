@@ -140,29 +140,29 @@ if __name__ == '__main__':
             logger.info('Reloaded clustering results for {}.'.format(prot))
 
     # Create results plots
-    names = ['mean', 'median', 'std', 'min', 'max', 'len', 'top_k_clusters', 'n_isolated', 'n_50_clusters']
-    names.append('Davies-Bouldin')
-    names.append('Dunn_index')
-    names.append('largest_cluster_volume')
-    for prot, n_variants, stats in results:
-        plot_failed_placeholder = os.path.join(args.RESULTS_DIR, 'plot_file_' + prot + '.failed')
-        plot_file_name = 'cluster_metrics_' + prot + '.png'
-        plot_file = os.path.join(args.RESULTS_DIR, plot_file_name)
-        if not os.path.isfile(plot_file):
-            if not os.path.isfile(plot_failed_placeholder) or args.retry_failed:
-                try:
-                    logger.info('Plotting results for {}.'.format(prot))
-                    analysis.clustering.plot_sample_distributions(stats, names)
-                    plt.suptitle(prot)
-                    plt.tight_layout()
-                    plt.savefig(plot_file, format='png')
-                    plt.close()
-                except:
-                    logger.warning('Cannot provide plot for {}... skipping.'.format(prot))
-                    with open(plot_failed_placeholder, 'w') as output:
-                        output.write('Last attempted at {}\n'.format(time.strftime('%a %d %b - %H:%M:%S')))
-        else:
-            logger.info('Results already plotted for {}... skipping.'.format(prot))
+    # names = ['mean', 'median', 'std', 'min', 'max', 'len', 'top_k_clusters', 'n_isolated', 'n_50_clusters']
+    # names.append('Davies-Bouldin')
+    # names.append('Dunn_index')
+    # names.append('largest_cluster_volume')
+    # for prot, n_variants, stats in results:
+    #     plot_failed_placeholder = os.path.join(args.RESULTS_DIR, 'plot_file_' + prot + '.failed')
+    #     plot_file_name = 'cluster_metrics_' + prot + '.png'
+    #     plot_file = os.path.join(args.RESULTS_DIR, plot_file_name)
+    #     if not os.path.isfile(plot_file):
+    #         if not os.path.isfile(plot_failed_placeholder) or args.retry_failed:
+    #             try:
+    #                 logger.info('Plotting results for {}.'.format(prot))
+    #                 analysis.clustering.plot_sample_distributions(stats, names)
+    #                 plt.suptitle(prot)
+    #                 plt.tight_layout()
+    #                 plt.savefig(plot_file, format='png')
+    #                 plt.close()
+    #             except:
+    #                 logger.warning('Cannot provide plot for {}... skipping.'.format(prot))
+    #                 with open(plot_failed_placeholder, 'w') as output:
+    #                     output.write('Last attempted at {}\n'.format(time.strftime('%a %d %b - %H:%M:%S')))
+    #     else:
+    #         logger.info('Results already plotted for {}... skipping.'.format(prot))
 
     # Write some summary stats
     results_file = os.path.join(args.RESULTS_DIR, 'results_summary.txt')
