@@ -113,14 +113,22 @@ if __name__ == '__main__':
     # Cluster analysis -------------------------------------------------------------------------------------------------
     results = []
     for prot, table in structure_tables:
+
+        # Basic processing
         deduped = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
         mask = deduped.resn.notnull()
         n_variants = sum(mask)
+
+        # File names
         cluster_failed_placeholder = os.path.join(cluster_dir, 'cluster_results_' + prot + '.failed')
         cluster_pickle_name = 'cluster_results_' + prot + '.pkl'
         cluster_file_name = os.path.join(cluster_dir, cluster_pickle_name)
+
+        # Check if the results are already available or marked as failed
         if not os.path.isfile(cluster_file_name):
             if not os.path.isfile(cluster_failed_placeholder) or args.retry_failed:
+
+                # Try to complete the cluster analysis and store the results. Otherwise, record the failure and move on.
                 try:
                     logger.info('Running cluster analysis for {}.'.format(prot))
                     cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
@@ -132,9 +140,13 @@ if __name__ == '__main__':
                     logger.warning('Cannot complete cluster analysis for {}... skipping.'.format(prot))
                     with open(cluster_failed_placeholder, 'w') as output:
                         output.write('Last attempted at {}\n'.format(time.strftime('%a %d %b - %H:%M:%S')))
+
             else:
+                # Log and skip
                 logger.info('Clustering for {} recorded as failed... skipping.'.format(prot))
+
         else:
+            # Reload the clustering
             cluster_table = pickle.load(open(cluster_file_name, 'rb'))
             results.append((prot, n_variants, cluster_table))
             logger.info('Reloaded clustering results for {}.'.format(prot))
