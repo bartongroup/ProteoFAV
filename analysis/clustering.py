@@ -700,17 +700,10 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
 
     # If required, test significance using bootstrap
     if n_samples > 0:
-        annotated_tables, bs_stats, p_values, sample_cluster_sizes, stats = test_cluster_significance(part, points,
-                                                                                                      method,
-                                                                                                      similarity, table,
-                                                                                                      show_progress,
-                                                                                                      n_samples, kwargs)
-
-        if return_samples:
-            return {'part': part, 'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats,
-                    'sample_size_dist': sample_cluster_sizes, 'random_samples': annotated_tables}
-        else:
-            return {'part': part, 'p': p_values, 'stats': stats}
+        significance_results = test_cluster_significance(part, points, method, similarity, table, show_progress,
+                                                         n_samples, return_samples)
+        significance_results.update({'part': part})
+        return significance_results
 
     else:
 
@@ -721,7 +714,8 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         return part, annotated_table
 
 
-def test_cluster_significance(part, points, method, similarity, table, show_progress, n_samples, kwargs):
+def test_cluster_significance(part, points, method, similarity, table, show_progress, n_samples, return_samples,
+                              **kwargs):
     n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
     n_phenotypes = len(table.disease.dropna().unique())
     clean_table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id']).drop(['resn', 'mut', 'disease'],
@@ -740,7 +734,12 @@ def test_cluster_significance(part, points, method, similarity, table, show_prog
     annotated_tables[:] = [i.loc[i.cluster_id.notnull(), column_whitelist] for i in annotated_tables]
     bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(part, points,
                                                                                         annotated_tables)
-    return annotated_tables, bs_stats, p_values, sample_cluster_sizes, stats
+
+    results = {'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats}
+    if return_samples:
+        results.update({'sample_size_dist': sample_cluster_sizes, 'random_samples': annotated_tables})
+
+    return results
 
 
 def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
