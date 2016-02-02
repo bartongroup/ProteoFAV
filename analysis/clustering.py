@@ -703,7 +703,7 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
                                                       similarity,
                                                       **kwargs)
 
-        bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(n_samples, part, points,
+        bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(part, points,
                                                                                             annotated_tables)
 
         if return_samples:
@@ -720,7 +720,7 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         return part, annotated_table
 
 
-def collect_cluster_sample_statistics(n_samples, part, points, annotated_tables):
+def collect_cluster_sample_statistics(part, points, annotated_tables):
 
     # Parse the clustered tables
     sample_clusters = []
@@ -758,7 +758,7 @@ def collect_cluster_sample_statistics(n_samples, part, points, annotated_tables)
     names.append('Davies-Bouldin')
     names.append('Dunn_index')
     names.append('largest_cluster_volume')
-    for i in xrange(n_samples):
+    for i in xrange(len(annotated_tables)):
         bs_stats[i].append(sample_davies_bouldins[i])
         bs_stats[i].append(sample_dunns[i])
         bs_stats[i].append(sample_largest_cluster_volume[i])
