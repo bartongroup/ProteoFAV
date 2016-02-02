@@ -744,18 +744,16 @@ def collect_cluster_sample_statistics(part, points, annotated_tables):
 
     # Parse the clustered tables
     sample_clusters = []
-    sample_tables = []
     for i in annotated_tables:
         cluster_ids = i.cluster_id.dropna()
         sample_part = list(pd.Series(cluster_ids, dtype=int))
         sample_clusters.append(sample_part)
-        sample_tables.append(i.drop('cluster_id', axis=1))
 
     # Metrics that need original points
     sample_davies_bouldins = []
     sample_dunns = []
     sample_largest_cluster_volume = []
-    for sample_part, sample_table in zip(sample_clusters, sample_tables):
+    for sample_part, sample_table in zip(sample_clusters, annotated_tables):
         # Metrics that need the original points
         sample_points = np.array(sample_table[['Cartn_x', 'Cartn_y', 'Cartn_z']])
         sample_davies_bouldins.append(davies_bouldin(sample_part, sample_points))
