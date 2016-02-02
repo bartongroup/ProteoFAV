@@ -25,6 +25,7 @@ from main import merge_tables
 from variants.to_table import _fetch_uniprot_variants
 from utils import get_colors, autoscale_axes, fractional_to_cartesian, delete_file
 from analysis.random_annotations import add_random_disease_variants
+from operator import itemgetter
 
 __author__ = 'smacgowan'
 
@@ -755,25 +756,24 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
 
     # Combine the random sample cluster statistics
     for i in xrange(len(sample_tables)):
-        random_sample_cluster_statistics[i].update({'davies_bouldin': sample_davies_bouldins[i]})
-        random_sample_cluster_statistics[i].update({'dunn': sample_dunns[i]})
+        random_sample_cluster_statistics[i].update({'Davies-Bouldin': sample_davies_bouldins[i]})
+        random_sample_cluster_statistics[i].update({'Dunn_index': sample_dunns[i]})
         random_sample_cluster_statistics[i].update({'largest_cluster_volume': sample_largest_cluster_volume[i]})
 
     # Collect the observed cluster statistics
     observed_stats = {}
     observed_stats.update(cluster_size_stats(test_part, names=True))
     observed_stats.update(cluster_spatial_statistics(test_part, test_points))
-    names, obs_stats = zip(*[(k, v) for k, v in observed_stats.iteritems()])
 
     # Calculate p for randomly seeing a value smaller, equal to or larger than observed statistic
-    p_values = []
-    for obs, sampled in zip(obs_stats, zip(*random_sample_cluster_statistics)):
+    p_values = {}
+    for stat_key in observed_stats:
+        sampled = map(itemgetter(stat_key), random_sample_cluster_statistics)
+        obs = observed_stats[stat_key]
         left = boot_pvalue(sampled, lambda x: x < obs)
         mid = boot_pvalue(sampled, lambda x: x == obs)
         right = boot_pvalue(sampled, lambda x: x > obs)
-        p_values.append((left, mid, right))
-    p_values = dict(zip(names, p_values))
-    stats = dict(zip(names, obs_stats))
+        p_values.update({stat_key: (left, mid, right)})
 
     ## For complete cluster size distribution
     sample_cluster_sizes = []
@@ -781,7 +781,7 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
         sample_cluster_sizes.append(partition_to_sizes(i))
     sample_cluster_sizes = [e for sublist in sample_cluster_sizes for e in sublist]  # Flatten
 
-    return random_sample_cluster_statistics, p_values, sample_cluster_sizes, stats
+    return random_sample_cluster_statistics, p_values, sample_cluster_sizes, observed_stats
 
 
 def cluster_spatial_statistics(test_part, test_points):
