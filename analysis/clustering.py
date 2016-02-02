@@ -512,6 +512,11 @@ def dunn(partition, observations):
     :return: The Dunn index
     """
     cluster_ids = list(set(partition))
+
+    # NA if only one cluster
+    if len(cluster_ids) == 1:
+        return np.nan
+
     cluster_ids.sort()
     min_inter = min(pdist(centroids(partition, observations).values()))
     intras = []
