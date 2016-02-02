@@ -131,8 +131,12 @@ if __name__ == '__main__':
                 # Try to complete the cluster analysis and store the results. Otherwise, record the failure and move on.
                 try:
                     logger.info('Running cluster analysis for {}.'.format(prot))
-                    cluster_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
-                                                                      n_samples=50, return_samples=True, **vars(args))
+                    annotated_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
+                                                                        **vars(args))
+                    cluster_table = analysis.clustering.test_cluster_significance(annotated_table, method=['mcl_program'],
+                                                                                  table=deduped, show_progress=False,
+                                                                                  n_samples=50, return_samples=True,
+                                                                                  **vars(args))
                     with open(cluster_file_name, 'wb') as output:
                         pickle.dump(cluster_table, output, -1)
                     results.append((prot, n_variants, cluster_table))
