@@ -710,7 +710,7 @@ def cluster_table(table, mask, method, n_samples=0, return_samples=False,
         significance_results.update({'part': part})
         return significance_results
     else:
-        return part, annotated_table
+        return annotated_table
 
 
 def test_cluster_significance(test_table, method, similarity, table, show_progress, n_samples, return_samples,
@@ -817,8 +817,8 @@ def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_v
     for i in xrange(n_samples):
         sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
         sample_mask = sample_table.resn.notnull()
-        sample_part, annotated_table = cluster_table(sample_table, sample_mask, method, n_samples=0,
-                                                     similarity=similarity, **kwargs)
+        annotated_table = cluster_table(sample_table, sample_mask, method, n_samples=0,
+                                        similarity=similarity, **kwargs)
         annotated_tables.append(annotated_table)
         if show_progress:
             pc_complete = (i + 1) / float(n_samples) * 100
