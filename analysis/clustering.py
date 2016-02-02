@@ -751,13 +751,13 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
     sample_davies_bouldins = [davies_bouldin(part, points) for part, points in parsed_samples]
     sample_dunns = [dunn(part, points) for part, points in parsed_samples]
     sample_largest_cluster_volume = [max(cluster_hull_volumes(part, points)) for part, points in parsed_samples]
-    random_sample_cluster_statistics = bootstrap_stats(zip(*parsed_samples)[0])  # Partition metrics
+    random_sample_cluster_statistics = bootstrap_stats(zip(*parsed_samples)[0], names=True)  # Partition metrics
 
     # Combine the random sample cluster statistics
     for i in xrange(len(sample_tables)):
-        random_sample_cluster_statistics[i].append(sample_davies_bouldins[i])
-        random_sample_cluster_statistics[i].append(sample_dunns[i])
-        random_sample_cluster_statistics[i].append(sample_largest_cluster_volume[i])
+        random_sample_cluster_statistics[i].update({'davies_bouldin': sample_davies_bouldins[i]})
+        random_sample_cluster_statistics[i].update({'dunn': sample_dunns[i]})
+        random_sample_cluster_statistics[i].update({'largest_cluster_volume': sample_largest_cluster_volume[i]})
 
     # Collect the observed cluster statistics
     observed_stats = {}
