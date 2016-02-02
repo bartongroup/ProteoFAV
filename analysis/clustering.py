@@ -744,26 +744,26 @@ def test_cluster_significance(part, points, method, similarity, table, show_prog
 
 def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
 
-    # Parse the clustered tables
+    # Parse the random sample cluster tables
     parsed_samples = [clustered_table_to_partition_and_points(i) for i in sample_tables]
 
-    # Metrics that need original points
+    # Gather the random sample cluster statistics
     sample_davies_bouldins = [davies_bouldin(part, points) for part, points in parsed_samples]
     sample_dunns = [dunn(part, points) for part, points in parsed_samples]
     sample_largest_cluster_volume = [max(cluster_hull_volumes(part, points)) for part, points in parsed_samples]
+    bs_stats = bootstrap_stats(zip(*parsed_samples)[0])  # Partition metrics
 
-    # Partition metrics
-    bs_stats = bootstrap_stats(zip(*parsed_samples)[0])
-
-    observed_stats = {}
-    observed_stats.update(cluster_size_stats(test_part, names=True))
-    observed_stats.update(cluster_spatial_statistics(test_part, test_points))
-    names, obs_stats = zip(*[(k, v) for k, v in observed_stats.iteritems()])
-
+    # Combine the random sample cluster statistics
     for i in xrange(len(sample_tables)):
         bs_stats[i].append(sample_davies_bouldins[i])
         bs_stats[i].append(sample_dunns[i])
         bs_stats[i].append(sample_largest_cluster_volume[i])
+
+    # Collect the observed cluster statistics
+    observed_stats = {}
+    observed_stats.update(cluster_size_stats(test_part, names=True))
+    observed_stats.update(cluster_spatial_statistics(test_part, test_points))
+    names, obs_stats = zip(*[(k, v) for k, v in observed_stats.iteritems()])
 
     # Calculate p for randomly seeing a value smaller, equal to or larger than observed statistic
     p_values = []
