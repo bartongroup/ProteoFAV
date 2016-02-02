@@ -567,9 +567,10 @@ def cluster_hull_volumes(partition, points):
         member_ids = member_indexes(partition, cid)
         member_pts = points[member_ids, :]
         if len(member_pts) >= 4:  ## Ignore 'plane' clusters, TODO: handle duplicates
-            volumes[cid] = convex_hull_volume_bis(member_pts)
+            volume = convex_hull_volume_bis(member_pts)
         else:
-            volumes[cid] = 0
+            volume = 0
+        volumes[cid] = 0 if volume is None else volume
     return volumes
 
 
@@ -740,44 +741,32 @@ def test_cluster_significance(part, points, method, similarity, table, show_prog
     return annotated_tables, bs_stats, p_values, sample_cluster_sizes, stats
 
 
-def collect_cluster_sample_statistics(part, points, annotated_tables):
+def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
 
     # Parse the clustered tables
-    sample_clusters = []
-    for i in annotated_tables:
-        cluster_ids = i.cluster_id.dropna()
-        sample_part = list(pd.Series(cluster_ids, dtype=int))
-        sample_clusters.append(sample_part)
+    parsed_samples = [clustered_table_to_partition_and_points(i) for i in sample_tables]
 
     # Metrics that need original points
-    sample_davies_bouldins = []
-    sample_dunns = []
-    sample_largest_cluster_volume = []
-    for sample_part, sample_table in zip(sample_clusters, annotated_tables):
-        # Metrics that need the original points
-        sample_points = np.array(sample_table[['Cartn_x', 'Cartn_y', 'Cartn_z']])
-        sample_davies_bouldins.append(davies_bouldin(sample_part, sample_points))
-        sample_dunns.append(dunn(sample_part, sample_points))
-        volumes = cluster_hull_volumes(sample_part, sample_points).values()
-        if len(volumes) > 0:
-            sample_largest_cluster_volume.append(max(volumes))
-        else:
-            sample_largest_cluster_volume.append(0)
+    sample_davies_bouldins = [davies_bouldin(part, points) for part, points in parsed_samples]
+    sample_dunns = [dunn(part, points) for part, points in parsed_samples]
+    sample_largest_cluster_volume = [max(cluster_hull_volumes(part, points)) for part, points in parsed_samples]
 
     # Partition metrics
-    bs_stats = bootstrap_stats(sample_clusters)
-    names, obs_stats = cluster_size_stats(part, names=True)
+    bs_stats = bootstrap_stats(zip(*parsed_samples)[0])
+    names, obs_stats = cluster_size_stats(test_part, names=True)
     # Add other metrics
-    obs_stats.append(davies_bouldin(part, points))
-    obs_stats.append(dunn(part, points))
-    obs_stats.append(max(cluster_hull_volumes(part, points).values()))
+    obs_stats.append(davies_bouldin(test_part, test_points))
+    obs_stats.append(dunn(test_part, test_points))
+    obs_stats.append(max(cluster_hull_volumes(test_part, test_points).values()))
     names.append('Davies-Bouldin')
     names.append('Dunn_index')
     names.append('largest_cluster_volume')
-    for i in xrange(len(annotated_tables)):
+    for i in xrange(len(sample_tables)):
         bs_stats[i].append(sample_davies_bouldins[i])
         bs_stats[i].append(sample_dunns[i])
         bs_stats[i].append(sample_largest_cluster_volume[i])
+
+    # Calculate p for randomly seeing a value smaller, equal to or larger than observed statistic
     p_values = []
     for obs, sampled in zip(obs_stats, zip(*bs_stats)):
         left = boot_pvalue(sampled, lambda x: x < obs)
@@ -786,11 +775,13 @@ def collect_cluster_sample_statistics(part, points, annotated_tables):
         p_values.append((left, mid, right))
     p_values = dict(zip(names, p_values))
     stats = dict(zip(names, obs_stats))
+
     ## For complete cluster size distribution
     sample_cluster_sizes = []
-    for i in sample_clusters:
+    for i in zip(*parsed_samples)[0]:
         sample_cluster_sizes.append(partition_to_sizes(i))
     sample_cluster_sizes = [e for sublist in sample_cluster_sizes for e in sublist]  # Flatten
+
     return bs_stats, p_values, sample_cluster_sizes, stats
 
 
@@ -850,6 +841,17 @@ def add_clusters_to_table(labelled_points, clustered_table):
     :return:
     """
     return pd.merge(clustered_table, labelled_points, how='left')
+
+
+def clustered_table_to_partition_and_points(table):
+    """
+
+    :param table: A structure table with clustered sites.
+    :return: A 2-tuple with the partition vector (list) and point positions (np.array).
+    """
+    partition = list(pd.Series(table.cluster_id.dropna(), dtype=int))
+    points = np.array(table.loc[table.cluster_id.notnull(), ['Cartn_x', 'Cartn_y', 'Cartn_z']])
+    return partition, points
 
 
 if __name__ == '__main__':
