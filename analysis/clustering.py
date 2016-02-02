@@ -442,7 +442,8 @@ def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, l
         return results
     else:
         stat_functions = [stat.__name__ for stat in statistics]
-        return stat_functions, results
+        results = {k: v for k, v in zip(stat_functions, results)}
+        return results
 
 
 def centroids(partition, observations):
@@ -753,14 +754,12 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
 
     # Partition metrics
     bs_stats = bootstrap_stats(zip(*parsed_samples)[0])
-    names, obs_stats = cluster_size_stats(test_part, names=True)
-    # Add other metrics
-    obs_stats.append(davies_bouldin(test_part, test_points))
-    obs_stats.append(dunn(test_part, test_points))
-    obs_stats.append(max(cluster_hull_volumes(test_part, test_points).values()))
-    names.append('Davies-Bouldin')
-    names.append('Dunn_index')
-    names.append('largest_cluster_volume')
+
+    observed_stats = {}
+    observed_stats.update(cluster_size_stats(test_part, names=True))
+    observed_stats.update(cluster_spatial_statistics(test_part, test_points))
+    names, obs_stats = zip(*[(k, v) for k, v in observed_stats.iteritems()])
+
     for i in xrange(len(sample_tables)):
         bs_stats[i].append(sample_davies_bouldins[i])
         bs_stats[i].append(sample_dunns[i])
@@ -783,6 +782,19 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
     sample_cluster_sizes = [e for sublist in sample_cluster_sizes for e in sublist]  # Flatten
 
     return bs_stats, p_values, sample_cluster_sizes, stats
+
+
+def cluster_spatial_statistics(test_part, test_points):
+    obs_stats = []
+    obs_stats.append(davies_bouldin(test_part, test_points))
+    obs_stats.append(dunn(test_part, test_points))
+    obs_stats.append(max(cluster_hull_volumes(test_part, test_points).values()))
+    names = []
+    names.append('Davies-Bouldin')
+    names.append('Dunn_index')
+    names.append('largest_cluster_volume')
+    results = {k: v for k, v in zip(names, obs_stats)}
+    return results
 
 
 ##############################################################################
