@@ -2,6 +2,7 @@
 # -*- coding: utf-8
 
 import logging
+import re
 import pandas as pd
 import pymol  ##TODO: This import kicks of pymol, consider it for in function.
 
@@ -61,6 +62,7 @@ def make_selection(chain, select_ResNums, select_name):
     :param select_name: The name for the selection
     :return:
     """
+    select_name = re.sub("[!@#$%^&*()'\"[\]{}\|~`<>.?/ ]+", "_", select_name.strip())  # Sanitise select_name
     if select_name not in pymol.cmd.get_names('selections'):
         pymol.cmd.select('"{0}"'.format(select_name), 'none')
         logging.debug('Created selection "{0}" in PyMol'.format(select_name))
