@@ -48,9 +48,9 @@ def view_table(table, show=None, biological_assembly=True):
         # Selection must be built per chain to avoid ambiguous selections
         for chain in unique_chains:
             select_ResNums = residueIds[select_atom & (chain_ids == chain)]
-            select_name = column
+            select_name = 'has_' + column
             if select_name not in pymol.cmd.get_names('selections'):
-                pymol.cmd.select(select_name, 'none')
+                pymol.cmd.select('"{0}"'.format(select_name), 'none')
             selection = 'chain ' + chain + ' and resi ' + '+'.join(
                     select_ResNums) + ' or ' + select_name
 
