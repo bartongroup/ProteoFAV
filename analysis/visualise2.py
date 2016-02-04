@@ -47,8 +47,7 @@ def view_table(table, show=None, biological_assembly=True):
 
         # Selection must be built per chain to avoid ambiguous selections
         for chain in unique_chains:
-
-            select_ResNums = residueIds[select_atom & (chain_ids == chain)]
+            select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
             select_name = 'has_' + column
             make_selection(chain, select_ResNums, select_name)
 
