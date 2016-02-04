@@ -680,6 +680,18 @@ def confirm_column_types(table):
             logging.debug('Coercing `{}` to `{}`'.format(column, dtype_should_be))
             table[column] = table[column].astype(dtype_should_be)
 
+    # Now check that the index is the correct type
+    column = table.index.name
+    type_should_be = column_types_long.get(column)
+    dtype_should_be = type_to_dtype_if_contains_nan.get(type_should_be)
+    if dtype_should_be is None:
+        logging.warning('Index column `{}` not recognised'.format(column))
+    current_dtype = table.index.dtype
+    if current_dtype != dtype_should_be:
+        logging.debug('Coercing index `{}` to `{}`'.format(column, dtype_should_be))
+        table.index = table.index.astype(dtype_should_be)
+
+
     return table
 
 
