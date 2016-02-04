@@ -54,7 +54,7 @@ def view_table(table, show=None, biological_assembly=True):
 
 def make_selection(chain, select_ResNums, select_name):
     """
-    Create a selection in PyMol.
+    Create a new selection or add residues to an existing selection in PyMol.
 
     :param chain: A Chain ID
     :param select_ResNums: PDB residue numbers
@@ -63,10 +63,11 @@ def make_selection(chain, select_ResNums, select_name):
     """
     if select_name not in pymol.cmd.get_names('selections'):
         pymol.cmd.select('"{0}"'.format(select_name), 'none')
+        logging.debug('Created selection "{0}" in PyMol'.format(select_name))
     selection = 'chain ' + chain + ' and resi ' + '+'.join(
         select_ResNums) + ' or ' + select_name
     pymol.cmd.select(select_name, selection)
-    message = "Created PyMol selection '{0}' from '{1}'".format(select_name, selection)
+    message = 'Added residues "{0}" to PyMol selection "{1}"'.format(selection, select_name)
     logging.debug(message)
     # Apply some styles
     pymol.cmd.show("lines", select_name)
