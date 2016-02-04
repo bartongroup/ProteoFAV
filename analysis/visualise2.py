@@ -42,15 +42,16 @@ def view_table(table, show=None, biological_assembly=True):
     unique_chains = chain_ids.dropna().unique()
 
     # Now create labelled boolean selections
-    for column in show:
-        ## TODO: either parametrise test (e.g. allow .isnull() or create inverse selection too.
-        select_atom = table[column].notnull()
-
-        # Selection must be built per chain to avoid ambiguous selections
-        for chain in unique_chains:
-            select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
+    if show:
+        for column in show:
+            ## TODO: either parametrise test (e.g. allow .isnull() or create inverse selection too.
+            select_atom = table[column].notnull()
             select_name = 'has_' + column
-            make_selection(chain, select_ResNums, select_name)
+
+            # Selection must be built per chain to avoid ambiguous selections
+            for chain in unique_chains:
+                select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
+                make_selection(chain, select_ResNums, select_name)
 
 
 def make_selection(chain, select_ResNums, select_name):
