@@ -30,14 +30,15 @@ def view_table(table, show=None, biological_assembly=True):
     else:
         residueIds = table.PDB_dbResNum
 
+    # Get residue IDs in suitable format and drop residues with no PDB reference
     ##TODO: this may be useful elsewhere
     dropped = residueIds.isnull()
     residueIds = residueIds.dropna()
     residueIds = residueIds.astype('object').astype('int').astype('string')
-
     table = table[dropped == False]
 
     chain_ids = table.chain_id
+    unique_chains = chain_ids.dropna().unique()
 
     # Now create labelled boolean selections
     for column in show:
@@ -45,7 +46,6 @@ def view_table(table, show=None, biological_assembly=True):
         select_atom = table[column].notnull()
 
         # Selection must be built per chain to avoid ambiguous selections
-        unique_chains = chain_ids.dropna().unique()
         for chain in unique_chains:
             select_ResNums = residueIds[select_atom & (chain_ids == chain)]
             select_name = column
