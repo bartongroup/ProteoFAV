@@ -6,7 +6,7 @@ import re
 import pandas as pd
 import pymol  ##TODO: This import kicks of pymol, consider it for in function.
 
-def view_table(table, show=None, biological_assembly=True):
+def view_table(table, show=None, show_group_by=None, biological_assembly=True):
 
     # First figure out what PDB and chains are in the table
     pdb_id = table.PDB_dbAccessionId.unique()[0]
@@ -52,6 +52,18 @@ def view_table(table, show=None, biological_assembly=True):
             for chain in unique_chains:
                 select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
                 make_selection(chain, select_ResNums, select_name)
+
+    # Create level selections
+    if show_group_by:
+        for column in show_group_by:
+            unique_values = table[column].dropna().unique()
+            for value in unique_values:
+                select_atom = (table[column] == value)
+                select_name = column + '_{}'.format(value)
+                for chain in unique_chains:
+                    select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
+                    make_selection(chain, select_ResNums, select_name)
+
 
 
 def make_selection(chain, select_ResNums, select_name):
