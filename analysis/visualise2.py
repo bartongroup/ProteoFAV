@@ -49,16 +49,15 @@ def view_table(table, show=None, biological_assembly=True):
         for chain in unique_chains:
             select_ResNums = residueIds[select_atom & (chain_ids == chain)]
             select_name = 'has_' + column
+
+            # Make the selection
             if select_name not in pymol.cmd.get_names('selections'):
                 pymol.cmd.select('"{0}"'.format(select_name), 'none')
             selection = 'chain ' + chain + ' and resi ' + '+'.join(
                     select_ResNums) + ' or ' + select_name
-
-            # Make the selection
-            message = "Creating PyMol selection {} from '{}'".format(select_name,
-                                                                     selection)
-            logging.debug(message)
             pymol.cmd.select(select_name, selection)
+            message = "Created PyMol selection '{0}' from '{1}'".format(select_name, selection)
+            logging.debug(message)
 
             # Apply some styles
             pymol.cmd.show("lines", select_name)
