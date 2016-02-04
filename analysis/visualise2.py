@@ -3,12 +3,15 @@
 
 import logging
 import re
+
 import pandas as pd
 import pymol  ##TODO: This import kicks of pymol, consider it for in function.
 
+
 def view_table(table, show=None, show_group_by=None, biological_assembly=True):
     """
-    View the PDB entry associated with the provided structure table in PyMol and optionally create residue selections based on annotation columns.
+    View the PDB entry associated with the provided structure table in PyMol and optionally create residue selections
+    based on annotation columns.
 
     :param table: A structure table from `main.merge_tables`
     :param show: List of annotation columns to produce a selection passed on a boolean test (e.g., 'has_variant`)
@@ -72,7 +75,6 @@ def view_table(table, show=None, show_group_by=None, biological_assembly=True):
                 for chain in unique_chains:
                     select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
                     make_selection(chain, select_ResNums, select_name)
-
 
 
 def make_selection(chain, select_ResNums, select_name):
