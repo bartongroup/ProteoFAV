@@ -844,7 +844,12 @@ def add_clusters_to_table(labelled_points, clustered_table):
     :param clustered_table:
     :return:
     """
-    return pd.merge(clustered_table, labelled_points, how='left')
+    index_name = clustered_table.index.name
+    if index_name is not None:
+        merged_table = clustered_table.reset_index().merge(labelled_points, how='left').set_index(index_name)
+    else:
+        merged_table = clustered_table.merge(labelled_points, how='left')
+    return merged_table
 
 
 def clustered_table_to_partition_and_points(table):
