@@ -7,6 +7,15 @@ import pandas as pd
 import pymol  ##TODO: This import kicks of pymol, consider it for in function.
 
 def view_table(table, show=None, show_group_by=None, biological_assembly=True):
+    """
+    View the PDB entry associated with the provided structure table in PyMol and optionally create residue selections based on annotation columns.
+
+    :param table: A structure table from `main.merge_tables`
+    :param show: List of annotation columns to produce a selection passed on a boolean test (e.g., 'has_variant`)
+    :param show_group_by: List of annotation columns to produce a selection based on the annotations value
+    :param biological_assembly: Show the biological assembly.
+    :return:
+    """
 
     # First figure out what PDB and chains are in the table
     pdb_id = table.PDB_dbAccessionId.unique()[0]
