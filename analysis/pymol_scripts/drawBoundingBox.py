@@ -115,4 +115,4 @@ def drawBoundingBox(selection="(all)", padding=0.0, linewidth=2.0, r=1.0, g=1.0,
         cmd.load_cgo(boundingBox,boxName)
         return boxName
 
-cmd.extend ("drawBoundingBox", drawBoundingBox)
+cmd.extend("drawBoundingBox", drawBoundingBox)
