@@ -7,6 +7,8 @@ import re
 import pandas as pd
 import pymol  ##TODO: This import kicks of pymol, consider it for in function.
 
+from analysis.pymol_scripts.drawBoundingBox import drawBoundingBox
+
 
 def view_table(table, show=None, show_group_by=None, biological_assembly=True):
     """
@@ -54,6 +56,7 @@ def view_table(table, show=None, show_group_by=None, biological_assembly=True):
     unique_chains = chain_ids.dropna().unique()
 
     # Now create labelled boolean selections
+    selections = []
     if show:
         for column in show:
             ## TODO: either parametrise test (e.g. allow .isnull() or create inverse selection too.
@@ -63,7 +66,7 @@ def view_table(table, show=None, show_group_by=None, biological_assembly=True):
             # Selection must be built per chain to avoid ambiguous selections
             for chain in unique_chains:
                 select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
-                make_selection(chain, select_ResNums, select_name)
+                selections.append(make_selection(chain, select_ResNums, select_name))
 
     # Create level selections
     if show_group_by:
@@ -74,7 +77,14 @@ def view_table(table, show=None, show_group_by=None, biological_assembly=True):
                 select_name = column + '_{}'.format(value)
                 for chain in unique_chains:
                     select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
-                    make_selection(chain, select_ResNums, select_name)
+                    selections.append(make_selection(chain, select_ResNums, select_name))
+
+    selections = set(selections)
+
+    # Now style them
+    if len(selections) > 0:
+        for select_name in selections:
+            style_selection(select_name)
 
 
 def make_selection(chain, select_ResNums, select_name):
@@ -86,7 +96,10 @@ def make_selection(chain, select_ResNums, select_name):
     :param select_name: The name for the selection
     :return:
     """
-    select_name = re.sub("[!@#$%^&*()'\"[\]{}\|~`<>.?/ ]+", "_", select_name.strip())  # Sanitise select_name
+    # Sanitise select_name
+    select_name = re.sub("[!@#$%^&*()'\"[\]{}\|~`<>.?/ ]+", "_", select_name.strip())
+
+    # Create or append to the selection
     if select_name not in pymol.cmd.get_names('selections'):
         pymol.cmd.select('"{0}"'.format(select_name), 'none')
         logging.debug('Created selection "{0}" in PyMol'.format(select_name))
@@ -95,7 +108,28 @@ def make_selection(chain, select_ResNums, select_name):
     pymol.cmd.select(select_name, selection)
     message = 'Added residues "{0}" to PyMol selection "{1}"'.format(selection, select_name)
     logging.debug(message)
+
+    return select_name
+
+
+def style_selection(select_name):
     # Apply some styles
     pymol.cmd.show("lines", select_name)
     pymol.util.cnc(select_name)
 
+    # # Show bounding surface
+    # pymol.cmd.flag('ignore', 'not ' + select_name, 'set')
+    # pymol.cmd.delete('indicate')
+    # pymol.cmd.show('surface')
+    # pymol.cmd.rebuild()
+    # pymol.cmd.flag('ignore', 'all', 'reset')
+
+    drawBoundingBox(select_name)
+
+
+def int_to_chain(x):
+    if x <= 25:
+        return chr(x + ord('A'))
+    else:
+        y = (x / 26)
+        return chr((y - 1) + ord('A')) + int_to_chain(x - (26 * y))
