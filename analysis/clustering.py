@@ -19,17 +19,20 @@ from mcl.mcl_clustering import mcl
 from mpl_toolkits.mplot3d import Axes3D  ## Required
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial import ConvexHull
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist, squareform, euclidean
 from scipy.spatial.qhull import QhullError
-
 from main import merge_tables
 from variants.to_table import _fetch_uniprot_variants
-from utils import get_colors, autoscale_axes, fractional_to_cartesian
+from utils import get_colors, autoscale_axes, fractional_to_cartesian, delete_file
 from analysis.random_annotations import add_random_disease_variants
+from operator import itemgetter
 
 __author__ = 'smacgowan'
 
 
+##############################################################################
+# Distance Matrix Helpers
+##############################################################################
 def atom_dist(table, mask, cartesian=False):
     """
     Find the intervariant distances for a given PDB chain.
@@ -43,8 +46,8 @@ def atom_dist(table, mask, cartesian=False):
     excluded = table[~mask]
 
     # Build array distance matrix
-    included, included_xyz = extract_coords(included)
-    excluded, excluded_xyz = extract_coords(excluded)
+    included, included_xyz = select_valid_coordinates(included)
+    excluded, excluded_xyz = select_valid_coordinates(excluded)
 
     # Convert to fractional coordinates
     if cartesian:
@@ -57,7 +60,7 @@ def atom_dist(table, mask, cartesian=False):
     return d, included_xyz, included[['UniProt_dbResNum', 'chain_id']], excluded_xyz
 
 
-def extract_coords(table):
+def select_valid_coordinates(table):
     """
 
     :param table:
@@ -70,7 +73,7 @@ def extract_coords(table):
     return table, coord_array
 
 
-def invert_distances(d, method='max_minus_d', threshold=float('inf'), **kwargs):
+def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), gamma=1./3, **kwargs):
     """
 
     :param d: A reduced distance matrix, such as produced by `pdist` or the
@@ -79,6 +82,7 @@ def invert_distances(d, method='max_minus_d', threshold=float('inf'), **kwargs):
       Choose from: 'max_minus_d' or 'reciprocal'
     :param threshold: The threshold to discard distances (i.e. remove edges)
      before conversion to similarities
+    :param gamma: The gamma coefficient in the exponential decay transform (s = e^(-d * gamma)
     :return:
 
     NB. **kwargs is just so that this can be called with extraneous arguments.
@@ -86,60 +90,26 @@ def invert_distances(d, method='max_minus_d', threshold=float('inf'), **kwargs):
     if method == 'max_minus_d':
         d[d > threshold] = d.max()
         s = d.max() - d
+
     if method == 'reciprocal':
         d = d + 1
         s = 1. / d
+
+    if method == 'exp_decay':
+        if gamma <= 0:
+            raise ValueError('Invalid gamma: must be >= 0')
+        s = np.exp(-d * gamma)
+
+    if method == 'alt_reciprocal':
+        ##d[d > threshold] = float('inf')  #TODO: Any threshold here hides cluster structure. Why?
+        s = 1. / (d / d.max())
+
     return s
 
 
-def linkage_cluster(d, methods=['single', 'complete'], **kwargs):
-    """
-
-    :param d: A reduced distance matrix, such as produced by `pdist`
-    :param methods: A list of strings indicating the cluster methods to employ.
-      Choose from: 'single', 'complete', 'average' and 'mcl'
-    :param invert_method: See `invert_distances`
-    :param threshold: See `invert_distances`
-    :return:
-    """
-    linkages = []
-    for method in methods:
-        if not method.startswith('mcl'):
-            z = hac.linkage(d, method=method)
-            linkages.append([z, method])
-        else:
-            sq = squareform(d)
-            s = invert_distances(sq, **kwargs)
-            if method.startswith('mcl_program'):
-                clusters = launch_mcl(s, **kwargs)
-                linkages.append([clusters, method])
-            else:
-                if not 'inflate' in kwargs:
-                    inflate_factor = 2
-                else:
-                    inflate_factor = kwargs['inflate']
-                M, clusters = mcl(s, max_loop=50, inflate_factor=inflate_factor)
-                linkages.append([[M, clusters], method])
-
-    return linkages
-
-
-def cluster_dict_to_partitions(cluster_dict):
-    """
-    Convert the cluster output format from the MCL function to a partition list;
-     like that produced by `fcluster`
-
-    :param cluster_dict: A dictionary where the keys indicate cluster_dict and the
-     list elements indicate node membership
-    :return: A list where the positioning indexes correspond to node numbers and the
-     values correspond to its cluster
-    """
-    new_dict = {e: k for k, v in cluster_dict.items() for e in v}
-    part = [new_dict[k] + 1 for k in sorted(new_dict.keys())]
-    part = np.array(part)
-    return part
-
-
+##############################################################################
+# MCL Program Interface
+##############################################################################
 def write_mcl_input(s):
     """
     Re-format a similarity matrix into a list of edge weights and write to a file.
@@ -195,8 +165,13 @@ def launch_mcl(s, format='partition', inflate=None, silent=True, **kwargs):
     else:
         call(mcl_call)
 
-    # Read and parse results
+    # Read results
     clusters = read_mcl_clusters('mcl_results.txt')
+
+    # Cleanup
+    delete_file('mcl_results.txt')
+    delete_file('mcl_interactions.csv')
+
     if format == 'partition':
         part = ['unassigned'] * len(s)
         cluster_id = 0
@@ -209,6 +184,25 @@ def launch_mcl(s, format='partition', inflate=None, silent=True, **kwargs):
         return clusters
 
 
+##############################################################################
+# Cluster results formatting
+##############################################################################
+def cluster_dict_to_partitions(cluster_dict):
+    """
+    Convert the cluster output format from the MCL function to a partition list;
+     like that produced by `fcluster`
+
+    :param cluster_dict: A dictionary where the keys indicate cluster_dict and the
+     list elements indicate node membership
+    :return: A list where the positioning indexes correspond to node numbers and the
+     values correspond to its cluster
+    """
+    new_dict = {e: k for k, v in cluster_dict.items() for e in v}
+    part = [new_dict[k] + 1 for k in sorted(new_dict.keys())]
+    part = np.array(part)
+    return part
+
+
 def merge_clusters_to_table(residue_ids, partition, target_table, multichain=False):
     df = pd.DataFrame(residue_ids)
     df['Cluster'] = pd.Series(partition)
@@ -219,6 +213,42 @@ def merge_clusters_to_table(residue_ids, partition, target_table, multichain=Fal
         merge_columns = 'UniProt_dbResNum'
     merged = pd.merge(target_table, df, on=merge_columns)
     return merged
+
+
+##############################################################################
+# Comparing clustering routines
+##############################################################################
+def linkage_cluster(d, methods=['single', 'complete'], similarity='max_minus_d',
+                    **kwargs):
+    """
+
+    :param d: A reduced distance matrix, such as produced by `pdist`
+    :param methods: A list of strings indicating the cluster methods to employ.
+      Choose from: 'single', 'complete', 'average' and 'mcl'
+    :param invert_method: See `dist_to_sim`
+    :param threshold: See `dist_to_sim`
+    :return:
+    """
+    linkages = []
+    for method in methods:
+        if not method.startswith('mcl'):
+            z = hac.linkage(d, method=method)
+            linkages.append([z, method])
+        else:
+            sq = squareform(d)
+            s = dist_to_sim(sq, method=similarity, **kwargs)
+            if method.startswith('mcl_program'):
+                clusters = launch_mcl(s, **kwargs)
+                linkages.append([clusters, method])
+            else:
+                if not 'inflate' in kwargs:
+                    inflate_factor = 2
+                else:
+                    inflate_factor = kwargs['inflate']
+                M, clusters = mcl(s, max_loop=50, inflate_factor=inflate_factor)
+                linkages.append([[M, clusters], method])
+
+    return linkages
 
 
 def compare_clustering(linkages, xyz, title=None, addn_points=None):
@@ -322,9 +352,7 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
 ##############################################################################
 # Cluster statistic functions
 ##############################################################################
-
-
-def n_clusters(part):
+def n_clusters(partition):
     """
     Determine the number of clusters from a partition list.
 
@@ -332,6 +360,7 @@ def n_clusters(part):
     :type part: List
     :return: The number of clusters in the partition list
     """
+    part = list(partition)  # Copy to avoid sorting outside scope
     part.sort()
 
     if part[0] == 0:
@@ -379,16 +408,21 @@ def n_isolated(sizes):
 
 
 def n_50_clusters(sizes):
+    return n_x_clusters(sizes, 50)
+
+
+def n_x_clusters(sizes, percent):
     """
 
     :param sizes:
     :return: Minimum number of clusters that contains half the observations.
     """
-    n_half = sum(sizes) / 2  ## TODO: Not perfect for odd numbers
+    n_required = sum(sizes) / (100. / percent)  ## TODO: Not perfect for odd numbers
+    sizes = list(sizes)
     sizes.sort()
     n_obs = 0
     n_clusters = 0
-    while n_obs < n_half:
+    while n_obs < n_required:
         n_obs += sizes.pop()
         n_clusters += 1
     return n_clusters
@@ -409,14 +443,142 @@ def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, l
         return results
     else:
         stat_functions = [stat.__name__ for stat in statistics]
-        return stat_functions, results
+        results = {k: v for k, v in zip(stat_functions, results)}
+        return results
+
+
+def centroids(partition, observations):
+    """
+    Return cluster centroids.
+
+    :param part: Partition vector
+    :type part: List
+    :param obs: Observation array
+    :type obs: NumPy array
+    :return: A dictionary containing the cluster centroids.
+    """
+    cluster_ids = list(set(partition))
+    cluster_ids.sort()
+    cluster_centroids = {}
+    for cid in cluster_ids:
+        members = member_indexes(partition, cid)
+        member_observations = observations[members, :]
+        cluster_centroids[cid] = np.mean(member_observations, axis=0)
+    return cluster_centroids
+
+
+def member_indexes(partition, cluster_id):
+    return [i for i, x in enumerate(partition) if x == cluster_id]
+
+
+def davies_bouldin(partition, observations):
+    """
+    Return the Davies-Bouldin index for the given clustering.
+
+    :param part: Partition vector
+    :type part: List
+    :param obs: Observation array
+    :type obs: NumPy array
+    :return: The Davies-Bouldin index
+    """
+
+    n = n_clusters(partition)
+    cluster_ids = list(set(partition))
+    cluster_ids.sort()
+    cluster_centroids = centroids(partition, observations)
+    terms = []
+    for i in cluster_ids:
+        ci = cluster_centroids[i]
+        i_indexes = member_indexes(partition, i)
+        sigma_i = np.mean([euclidean(u, ci) for u in observations[i_indexes, :]])
+        Sij = []
+        for j in cluster_ids:
+            if i != j:
+                cj = cluster_centroids[j]
+                d = euclidean(ci, cj)
+                j_indexes = member_indexes(partition, j)
+                sigma_j = np.mean([euclidean(u, cj) for u in observations[j_indexes, :]])
+                Sij.append((sigma_i + sigma_j) / d)
+        if len(Sij) > 0:
+            terms.append(max(Sij))
+    return sum(terms) / n
+
+
+def dunn(partition, observations):
+    """
+    Return the Dunn index for a clustering.
+
+    :param part: Partition vector
+    :type part: List
+    :param obs: Observation array
+    :type obs: NumPy array
+    :return: The Dunn index
+    """
+    cluster_ids = list(set(partition))
+
+    # NA if only one cluster
+    if len(cluster_ids) == 1:
+        return np.nan
+
+    cluster_ids.sort()
+    min_inter = min(pdist(centroids(partition, observations).values()))
+    intras = []
+    for cid in cluster_ids:
+        member_ids = member_indexes(partition, cid)
+        d = pdist(observations[member_ids, :])
+        if len(d) != 0:  ## Handles singleton clusters
+            intras.append(max(d))
+
+    if len(intras) == 0:
+        return np.nan
+    else:
+        max_intra = max(intras)
+
+    return(min_inter / max_intra)
+
+
+##############################################################################
+# Cluster geometry
+##############################################################################
+def cluster_hull_volumes(partition, points):
+    """
+
+    :param partition:
+    :param points:
+    :return:
+
+    See http://stackoverflow.com/questions/24733185/volume-of-convex-hull-with-qhull-from-scipy
+    for some discussion (and some of the code used here).
+    """
+    def tetrahedron_volume(a, b, c, d):
+        return np.abs(np.einsum('ij,ij->i', a-d, np.cross(b-d, c-d))) / 6
+
+    def convex_hull_volume_bis(pts):
+        ch = ConvexHull(pts)
+
+        simplices = np.column_stack((np.repeat(ch.vertices[0], ch.nsimplex),
+                                     ch.simplices))
+        tets = ch.points[simplices]
+        return np.sum(tetrahedron_volume(tets[:, 0], tets[:, 1],
+                                         tets[:, 2], tets[:, 3]))
+
+    cluster_ids = list(set(partition))
+    cluster_ids.sort()
+    volumes = {}
+    for cid in cluster_ids:
+        member_ids = member_indexes(partition, cid)
+        member_pts = points[member_ids, :]
+        if len(member_pts) >= 4:  ## Ignore 'plane' clusters, TODO: handle duplicates
+            volume = convex_hull_volume_bis(member_pts)
+        else:
+            volume = 0
+        volumes[cid] = 0 if volume is None else volume
+    return volumes
 
 
 ##############################################################################
 # Cluster bootstrapping
 ##############################################################################
-
-
 def bootstrap(table, methods, n_residues, n_phenotypes,
               samples=10, **kwargs):
     """
@@ -483,12 +645,26 @@ def tail_thresholds(alpha, samples, stats):
     return thresholds
 
 
+def plot_sample_distributions(results, names):
+    for i in xrange(len(names)):
+        plt.subplot(3, 4, i + 1)
+        plt.title(names[i])
+        data = zip(*results['sample_stats'])[i]
+        if np.nan in data:
+            data = [x for x in data if not np.isnan(x)]
+        if all(isinstance(x, int) for x in data):
+            plt.hist(data, color='c', bins=range(min(data), max(data) + 1, 1))
+        else:
+            plt.hist(data, color='c')
+        plt.axvline(results['obs_stats'][names[i]], color='b', linestyle='dashed', linewidth=2)
+        plt.xticks(rotation=45)
+
+
 ##############################################################################
 # Convenience wrappers
 ##############################################################################
-
-
-def cluster_table(table, mask, method, n_samples=0, **kwargs):
+def cluster_table(table, mask, method, sites_only=True, similarity='max_minus_d',
+                  **kwargs):
     """
 
     :param table:
@@ -497,46 +673,194 @@ def cluster_table(table, mask, method, n_samples=0, **kwargs):
     :param kwargs:
     :return:
     """
+
+    # Create string describing clustering for metadata
+    cluster_parameters_whitelist = ['method', 'threshold', 'similarity']
+    cluster_parameters = []
+    for k, v in locals().iteritems():
+        if k in cluster_parameters_whitelist:
+            cluster_parameters.append(str(k))
+            cluster_parameters.append(str(v))
+    cluster_meta_tag = '_'.join(cluster_parameters)
+
+    # # Apply mask
+    # table = table[mask]
+    # mask = np.array([True] * len(table))  #TODO: Remove the need for this hack needed for `atom_dist`
+
+    # Dedupe table by UniProt and chain if only clustering sites
+    if sites_only:
+        table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id'])
+        # mask = np.array([True] * len(table))  #TODO: See above
+
     # Perform clustering
-    d, points, resids, unmapped_points = atom_dist(table, mask)
-    links = linkage_cluster(d, methods=method, **kwargs)
+    d, points, resids, unmapped_points = atom_dist(table, table.resn.notnull())
+    links = linkage_cluster(d, methods=method, similarity=similarity, **kwargs)
     part = links[0][0]
 
-    # If required, test significance using bootstrap
-    if n_samples > 0:
-        n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
-        n_phenotypes = len(table.disease.dropna().unique())
-        clean_table = table.drop_duplicates(subset='UniProt_dbResNum').drop(
-                ['resn', 'mut', 'disease'], axis=1)
-        clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
+    # Format the results
+    labelled_points = add_clusters_to_points(part, points)
+    annotated_table = add_clusters_to_table(labelled_points, table)
+    annotated_table.loc[annotated_table.cluster_id.notnull(), 'cluster_info'] = cluster_meta_tag  ## New column until pandas reliably stores metadata
 
-        # Bootstrap
-        sample_clusters = []
-        for i in xrange(n_samples):
-            sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
-            sample_mask = sample_table.resn.notnull()
-            sample_clusters.append(
-                cluster_table(sample_table, sample_mask, method, n_samples=0, **kwargs))
+    return annotated_table
+
+
+def test_cluster_significance(test_table, method, similarity, table, show_progress, n_samples, return_samples,
+                              **kwargs):
+    n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
+    n_phenotypes = len(table.disease.dropna().unique())
+    clean_table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id']).drop(['resn', 'mut', 'disease'],
+                                                                                      axis=1)
+    clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
+    # Bootstrap samples
+    annotated_tables = bootstrap_residue_clusters(clean_table, method,
+                                                  n_phenotypes,
+                                                  n_samples,
+                                                  n_variants,
+                                                  show_progress,
+                                                  similarity,
+                                                  **kwargs)
+    # Drop unneccesary data
+    column_whitelist = ['Cartn_x', 'Cartn_y', 'Cartn_z', 'cluster_id']
+    annotated_tables[:] = [i.loc[i.cluster_id.notnull(), column_whitelist] for i in annotated_tables]
+
+    part, points = clustered_table_to_partition_and_points(test_table)
+    bs_stats, p_values, sample_cluster_sizes, stats = collect_cluster_sample_statistics(part, points,
+                                                                                        annotated_tables)
+
+    results = {'p': p_values, 'obs_stats': stats, 'sample_stats': bs_stats}
+    if return_samples:
+        results.update({'sample_size_dist': sample_cluster_sizes, 'random_samples': annotated_tables})
+
+    return results
+
+
+def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
+
+    # Parse the random sample cluster tables
+    parsed_samples = [clustered_table_to_partition_and_points(i) for i in sample_tables]
+
+    # Gather the random sample cluster statistics
+    sample_davies_bouldins = [davies_bouldin(part, points) for part, points in parsed_samples]
+    sample_dunns = [dunn(part, points) for part, points in parsed_samples]
+    sample_largest_cluster_volume = [max(cluster_hull_volumes(part, points)) for part, points in parsed_samples]
+    random_sample_cluster_statistics = bootstrap_stats(zip(*parsed_samples)[0], names=True)  # Partition metrics
+
+    # Combine the random sample cluster statistics
+    for i in xrange(len(sample_tables)):
+        random_sample_cluster_statistics[i].update({'Davies-Bouldin': sample_davies_bouldins[i]})
+        random_sample_cluster_statistics[i].update({'Dunn_index': sample_dunns[i]})
+        random_sample_cluster_statistics[i].update({'largest_cluster_volume': sample_largest_cluster_volume[i]})
+
+    # Collect the observed cluster statistics
+    observed_stats = {}
+    observed_stats.update(cluster_size_stats(test_part, names=True))
+    observed_stats.update(cluster_spatial_statistics(test_part, test_points))
+
+    # Calculate p for randomly seeing a value smaller, equal to or larger than observed statistic
+    p_values = {}
+    for stat_key in observed_stats:
+        sampled = map(itemgetter(stat_key), random_sample_cluster_statistics)
+        obs = observed_stats[stat_key]
+        left = boot_pvalue(sampled, lambda x: x < obs)
+        mid = boot_pvalue(sampled, lambda x: x == obs)
+        right = boot_pvalue(sampled, lambda x: x > obs)
+        p_values.update({stat_key: (left, mid, right)})
+
+    ## For complete cluster size distribution
+    sample_cluster_sizes = []
+    for i in zip(*parsed_samples)[0]:
+        sample_cluster_sizes.append(partition_to_sizes(i))
+    sample_cluster_sizes = [e for sublist in sample_cluster_sizes for e in sublist]  # Flatten
+
+    return random_sample_cluster_statistics, p_values, sample_cluster_sizes, observed_stats
+
+
+def cluster_spatial_statistics(test_part, test_points):
+    obs_stats = []
+    obs_stats.append(davies_bouldin(test_part, test_points))
+    obs_stats.append(dunn(test_part, test_points))
+    obs_stats.append(max(cluster_hull_volumes(test_part, test_points).values()))
+    names = []
+    names.append('Davies-Bouldin')
+    names.append('Dunn_index')
+    names.append('largest_cluster_volume')
+    results = {k: v for k, v in zip(names, obs_stats)}
+    return results
+
+
+##############################################################################
+# Bootstrapping
+##############################################################################
+def bootstrap_residue_clusters(clean_table, method, n_phenotypes, n_samples, n_variants, show_progress, similarity,
+                               **kwargs):
+    """
+
+    :param clean_table: A structure table
+    :param method: Method to use for clustering.
+    :param n_phenotypes: Number of phenotypes for `add_random_disease_variants`.
+    :param n_samples: Number of random samples to produce and assess.
+    :param n_variants: Number of variants for `add_random_disease_variants`.
+    :param show_progress: Show a progress bar.
+    :param kwargs: Arguments passed to `cluster_table`.
+    :return:
+    """
+    annotated_tables = []
+    for i in xrange(n_samples):
+        sample_table = add_random_disease_variants(clean_table, n_variants, n_phenotypes)
+        sample_mask = sample_table.resn.notnull()
+        annotated_table = cluster_table(sample_table, sample_mask, method, n_samples=0,
+                                        similarity=similarity, **kwargs)
+        annotated_tables.append(annotated_table)
+        if show_progress:
             pc_complete = (i + 1) / float(n_samples) * 100
             if pc_complete % 10 == 0:
                 sys.stdout.write("\r%d%%" % (pc_complete))
                 sys.stdout.flush()
 
-        bs_stats = bootstrap_stats(sample_clusters)
-        names, obs_stats = cluster_size_stats(part, names=True)
+    return annotated_tables
 
-        p_values = []
-        for obs, sampled in zip(obs_stats, zip(*bs_stats)):
-            left = boot_pvalue(sampled, lambda x: x <= obs)
-            right = boot_pvalue(sampled, lambda x: x >= obs)
-            p_values.append((left, right))
 
-        p_values = dict(zip(names, p_values))
+##############################################################################
+# Data handling
+##############################################################################
+def add_clusters_to_points(cluster_partition, clustered_points):
+    """
 
-        return {'part': part, 'p': p_values}
+    :param cluster_partition:
+    :param clustered_points:
+    :return:
+    """
+    points = pd.DataFrame(clustered_points)
+    points.loc[:, 'cluster_id'] = pd.Series(cluster_partition, index=points.index)
+    points = points.rename(columns={0: 'Cartn_x', 1: 'Cartn_y', 2: 'Cartn_z'})
+    return points
 
+
+def add_clusters_to_table(labelled_points, clustered_table):
+    """
+
+    :param cluster_partition:
+    :param clustered_table:
+    :return:
+    """
+    index_name = clustered_table.index.name
+    if index_name is not None:
+        merged_table = clustered_table.reset_index().merge(labelled_points, how='left').set_index(index_name)
     else:
-        return part
+        merged_table = clustered_table.merge(labelled_points, how='left')
+    return merged_table
+
+
+def clustered_table_to_partition_and_points(table):
+    """
+
+    :param table: A structure table with clustered sites.
+    :return: A 2-tuple with the partition vector (list) and point positions (np.array).
+    """
+    partition = list(pd.Series(table.cluster_id.dropna(), dtype=int))
+    points = np.array(table.loc[table.cluster_id.notnull(), ['Cartn_x', 'Cartn_y', 'Cartn_z']])
+    return partition, points
 
 
 if __name__ == '__main__':
@@ -555,7 +879,7 @@ if __name__ == '__main__':
     sq = squareform(d)
     links = []
     for inf_fact in [2., 6.]:
-        s = invert_distances(sq, method='max_minus_d', threshold=10)
+        s = dist_to_sim(sq, method='max_minus_d', threshold=10)
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nmax_minus_d(t=10)'])
     compare_clustering(links, points, '3ecr(a) P08397')
@@ -563,7 +887,7 @@ if __name__ == '__main__':
     # No min. distance for connected threshold (saturated network)
     links = []
     for inf_fact in [2., 6.]:
-        s = invert_distances(sq, method='max_minus_d')
+        s = dist_to_sim(sq, method='max_minus_d')
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nmax_minus_d(t=inf)'])
     compare_clustering(links, points, '3ecr(a) P08397')
@@ -571,7 +895,7 @@ if __name__ == '__main__':
     # Using reciprocal distance for similarity
     links = []
     for inf_fact in [2., 6.]:
-        s = invert_distances(sq, method='reciprocal')
+        s = dist_to_sim(sq, method='reciprocal')
         links.append([mcl(s, max_loop=50, inflate_factor=inf_fact),
                       'mcl_IF=' + str(inf_fact) + '\nreciprocal'])
     compare_clustering(links, points, '3ecr(a) P08397')

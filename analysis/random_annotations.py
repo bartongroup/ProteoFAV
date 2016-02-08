@@ -18,7 +18,7 @@ __author__ = 'smacgowan'
 
 
 def random_uniprot_patho_table(merge_table, n_residues, n_phenotypes=1,
-                               proportions=None, repeats_allowed=True, force=False):
+                               proportions=None, repeats_allowed=False, force=False):
     """
 
     :param merge_table:

@@ -25,6 +25,29 @@ socket.setdefaulttimeout(15)
 log = logging.getLogger(__name__)
 
 
+def is_valid_file(parser, arg):
+    """
+    Check if arg is a valid file and throw a parsing error if not.
+
+    :param parser: argparse.ArgumentParser
+    :param arg: argument
+    :return: Open file handle
+    """
+    try:
+        return open(arg, 'r')
+    except:
+        parser.error("Not a valid file: %s" % arg)
+
+
+def delete_file(filename):
+    """
+
+    :param filename: File to delete
+    :return: None
+    """
+    os.remove(filename)
+
+
 class IDNotValidError(Exception):
     """
     Base class for database related exceptions.
@@ -263,6 +286,25 @@ def compare_uniprot_ensembl_sequence(sequence1, sequence2,
                 if i != j:
                     return False
             return True
+
+
+def count_mismatches(sequence1, sequence2):
+    """
+    Counts the number of mismatches between two sequences
+    of the same length.
+
+    :param sequence1: sequence 1
+    :param sequence2: sequence 2
+    :return: The number of mismatches between sequences 1 and 2.
+    """
+    if len(sequence1) == len(sequence2):
+        mismatches = []
+        for i, j in zip(sequence1, sequence2):
+                    if i != j:
+                        mismatches.append((i, j))
+    else:
+        raise ValueError('Sequences are different lengths.')
+    return(len(mismatches))
 
 
 def map_sequence_indexes(from_seq, to_seq):
@@ -656,6 +698,18 @@ def confirm_column_types(table):
         if current_dtype != dtype_should_be:
             logging.debug('Coercing `{}` to `{}`'.format(column, dtype_should_be))
             table[column] = table[column].astype(dtype_should_be)
+
+    # Now check that the index is the correct type
+    column = table.index.name
+    type_should_be = column_types_long.get(column)
+    dtype_should_be = type_to_dtype_if_contains_nan.get(type_should_be)
+    if dtype_should_be is None:
+        logging.warning('Index column `{}` not recognised'.format(column))
+    current_dtype = table.index.dtype
+    if current_dtype != dtype_should_be:
+        logging.debug('Coercing index `{}` to `{}`'.format(column, dtype_should_be))
+        table.index = table.index.astype(dtype_should_be)
+
 
     return table
 
