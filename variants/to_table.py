@@ -88,7 +88,7 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
     """
 
     # POST if given a list of ids
-    if isinstance(variant_ids, list):
+    if isinstance(variant_ids, (list, pd.Series)):
         # Remove any nans from the list
         variant_ids = [i for i in variant_ids if not str(i) == 'nan']
 
