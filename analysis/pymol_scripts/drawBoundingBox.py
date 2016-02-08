@@ -108,11 +108,11 @@ def drawBoundingBox(selection="(all)", padding=0.0, linewidth=2.0, r=1.0, g=1.0,
                 END
         ]
 
-        boxName = "box_" + str(randint(0,10000))
-        while boxName in cmd.get_names():
-                boxName = "box_" + str(randint(0,10000))
+        boxName = "box_" + selection
+        # while boxName in cmd.get_names():
+        #         boxName = "box_" + str(randint(0,10000))
 
-        cmd.load_cgo(boundingBox,boxName)
+        cmd.load_cgo(boundingBox, boxName)
         return boxName
 
 cmd.extend("drawBoundingBox", drawBoundingBox)
