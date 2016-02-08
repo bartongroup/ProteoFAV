@@ -4,10 +4,14 @@
 import logging
 import re
 
+import numpy as np
 import pandas as pd
 import pymol  ##TODO: This import kicks of pymol, consider it for in function.
+from pymol.cgo import *
+from scipy.spatial import ConvexHull
 
 from analysis.pymol_scripts.drawBoundingBox import drawBoundingBox
+from analysis.clustering import clustered_table_to_partition_and_points, add_clusters_to_points
 
 
 def view_table(table, show=None, show_group_by=None, biological_assembly=True):
@@ -133,3 +137,83 @@ def int_to_chain(x):
     else:
         y = (x / 26)
         return chr((y - 1) + ord('A')) + int_to_chain(x - (26 * y))
+
+
+def plot_convex_hulls(clustered_table):
+    # Extract points for convex hull calculation
+    part, points = clustered_table_to_partition_and_points(clustered_table)
+    point_table = add_clusters_to_points(part, points)
+
+    # Don't bother with clusters of less than four points
+    counts = point_table.cluster_id.value_counts()
+    clusters_to_drop = list(counts[counts < 4].index)
+    for cluster_id in clusters_to_drop:
+        point_table = point_table[point_table['cluster_id'] != cluster_id]
+
+    grouped_point_tables = point_table.groupby('cluster_id')
+
+    # Calculate convex hulls
+    cluster_hulls = []
+    for _, cluster_point_table in grouped_point_tables:
+        _, cluster_points = clustered_table_to_partition_and_points(cluster_point_table)
+        cluster_hulls.append(ConvexHull(cluster_points))
+
+    # Prepare hull CGO lists
+    hull_cgo_lists = []
+    for hull, (_, cluster_point_table) in zip(cluster_hulls, grouped_point_tables):
+        # Calculate facets
+        cgo_facets = []
+        for simplex in hull.simplices:
+            _, cluster_points = clustered_table_to_partition_and_points(cluster_point_table)
+            cgo = build_cgo(cluster_points[simplex, ])
+            cgo_facets.append(cgo)
+        hull_cgo_lists.append(concat_cgo_lists(cgo_facets))
+
+    # Plot them all
+    for i, cgo in enumerate(hull_cgo_lists):
+        pymol.cmd.load_cgo(cgo, 'hull_' + str(i))
+
+
+def build_cgo(array):
+    cgo = [
+        BEGIN, LINES,
+        COLOR, 1., 1., 1.
+    ]
+
+    # Draw lines between points
+    for start, finish in zip(array[:-1], array[1:]):
+        cgo.append(VERTEX)
+        for component in start:
+            cgo.append(component)
+        cgo.append(VERTEX)
+        for component in finish:
+            cgo.append(component)
+
+    # Once more to join ends
+    start, finish = array[-1], array[0]
+    cgo.append(VERTEX)
+    for component in start:
+        cgo.append(component)
+    cgo.append(VERTEX)
+    for component in finish:
+        cgo.append(component)
+
+    cgo.append(END)
+
+    return cgo
+
+
+def concat_cgo_lists(list_of_cgo_lists):
+    concat_cgo = []
+    for i, cgo in enumerate(list_of_cgo_lists):
+        i += 1
+        if i == 1:
+            mod_cgo = cgo[:-1]  # Remove END element
+        elif i < len(list_of_cgo_lists):
+            mod_cgo = cgo[6:-1]  # Remove BEGIN, LINES, COLOR and rgb elements and END
+        else:
+            mod_cgo = cgo[6:]  # Remove BEGIN, LINES, COLOR and rgb elements
+        concat_cgo.append(mod_cgo)
+    concat_cgo[:] = [e for cgo in concat_cgo for e in cgo]
+    return concat_cgo
+
