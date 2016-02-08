@@ -11,7 +11,9 @@ from StringIO import StringIO
 from urlparse import parse_qs
 
 from config import defaults
-from utils import get_url_or_retry, is_valid, compare_uniprot_ensembl_sequence
+from utils import get_url_or_retry, is_valid, compare_uniprot_ensembl_sequence, count_mismatches
+from utils import map_sequence_indexes, apply_sequence_index_map
+
 
 log = logging.getLogger(__name__)
 
@@ -392,7 +394,7 @@ def select_uniprot_gff(identifier,
     return data.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
 
 
-def select_uniprot_variants(identifier):
+def select_uniprot_variants(identifier, align_transcripts=False):
     """
     Summarise variants for a protein in the UniProt
 
@@ -416,15 +418,31 @@ def select_uniprot_variants(identifier):
 
     # get the sequence of the ensembl protein
     usable_indexes = []
+    aligned_indexes = []
+    seq_maps = []
+
     for i, enspro in enumerate(ens_pros):
         seq_pro = _sequence_from_ensembl_protein(enspro, org, protein=True)
 
         # validate if the sequence of uniprot and ensembl protein matches
         if compare_uniprot_ensembl_sequence(seq, seq_pro, permissive=False):
             usable_indexes.append(i)
+        elif compare_uniprot_ensembl_sequence(seq, seq_pro, permissive=True):
+            usable_indexes.append(i)
+            seq_maps.append(None)
+            n_mismatches = count_mismatches(seq, seq_pro)
+            message = "{0}: Sequences are of same length but have {1} mismatch(s)".format(enspro, n_mismatches)
+            logging.warning(message)
+        elif align_transcripts:
+            message = "Sequences don't match! Will attempt alignment... {}".format(enspro)
+            logging.warning(message)
+            aligned_indexes.append(i)
+            ensembl_to_uniprot = map_sequence_indexes(seq_pro, seq)
+            seq_maps.append(ensembl_to_uniprot)
         else:
             message = "Sequences don't match! skipping... {}".format(enspro)
             logging.warning(message)
+            seq_maps.append(None)
 
     # get the variants for the ensembl proteins that match the uniprot
     tables = []
@@ -438,6 +456,23 @@ def select_uniprot_variants(identifier):
             tables.append(vars[['translation', 'id', 'start', 'residues']])
         if not muts.empty:
             tables.append(muts[['translation', 'id', 'start', 'residues']])
+
+    # Get variants from aligned sequences
+    if align_transcripts:
+        for i in aligned_indexes:
+            vars = _transcript_variants_ensembl(ens_pros[i], missense=True)
+            muts = _somatic_variants_ensembl(ens_pros[i], missense=True)
+
+            var_table = vars[['translation', 'id', 'start', 'residues']]
+            mut_table = muts[['translation', 'id', 'start', 'residues']]
+
+            var_table.start = apply_sequence_index_map(var_table.start, seq_maps[i])
+            mut_table.start = apply_sequence_index_map(mut_table.start, seq_maps[i])
+
+            if not var_table.empty:
+                tables.append(var_table)
+            if not var_table.empty:
+                tables.append(mut_table)
 
     # to_unique = lambda series: series.unique()
     # return table.groupby('start').apply(to_unique)

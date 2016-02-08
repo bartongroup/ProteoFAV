@@ -288,6 +288,25 @@ def compare_uniprot_ensembl_sequence(sequence1, sequence2,
             return True
 
 
+def count_mismatches(sequence1, sequence2):
+    """
+    Counts the number of mismatches between two sequences
+    of the same length.
+
+    :param sequence1: sequence 1
+    :param sequence2: sequence 2
+    :return: The number of mismatches between sequences 1 and 2.
+    """
+    if len(sequence1) == len(sequence2):
+        mismatches = []
+        for i, j in zip(sequence1, sequence2):
+                    if i != j:
+                        mismatches.append((i, j))
+    else:
+        raise ValueError('Sequences are different lengths.')
+    return(len(mismatches))
+
+
 def map_sequence_indexes(from_seq, to_seq):
     """
     Gets a map between sequences.
