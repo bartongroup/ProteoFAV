@@ -87,14 +87,17 @@ def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
     :return:
     """
 
+    if isinstance(variant_ids, pd.Series):
+        variant_ids = list(variant_ids)
     # POST if given a list of ids
-    if isinstance(variant_ids, (list, pd.Series)):
+    if isinstance(variant_ids, list):
         # Remove any nans from the list
         variant_ids = [i for i in variant_ids if not str(i) == 'nan']
 
         ensembl_endpoint = "variation/homo_sapiens"
         if use_vep:
             ensembl_endpoint = "vep/human/id"
+
         url = defaults.api_ensembl + ensembl_endpoint
         headers = {"Content-Type": "application/json",
                    "Accept": "application/json"}
