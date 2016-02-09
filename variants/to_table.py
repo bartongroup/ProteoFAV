@@ -14,6 +14,7 @@ from config import defaults
 from utils import get_url_or_retry, is_valid, compare_uniprot_ensembl_sequence, count_mismatches
 from utils import map_sequence_indexes, apply_sequence_index_map
 
+from response_parsers import parse_mutation
 
 log = logging.getLogger(__name__)
 
@@ -453,7 +454,6 @@ def select_uniprot_variants(identifier, align_transcripts=False):
         vars = _transcript_variants_ensembl(ens_pros[i], missense=True)
         muts = _somatic_variants_ensembl(ens_pros[i], missense=True)
 
-        # TODO: From... TO... mutated residues as different columns in the table
         # TODO: Shouldn't the default behaviour return all the columns?
         if not vars.empty:
             tables.append(vars[['translation', 'id', 'start', 'residues']])
@@ -480,6 +480,7 @@ def select_uniprot_variants(identifier, align_transcripts=False):
     # to_unique = lambda series: series.unique()
     # return table.groupby('start').apply(to_unique)
     table = pd.concat(tables)
+    table = parse_mutation(table)
     return table
 
 
