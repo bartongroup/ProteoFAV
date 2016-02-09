@@ -23,12 +23,12 @@ __all__ = ["select_uniprot_gff", "select_uniprot_variants"]
 ##############################################################################
 # Private methods
 ##############################################################################
-def _fetch_uniprot_variants(identifier, format='tab'):
+def _fetch_uniprot_variants(identifier, _format='tab'):
     """
     Request human curated variants from UniProt.
 
     :param identifier: UniProt ID
-    :param format: request output from the webserver
+    :param _format: request output from the webserver
     :return: pandas dataframe
     """
     # Check if query has already been saved
@@ -36,7 +36,7 @@ def _fetch_uniprot_variants(identifier, format='tab'):
     query_file_name = defaults.db_variants + 'uniprot_variants_' + identifier + '.pkl'
     if not os.path.isfile(query_file_name):
         url = defaults.http_uniprot + '?query=accession:' + identifier
-        url += '&format=' + format
+        url += '&format=' + _format
         url += '&columns=feature(NATURAL+VARIANT)'
         result = get_url_or_retry(url)
         with open(query_file_name, 'wb') as output:
@@ -308,6 +308,17 @@ def _uniprot_gff(identifier):
 def raise_if_not_ok(response):
     if not response.ok:
         response.raise_for_status()
+
+
+def uniprot_missense_variants(identifier):
+    """Fetches uniprot variants from Uniprot. These are human curated and are
+    related to disease causing mutations.
+
+    Replaces _fetch_uniprot_variants
+    :param identifier:
+    :return: table with mutations
+    :rtype: pandas.DataFrame
+    """
 
 
 def icgc_missense_variant(ensembl_gene_id):
