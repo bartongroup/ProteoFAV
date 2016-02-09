@@ -15,6 +15,23 @@ def has_phenotype(variation_endpoint_json):
     return results
 
 
+def variation_response_to_table(variation_response_json):
+    """
+    Convert the JSON response from the variation endpoint to a pandas.DataFrame
+
+    :param variation_response_json: Decoded JSON from EnsEMBL variation query
+    :return: pandas.DataFrame
+    """
+    results = pd.DataFrame()
+    for variant, annotations in variation_response_json.items():
+
+        parsed = dict([(k, [v]) for k, v in annotations.iteritems()])
+        df = pd.DataFrame(parsed, index=[variant])
+        results = results.append(df)
+        results.index.name = 'variant_id'
+    return results
+
+
 def parse_mutation(variation_table, column_name='residues'):
     """
     Parse AA mutation strings of the form [native]/[mutant1]/[mutant2]/...
