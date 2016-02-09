@@ -36,7 +36,12 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
 
         # Find the residues we want to highlight
         in_chain = mapped_variants.chain_id == chain
-        start = mapped_variants.PDB_dbResNum[in_group & in_chain]
+        try:
+            start = mapped_variants.PDB_dbResNum[in_group & in_chain]
+        except AttributeError:
+            working = mapped_variants[in_group & in_chain]
+            working.reset_index(inplace=True)
+            start = working.PDB_dbResNum
         variant_residues = list(start.dropna().astype(int).astype(str).unique())
 
         # Construct PyMol select command
