@@ -25,6 +25,14 @@ socket.setdefaulttimeout(15)
 log = logging.getLogger(__name__)
 
 
+class IDNotValidError(Exception):
+    """
+    Base class for database related exceptions.
+    Databases: UniProt, PDB, Ensembl, etc.
+    """
+    pass
+
+
 def is_valid_file(parser, arg):
     """
     Check if arg is a valid file and throw a parsing error if not.
@@ -46,14 +54,6 @@ def delete_file(filename):
     :return: None
     """
     os.remove(filename)
-
-
-class IDNotValidError(Exception):
-    """
-    Base class for database related exceptions.
-    Databases: UniProt, PDB, Ensembl, etc.
-    """
-    pass
 
 
 def current_date():
