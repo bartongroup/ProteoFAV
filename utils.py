@@ -40,6 +40,7 @@ def is_valid_file(parser, arg):
     :param parser: argparse.ArgumentParser
     :param arg: argument
     :return: Open file handle
+    !FIXME argparse support file as an type https://docs.python.org/2/library/argparse.html#type
     """
     try:
         return open(arg, 'r')
