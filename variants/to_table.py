@@ -78,7 +78,7 @@ def _fetch_uniprot_variants(identifier, format='tab'):
     return table
 
 
-def _variant_characteristics_from_identifiers(variant_ids, use_vep=False):
+def _ensembl_variant_annotations(variant_ids, use_vep=False):
     """
     Retrieves variant annotation from ENSEMBL.
 

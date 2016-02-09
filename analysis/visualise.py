@@ -9,7 +9,7 @@ import pandas as pd
 
 from main import merge_tables
 from variants.to_table import (_fetch_uniprot_variants,
-                               _variant_characteristics_from_identifiers)
+                               _ensembl_variant_annotations)
 
 __author__ = 'smacgowan'
 
@@ -144,7 +144,7 @@ def ensembl_traits(variant_ids):
     traits = []
     for variant in variant_ids:
         phenos = \
-            _variant_characteristics_from_identifiers(str(variant))[
+            _ensembl_variant_annotations(str(variant))[
                 'phenotypes']
         if phenos == []:
             traits.append([variant, 'No_Available_Phenotype'])
