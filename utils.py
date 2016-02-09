@@ -539,26 +539,31 @@ def confirm_column_types(table):
 
     :param table: A pandas data frame produced by a to_* function
     :return: A pandas data frame of the same data with correct column types
+
+    .. note::
+    There are fewer pandas `dtypes` than the corresponding numpy type classes, but all numpy types
+    can be accommodated.
+
+    NaNs and Upcasting:
+    The upcasting of dtypes on columns that contain NaNs has been an issue and can lead to
+    inconsistencies between the column types of different tables that contain equivalent data.
+    E.g., a `merged_table` from a PDB entry may have NaNs in UniProt_dbResNum and so is cast to
+    float64 whilst a UniProt variants table will have no NaNs in this field and so remains int64
+    by default. The main issue here is that it creates additional work for merging these tables as
+    the keys must be of the same type. It's also a problem if you want to test elements say for
+    example you expect to be testing integer equality but the values have been coerced to floats.
+
+    Ideally then we need to ensure that all equivalent column types are by default the least
+    generic dtype that can contain all possible values that can be seen in the column, i.e. if
+    NaNs are possible then even when not present, a column of integers that can contain NaNs
+    should always be at least float.
+
+    dtypes and element types:
+    It seems that coercion to certain dtypes alters the element types too. For instance, int64 ->
+    float64 will make an equivalent change to individual value types. However, the original element
+    types can be preserved with the generic `object` dtype, so this will be used in preference for
+    integer columns that can contain NaNs.
     """
-    # There are fewer pandas `dtypes` than the corresponding numpy type classes, but all numpy types can be
-    # accommodated.
-    #
-    # NaNs and Upcasting:
-    # The upcasting of dtypes on columns that contain NaNs has been an issue and can lead to inconsistencies between
-    # the column types of different tables that contain equivalent data. E.g., a `merged_table` from a PDB entry may
-    # have NaNs in UniProt_dbResNum and so is cast to float64 whilst a UniProt variants table will have no NaNs in
-    # this field and so remains int64 by default. The main issue here is that it creates additional work for merging
-    # these tables as the keys must be of the same type. It's also a problem if you want to test elements say for
-    # example you expect to be testing integer equality but the values have been coerced to floats.
-    #
-    # Ideally then we need to ensure that all equivalent column types are by default the least generic dtype that can
-    # contain all possible values that can be seen in the column, i.e. if NaNs are possible then even when not present,
-    # a column of integers that can contain NaNs should always be at least float.
-    #
-    # dtypes and element types:
-    # It seems that coercion to certain dtypes alters the element types too. For instance, int64 -> float64 will make
-    # an equivalent change to individual value types. However, the original element types can be preserved with the
-    # generic `object` dtype, so this will be used in preference for integer columns that can contain NaNs.
 
     column_types_long = {
         # SIFTs mappings
@@ -629,7 +634,6 @@ def confirm_column_types(table):
         'acc': 'float',
         'phi': 'float',
         'psi': 'float',
-        'aa': 'string',
         # Merged table
         'dssp_aa': 'string',
         'cif_aa': 'string',
@@ -690,7 +694,8 @@ def confirm_column_types(table):
         # Element replacements as required
         if column in column_replacements:
             to_replace, replacement = column_replacements.get(column)
-            logging.debug('Replacing {} with {} in column {}'.format(to_replace, replacement, column))
+            logging.debug(
+                'Replacing {} with {} in column {}'.format(to_replace, replacement, column))
             table[column] = table[column].replace(to_replace, replacement)
 
         # Coerce column if neccessary
@@ -709,7 +714,6 @@ def confirm_column_types(table):
     if current_dtype != dtype_should_be:
         logging.debug('Coercing index `{}` to `{}`'.format(column, dtype_should_be))
         table.index = table.index.astype(dtype_should_be)
-
 
     return table
 
