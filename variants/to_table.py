@@ -480,6 +480,7 @@ def select_uniprot_variants(identifier, align_transcripts=False):
     # to_unique = lambda series: series.unique()
     # return table.groupby('start').apply(to_unique)
     table = pd.concat(tables)
+    table.rename(columns={'id': 'variant_id'}, inplace=True)
     table = parse_mutation(table)
     return table
 
