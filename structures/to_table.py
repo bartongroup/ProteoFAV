@@ -24,8 +24,6 @@ from requests import HTTPError
 
 log = logging.getLogger(__name__)
 
-__all__ = ["select_cif", "select_sifts", "select_dssp", "select_validation",
-           "sifts_best", "_rcsb_description"]
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 
 
@@ -622,26 +620,26 @@ def select_validation(pdb_id, chains=None):
     raise ValueError('Parsing {} resulted in a empty table'.format(val_path))
 
 
-def sifts_best(identifier, first=False):
+def sifts_best(uniprot_id, first=False):
     """
     Retrieves the best structures from the SIFTS endpoint in the PDBe api.
 
-    :param identifier: Uniprot ID
+    :param uniprot_id: Uniprot ID
     :param first: gets the first entry
     :return: url content or url content in json data structure.
     """
 
     sifts_endpoint = "mappings/best_structures/"
-    url = defaults.api_pdbe + sifts_endpoint + str(identifier)
+    url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
     try:
         response = get_url_or_retry(url, json=True)
     except HTTPError, e:
         if e.response.status_code == 404:
-            logging.error('No SIFTS mapping found for {}'.format(identifier))
+            logging.error('No SIFTS mapping found for {}'.format(uniprot_id))
             return None
         else:
             raise
-    return response if not first else response[identifier][0]
+    return response if not first else response[uniprot_id][0]
 
 
 if __name__ == '__main__':
