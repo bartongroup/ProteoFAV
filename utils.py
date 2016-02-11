@@ -21,6 +21,7 @@ from Bio import pairwise2
 from library import valid_ensembl_species_variation
 from config import defaults
 import pandas as pd
+import itertools
 
 socket.setdefaulttimeout(15)
 log = logging.getLogger(__name__)
@@ -750,6 +751,20 @@ def list_series_to_tuples(series):
     """
     new_series = series.apply(lambda x: tuple(x) if isinstance(x, list) else x)
     return new_series
+
+
+def ranges(i):
+    """
+    Takes a list of ints with potentially consecutive ranges and returns the ranges.
+
+    :param i: List of integers.
+    :return: List of tuples of the consecutive ranges.
+    """
+    ranges = []
+    for a, b in itertools.groupby(enumerate(i), lambda (x, y): y - x):
+        b = list(b)
+        ranges.append((b[0][1], b[-1][1]))
+    return ranges
 
 
 if __name__ == '__main__':
