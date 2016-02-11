@@ -79,7 +79,7 @@ def _fetch_uniprot_variants(identifier, format='tab'):
     return table
 
 
-def _ensembl_variant_annotations(variant_ids, use_vep=False):
+def _ensembl_variant_annotations(variant_ids, use_vep=False, phenotypes=True):
     """
     Retrieves variant annotation from ENSEMBL.
 
@@ -96,14 +96,16 @@ def _ensembl_variant_annotations(variant_ids, use_vep=False):
         variant_ids = [i for i in variant_ids if not str(i) == 'nan']
 
         ensembl_endpoint = "variation/homo_sapiens"
+        if phenotypes:
+            ensembl_endpoint += '?phenotypes=1'
+
         if use_vep:
             ensembl_endpoint = "vep/human/id"
 
         url = defaults.api_ensembl + ensembl_endpoint
         headers = {"Content-Type": "application/json",
                    "Accept": "application/json"}
-        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") \
-               + ', "phenotypes" : 1 }'  # FIXME
+        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") + '}'
         data = data.replace("'", "\"")
         r = requests.post(url, headers=headers, data=data)
 
