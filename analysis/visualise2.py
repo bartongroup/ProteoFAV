@@ -12,6 +12,7 @@ from scipy.spatial import ConvexHull
 
 from analysis.pymol_scripts.drawBoundingBox import drawBoundingBox
 from analysis.clustering import clustered_table_to_partition_and_points, add_clusters_to_points
+from utils import ranges
 
 
 def view_table(table, show=None, show_group_by=None, biological_assembly=True):
@@ -53,7 +54,7 @@ def view_table(table, show=None, show_group_by=None, biological_assembly=True):
     ##TODO: this may be useful elsewhere
     dropped = residueIds.isnull()
     residueIds = residueIds.dropna()
-    residueIds = residueIds.astype('object').astype('int').astype('string')
+    residueIds = residueIds.astype('object').astype('int')  # .astype('string')
     table = table[dropped == False]
 
     chain_ids = table.chain_id
@@ -103,6 +104,11 @@ def make_selection(chain, select_ResNums, select_name):
     """
     # Sanitise select_name
     select_name = re.sub("[!@#$%^&*()'\"[\]{}\|~`<>.?/ ]+", "_", select_name.strip())
+
+    # Convert 'resi' numbers to ranges to avoid PyMol 'word too long' error
+    select_ranges = ranges(select_ResNums)
+    select_ResNums = ['-'.join((str(start), str(end))) for start, end in select_ranges]
+
 
     # Create or append to the selection
     if select_name not in pymol.cmd.get_names('selections'):
