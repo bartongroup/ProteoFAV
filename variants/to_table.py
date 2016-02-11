@@ -123,10 +123,22 @@ def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
     """Queries the Ensembl API for germline variants (mostly dbSNP) and somatic
     (mostly COSMIC) based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
-    :param ensembl_ptn_id: Ensembl Protein ID
-    :return: table[Parent, allele, clinical_significance, codons, end,
-                   feature_type, id, minor_allele_frequency, polyphen,
-                   residues, seq_region_name, sift, start, translation, type ]
+    :param ensembl_ptn_id: Ensembl acession to a protein: ENSP00000XXXXXX
+    :return: table[Parent: str,
+                   allele§: str,
+                   clinical_significance: list,
+                   codons: str,
+                   end: int,
+                   feature_type: str,
+                   id: str,
+                   minor_allele_frequency: float ,
+                   polyphen: float,
+                   residues: str,
+                   seq_region_name: str,
+                   sift: float,
+                   start: int,
+                   translation: str,
+                   type: str ]
     :rtype: pandas.DataFrame
     """
     ensembl_endpoint = "overlap/translation/"
