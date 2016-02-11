@@ -39,7 +39,7 @@ def view_table(table, show=None, show_group_by=None, biological_assembly=True):
         pymol.cmd.fetch(pdb_id)
 
     pymol.cmd.hide("everything", "all")
-    pymol.cmd.show("ribbon", "all")
+    pymol.cmd.show("cartoon", "all")
     pymol.util.cbc()
 
     # Create a pymol selection for any column names in `show` ----------
@@ -137,7 +137,7 @@ def style_selection(select_name, colour=None):
     # pymol.cmd.rebuild()
     # pymol.cmd.flag('ignore', 'all', 'reset')
 
-    drawBoundingBox(select_name)
+    #drawBoundingBox(select_name)
 
 
 def int_to_chain(x):
