@@ -87,8 +87,8 @@ def view_table(table, show=None, show_group_by=None, biological_assembly=True):
 
     # Now style them
     if len(selections) > 0:
-        for select_name in selections:
-            style_selection(select_name)
+        for colour, select_name in enumerate(selections):
+            style_selection(select_name, colour + 2)
 
 
 def make_selection(chain, select_ResNums, select_name):
@@ -116,10 +116,12 @@ def make_selection(chain, select_ResNums, select_name):
     return select_name
 
 
-def style_selection(select_name):
+def style_selection(select_name, colour=None):
     # Apply some styles
-    pymol.cmd.show("lines", select_name)
+    pymol.cmd.show("spheres", select_name)
     pymol.util.cnc(select_name)
+    if colour:
+        pymol.cmd.color(colour, select_name)
 
     # # Show bounding surface
     # pymol.cmd.flag('ignore', 'not ' + select_name, 'set')
