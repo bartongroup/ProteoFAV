@@ -81,7 +81,8 @@ def view_table(table, show=None, show_group_by=None, biological_assembly=True):
                 select_name = column + '_{}'.format(value)
                 for chain in unique_chains:
                     select_ResNums = residueIds[select_atom & (chain_ids == chain)]  # Get correct residues
-                    selections.append(make_selection(chain, select_ResNums, select_name))
+                    if len(select_ResNums) >= 1:
+                        selections.append(make_selection(chain, select_ResNums, select_name))
 
     selections = set(selections)
 
