@@ -20,6 +20,7 @@ import numpy as np
 from Bio import pairwise2
 from library import valid_ensembl_species_variation
 from config import defaults
+import pandas as pd
 
 socket.setdefaulttimeout(15)
 log = logging.getLogger(__name__)
@@ -714,6 +715,30 @@ def confirm_column_types(table):
     return table
 
 
+def expand_dataframe(df, expand_column, id_column):
+    """
+    Take a pandas.DataFrame with a column that contains list elements and expand it so that each list element is in
+    its own row.
+
+    :param df: pandas.DataFrame
+    :param expand_column: Column to expand on.
+    :param id_column: Column to use as a unique key to merge the expanded rows back to the table.
+    :return: pandas.DataFrame with an extra column containing the list elements and extra rows as required.
+    """
+
+    def expand_row(row, expand_column, id_column):
+        column_values = row[expand_column] if isinstance(row[expand_column], list) else [row[expand_column]]
+        s = pd.Series(row[id_column], index=list(set(column_values)))
+        return s
+
+    expanded_rows = df.apply(expand_row, expand_column=expand_column, id_column=id_column, axis=1).stack()
+    expanded_rows = expanded_rows.to_frame().reset_index(level=1, drop=False)
+    expanded_rows.columns = [expand_column + '_expanded', id_column]
+    #expanded_rows.reset_index(drop=True, inplace=True)
+
+    expanded_df = df.merge(expanded_rows)
+
+    return expanded_df
 if __name__ == '__main__':
     # testing routines
     pass
