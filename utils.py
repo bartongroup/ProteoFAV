@@ -739,6 +739,19 @@ def expand_dataframe(df, expand_column, id_column):
     expanded_df = df.merge(expanded_rows)
 
     return expanded_df
+
+
+def list_series_to_tuples(series):
+    """
+    Convert list elements in a pandas.Series into tuples so that they are hashable.
+
+    :param series: A pandas.Series with list elements
+    :return: A pandas.Series with tuple elements
+    """
+    new_series = series.apply(lambda x: tuple(x) if isinstance(x, list) else x)
+    return new_series
+
+
 if __name__ == '__main__':
     # testing routines
     pass
