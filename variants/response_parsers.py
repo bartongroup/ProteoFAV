@@ -28,7 +28,7 @@ def variation_response_to_table(variation_response_json):
         parsed = dict([(k, [v]) for k, v in annotations.iteritems()])
         df = pd.DataFrame(parsed, index=[variant])
         results = results.append(df)
-        results.index.name = 'variant_id'
+    results.index.name = 'variant_id'
     return results
 
 
