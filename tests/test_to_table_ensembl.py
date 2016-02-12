@@ -6,8 +6,7 @@ import unittest
 from os import path
 import pandas as pd
 
-from variants.to_table import (_transcript_variants_ensembl, _somatic_variants_ensembl,
-                               _ensembl_variant, select_uniprot_variants)
+from variants.to_table import (_fetch_ensembl_variants, _ensembl_variant, select_uniprot_variants)
 from utils import is_valid_ensembl_id
 
 
@@ -27,8 +26,8 @@ class TestENSEMBLParser(unittest.TestCase):
         self.variant_id_error1 = ''
         self.variant_id_error2 = 123456
         self.variant_id_error3 = []
-        self.ensembl_trascript = _transcript_variants_ensembl
-        self.ensembl_somatic = _somatic_variants_ensembl
+        self.ensembl_trascript = _fetch_ensembl_variants
+        self.fetch_variant = _fetch_ensembl_variants
         self.ensembl_variant = _ensembl_variant
         self.uniprot_variants = select_uniprot_variants
         self.isvalid = is_valid_ensembl_id
@@ -48,8 +47,7 @@ class TestENSEMBLParser(unittest.TestCase):
         self.variant_id_error2 = None
         self.variant_id_error3 = None
         self.ensembl_trascript = None
-        self.ensembl_somatic = None
-        self.ensembl_variant = None
+        self.fetch_variant = None
         self.uniprot_variants = None
         self.isvalid = None
 
@@ -71,13 +69,14 @@ class TestENSEMBLParser(unittest.TestCase):
         self.assertFalse(self.isvalid(self.variant_id_error3, variant=True))
 
     def test_querying_ensembl_transcript_variants(self):
-        data = self.ensembl_trascript(self.ensembl_id, species='human')
+        data = self.fetch_variant(self.ensembl_id, feature='transcript_variation')
 
         # doesn't check anything about the output
         self.assertIsInstance(data, pd.DataFrame)
 
     def test_querying_ensembl_somatic_variants(self):
-        data = self.ensembl_somatic(self.ensembl_id, species='human')
+        data = self.fetch_variant(
+                self.ensembl_id, feature='somatic_transcript_variation')
 
         # doesn't check anything about the output
         self.assertIsInstance(data, pd.DataFrame)

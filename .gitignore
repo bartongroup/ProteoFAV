@@ -6,5 +6,7 @@ env
 ._*
 .DS_Store
 __pycache__
-config_*
+config*
 !config.py
+.ipynb_checkpoints
+*.ipynb

@@ -3,28 +3,39 @@
 
 from __future__ import print_function
 
+import colorsys
+import gzip
 import logging
 import os
 import re
+import shutil
+import socket
 import sys
 import time
 import urllib
-import gzip
-import shutil
-import socket
-import colorsys
-import requests
-from os import path
 from datetime import datetime
+from os import path
+from urlparse import parse_qs
+
 import numpy as np
+import requests
 from Bio import pairwise2
-from library import valid_ensembl_species_variation
+
 from config import defaults
 import pandas as pd
 import itertools
+from library import valid_ensembl_species_variation
 
 socket.setdefaulttimeout(15)
 log = logging.getLogger(__name__)
+
+
+class IDNotValidError(Exception):
+    """
+    Base class for database related exceptions.
+    Databases: UniProt, PDB, Ensembl, etc.
+    """
+    pass
 
 
 def is_valid_file(parser, arg):
@@ -34,6 +45,7 @@ def is_valid_file(parser, arg):
     :param parser: argparse.ArgumentParser
     :param arg: argument
     :return: Open file handle
+    !FIXME argparse support file as an type https://docs.python.org/2/library/argparse.html#type
     """
     try:
         return open(arg, 'r')
@@ -48,14 +60,6 @@ def delete_file(filename):
     :return: None
     """
     os.remove(filename)
-
-
-class IDNotValidError(Exception):
-    """
-    Base class for database related exceptions.
-    Databases: UniProt, PDB, Ensembl, etc.
-    """
-    pass
 
 
 def current_date():
@@ -129,8 +133,7 @@ def string_split(s):
     return filter(None, re.split(r'(\d+)', s))
 
 
-def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None,
-                     **params):
+def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **params):
     """
     Fetch an url using Requests or retry fetching it if the server is
     complaining with retry_in error.
@@ -158,8 +161,7 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None,
             return response.content
     elif response.status_code in retry_in:
         time.sleep(wait)
-        return get_url_or_retry(
-                url, retry_in, wait, json, header, **params)
+        return get_url_or_retry(url, retry_in, wait, json, header, **params)
     else:
         print(response.url)
         log.error(response.status_code)
@@ -200,11 +202,11 @@ def is_valid(identifier, database=None, url=None):
         return True
 
 
-def is_valid_ensembl_id(identifier, species='human', variant=False):
+def is_valid_ensembl_id(uniprot_id, species='human', variant=False):
     """
     Checks if an Ensembl id is valid.
 
-    :param identifier: testing ID
+    :param uniprot_id: testing ID
     :param species: Ensembl species
     :param variant: boolean if True uses the variant endpoint
     :return: simply a true or false
@@ -212,12 +214,12 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
     """
 
     try:
-        identifier = str(identifier)
+        uniprot_id = str(uniprot_id)
     except ValueError:
         # raise IDNotValidError
         return False
 
-    if len(str(identifier)) < 1:
+    if len(str(uniprot_id)) < 1:
         # raise IDNotValidError
         return False
 
@@ -228,8 +230,8 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
     else:
         ensembl_endpoint = "lookup/id/"
     try:
-        if identifier != '':
-            url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
+        if uniprot_id != '':
+            url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(uniprot_id, safe='')
             data = requests.get(url)
             if data.status_code is not 200:
                 return False
@@ -245,49 +247,39 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
         return False
 
 
-def fetch_sifts_best(identifier, first=False):
+def fetch_sifts_best(uniprot_id, first=False):
     """
     Gets the best structures from the SIFTS endpoint in the
     PDBe api.
 
-    :param identifier: UniProt ID
+    :param uniprot_id: UniProt ID
     :param first: gets the first entry
     :return: url content or url content in json data structure.
     """
 
     sifts_endpoint = "mappings/best_structures/"
-    url = defaults.api_pdbe + sifts_endpoint + str(identifier)
+    url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
     response = get_url_or_retry(url, json=True)
-    return response if not first else response[identifier][0]
+    return response if not first else response[uniprot_id][0]
 
 
-def compare_uniprot_ensembl_sequence(sequence1, sequence2,
-                                     permissive=True):
-    """
-    Compares two given sequences in terms of length and
-    sequence content.
+def compare_sequences(sequence1, sequence2, permissive=True, n_mismatches=1):
+    """Compares two given sequences in terms of length and sequence content.
 
-    :param sequence1: sequence 1
-    :param sequence2: sequence 2
-    :param permissive: if True it allows for same size
-                      sequences with mismatches
+    :param sequence1: First sequence
+    :param sequence2: Second sequence
+    :param permissive: if True it allow sequences with different sizes to return True
+    :param n_mismatches: number of allowed mistmatches
     :return: simply a true or false
     :rtype: boolean
     """
+    if not permissive and len(sequence1) != len(sequence2):
+        return False
 
-    if permissive:
-        if len(sequence1) == len(sequence2):
-            return True
-        else:
-            return False
-    else:
-        if not len(sequence1) == len(sequence2):
-            return False
-        else:
-            for i, j in zip(sequence1, sequence2):
-                if i != j:
-                    return False
-            return True
+    if count_mismatches(sequence1, sequence2) > n_mismatches:
+        return False
+
+    return True
 
 
 def count_mismatches(sequence1, sequence2):
@@ -299,14 +291,7 @@ def count_mismatches(sequence1, sequence2):
     :param sequence2: sequence 2
     :return: The number of mismatches between sequences 1 and 2.
     """
-    if len(sequence1) == len(sequence2):
-        mismatches = []
-        for i, j in zip(sequence1, sequence2):
-                    if i != j:
-                        mismatches.append((i, j))
-    else:
-        raise ValueError('Sequences are different lengths.')
-    return(len(mismatches))
+    return sum(i!=j for i, j in zip(sequence1, sequence2))
 
 
 def map_sequence_indexes(from_seq, to_seq):
@@ -541,26 +526,31 @@ def confirm_column_types(table):
 
     :param table: A pandas data frame produced by a to_* function
     :return: A pandas data frame of the same data with correct column types
+
+    .. note::
+    There are fewer pandas `dtypes` than the corresponding numpy type classes, but all numpy types
+    can be accommodated.
+
+    NaNs and Upcasting:
+    The upcasting of dtypes on columns that contain NaNs has been an issue and can lead to
+    inconsistencies between the column types of different tables that contain equivalent data.
+    E.g., a `merged_table` from a PDB entry may have NaNs in UniProt_dbResNum and so is cast to
+    float64 whilst a UniProt variants table will have no NaNs in this field and so remains int64
+    by default. The main issue here is that it creates additional work for merging these tables as
+    the keys must be of the same type. It's also a problem if you want to test elements say for
+    example you expect to be testing integer equality but the values have been coerced to floats.
+
+    Ideally then we need to ensure that all equivalent column types are by default the least
+    generic dtype that can contain all possible values that can be seen in the column, i.e. if
+    NaNs are possible then even when not present, a column of integers that can contain NaNs
+    should always be at least float.
+
+    dtypes and element types:
+    It seems that coercion to certain dtypes alters the element types too. For instance, int64 ->
+    float64 will make an equivalent change to individual value types. However, the original element
+    types can be preserved with the generic `object` dtype, so this will be used in preference for
+    integer columns that can contain NaNs.
     """
-    # There are fewer pandas `dtypes` than the corresponding numpy type classes, but all numpy types can be
-    # accommodated.
-    #
-    # NaNs and Upcasting:
-    # The upcasting of dtypes on columns that contain NaNs has been an issue and can lead to inconsistencies between
-    # the column types of different tables that contain equivalent data. E.g., a `merged_table` from a PDB entry may
-    # have NaNs in UniProt_dbResNum and so is cast to float64 whilst a UniProt variants table will have no NaNs in
-    # this field and so remains int64 by default. The main issue here is that it creates additional work for merging
-    # these tables as the keys must be of the same type. It's also a problem if you want to test elements say for
-    # example you expect to be testing integer equality but the values have been coerced to floats.
-    #
-    # Ideally then we need to ensure that all equivalent column types are by default the least generic dtype that can
-    # contain all possible values that can be seen in the column, i.e. if NaNs are possible then even when not present,
-    # a column of integers that can contain NaNs should always be at least float.
-    #
-    # dtypes and element types:
-    # It seems that coercion to certain dtypes alters the element types too. For instance, int64 -> float64 will make
-    # an equivalent change to individual value types. However, the original element types can be preserved with the
-    # generic `object` dtype, so this will be used in preference for integer columns that can contain NaNs.
 
     column_types_long = {
         # SIFTs mappings
@@ -692,7 +682,8 @@ def confirm_column_types(table):
         # Element replacements as required
         if column in column_replacements:
             to_replace, replacement = column_replacements.get(column)
-            logging.debug('Replacing {} with {} in column {}'.format(to_replace, replacement, column))
+            logging.debug(
+                'Replacing {} with {} in column {}'.format(to_replace, replacement, column))
             table[column] = table[column].replace(to_replace, replacement)
 
         # Coerce column if neccessary
@@ -711,9 +702,30 @@ def confirm_column_types(table):
     if current_dtype != dtype_should_be:
         logging.debug('Coercing index `{}` to `{}`'.format(column, dtype_should_be))
         table.index = table.index.astype(dtype_should_be)
-
-
     return table
+
+
+def fetch_uniprot_gff(identifier):
+    """
+    Retrieve UniProt data from the GFF file
+
+    :param identifier: UniProt accession identifier
+    :return: pandas table
+    """
+    url = defaults.http_uniprot + identifier + ".gff"
+    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
+
+    data = pd.read_table(url, skiprows=2, names=cols)
+    groups = data.GROUP.apply(parse_qs)
+    groups = pd.DataFrame.from_records(groups)
+    data = data.merge(groups, left_index=True, right_index=True)
+
+    return data
+
+
+def raise_if_not_ok(response):
+    if not response.ok:
+        response.raise_for_status()
 
 
 def expand_dataframe(df, expand_column, id_column):
