@@ -87,9 +87,9 @@ def _ensembl_variant_annotations(variant_ids, use_vep=False, phenotypes=True):
     """
 
     if isinstance(variant_ids, pd.Series):
-        variant_ids = list(variant_ids)
+        variant_ids = list(variant_ids.dropna().unique())
     # POST if given a list of ids
-    if isinstance(variant_ids, list):
+    if isinstance(variant_ids, list) and len(variant_ids) <= 1000:
         # Remove any nans from the list
         variant_ids = [i for i in variant_ids if not str(i) == 'nan']
 
@@ -106,6 +106,14 @@ def _ensembl_variant_annotations(variant_ids, use_vep=False, phenotypes=True):
         data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") + '}'
         data = data.replace("'", "\"")
         r = requests.post(url, headers=headers, data=data)
+    else:
+        # Break up the request into chunks and combine the responses
+        chunks = [variant_ids[i:i+1000] for i in range(0, len(variant_ids), 1000)]
+        responses = {}
+        for chunk in chunks:
+            responses.update(_ensembl_variant_annotations(chunk, use_vep, phenotypes))
+        return responses
+
 
     # GET if given single id
     if isinstance(variant_ids, str):
