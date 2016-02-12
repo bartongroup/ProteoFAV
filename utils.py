@@ -754,6 +754,31 @@ def expand_dataframe(df, expand_column, id_column):
     return expanded_df
 
 
+def collapse_dataframe(df, collapse_column, id_column, separator=';', drop_collapsed=True):
+    """
+    Collapse a DataFrame column via string concatenation by groups.
+
+    :param df: A pandas.DataFrame to be collapsed
+    :param collapse_column: The column of `df` to collapse
+    :param id_column: The column to use as grouping
+    :param separator: String to join unique elements of `collapse_column`
+    :param drop_collapsed: If True, remove the uncollapsed column and drop duplicates.
+    :return:
+    """
+    grouped = df[df[collapse_column].notnull()].groupby(id_column)
+    aggregated = grouped[collapse_column].agg(lambda x: separator.join(x.unique()))
+    aggregated = pd.DataFrame(aggregated)
+
+    if drop_collapsed:
+        df = df.drop(collapse_column, axis=1)
+        #df = df.drop_duplicates()
+
+    new_table = df.merge(aggregated, how='left', left_on=id_column, right_index=True,
+                         suffixes=('', '_collapsed'))
+
+    return new_table
+
+
 def list_series_to_tuples(series):
     """
     Convert list elements in a pandas.Series into tuples so that they are hashable.
