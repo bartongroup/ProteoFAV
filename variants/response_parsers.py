@@ -50,4 +50,33 @@ def parse_mutation(variation_table, column_name='residues'):
         to_aa.append(parsed[1:])
     variation_table['from_aa'] = pd.Series(from_aa)
     variation_table['to_aa'] = pd.Series(to_aa)
+    
     return variation_table
+
+
+def parse_phenotypes_to_table(variation_table, drop_unparsed=False):
+    """
+    Parses the 'phenotypes' field from the EnsEMBL variation endpoint (a list of dictionaries) to a pandas.DataFrame.
+
+    :param variation_table: A table with a 'phenotypes' column as produced by `variation_response_to_table`.
+    :param drop_unparsed: If True, drop the original 'phenotypes' column from the result.
+    :return: A pandas.DataFrame
+    """
+
+    # Create the phenotype table
+    phenotype_table = pd.DataFrame()
+    for variant, phenotypes in variation_table.phenotypes.iteritems():
+        for d in phenotypes:
+            parsed = dict([(k, [v]) for k, v in d.iteritems()])
+            df = pd.DataFrame(parsed, index=[variant])
+            phenotype_table = phenotype_table.append(df)
+    phenotype_table.index.name = 'variant_id'
+
+    # Merge the phenotype table back to the original input
+    new_table = variation_table.merge(phenotype_table, how='left', left_index=True, right_index=True,
+                                      suffixes=('', '_phenotypes'))
+
+    if drop_unparsed:
+        new_table.drop('phenotypes', axis=1, inplace=True)
+
+    return new_table
