@@ -436,12 +436,12 @@ def _bio_unit_to_mmcif():
 
 
 def _generic_mmcif_field_to_table(filename, fieldname='_pdbx_poly_seq_scheme.'):
-    """
-    Generic method that gets a particular field to pandas table.
+    # !FIXME doctest
+    """Generic method that gets a particular field to pandas table.
 
     :param filename: input mmcif structure
     :param fieldname: name of the field to be parsed
-    :return: dataframe
+    :return: table
     """
     header = []
     lines = []
