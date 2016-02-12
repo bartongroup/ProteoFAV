@@ -10,7 +10,7 @@ from pandas import DataFrame
 from structures.to_table import (select_cif, select_dssp, select_sifts,
                                  select_validation, sifts_best, _rcsb_description)
 
-from variants.to_table import (select_uniprot_gff, select_uniprot_variants,
+from variants.to_table import (map_gff_features_to_sequence, select_uniprot_variants,
                                _fetch_uniprot_variants)
 
 log = logging.getLogger(__name__)
@@ -203,7 +203,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
-            uniprot_annotation = select_uniprot_gff(identifier)
+            uniprot_annotation = map_gff_features_to_sequence(identifier)
             uniprot_annotation.index = uniprot_annotation.index.astype(float)
             table = table.reset_index().merge(uniprot_annotation, how='left',
                                               on="UniProt_dbResNum")
