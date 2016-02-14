@@ -262,13 +262,13 @@ def fetch_sifts_best(uniprot_id, first=False):
     return response if not first else response[uniprot_id][0]
 
 
-def compare_sequences(sequence1, sequence2, permissive=True, n_mismatches=1):
+def compare_sequences(sequence1, sequence2, permissive=True, n_mismatches=0):
     """Compares two given sequences in terms of length and sequence content.
 
     :param sequence1: First sequence
     :param sequence2: Second sequence
     :param permissive: if True it allow sequences with different sizes to return True
-    :param n_mismatches: number of allowed mistmatches
+    :param n_mismatches: number of allowed mismatches
     :return: simply a true or false
     :rtype: boolean
     """
