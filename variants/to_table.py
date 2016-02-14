@@ -483,9 +483,9 @@ def map_gff_features_to_sequence(identifier, query_type='', drop_types=(
     :return: table read to be joined to main table
     """
 
-    def annotation_writter(gff_row):
+    def annotation_writer(gff_row):
         """
-        Establish a set of rules to annotates uniprot GFF.
+        Establish a set of rules to annotate uniprot GFF.
 
         :param gff_row: each line in the GFF file
         :return:
@@ -507,7 +507,7 @@ def map_gff_features_to_sequence(identifier, query_type='', drop_types=(
 
     lines = []
     for i, row in table.iterrows():
-        lines.extend({'idx': i, 'annotation': annotation_writter(row)}
+        lines.extend({'idx': i, 'annotation': annotation_writer(row)}
                      for i in range(row.START, row.END + 1))
     table = pd.DataFrame(lines)
     return table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
