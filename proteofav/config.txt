@@ -1,33 +1,41 @@
 # example config file
 [Global]
-db_pdb = /Volumes/tbrittoborges/NOBACK/pdb_files/
-db_mmcif = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/mmcif/
-db_sifts = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/sifts_xml/
-db_dssp = /Volumes/gjb/db/NOBACK/local_databases/dssp/
+db_pdb = ...
+db_mmcif = ...
+db_dssp = ...
+db_sifts = ...
+db_validation = ...
+db_germline_variants = ...
+db_somatic_variants = ...
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/
-api_cath = http://www.cathdb.info/version/v4_0_0/api/rest/superfamily/
-web_cath = http://www.cathdb.info/version/v4_0_0/superfamily/
 api_rcsb = http://www.rcsb.org/pdb/rest/
-rsync_pdb = rsync.ebi.ac.uk::pub/databases/rcsb/pdb/data/structures/divided/pdb/
-rsync_cif = rsync.ebi.ac.uk::pub/databases/rcsb/pdb/data/structures/divided/mmCIF/
-rsync_sifts = rsync.ebi.ac.uk::pub/databases/msd/sifts/split_xml/
-rsync_dssp = rsync.cmbi.ru.nl::dssp/
-ftp_sifts = ftp.ebi.ac.uk/pub/databases/msd/sifts/text/
-ftp_obsolete = ftp.ebi.ac.uk/pub/databases/rcsb/pdb/data/status/obsolete.dat
-http_uniprot = http://www.uniprot.org/uniprot/
-http_uniprot_mapping = http://www.uniprot.org/mapping/
-http_pdbe = http://www.ebi.ac.uk/pdbe/entry/pdb/
+api_uniprot = http://www.uniprot.org/uniprot/
 api_ensembl = http://rest.ensembl.org/
+api_icgc = https://dcc.icgc.org/api/v1/genes/
+
 cif_fetch = http://www.ebi.ac.uk/pdbe/entry-files/
 dssp_fetch = ftp://ftp.cmbi.ru.nl//pub/molbio/data/dssp/
 sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 validation_fetch = http://www.ebi.ac.uk/pdbe/entry-files/download/
 
 [Variables]
-contact_email = tbrittoborges@dundee.ac.uk
+contact_email = ...
 cif_extension = _updated.cif
 dssp_extension = .dssp
 sifts_extension = .xml.gz
 validation_extension = _validation.xml
+
+
+# Not used at the moment
+#api_cath = http://www.cathdb.info/version/v4_0_0/api/rest/superfamily/
+#web_cath = http://www.cathdb.info/version/v4_0_0/superfamily/
+#rsync_pdb = rsync.ebi.ac.uk::pub/databases/rcsb/pdb/data/structures/divided/pdb/
+#rsync_cif = rsync.ebi.ac.uk::pub/databases/rcsb/pdb/data/structures/divided/mmCIF/
+#rsync_sifts = rsync.ebi.ac.uk::pub/databases/msd/sifts/split_xml/
+#rsync_dssp = rsync.cmbi.ru.nl::dssp/
+#ftp_sifts = ftp.ebi.ac.uk/pub/databases/msd/sifts/text/
+#ftp_obsolete = ftp.ebi.ac.uk/pub/databases/rcsb/pdb/data/status/obsolete.dat
+#http_uniprot_mapping = http://www.uniprot.org/mapping/
+#http_pdbe = http://www.ebi.ac.uk/pdbe/entry/pdb/
