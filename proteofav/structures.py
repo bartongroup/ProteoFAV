@@ -18,7 +18,7 @@ from scipy.spatial import cKDTree
 
 
 from .config import defaults
-from .utils import fetch_files, get_url_or_retry, is_valid
+from .utils import fetch_files, get_url_or_retry
 from .library import scop_3to1
 
 log = logging.getLogger(__name__)
@@ -29,16 +29,6 @@ UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 ##############################################################################
 # Private methods
 ##############################################################################
-def _to_unique(series):
-    """
-    Lambda-like expression for returning unique elements of a Series.
-
-    :param series: pandas.Series
-    :return: pandas.Series
-    """
-    return series.unique()
-
-
 def _dssp(filename):
     """
     Parses DSSP file output to a pandas DataFrame.
@@ -67,7 +57,7 @@ def _mmcif_atom(filename, delimiter=None):
     :param filename: input CIF file path
     :return: pandas table dataframe
     """
-
+    # parsing atom lines
     _header_mmcif = []
     lines = []
     with open(filename) as inlines:
@@ -97,7 +87,7 @@ def _sifts_residues(filename, cols=None):
     :param filename: input SIFTS xml file
     :return: pandas table dataframe
     """
-
+    # parsing sifts segments
     tree = etree.parse(filename)
     root = tree.getroot()
     namespace = root.nsmap[None]
@@ -181,140 +171,6 @@ def _sifts_residues(filename, cols=None):
     return data
 
 
-def _sifts_regions(filename):
-    """
-    Parse the region field of the SIFTS XML file to a pandas dataframe.
-
-    :param filename: input SIFTS xml file path
-    :return: pandas table dataframe
-    """
-
-    if not path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
-
-    tree = etree.parse(filename)
-    root = tree.getroot()
-    namespace = 'http://www.ebi.ac.uk/pdbe/docs/sifts/eFamily.xsd'
-    namespace_map = {'ns': namespace}
-    db_reference = "{{{}}}db".format(namespace)
-    db_detail = "{{{}}}dbDetail".format(namespace)
-    rows = []
-    regions = {}
-
-    for segment in root.find('.//ns:entity[@type="protein"]',
-                             namespaces=namespace_map):
-        for region in segment.find('.//ns:listMapRegion',
-                                   namespaces=namespace_map):
-            # get region annotations
-            region_annotation = {}
-
-            # parse extra annotations for each region
-            for annotation in region:
-                for k, v in annotation.attrib.items():
-                    # db entries
-                    if annotation.tag == db_reference:
-                        # skipping dbSource
-                        if k == 'dbSource':
-                            continue
-
-                        start = region.attrib['start']
-                        end = region.attrib['end']
-                        coord = annotation.attrib.get('dbCoordSys', '')
-                        region_annotation['Start'] = start
-                        region_annotation['End'] = end
-
-                        # region id
-                        r = (start, end, coord)
-
-                        # renaming all keys with dbSource prefix
-                        k = "{}_{}".format(annotation.attrib["dbSource"], k)
-
-                    # dbDetail entries
-                    elif annotation.tag == db_detail:
-                        # joining dbSource and property keys
-                        k = "_".join([annotation.attrib["dbSource"],
-                                      annotation.attrib["property"]])
-                        # value is the text field in the XML
-                        v = annotation.text
-
-                    # adding to the dictionary
-                    try:
-                        if v in region_annotation[k]:
-                            continue
-                        region_annotation[k].append(v)
-                    except KeyError:
-                        region_annotation[k] = v
-                    except AttributeError:
-                        region_annotation[k] = [region_annotation[k]]
-                        region_annotation[k].append(v)
-
-                    if r not in regions:
-                        regions[r] = [region_annotation]
-                    else:
-                        regions[r].append(region_annotation)
-
-        # group regions together
-        for region in regions:
-            region_annotation = {}
-            for region_annot in regions[region]:
-                for k in region_annot:
-                    v = region_annot[k]
-                    try:
-                        if v in region_annotation[k]:
-                            continue
-                        region_annotation[k].append(v)
-                    except KeyError:
-                        region_annotation[k] = v
-                    except AttributeError:
-                        region_annotation[k] = [region_annotation[k]]
-                        region_annotation[k].append(v)
-
-            rows.append(region_annotation)
-    return pd.DataFrame(rows)
-
-
-def _pdb_uniprot_sifts_mapping(identifier):
-    """
-    Queries the PDBe API for SIFTS mapping between PDB - UniProt.
-    One to many relationship expected.
-
-    :param identifier: PDB id
-    :return: pandas table dataframe
-    """
-
-    if not is_valid(identifier, 'pdbe'):
-        raise ValueError(
-                "{} is not a valid PDB identifier.".format(identifier))
-
-    sifts_endpoint = "mappings/uniprot/"
-    url = defaults.api_pdbe + sifts_endpoint + identifier
-    information = get_url_or_retry(url, json=True)
-
-    rows = []
-    for uniprot in information[identifier]['UniProt']:
-        uniprots = {'uniprot_id': uniprot}
-        rows.append(uniprots)
-    return pd.DataFrame(rows)
-
-
-def _uniprot_pdb_sifts_mapping(identifier):
-    """
-    Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
-    One to many relationship expected.
-
-    :param identifier: UniProt ID
-    :return: pandas table dataframe
-    """
-    sifts_endpoint = "mappings/best_structures/"
-    url = defaults.api_pdbe + sifts_endpoint + str(identifier)
-    information = get_url_or_retry(url, json=True)
-
-    rows = []
-    for entry in information[identifier]:
-        rows.append(entry)
-    return pd.DataFrame(rows)
-
-
 def _pdb_validation_to_table(filename, global_parameters=False):
     """
     Parse the PDB's validation validation file to a pandas DataFrame.
@@ -325,9 +181,6 @@ def _pdb_validation_to_table(filename, global_parameters=False):
     :return: table with validation information
     :rtype: pandas.DataFrame
     """
-    if not path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
-
     tree = etree.parse(filename)
     root = tree.getroot()
     if global_parameters:
@@ -364,7 +217,6 @@ def _rcsb_description(pdb_id, tag, key):
     values = []
     for i in tree.iter(tag):
         values.append(i.attrib[key])
-
     return values
 
 
@@ -378,7 +230,6 @@ def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
       (in both directions)
     :return: new pd.Dataframe
     """
-
     ig = ignore_consecutive
 
     # using KDTree
@@ -397,10 +248,7 @@ def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
     return df
 
 
-##############################################################################
-# Public methods
-##############################################################################
-def table_selector(table, column, value):
+def _table_selector(table, column, value):
     """
     Generic table selector.
 
@@ -422,8 +270,47 @@ def table_selector(table, column, value):
     if table.empty:
         raise ValueError('Column {} does not contain {} value(s)'.format(
                 column, value))
-
     return table
+
+
+def _residues_as_centroid(table):
+    """
+    Gets the residues' atoms and their centroids (mean).
+
+    :param table: main dataframe
+    :return: compressed dataframe
+    """
+    columns_to_agg = {col: "first" if table[col].dtype == 'object' else 'mean'
+                      for col in table.columns
+                      if col not in UNIFIED_COL}
+    columns_to_agg['auth_atom_id'] = 'unique'
+    return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
+
+
+def _import_dssp_chains_ids(pdb_id):
+    """Imports mmCIF chain identifier to DSSP.
+
+    :param pdb_id:
+    :return: DSSP table with corrected chain ids.
+    """
+    dssp_table = select_dssp(pdb_id)
+    cif_table = select_cif(pdb_id)
+    cif_seq = cif_table.auth_comp_id.apply(scop_3to1.get)
+    dssp_has_seq = dssp_table.aa.isin(scop_3to1.values())
+    dssp_seq = dssp_table.aa[dssp_has_seq]
+    # Import only if the sequences are identical
+    if not (cif_seq == dssp_seq).all():
+        err = ('Inconsitent DSSP / mmCIF sequence for {} protein structure cannot be fixed'
+               'by import_dssp_chains_ids')
+        raise ValueError(err.format(pdb_id))
+    dssp_table.loc[dssp_has_seq, 'chain_id'] = cif_table.auth_asym_id
+    return dssp_table
+
+
+##############################################################################
+# Public methods
+##############################################################################
+
 
 
 def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
@@ -450,28 +337,28 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
     # select the models
     if models:
         try:
-            cif_table = table_selector(cif_table, 'pdbx_PDB_model_num', models)
+            cif_table = _table_selector(cif_table, 'pdbx_PDB_model_num', models)
         except AttributeError:
             err = 'Structure {} has only one model, which was kept'.format
             log.info(err(pdb_id))
 
     # select chains
     if chains:
-        cif_table = table_selector(cif_table, 'auth_asym_id', chains)
+        cif_table = _table_selector(cif_table, 'auth_asym_id', chains)
 
     # select lines
     if lines:
-        cif_table = table_selector(cif_table, 'group_PDB', lines)
+        cif_table = _table_selector(cif_table, 'group_PDB', lines)
 
     # select which atom line will represent
     if atoms == 'centroid':
-        cif_table = residues_as_cetroid(cif_table)
+        cif_table = _residues_as_centroid(cif_table)
     elif atoms == 'backbone_centroid':
-        cif_table = table_selector(
+        cif_table = _table_selector(
                 cif_table, 'label_atom_id', ('CA', 'N', 'C', 'O'))
-        cif_table = residues_as_cetroid(cif_table)
+        cif_table = _residues_as_centroid(cif_table)
     elif atoms:
-        cif_table = table_selector(cif_table, 'label_atom_id', atoms)
+        cif_table = _table_selector(cif_table, 'label_atom_id', atoms)
 
     # from here we treat the corner cases for duplicated ids
     # in case of alternative id, use the ones with maximum occupancy
@@ -496,40 +383,6 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
     return cif_table.set_index(['auth_seq_id'])
 
 
-def residues_as_cetroid(table):
-    """
-    Gets the residues' atoms and their centroids (mean).
-
-    :param table: main dataframe
-    :return: compressed dataframe
-    """
-    columns_to_agg = {col: "first" if table[col].dtype == 'object' else 'mean'
-                      for col in table.columns
-                      if col not in UNIFIED_COL}
-    columns_to_agg['auth_atom_id'] = 'unique'
-    return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
-
-
-def import_dssp_chains_ids(pdb_id):
-    """Imports mmCIF chain identifier to DSSP.
-
-    :param pdb_id:
-    :return: DSSP table with corrected chain ids.
-    """
-    dssp_table = select_dssp(pdb_id)
-    cif_table = select_cif(pdb_id)
-    cif_seq = cif_table.auth_comp_id.apply(scop_3to1.get)
-    dssp_has_seq = dssp_table.aa.isin(scop_3to1.values())
-    dssp_seq = dssp_table.aa[dssp_has_seq]
-    # Import only if the sequences are identical
-    if not (cif_seq == dssp_seq).all():
-        err = ('Inconsitent DSSP / mmCIF sequence for {} protein structure cannot be fixed'
-               'by import_dssp_chains_ids')
-        raise ValueError(err.format(pdb_id))
-    dssp_table.loc[dssp_has_seq, 'chain_id'] = cif_table.auth_asym_id
-    return dssp_table
-
-
 def select_dssp(pdb_id, chains=None):
     """
     Produce table from DSSP file output.
@@ -538,7 +391,6 @@ def select_dssp(pdb_id, chains=None):
     :param chains: PDB protein chain
     :return: pandas dataframe
     """
-
     dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
     try:
         dssp_table = _dssp(dssp_path)
@@ -550,12 +402,12 @@ def select_dssp(pdb_id, chains=None):
 
     if chains:
         try:
-            dssp_table = table_selector(dssp_table, 'chain_id', chains)
+            dssp_table = _table_selector(dssp_table, 'chain_id', chains)
         except ValueError:
             # Could not find the correct PDB chain. It happens for protein structures with complex
             # chain identifier, as 4v9d.
-            dssp_table = import_dssp_chains_ids(pdb_id)
-            dssp_table = table_selector(dssp_table, 'chain_id', chains)
+            dssp_table = _import_dssp_chains_ids(pdb_id)
+            dssp_table = _table_selector(dssp_table, 'chain_id', chains)
 
     if dssp_table.index.name == 'icode':
         if dssp_table.index.duplicated().any():
@@ -564,7 +416,6 @@ def select_dssp(pdb_id, chains=None):
 
     if chains and dssp_table.icode.duplicated().any():
         log.info('DSSP file for {} has not unique index'.format(pdb_id))
-
     return dssp_table.set_index(['icode'])
 
 
@@ -576,7 +427,6 @@ def select_sifts(pdb_id, chains=None):
     :param chains: Protein structure chain
     :return: table read to be merged
     """
-
     sift_path = path.join(defaults.db_sifts, pdb_id + '.xml')
 
     try:
@@ -593,7 +443,7 @@ def select_sifts(pdb_id, chains=None):
     if chains is None:
         return sift_table
     else:
-        return table_selector(sift_table, 'PDB_dbChainId', chains)
+        return _table_selector(sift_table, 'PDB_dbChainId', chains)
 
 
 def select_validation(pdb_id, chains=None):
@@ -612,7 +462,7 @@ def select_validation(pdb_id, chains=None):
         val_table = _pdb_validation_to_table(val_path)
 
     if chains:
-        val_table = table_selector(val_table, 'chain', chains)
+        val_table = _table_selector(val_table, 'chain', chains)
     if not val_table.empty:
         val_table.columns = ["val_" + name for name in val_table.columns]
         return val_table
@@ -627,7 +477,6 @@ def sifts_best(uniprot_id, first=False):
     :param first: gets the first entry
     :return: url content or url content in json data structure.
     """
-
     sifts_endpoint = "mappings/best_structures/"
     url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
     try:
