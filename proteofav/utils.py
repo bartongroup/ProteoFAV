@@ -19,10 +19,8 @@ import pandas as pd
 import requests
 from lxml import etree
 
-from proteofav.config import defaults
-from proteofav.library import valid_ensembl_species_variation
-
 from .config import defaults
+from .library import valid_ensembl_species_variation
 
 # TODO what is this for?
 socket.setdefaulttimeout(15)
