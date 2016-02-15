@@ -25,7 +25,9 @@ from scipy.spatial.distance import pdist, squareform, euclidean
 from scipy.spatial.qhull import QhullError
 
 from proteofav.analysis import add_random_disease_variants
-from proteofav.utils import get_colors, autoscale_axes, fractional_to_cartesian, delete_file
+from proteofav.utils import _get_colors, _autoscale_axes, _fractional_to_cartesian
+from proteofav.analysis.utils import delete_file, _get_colors, _fractional_to_cartesian, \
+    _autoscale_axes
 
 __author__ = 'smacgowan'
 
@@ -52,8 +54,8 @@ def atom_dist(table, mask, cartesian=False):
     # Convert to fractional coordinates
     if cartesian:
         pdb_id = table.PDB_dbAccessionId.unique()[0]
-        included_xyz = fractional_to_cartesian(included_xyz, pdb_id)
-        excluded_xyz = fractional_to_cartesian(excluded_xyz, pdb_id)
+        included_xyz = _fractional_to_cartesian(included_xyz, pdb_id)
+        excluded_xyz = _fractional_to_cartesian(excluded_xyz, pdb_id)
 
     d = pdist(included_xyz)
 
@@ -294,7 +296,7 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
             part2 = part1
             num_clust2 = num_clust1
 
-        clr = get_colors(max([num_clust1, num_clust2]))
+        clr = _get_colors(max([num_clust1, num_clust2]))
 
         for part, i in zip([part1, part2], [2, 3]):
             ax = fig.add_subplot(nrows, 3, i + offset, projection='3d')
@@ -328,10 +330,10 @@ def compare_clustering(linkages, xyz, title=None, addn_points=None):
                 y = np.append(xyz[:, 1], addn_points[:, 1])
                 z = np.append(xyz[:, 2], addn_points[:, 2])
                 all_points = np.array([x, y, z]).T
-                x, y, z = autoscale_axes(all_points)
+                x, y, z = _autoscale_axes(all_points)
                 ax.auto_scale_xyz(x, y, z)
             else:
-                x, y, z = autoscale_axes(xyz)
+                x, y, z = _autoscale_axes(xyz)
                 ax.auto_scale_xyz(x, y, z)
 
         m = '\n(method: {})'.format(method)

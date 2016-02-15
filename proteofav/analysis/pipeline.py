@@ -14,7 +14,8 @@ import logging
 from proteofav import main
 import os
 import time
-from proteofav.utils import is_valid_file, create_directory
+from proteofav.utils import create_directory
+from proteofav.analysis.utils import is_valid_file, create_directory
 
 if __name__ == '__main__':
 

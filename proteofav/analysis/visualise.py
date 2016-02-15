@@ -10,7 +10,7 @@ import pymol
 
 from proteofav.main import merge_tables
 from proteofav.variants import (_fetch_uniprot_variants,
-                                _variant_characteristics_from_identifiers)
+                                _fetch_variant_characteristics_from_identifiers)
 
 __author__ = 'smacgowan'
 
@@ -140,7 +140,7 @@ def ensembl_traits(variant_ids):
     traits = []
     for variant in variant_ids:
         phenos = \
-            _variant_characteristics_from_identifiers(str(variant))[
+            _fetch_variant_characteristics_from_identifiers(str(variant))[
                 'phenotypes']
         if phenos == []:
             traits.append([variant, 'No_Available_Phenotype'])
