@@ -26,10 +26,11 @@ issues please log them in the `issue tracker`_.
 License
 ~~~~~~~
 
-To be decided later...
+See `license`_.
 
 
 .. _requirements: https://github.com/biomadeira/ProteoFAV/blob/master/requirements.txt
+.. _license: https://github.com/biomadeira/ProteoFAV/blob/master/LICENSE.txt
 .. _issue tracker: https://github.com/biomadeira/ProteoFAV/issues
 .. _docs: https://github.com/biomadeira/ProteoFAV/blob/master/docs/index.rst
 .. _Pandas: http://pandas.pydata.org/

@@ -6,9 +6,11 @@ numpy
 requests
 pandas>=0.17
 lxml
+biopython
 
 # Testing
 mock
+responses
 
 # Protein structure visualisation
 #pymol (not in pip; available through brew on Mac)
