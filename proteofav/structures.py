@@ -310,9 +310,6 @@ def _import_dssp_chains_ids(pdb_id):
 ##############################################################################
 # Public methods
 ##############################################################################
-
-
-
 def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
     """
     Produce table read from mmCIF file.
