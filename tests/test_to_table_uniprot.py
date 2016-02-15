@@ -4,7 +4,6 @@
 
 import unittest
 
-from proteofav import utils
 from proteofav.variants import _uniprot_ensembl_mapping, _uniprot_info
 
 
@@ -21,7 +20,6 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_id_error5 = []
         self.uniprot_info = _uniprot_info
         self.uniprot_ensembl = _uniprot_ensembl_mapping
-        self.isvalid = utils.is_valid
 
     def tearDown(self):
         """Remove testing framework."""
@@ -34,17 +32,6 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_id_error5 = None
         self.uniprot_info = None
         self.uniprot_ensembl = None
-
-    def test_uniprot_ids(self):
-        """
-        Testing input of invalid UniProt identifiers.
-        """
-        self.assertTrue(self.isvalid(self.uniprot_id, 'uniprot'))
-        self.assertFalse(self.isvalid(self.uniprot_id_error1, 'uniprot'))
-        self.assertFalse(self.isvalid(self.uniprot_id_error2, 'uniprot'))
-        self.assertFalse(self.isvalid(self.uniprot_id_error3, 'uniprot'))
-        self.assertFalse(self.isvalid(self.uniprot_id_error4, 'uniprot'))
-        self.assertFalse(self.isvalid(self.uniprot_id_error5, 'uniprot'))
 
     def test_to_table_uniprot_info(self):
         """
