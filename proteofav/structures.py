@@ -451,7 +451,7 @@ def select_validation(pdb_id, chains=None):
     :param chains: PDB protein chain
     :return: pandas dataframe
     """
-    val_path = path.join(defaults.db_pdb, pdb_id + defaults.validation_extension)
+    val_path = path.join(defaults.db_validation, pdb_id + defaults.validation_extension)
     try:
         val_table = _pdb_validation_to_table(val_path)
     except IOError:

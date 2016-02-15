@@ -3,10 +3,11 @@
 
 
 import shlex
+from collections import OrderedDict
+from os import path
+
 import numpy as np
 import pandas as pd
-from os import path
-from collections import OrderedDict
 
 from .structures import _mmcif_atom
 
