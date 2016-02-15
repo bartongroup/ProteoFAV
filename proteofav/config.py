@@ -9,10 +9,10 @@ config.py
 This defines the methods that load and validate user defined
 parameters.
 Usage
->>> from config import defaults
+>>> from proteofav.config import defaults
 >>> print(defaults.api_pdbe)
 http://www.ebi.ac.uk/pdbe/api/
->>> from config import Defaults
+>>> from proteofav.config import Defaults
 >>> local_defaults = Defaults("config.txt")
 >>> print(local_defaults.http_uniprot)
 http://www.uniprot.org/uniprot/
@@ -25,9 +25,9 @@ AttributeError: 'Defaults' object has no attribute 'email'"""
 
 from __future__ import print_function
 
-from ConfigParser import ConfigParser
 import logging
 from os import path
+from ConfigParser import ConfigParser
 
 __all__ = ["defaults", "Defaults"]
 

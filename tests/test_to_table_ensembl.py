@@ -4,10 +4,11 @@
 
 import unittest
 from os import path
+
 import pandas as pd
 
-from variants.to_table import (_fetch_ensembl_variants, _ensembl_variant, select_uniprot_variants)
-from utils import is_valid_ensembl_id
+from proteofav.utils import is_valid_ensembl_id
+from proteofav.variants import (_fetch_ensembl_variants, _ensembl_variant, select_uniprot_variants)
 
 
 class TestENSEMBLParser(unittest.TestCase):

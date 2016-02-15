@@ -5,7 +5,7 @@
 import unittest
 from os import path
 
-from structures.to_table import _pdb_validation_to_table
+from proteofav.structures import _pdb_validation_to_table
 
 
 class TestValidationParser(unittest.TestCase):

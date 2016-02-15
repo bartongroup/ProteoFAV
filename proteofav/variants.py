@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import cPickle as pickle
-import json
+
+
 import logging
-import os.path
+import os
+import json
 import sys
+import requests
+import pandas as pd
+import cPickle as pickle
 from StringIO import StringIO
 
-import pandas as pd
-import requests
-
-from config import defaults
-from utils import (get_url_or_retry, is_valid, compare_sequences, count_mismatches,
+from .config import defaults
+from .utils import (get_url_or_retry, is_valid, compare_sequences, count_mismatches,
                    fetch_uniprot_gff, raise_if_not_ok, map_sequence_indexes,
                    apply_sequence_index_map)
+
 
 log = logging.getLogger(__name__)
 
@@ -195,12 +197,11 @@ def _ensembl_variant(identifier, species='human'):
     return pd.DataFrame(rows)
 
 
-def _sequence_from_ensembl_protein(identifier, species='human', protein=True):
+def _sequence_from_ensembl_protein(identifier, protein=True):
     """
     Gets the sequence for an Ensembl identifier.
 
     :param identifier: Ensembl ID
-    :param species: Ensembl species
     :return: sequence
     """
     ensembl_endpoint = "sequence/id/"

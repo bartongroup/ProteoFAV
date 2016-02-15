@@ -5,13 +5,13 @@ from __future__ import print_function
 
 import logging
 
-from library import to_single_aa
 from pandas import DataFrame
-from structures.to_table import (select_cif, select_dssp, select_sifts,
-                                 select_validation, sifts_best, _rcsb_description)
 
-from variants.to_table import (select_uniprot_variants, _fetch_uniprot_variants,
-                               map_gff_features_to_sequence)
+from .library import to_single_aa
+from .structures import (select_cif, select_dssp, select_sifts,
+                         select_validation, sifts_best, _rcsb_description)
+from .variants import (select_uniprot_variants, _fetch_uniprot_variants,
+                       map_gff_features_to_sequence)
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)

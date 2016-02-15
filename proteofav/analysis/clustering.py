@@ -7,25 +7,25 @@ http://stackoverflow.com/questions/21638130/tutorial-for-scipy-cluster-hierarchy
 """
 
 import csv
-from subprocess import call
 import os
 import sys
+from operator import itemgetter
+from subprocess import call
 from time import strftime
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.cluster.hierarchy as hac
+from main import merge_tables
 from mcl.mcl_clustering import mcl
-from mpl_toolkits.mplot3d import Axes3D  ## Required
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial import ConvexHull
 from scipy.spatial.distance import pdist, squareform, euclidean
 from scipy.spatial.qhull import QhullError
-from main import merge_tables
-from variants.to_table import _fetch_uniprot_variants
-from utils import get_colors, autoscale_axes, fractional_to_cartesian, delete_file
-from analysis.random_annotations import add_random_disease_variants
-from operator import itemgetter
+
+from proteofav.analysis import add_random_disease_variants
+from proteofav.utils import get_colors, autoscale_axes, fractional_to_cartesian, delete_file
 
 __author__ = 'smacgowan'
 

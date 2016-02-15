@@ -9,18 +9,17 @@ for better error handling. Both levels are covered by test cases.
 """
 
 import logging
-from StringIO import StringIO
-from os import path
-
 import pandas as pd
+from os import path
 from lxml import etree
+from StringIO import StringIO
+from requests import HTTPError
 from scipy.spatial import cKDTree
 
-from config import defaults
-from utils import fetch_files, get_url_or_retry, is_valid
-from library import scop_3to1
 
-from requests import HTTPError
+from .config import defaults
+from .utils import fetch_files, get_url_or_retry, is_valid
+from .library import scop_3to1
 
 log = logging.getLogger(__name__)
 

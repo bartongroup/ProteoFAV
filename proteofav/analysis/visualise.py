@@ -2,14 +2,15 @@
 # -*- coding: utf-8
 
 
-import re
-import pymol
 import logging
-import pandas as pd
+import re
 
-from main import merge_tables
-from variants.to_table import (_fetch_uniprot_variants,
-                               _variant_characteristics_from_identifiers)
+import pandas as pd
+import pymol
+
+from proteofav.main import merge_tables
+from proteofav.variants import (_fetch_uniprot_variants,
+                                _variant_characteristics_from_identifiers)
 
 __author__ = 'smacgowan'
 

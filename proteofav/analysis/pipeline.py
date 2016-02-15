@@ -7,16 +7,14 @@ import sys
 
 sys.path.extend(['/Users/smacgowan/PycharmProjects/ProteoFAV'])
 
-from analysis.query_uniprot import query_uniprot
-import analysis.clustering
+from proteofav.analysis import query_uniprot
 import argparse
 import cPickle as pickle
 import logging
-import main
-import matplotlib.pyplot as plt
+from proteofav import main
 import os
 import time
-from utils import is_valid_file, create_directory
+from proteofav.utils import is_valid_file, create_directory
 
 if __name__ == '__main__':
 
@@ -131,12 +129,12 @@ if __name__ == '__main__':
                 # Try to complete the cluster analysis and store the results. Otherwise, record the failure and move on.
                 try:
                     logger.info('Running cluster analysis for {}.'.format(prot))
-                    annotated_table = analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
-                                                                        **vars(args))
-                    cluster_table = analysis.clustering.test_cluster_significance(annotated_table, method=['mcl_program'],
-                                                                                  table=deduped, show_progress=False,
-                                                                                  n_samples=50, return_samples=True,
+                    annotated_table = proteofav.analysis.clustering.cluster_table(deduped, mask=mask, method=['mcl_program'],
                                                                                   **vars(args))
+                    cluster_table = proteofav.analysis.clustering.test_cluster_significance(annotated_table, method=['mcl_program'],
+                                                                                            table=deduped, show_progress=False,
+                                                                                            n_samples=50, return_samples=True,
+                                                                                            **vars(args))
                     with open(cluster_file_name, 'wb') as output:
                         pickle.dump(cluster_table, output, -1)
                     results.append((prot, n_variants, cluster_table))

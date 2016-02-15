@@ -3,26 +3,23 @@
 
 from __future__ import print_function
 
+import logging
 import colorsys
 import gzip
-import logging
 import os
-import re
 import shutil
 import socket
-import sys
 import time
 import urllib
-from datetime import datetime
+import requests
+import numpy as np
+import pandas as pd
 from os import path
 from urlparse import parse_qs
 
-import numpy as np
-import pandas as pd
-import requests
 from Bio import pairwise2
 
-from config import defaults
+from .config import defaults
 from library import valid_ensembl_species_variation
 
 socket.setdefaulttimeout(15)
@@ -61,37 +58,6 @@ def delete_file(filename):
     os.remove(filename)
 
 
-def current_date():
-    """
-    Gets the current date.
-
-    :return: outputs formatted date as 'Day/Month/Year'
-    :rtype: str
-    """
-    date = datetime.now()
-    month = date.strftime("%b")
-    day = date.strftime("%d")
-    year = date.strftime("%Y")
-    return "{}/{}/{}".format(day, month, year)
-
-
-def current_time():
-    """
-    Gets current date and time.
-
-    :return: outputs formatted time as 'Day/Month/Year H:M:S'
-    :rtype: str
-    """
-    date = datetime.now()
-    year = date.strftime("%Y")
-    month = date.strftime("%m")
-    day = date.strftime("%d")
-    hour = date.strftime("%H")
-    minute = date.strftime("%M")
-    second = date.strftime("%S")
-    return "{}/{}/{} {}:{}:{}".format(day, month, year, hour, minute, second)
-
-
 def create_directory(directory):
     """
     Creates a directory structure if it does not exist.
@@ -100,36 +66,6 @@ def create_directory(directory):
     :return: creates a directory if it does not exist yet
     """
     return os.makedirs(directory)
-
-
-def flash(message):
-    """
-    Flashes a message out.
-
-    :param message: input message str()
-    """
-    print(str(message))
-    sys.stdout.flush()
-    return
-
-
-def string_split(s):
-    """
-    Splits a string by its numeric values:
-
-    :param s: input string
-    :return: a list of strings
-    :rtype: list
-
-    :Example:
-
-        >>> a = "foo234bar"
-        >>> b = string_split(a)
-        >>> print(b)
-        ['foo', '234', 'bar']
-
-    """
-    return filter(None, re.split(r'(\d+)', s))
 
 
 def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **params):
@@ -201,11 +137,11 @@ def is_valid(identifier, database=None, url=None):
         return True
 
 
-def is_valid_ensembl_id(uniprot_id, species='human', variant=False):
+def is_valid_ensembl_id(identifier, species='human', variant=False):
     """
     Checks if an Ensembl id is valid.
 
-    :param uniprot_id: testing ID
+    :param identifier: testing ID
     :param species: Ensembl species
     :param variant: boolean if True uses the variant endpoint
     :return: simply a true or false
@@ -213,12 +149,12 @@ def is_valid_ensembl_id(uniprot_id, species='human', variant=False):
     """
 
     try:
-        uniprot_id = str(uniprot_id)
+        identifier = str(identifier)
     except ValueError:
         # raise IDNotValidError
         return False
 
-    if len(str(uniprot_id)) < 1:
+    if len(str(identifier)) < 1:
         # raise IDNotValidError
         return False
 
@@ -229,15 +165,12 @@ def is_valid_ensembl_id(uniprot_id, species='human', variant=False):
     else:
         ensembl_endpoint = "lookup/id/"
     try:
-        if uniprot_id != '':
-            url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(uniprot_id, safe='')
-            data = requests.get(url)
-            if data.status_code is not 200:
+        if identifier != '':
+            url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
+            data = get_url_or_retry(url, json=True)
+            if 'error' in data:
                 return False
-            elif 'error' not in data.text:
-                return True
-            else:
-                return False
+            return True
         else:
             raise IDNotValidError
     except IDNotValidError:

@@ -1,9 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import requests
 import logging
 
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
+
+# TODO: move this to variants.py?
 def query_uniprot(search_terms=('keyword:Disease', 'reviewed:yes', 'organism:human', 'database:(type:pdb)')):
     """
     Query the UniProt API for proteins that have particualar characteristics.

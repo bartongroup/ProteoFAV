@@ -4,8 +4,8 @@
 
 import unittest
 
-import utils
-from variants.to_table import _uniprot_ensembl_mapping, _uniprot_info
+from proteofav import utils
+from proteofav.variants import _uniprot_ensembl_mapping, _uniprot_info
 
 
 class TestUNIPROTParser(unittest.TestCase):

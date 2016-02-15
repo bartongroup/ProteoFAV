@@ -3,11 +3,12 @@
 
 
 import unittest
-import numpy
 from os import path
 
-from library import scop_3to1
-from structures.to_table import _dssp, import_dssp_chains_ids
+import numpy
+
+from proteofav.library import scop_3to1
+from proteofav.structures import _dssp, import_dssp_chains_ids
 
 
 class TestDSSPParser(unittest.TestCase):

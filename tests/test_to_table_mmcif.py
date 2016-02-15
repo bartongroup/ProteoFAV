@@ -7,10 +7,10 @@ import sys
 import unittest
 from os import path, remove
 
-from structures.mmcif_tools import _bio_unit_to_table
-from structures.mmcif_tools import _mmcif_info_to_dict
-from structures.to_table import _mmcif_atom
-from utils import is_valid
+from proteofav.mmcif_tools import _bio_unit_to_table
+from proteofav.structures import _mmcif_atom
+from proteofav.mmcif_tools import _mmcif_info_to_dict
+from proteofav.utils import is_valid
 
 
 class TestMMCIFParser(unittest.TestCase):
