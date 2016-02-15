@@ -3,69 +3,30 @@
 
 from __future__ import print_function
 
-import logging
-import colorsys
 import gzip
+import json
+import logging
 import os
 import shutil
 import socket
 import time
 import urllib
-import requests
+from os import path
+
 import numpy as np
 import pandas as pd
-from os import path
-from urlparse import parse_qs
 
-from Bio import pairwise2
+import requests
+from lxml import etree
+
+from proteofav.config import defaults
+from proteofav.library import valid_ensembl_species_variation
 
 from .config import defaults
-from library import valid_ensembl_species_variation
 
+# TODO what is this for?
 socket.setdefaulttimeout(15)
 log = logging.getLogger(__name__)
-
-
-class IDNotValidError(Exception):
-    """
-    Base class for database related exceptions.
-    Databases: UniProt, PDB, Ensembl, etc.
-    """
-    pass
-
-
-def is_valid_file(parser, arg):
-    """
-    Check if arg is a valid file and throw a parsing error if not.
-
-    :param parser: argparse.ArgumentParser
-    :param arg: argument
-    :return: Open file handle
-    !FIXME argparse support file as an type https://docs.python.org/2/library/argparse.html#type
-    """
-    try:
-        return open(arg, 'r')
-    except:
-        parser.error("Not a valid file: %s" % arg)
-
-
-def delete_file(filename):
-    """
-
-    :param filename: File to delete
-    :return: None
-    """
-    os.remove(filename)
-
-
-def create_directory(directory):
-    """
-    Creates a directory structure if it does not exist.
-
-    :param directory: directory name (expects full path)
-    :return: creates a directory if it does not exist yet
-    """
-    return os.makedirs(directory)
 
 
 def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **params):
@@ -101,301 +62,6 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **para
         print(response.url)
         log.error(response.status_code)
         response.raise_for_status()
-
-
-def is_valid(identifier, database=None, url=None):
-    """
-    Generic method to check if a given id is valid.
-
-    :param url: if given use this instead
-    :param identifier: accession id
-    :param database: database to test against
-    :return: simply a true or false
-    :rtype: boolean
-    """
-
-    try:
-        identifier = str(identifier)
-    except ValueError:
-        # raise IDNotValidError
-        return False
-
-    if len(str(identifier)) < 1:
-        # raise IDNotValidError
-        return False
-    if not url:
-        url = getattr(defaults, 'http_' + database) + identifier
-    r = requests.get(url)
-    if not r.ok:
-        # not the best approach
-        try:
-            raise IDNotValidError('{} not found at {}: (url check:{}'.format(
-                    identifier, database, r.url))
-        except IDNotValidError:
-            return False
-    else:
-        return True
-
-
-def is_valid_ensembl_id(identifier, species='human', variant=False):
-    """
-    Checks if an Ensembl id is valid.
-
-    :param identifier: testing ID
-    :param species: Ensembl species
-    :param variant: boolean if True uses the variant endpoint
-    :return: simply a true or false
-    :rtype: boolean
-    """
-
-    try:
-        identifier = str(identifier)
-    except ValueError:
-        # raise IDNotValidError
-        return False
-
-    if len(str(identifier)) < 1:
-        # raise IDNotValidError
-        return False
-
-    if variant:
-        if species not in valid_ensembl_species_variation:
-            raise ValueError('Provided species {} is not valid'.format(species))
-        ensembl_endpoint = "variation/{}/".format(species)
-    else:
-        ensembl_endpoint = "lookup/id/"
-    try:
-        if identifier != '':
-            url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
-            data = get_url_or_retry(url, json=True)
-            if 'error' in data:
-                return False
-            return True
-        else:
-            raise IDNotValidError
-    except IDNotValidError:
-        return False
-    except requests.HTTPError:
-        return False
-
-
-def fetch_sifts_best(uniprot_id, first=False):
-    """
-    Gets the best structures from the SIFTS endpoint in the
-    PDBe api.
-
-    :param uniprot_id: UniProt ID
-    :param first: gets the first entry
-    :return: url content or url content in json data structure.
-    """
-
-    sifts_endpoint = "mappings/best_structures/"
-    url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
-    response = get_url_or_retry(url, json=True)
-    return response if not first else response[uniprot_id][0]
-
-
-def compare_sequences(sequence1, sequence2, permissive=True, n_mismatches=0):
-    """Compares two given sequences in terms of length and sequence content.
-
-    :param sequence1: First sequence
-    :param sequence2: Second sequence
-    :param permissive: if True it allow sequences with different sizes to return True
-    :param n_mismatches: number of allowed mismatches
-    :return: simply a true or false
-    :rtype: boolean
-    """
-    if not permissive and len(sequence1) != len(sequence2):
-        return False
-
-    if count_mismatches(sequence1, sequence2) > n_mismatches:
-        return False
-
-    return True
-
-
-def count_mismatches(sequence1, sequence2):
-    """
-    Counts the number of mismatches between two sequences
-    of the same length.
-
-    :param sequence1: sequence 1
-    :param sequence2: sequence 2
-    :return: The number of mismatches between sequences 1 and 2.
-    """
-    return sum(i!=j for i, j in zip(sequence1, sequence2))
-
-
-def map_sequence_indexes(from_seq, to_seq):
-    """
-    Gets a map between sequences.
-
-    :param from_seq: input sequence
-    :param to_seq: input sequence
-    :return: a map between sequences.
-    :rtype: dict
-    """
-
-    def aligned_seq_indexes(seq):
-        seq_indexes = []
-        i = 0
-        for res in seq:
-            if res != '-':
-                seq_indexes.append(i)
-                i += 1
-            else:
-                seq_indexes.append('-')
-        return seq_indexes
-
-    # build the local alignment
-    alignments = pairwise2.align.localxx(from_seq, to_seq)
-    scores = zip(*alignments)[2]
-    message = "Alignment score(s): {}".format(scores)
-    logging.info(message)
-    message = "First alignment:\n" + pairwise2.format_alignment(*alignments[0])
-    logging.debug(message)
-    if len(scores) > 1:
-        message = "Found multiple alignments, arbitrarily proceeding with the first."
-        logging.warning(message)
-
-    # create the index mapping
-    seq_one = aligned_seq_indexes(alignments[0][0])
-    seq_two = aligned_seq_indexes(alignments[0][1])
-    outmap = dict(zip(seq_one, seq_two))
-
-    return outmap
-
-
-# TODO: documentation
-def apply_sequence_index_map(indexes, imap):
-    """
-
-    :param indexes:
-    :param map:
-    :return:
-    """
-
-    # perform the raw translation
-    translation = []
-    for i in indexes:
-        equivalent = imap.get(i)
-        translation.append(equivalent)
-
-    return translation
-
-
-def get_colors(num_colors):
-    """
-    See
-    http://stackoverflow.com/questions/470690/how-to-automatically-generate-n-distinct-colors
-
-    :param num_colors: number of color
-    :return: a list of colors
-    :rtype: list
-    """
-    colors = []
-    for i in np.arange(0., 360., 360. / num_colors):
-        hue = i / 360.
-        lightness = (50 + np.random.rand() * 10) / 100.
-        saturation = (90 + np.random.rand() * 10) / 100.
-        colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
-    return colors
-
-
-def _mmcif_unit_cell(pdb_id):
-    """
-    Loader of mmCIF unit cell parameters.
-
-    :param pdb_id: PDB id
-    :return: pandas table dataframe
-    :rtype: dict
-    """
-
-    cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
-
-    lines = []
-    with open(cif_path) as inlines:
-        for line in inlines:
-            if line.startswith("_cell."):
-                lines.append(line.split('.')[1].rstrip())
-
-    l = [i.split() for i in lines]
-    d = {k: v for k, v in l}
-
-    return d
-
-
-def fractional_to_cartesian(coords, pdb_id, matrix_only=False):
-    """
-    Converts fractional unit cell coords to cartesian.
-
-    :param coords: Atom coordinates
-    :param pdb_id: PDB id
-    :param matrix_only: boolean
-    :return: cartesian coordinates
-    :rtype: np.array
-    """
-
-    # retrieve and parse unit cell parameters
-    d = _mmcif_unit_cell(pdb_id)
-    a2r = np.pi / 180.
-    alpha = a2r * float(d['angle_alpha'])
-    beta = a2r * float(d['angle_beta'])
-    gamma = a2r * float(d['angle_gamma'])
-    a = float(d['length_a'])
-    b = float(d['length_b'])
-    c = float(d['length_c'])
-
-    # unit cell volume
-    v = np.sqrt(1 - np.cos(alpha) * np.cos(alpha) - np.cos(beta) * np.cos(beta) -
-                np.cos(gamma) * np.cos(gamma) + 2 * np.cos(alpha) * np.cos(beta) * np.cos(gamma))
-
-    # build the transformation matrix
-    tr = np.matrix([
-        [a, b * np.cos(gamma), c * np.cos(beta)],
-        [0, b * np.sin(gamma),
-         c * ((np.cos(alpha) - np.cos(beta) * np.cos(gamma)) / np.sin(gamma))],
-        [0, 0, c * (v / np.sin(gamma))]
-    ])
-
-    if matrix_only:
-        return tr
-
-    # now apply the transformation to the coordinates
-    # TODO: type check this?
-    coords = np.matrix(coords)
-    coords = coords * tr
-
-    # return the Nx3 results
-    return np.array(coords)
-
-
-def autoscale_axes(xyz, margin=5):
-    """
-    Auto scales the xyz axes by a margin.
-
-    :param xyz: Atom coordinates
-    :param margin: spacial margin size/length
-    :return: array
-    """
-
-    x = xyz[:, 0]
-    y = xyz[:, 1]
-    z = xyz[:, 2]
-
-    rx = max(x) - min(x)
-    ry = max(y) - min(y)
-    rz = max(z) - min(z)
-
-    max_range = max([rx, ry, rz]) + margin
-
-    pad = []
-    for i in [rx, ry, rz]:
-        pad.append((max_range - i) / 2)
-
-    return [[max(x) + pad[0], min(x) - pad[0]],
-            [max(y) + pad[1], min(y) - pad[1]],
-            [max(z) + pad[2], min(z) - pad[2]]]
 
 
 def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
@@ -449,6 +115,273 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
                 filename = filename.replace('.gz', '')
         result.append(destination + filename)
     return result
+
+
+##############################################################################
+# Some other utils not currently in use
+##############################################################################
+class IDNotValidError(Exception):
+    """
+    Base class for database related exceptions.
+    Databases: UniProt, PDB, Ensembl, etc.
+    """
+    pass
+
+
+def raise_if_not_ok(response):
+    if not response.ok:
+        response.raise_for_status()
+
+
+def _sifts_regions(filename):
+    """
+    Parse the region field of the SIFTS XML file to a pandas dataframe.
+
+    :param filename: input SIFTS xml file path
+    :return: pandas table dataframe
+    """
+
+    if not path.isfile(filename):
+        raise IOError('File {} not found or unavailable.'.format(filename))
+
+    tree = etree.parse(filename)
+    root = tree.getroot()
+    namespace = 'http://www.ebi.ac.uk/pdbe/docs/sifts/eFamily.xsd'
+    namespace_map = {'ns': namespace}
+    db_reference = "{{{}}}db".format(namespace)
+    db_detail = "{{{}}}dbDetail".format(namespace)
+    rows = []
+    regions = {}
+
+    for segment in root.find('.//ns:entity[@type="protein"]',
+                             namespaces=namespace_map):
+        for region in segment.find('.//ns:listMapRegion',
+                                   namespaces=namespace_map):
+            # get region annotations
+            region_annotation = {}
+
+            # parse extra annotations for each region
+            for annotation in region:
+                for k, v in annotation.attrib.items():
+                    # db entries
+                    if annotation.tag == db_reference:
+                        # skipping dbSource
+                        if k == 'dbSource':
+                            continue
+
+                        start = region.attrib['start']
+                        end = region.attrib['end']
+                        coord = annotation.attrib.get('dbCoordSys', '')
+                        region_annotation['Start'] = start
+                        region_annotation['End'] = end
+
+                        # region id
+                        r = (start, end, coord)
+
+                        # renaming all keys with dbSource prefix
+                        k = "{}_{}".format(annotation.attrib["dbSource"], k)
+
+                    # dbDetail entries
+                    elif annotation.tag == db_detail:
+                        # joining dbSource and property keys
+                        k = "_".join([annotation.attrib["dbSource"],
+                                      annotation.attrib["property"]])
+                        # value is the text field in the XML
+                        v = annotation.text
+
+                    # adding to the dictionary
+                    try:
+                        if v in region_annotation[k]:
+                            continue
+                        region_annotation[k].append(v)
+                    except KeyError:
+                        region_annotation[k] = v
+                    except AttributeError:
+                        region_annotation[k] = [region_annotation[k]]
+                        region_annotation[k].append(v)
+
+                    if r not in regions:
+                        regions[r] = [region_annotation]
+                    else:
+                        regions[r].append(region_annotation)
+
+        # group regions together
+        for region in regions:
+            region_annotation = {}
+            for region_annot in regions[region]:
+                for k in region_annot:
+                    v = region_annot[k]
+                    try:
+                        if v in region_annotation[k]:
+                            continue
+                        region_annotation[k].append(v)
+                    except KeyError:
+                        region_annotation[k] = v
+                    except AttributeError:
+                        region_annotation[k] = [region_annotation[k]]
+                        region_annotation[k].append(v)
+
+            rows.append(region_annotation)
+    return pd.DataFrame(rows)
+
+
+def _pdb_uniprot_sifts_mapping(identifier):
+    """
+    Queries the PDBe API for SIFTS mapping between PDB - UniProt.
+    One to many relationship expected.
+
+    :param identifier: PDB id
+    :return: pandas table dataframe
+    """
+
+    sifts_endpoint = 'mappings/uniprot/'
+    url = defaults.api_pdbe + sifts_endpoint + identifier
+    information = get_url_or_retry(url, json=True)
+
+    rows = []
+    for uniprot in information[identifier]['UniProt']:
+        uniprots = {'uniprot_id': uniprot}
+        rows.append(uniprots)
+    return pd.DataFrame(rows)
+
+
+def _uniprot_pdb_sifts_mapping(identifier):
+    """
+    Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
+    One to many relationship expected.
+
+    :param identifier: UniProt ID
+    :return: pandas table dataframe
+    """
+    sifts_endpoint = 'mappings/best_structures/'
+    url = defaults.api_pdbe + sifts_endpoint + str(identifier)
+    information = get_url_or_retry(url, json=True)
+
+    rows = []
+    for entry in information[identifier]:
+        rows.append(entry)
+    return pd.DataFrame(rows)
+
+
+def icgc_missense_variant(ensembl_gene_id):
+    """Fetch a gene missense variants from ICGC data portal.
+
+    :param ensembl_gene_id: ensembl gene accession
+    :type ensembl_gene_id: str
+    :return: DataFrame with one mutation per row.
+    :rtype : pandas.DataFrame
+
+    :Example:
+
+
+        >>> table = icgc_missense_variant('ENSG00000012048')
+        >>> table.loc[0, ['id', 'mutation', 'type', 'start']]
+        id                          MU601299
+        mutation                         G>A
+        type        single base substitution
+        start                       41245683
+        Name: 0, dtype: object
+
+
+    .. note:: ICGC doc https://dcc.icgc.org/docs/#!/genes/findMutations_get_8
+
+    """
+    base_url = defaults.api_icgc + ensembl_gene_id + "/mutations/"
+    headers = {'content-type': 'application/json'}
+    filt = json.dumps({"mutation": {"consequenceType": {"is": ['missense_variant']}}})
+    params = {"filters": filt}
+
+    # First counts the number of mutation entries
+    counts_resp = requests.get(base_url + "counts/", headers=headers, params=params)
+    raise_if_not_ok(counts_resp)
+    total = counts_resp.json()['Total']
+
+    # then iterate the pages of entries, max 100 entries per page
+    hits = []
+    params['size'] = 100
+    for i in range(total // 100 + 1):
+        params['from'] = i * 100 + 1
+        mutation_resp = requests.get(base_url, headers=headers, params=params)
+        raise_if_not_ok(mutation_resp)
+        hits.extend(mutation_resp.json()['hits'])
+
+    return pd.DataFrame(hits)
+
+
+def is_valid(identifier, database=None, url=None):
+    """
+    Generic method to check if a given id is valid.
+
+    :param url: if given use this instead
+    :param identifier: accession id
+    :param database: database to test against
+    :return: simply a true or false
+    :rtype: boolean
+    """
+
+    try:
+        identifier = str(identifier)
+    except ValueError:
+        # raise IDNotValidError
+        return False
+
+    if len(str(identifier)) < 1:
+        # raise IDNotValidError
+        return False
+    if not url:
+        url = getattr(defaults, 'api_' + database) + identifier
+    r = requests.get(url)
+    if not r.ok:
+        # not the best approach
+        try:
+            raise IDNotValidError('{} not found at {}: (url check:{}'.format(
+                    identifier, database, r.url))
+        except IDNotValidError:
+            return False
+    else:
+        return True
+
+
+def is_valid_ensembl_id(identifier, species='human', variant=False):
+    """
+    Checks if an Ensembl id is valid.
+
+    :param identifier: testing ID
+    :param species: Ensembl species
+    :param variant: boolean if True uses the variant endpoint
+    :return: simply a true or false
+    :rtype: boolean
+    """
+
+    try:
+        identifier = str(identifier)
+    except ValueError:
+        # raise IDNotValidError
+        return False
+
+    if len(str(identifier)) < 1:
+        # raise IDNotValidError
+        return False
+
+    if variant:
+        if species not in valid_ensembl_species_variation:
+            raise ValueError('Provided species {} is not valid'.format(species))
+        ensembl_endpoint = "variation/{}/".format(species)
+    else:
+        ensembl_endpoint = "lookup/id/"
+    try:
+        if identifier != '':
+            url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
+            data = get_url_or_retry(url, json=True)
+            if 'error' in data:
+                return False
+            return True
+        else:
+            raise IDNotValidError
+    except IDNotValidError:
+        return False
+    except requests.HTTPError:
+        return False
 
 
 def confirm_column_types(table):
@@ -634,29 +567,6 @@ def confirm_column_types(table):
         logging.debug('Coercing index `{}` to `{}`'.format(column, dtype_should_be))
         table.index = table.index.astype(dtype_should_be)
     return table
-
-
-def fetch_uniprot_gff(identifier):
-    """
-    Retrieve UniProt data from the GFF file
-
-    :param identifier: UniProt accession identifier
-    :return: pandas table
-    """
-    url = defaults.http_uniprot + identifier + ".gff"
-    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
-
-    data = pd.read_table(url, skiprows=2, names=cols)
-    groups = data.GROUP.apply(parse_qs)
-    groups = pd.DataFrame.from_records(groups)
-    data = data.merge(groups, left_index=True, right_index=True)
-
-    return data
-
-
-def raise_if_not_ok(response):
-    if not response.ok:
-        response.raise_for_status()
 
 
 if __name__ == '__main__':
