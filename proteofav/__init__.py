@@ -20,7 +20,7 @@ except ImportError:
     raise ImportError('Unable to import Python module Pandas...')
 
 # from .config import defaults
-# from .main import merge_tables
+from .main import merge_tables
 # from .structures import *
 # from .variants import *
 # from .analysis import *
