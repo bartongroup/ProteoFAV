@@ -8,15 +8,34 @@ from urlparse import parse_qs
 
 import pandas as pd
 
-from proteofav.config import defaults
-
-__author__ = 'tbrittoborges'
+from proteofav import defaults
 
 
-def map_gff_features_to_sequence(identifier, query_type='', drop_types=(
+def _fetch_uniprot_gff(identifier):
+    """
+    Retrieve UniProt data from the GFF file
+
+    :param identifier: UniProt accession identifier
+    :type identifier: str
+    :return: table
+    :return type: pandas.DataFrame
+    """
+    url = defaults.api_uniprot + identifier + ".gff"
+    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
+
+    data = pd.read_table(url, skiprows=2, names=cols)
+    groups = data.GROUP.apply(parse_qs)
+    groups = pd.DataFrame.from_records(groups)
+    data = data.merge(groups, left_index=True, right_index=True)
+
+    return data
+
+
+def map_gff_features_to_sequence(identifier, query_type='', group_residues=True, drop_types=(
         'Helix', 'Beta strand', 'Turn', 'Chain')):
     """Remaps features in the uniprot gff file to the sequence.
 
+    :param group_residues:
     :param query_type:
     :param identifier: UniProt-SP accession
     :param drop_types: Annotation type to be dropped
@@ -28,7 +47,7 @@ def map_gff_features_to_sequence(identifier, query_type='', drop_types=(
         Establish a set of rules to annotate uniprot GFF.
 
         :param gff_row: each line in the GFF file
-        :return:
+        :return: template filled with type-specific fields.
         """
         if not gff_row.ID and not gff_row.Note:
             return gff_row.TYPE
@@ -50,24 +69,12 @@ def map_gff_features_to_sequence(identifier, query_type='', drop_types=(
         lines.extend({'idx': i, 'annotation': annotation_writer(row)}
                      for i in range(row.START, row.END + 1))
     table = pd.DataFrame(lines)
-    return table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
+    if group_residues:
+        return table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
+    else:
+        return table
 
 
-def _fetch_uniprot_gff(identifier):
-    """
-    Retrieve UniProt data from the GFF file
-
-    :param identifier: UniProt accession identifier
-    :type identifier: str
-    :return: table
-    :return type: pandas.DataFrame
-    """
-    url = defaults.api_uniprot + identifier + ".gff"
-    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
-
-    data = pd.read_table(url, skiprows=2, names=cols)
-    groups = data.GROUP.apply(parse_qs)
-    groups = pd.DataFrame.from_records(groups)
-    data = data.merge(groups, left_index=True, right_index=True)
-
-    return data
+if __name__ == '__main__':
+    # testing routines
+    pass
