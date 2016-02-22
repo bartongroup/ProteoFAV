@@ -29,7 +29,7 @@ def parse_uniprot_variants(uniprot_id):
     """
     check_local_or_fetch(uniprot_id)
 
-    disease_group = '\[\'In ([?P<disease>a-zA-Z0-9_]+)\.'
+    disease_group = '\[\'In ([?P<disease>a-zA-Z0-9_ ]+)[.;]'
     res_transition_group = '(?P<ref>.)->(?P<new>.)'
     ids_group = "\(\[\'([a-zA-Z0-9_]+)\'\]\)"
 
