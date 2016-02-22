@@ -4,4 +4,4 @@ db_sifts = SIFTS/
 db_dssp = DSSP/
 
 [Addresses]
-http_pdbe = http://www.ebi.ac.uk/pdbe/entry/pdb/
+api_pdbe = http://www.ebi.ac.uk/pdbe/entry/pdb/
