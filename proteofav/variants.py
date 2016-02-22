@@ -2,20 +2,18 @@
 # -*- coding: utf-8 -*-
 
 
+import cPickle as pickle
 import logging
 import os
-from urlparse import parse_qs
-
-import requests
-import pandas as pd
-import cPickle as pickle
 from StringIO import StringIO
 
+import pandas as pd
+import requests
 from Bio import pairwise2
 
+from proteofav.uniprot import map_gff_features_to_sequence
 from .config import defaults
-from .utils import (get_url_or_retry)
-
+from .utils import (get_url_or_retry, check_local_or_fetch)
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +21,28 @@ log = logging.getLogger(__name__)
 ##############################################################################
 # Private methods
 ##############################################################################
+def parse_uniprot_variants(uniprot_id):
+    """
+
+    :param uniprot_id:
+    :return:
+    """
+    check_local_or_fetch(uniprot_id)
+
+    disease_group = '\[\'In ([?P<disease>a-zA-Z0-9_]+)\.'
+    res_transition_group = '(?P<ref>.)->(?P<new>.)'
+    ids_group = "\(\[\'([a-zA-Z0-9_]+)\'\]\)"
+
+    table = map_gff_features_to_sequence(uniprot_id, query_type='Natural variant')
+    table['disease'] = table['annotation'].str.findall(disease_group)
+    table['transition'] = table['annotation'].str.findall(res_transition_group)
+    table['ids'] = table['annotation'].str.findall(ids_group)
+
+    del table['annotation']
+
+    return table
+
+
 def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
     """Queries the Ensembl API for germline variants (mostly dbSNP) and somatic
     (mostly COSMIC) based on Ensembl Protein identifiers (e.g. ENSP00000326864).
@@ -318,24 +338,6 @@ def _uniprot_info(identifier, retry_in=(503, 500), cols=None, check_id=False):
     return data
 
 
-def _fetch_uniprot_gff(identifier):
-    """
-    Retrieve UniProt data from the GFF file
-
-    :param identifier: UniProt accession identifier
-    :return: pandas table
-    """
-    url = defaults.api_uniprot + identifier + ".gff"
-    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
-
-    data = pd.read_table(url, skiprows=2, names=cols)
-    groups = data.GROUP.apply(parse_qs)
-    groups = pd.DataFrame.from_records(groups)
-    data = data.merge(groups, left_index=True, right_index=True)
-
-    return data
-
-
 def _map_sequence_indexes(from_seq, to_seq):
     """
     Gets a map between sequences.
@@ -515,46 +517,6 @@ def select_uniprot_variants(identifier, align_transcripts=False):
     # return table.groupby('start').apply(to_unique)
     table = pd.concat(tables)
     return table
-
-
-def map_gff_features_to_sequence(identifier, query_type='', drop_types=(
-        'Helix', 'Beta strand', 'Turn', 'Chain')):
-    """Remaps features in the uniprot gff file to the sequence.
-
-    :param query_type:
-    :param identifier: UniProt-SP accession
-    :param drop_types: Annotation type to be dropped
-    :return: table read to be joined to main table
-    """
-
-    def annotation_writer(gff_row):
-        """
-        Establish a set of rules to annotate uniprot GFF.
-
-        :param gff_row: each line in the GFF file
-        :return:
-        """
-        if not gff_row.ID and not gff_row.Note:
-            return gff_row.TYPE
-        elif not gff_row.ID:
-            return '{0.TYPE}: {0.Note}'.format(gff_row)
-        elif not gff_row.Note:
-            return '{0.TYPE} ({0.ID})'.format(gff_row)
-        else:
-            return '{0.TYPE}: {0.Note} ({0.ID})'.format(gff_row)
-
-    table = _fetch_uniprot_gff(identifier)
-    if query_type:
-        table = table[table.TYPE == query_type]
-    elif drop_types:
-        table = table[~table.TYPE.isin(drop_types)]
-
-    lines = []
-    for i, row in table.iterrows():
-        lines.extend({'idx': i, 'annotation': annotation_writer(row)}
-                     for i in range(row.START, row.END + 1))
-    table = pd.DataFrame(lines)
-    return table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
 
 
 if __name__ == '__main__':
