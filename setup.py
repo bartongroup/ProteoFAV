@@ -35,7 +35,7 @@ setup(
     test_suite='tests',
 
     # Test dependencies.
-    test_require=['mock', 'responses'],
+    test_requires=['mock', 'responses'],
 
     # Metadata for PyPI.
     # author=__author__,

@@ -10,3 +10,5 @@ config*
 !config.py
 .ipynb_checkpoints
 *.ipynb
+.tox/
+*.egg-info
