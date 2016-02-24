@@ -430,6 +430,10 @@ def parse_uniprot_variants(uniprot_id):
     return table
 
 
+# TODO we need to figure out a manual function to map sequences that have
+# small differences
+
+
 def select_uniprot_variants(identifier, align_transcripts=False):
     """
     Summarise variants for a protein in the UniProt
