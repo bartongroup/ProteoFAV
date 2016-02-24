@@ -15,7 +15,6 @@ from os import path
 
 import numpy as np
 import pandas as pd
-
 import requests
 from lxml import etree
 
@@ -60,6 +59,16 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **para
         print(response.url)
         log.error(response.status_code)
         response.raise_for_status()
+
+
+def check_local_or_fetch(identifier, update=False):
+    """
+
+    :param identifier:
+    :return:
+    """
+    # TODO fetch what?
+    pass
 
 
 def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
