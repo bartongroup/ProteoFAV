@@ -4,7 +4,8 @@
 
 import unittest
 
-from proteofav.variants import _uniprot_ensembl_mapping, _uniprot_info
+from proteofav.uniprot import _uniprot_info
+from proteofav.variants import _uniprot_ensembl_mapping
 
 
 class TestUNIPROTParser(unittest.TestCase):
