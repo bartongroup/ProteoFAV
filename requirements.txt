@@ -1,12 +1,10 @@
 # This requirements file lists all third-party dependencies for this project.
 #
 # Run 'pip install -r requirements.txt' to install these dependencies
-scipy
 numpy
 requests
 pandas>=0.17
 lxml
-biopython
 
 # Testing
 mock
