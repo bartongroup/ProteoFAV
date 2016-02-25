@@ -10,11 +10,10 @@ import pandas as pd
 import requests
 from Bio import pairwise2
 
-from proteofav.uniprot import map_gff_features_to_sequence, _uniprot_to_ensembl_xref, \
-    _uniprot_info, \
-    get_uniprot_formal_specie, get_uniprot_sequence
-from .config import defaults
-from .utils import (get_url_or_retry, check_local_or_fetch)
+from proteofav.config import defaults
+from proteofav.uniprot import (map_gff_features_to_sequence, _uniprot_to_ensembl_xref,
+                               _uniprot_info, get_uniprot_formal_specie, get_uniprot_sequence)
+from proteofav.utils import (get_url_or_retry, check_local_or_fetch)
 
 log = logging.getLogger(__name__)
 

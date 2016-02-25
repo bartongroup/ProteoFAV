@@ -11,14 +11,6 @@ sequences and genetic variants.
 :copyright: (c) 2015-2016.
 :license: TBD, see LICENSE for more details.
 """
-
-# TODO: Should we test for required modules?
-try:
-    import pandas
-    del pandas
-except ImportError:
-    raise ImportError('Unable to import Python module Pandas...')
-
 # from .config import defaults
 from .main import merge_tables
 # from .structures import *
@@ -43,4 +35,4 @@ logging.getLogger(__name__).addHandler(NullHandler())
 __title__ = 'proteofav'
 __version__ = '0.1.0'
 __license__ = 'TBD'
-__credits__ = ['Fábio Madeira', 'Thiago Britto-Borges', 'Stuart MacGowan']
+__credits__ = [u'Fábio Madeira', u'Thiago Britto-Borges', u'Stuart MacGowan']

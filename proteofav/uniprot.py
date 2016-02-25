@@ -9,9 +9,8 @@ from urlparse import parse_qs
 
 import pandas as pd
 
-from proteofav import defaults
-from proteofav.utils import get_url_or_retry
-from proteofav.variants import log
+from proteofav.config import defaults
+from proteofav.utils import get_url_or_retry, log
 
 
 def get_uniprot_sequence(uniprot_id):

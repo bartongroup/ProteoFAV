@@ -5,10 +5,11 @@
 import logging
 import unittest
 from os import path
+
 from mock import patch
 
-from proteofav.main import merge_tables
 from proteofav.config import Defaults
+from proteofav.main import merge_tables
 from proteofav.structures import _dssp, _sifts_residues, _mmcif_atom
 
 log = logging.getLogger(__name__)
@@ -81,21 +82,21 @@ class TestTableMerger(unittest.TestCase):
         # this test is very unstable to number of columns return by cif
         # TODO: improve this
 
-    def test_camIV_list_mode(self):
-        pass
-
-    def test_camIV_centroid_mode(self):
-        pass
-
-    def test_dssp_3ovv(self):
-        pass
-
-    def test_sift_3edv(self):
-        """
-        Example dbResNum is a string, therefore was not merging.
-        :return:
-        """
-        pass
+    # def test_camIV_list_mode(self):
+    #     pass
+    #
+    # def test_camIV_centroid_mode(self):
+    #     pass
+    #
+    # def test_dssp_3ovv(self):
+    #     pass
+    #
+    # def test_sift_3edv(self):
+    #     """
+    #     Example dbResNum is a string, therefore was not merging.
+    #     :return:
+    #     """
+    #     pass
 
     def test_merge_4ibw_A_with_alt_loc(self):
         """
@@ -154,11 +155,12 @@ class TestTableMerger(unittest.TestCase):
         data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
         self.assertFalse(data.empty)
 
+    # !FIXME
     def test_merge_4myi_A_fail(self):
         # TODO can we save it?
         data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
         # DSSP and Cif unaligned
-        self.assertRaises(ValueError)
+        # self.assertRaises(ValueError)
 
 
 if __name__ == '__main__':

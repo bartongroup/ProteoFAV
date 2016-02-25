@@ -64,6 +64,7 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **para
 def check_local_or_fetch(identifier, update=False):
     """
 
+    :param update:
     :param identifier:
     :return:
     """
@@ -136,6 +137,11 @@ class IDNotValidError(Exception):
 
 
 def raise_if_not_ok(response):
+    """
+
+
+    :param response:
+    """
     if not response.ok:
         response.raise_for_status()
 
