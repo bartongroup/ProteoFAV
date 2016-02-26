@@ -2,20 +2,18 @@
 # -*- coding: utf-8 -*-
 
 
+import cPickle as pickle
 import logging
 import os
-from urlparse import parse_qs
 
-import requests
 import pandas as pd
-import cPickle as pickle
-from StringIO import StringIO
-
+import requests
 from Bio import pairwise2
 
-from .config import defaults
-from .utils import (get_url_or_retry)
-
+from proteofav.config import defaults
+from proteofav.uniprot import (map_gff_features_to_sequence, _uniprot_to_ensembl_xref,
+                               _uniprot_info, get_uniprot_formal_specie, get_uniprot_sequence)
+from proteofav.utils import (get_url_or_retry, check_local_or_fetch)
 
 log = logging.getLogger(__name__)
 
@@ -74,8 +72,7 @@ def _fetch_uniprot_variants(identifier, _format='tab'):
     """
     # Check if query has already been saved
 
-    query_file_name = defaults.db_germline_variants + \
-                      'uniprot_variants_' + identifier + '.pkl'
+    query_file_name = defaults.db_germline_variants + 'uniprot_variants_' + identifier + '.pkl'
     if not os.path.isfile(query_file_name):
         url = defaults.api_uniprot + '?query=accession:' + identifier
         url += '&format=' + _format
@@ -247,93 +244,35 @@ def _uniprot_ensembl_mapping(identifier, species='human'):
     return pd.DataFrame(rows)
 
 
-def _uniprot_to_ensembl_xref(uniprot_id, species='homo_sapiens'):
-    """
-    Return Gene, transcripts and translational ids from Ensembl to Uniprot.
-    Ensembl -> Uniprot reference if better than otherwise due Ensembl
-    move quicker than Uniprot.
-
-    :param uniprot_id: Uniprot ID
-    :param species: organism name
-    :return:
-    :rtype: pandas.DataFrame
-    """
-    # TODO add species support
-    url = "{}xrefs/symbol/{}/{}?content-type=application/json".format(
-            defaults.api_ensembl, species, uniprot_id)
-
-    return pd.read_json(url)
-
-
-# TODO improve this: length / matching sequence
 def _match_uniprot_ensembl_seq(uniprot_id):
-    """
+    """Matches a Uniprot sequence to a identical Ensembl sequence making the
+    residue mapping trivial.
 
     :param uniprot_id:
     :return:
+    :raises ValueError: when no match is found between uniprot and ensembl
+
+        ..info:
+      ensembl of UNIPROT ACCESSION with more than one gene P04637
     """
-    uniprot_seq_url = "{}{}.fasta".format(defaults.api_uniprot, str(uniprot_id))
-    uniprot_seq = ''.join(get_url_or_retry(uniprot_seq_url).splitlines()[1:])
 
-    ensembl_xref = _uniprot_to_ensembl_xref(uniprot_id)
-    # TODO is human only for now
+    species = get_uniprot_formal_specie(uniprot_id)
+    ensembl_xref = _uniprot_to_ensembl_xref(uniprot_id, species=species.lower().replace(' ', '_'))
 
-    # ensembl of UNIPROT ACCESSION with more than one gene P04637, which is rare
-    # ensembl_gene_id = ensembl_xref.loc[ensembl_xref.type == 'gene', 'id'].first()
+    if ensembl_xref.empty:
+        raise ValueError('Not reference to {} was found in Ensembl not found.'.format(uniprot_id))
 
     ensembl_ptn_ids = ensembl_xref.loc[ensembl_xref.type == 'translation', 'id']
-    uniprot_sequence = _uniprot_info(uniprot_id, cols='sequence').iloc[0, 1]
+
+    uniprot_sequence = get_uniprot_sequence(uniprot_id)
     for ensembl_ptn_id in ensembl_ptn_ids:
         ensembl_ptn_seq = _sequence_from_ensembl_protein(ensembl_ptn_id)
         if _compare_sequences(uniprot_sequence, ensembl_ptn_seq, permissive=False):
             return ensembl_ptn_id
 
 
+# TODO improve this: length / matching sequence
 # TODO: should this be coming from GFF?
-def _uniprot_info(identifier, retry_in=(503, 500), cols=None, check_id=False):
-    """
-    Retrive uniprot information from the database.
-
-    :param identifier: UniProt accession identifier
-    :return: pandas table dataframe
-    """
-
-    if not cols:
-        cols = ('entry name', 'reviewed', 'protein names', 'genes', 'organism',
-                'sequence', 'length')
-    elif isinstance(cols, str):
-        cols = ('entry name', cols)
-
-    params = {'query': 'accession:' + str(identifier),
-              'columns': ",".join(cols),
-              'format': 'tab',
-              'contact': ""}
-    url = defaults.api_uniprot
-    response = get_url_or_retry(url=url, retry_in=retry_in, **params)
-    try:
-        data = pd.read_table(StringIO(response))
-    except ValueError as e:
-        log.error(e)
-        data = response
-    return data
-
-
-def _fetch_uniprot_gff(identifier):
-    """
-    Retrieve UniProt data from the GFF file
-
-    :param identifier: UniProt accession identifier
-    :return: pandas table
-    """
-    url = defaults.api_uniprot + identifier + ".gff"
-    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
-
-    data = pd.read_table(url, skiprows=2, names=cols)
-    groups = data.GROUP.apply(parse_qs)
-    groups = pd.DataFrame.from_records(groups)
-    data = data.merge(groups, left_index=True, right_index=True)
-
-    return data
 
 
 def _map_sequence_indexes(from_seq, to_seq):
@@ -427,6 +366,73 @@ def _count_mismatches(sequence1, sequence2):
 ##############################################################################
 # Public methods
 ##############################################################################
+def select_variants(uniprot_id, features=('uniprot', 'ensembl_somatic', 'ensembl_germline')):
+    """
+
+    :param features:
+    :param uniprot_id:
+    """
+    ensembl_ptn_id = None
+    tables = []
+    # let's use the uniprot natural variants as our reference (left) table
+    if 'uniprot' in features:
+        table_uni = parse_uniprot_variants(uniprot_id)
+        table_uni = table_uni['ids']
+        table_uni.name = 'uniprot_variants'
+
+        tables.append(table_uni)
+
+    if 'ensembl_somatic' in features:
+        ensembl_ptn_id = _match_uniprot_ensembl_seq(uniprot_id)
+        table_som = _fetch_ensembl_variants(ensembl_ptn_id, feature='somatic_transcript_variation')
+        table_som = table_som[table_som['type'] == 'coding_sequence_variant']
+        table_som = table_som.groupby('start')['id'].apply(list)
+        table_som.name = 'somatic_variants'
+
+        tables.append(table_som)
+
+    if 'ensembl_germline' in features:
+        if ensembl_ptn_id is None:
+            ensembl_ptn_id = _match_uniprot_ensembl_seq(uniprot_id)
+        table_ger = _fetch_ensembl_variants(ensembl_ptn_id, feature='transcript_variation')
+        table_ger = table_ger[table_ger['type'] == 'missense_variant']
+        table_ger = table_ger.groupby('start')['id'].apply(list)
+        table_ger.name = 'germline_variants'
+
+        tables.append(table_ger)
+
+    return pd.concat(tables, axis=1)
+
+
+def parse_uniprot_variants(uniprot_id):
+    """
+
+    :param uniprot_id: Uniprot accession to a protein P04637
+    :return: table[disease: list of str,
+                   transition: list of str (residue pairs),
+                   ids: list of str]
+    :rtype: pandas.DataFrame
+    """
+    check_local_or_fetch(uniprot_id)
+
+    disease_group = '\[\'In ([?P<disease>a-zA-Z0-9_ ]+)[.;]'
+    res_transition_group = '(?P<ref>[A-Z]+)->(?P<new>[A-Z]+)'
+    ids_group = "\(\[\'([a-zA-Z0-9_]+)\'\]\)"
+
+    table = map_gff_features_to_sequence(uniprot_id, query_type='Natural variant')
+    table['disease'] = table['annotation'].str.findall(disease_group)
+    table['transition'] = table['annotation'].str.findall(res_transition_group)
+    table['ids'] = table['annotation'].str.findall(ids_group)
+
+    del table['annotation']
+
+    return table
+
+
+# TODO we need to figure out a manual function to map sequences that have
+# small differences
+
+
 def select_uniprot_variants(identifier, align_transcripts=False):
     """
     Summarise variants for a protein in the UniProt
@@ -478,8 +484,8 @@ def select_uniprot_variants(identifier, align_transcripts=False):
             seq_maps.append(ensembl_to_uniprot)
         else:
             message = "Sequences don't match! skipping... {}".format(enspro)
-            logging.warning(message)
-            seq_maps.append(None)
+        logging.warning(message)
+        seq_maps.append(None)
 
     # get the variants for the ensembl proteins that match the uniprot
     tables = []
@@ -517,47 +523,5 @@ def select_uniprot_variants(identifier, align_transcripts=False):
     return table
 
 
-def map_gff_features_to_sequence(identifier, query_type='', drop_types=(
-        'Helix', 'Beta strand', 'Turn', 'Chain')):
-    """Remaps features in the uniprot gff file to the sequence.
-
-    :param query_type:
-    :param identifier: UniProt-SP accession
-    :param drop_types: Annotation type to be dropped
-    :return: table read to be joined to main table
-    """
-
-    def annotation_writer(gff_row):
-        """
-        Establish a set of rules to annotate uniprot GFF.
-
-        :param gff_row: each line in the GFF file
-        :return:
-        """
-        if not gff_row.ID and not gff_row.Note:
-            return gff_row.TYPE
-        elif not gff_row.ID:
-            return '{0.TYPE}: {0.Note}'.format(gff_row)
-        elif not gff_row.Note:
-            return '{0.TYPE} ({0.ID})'.format(gff_row)
-        else:
-            return '{0.TYPE}: {0.Note} ({0.ID})'.format(gff_row)
-
-    table = _fetch_uniprot_gff(identifier)
-    if query_type:
-        table = table[table.TYPE == query_type]
-    elif drop_types:
-        table = table[~table.TYPE.isin(drop_types)]
-
-    lines = []
-    for i, row in table.iterrows():
-        lines.extend({'idx': i, 'annotation': annotation_writer(row)}
-                     for i in range(row.START, row.END + 1))
-    table = pd.DataFrame(lines)
-    return table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
-
-
 if __name__ == '__main__':
     pass
-
-
