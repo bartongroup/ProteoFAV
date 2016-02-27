@@ -140,7 +140,7 @@ class UniprotTestCase(unittest.TestCase):
 
     def test_map_uniprot_gff_un_grouped(self):
         table = map_gff_features_to_sequence('P38995', group_residues=False)
-        self.assertEqual(set(table.columns), {'annotation', 'id'})
+        self.assertEqual(set(table.columns), {'annotation', 'idx'})
         self.assertTrue(table.idx.max() >= len(self.ccc2_sequence))
 
     def test_uniprot_to_ensembl_xref(self):
