@@ -484,8 +484,8 @@ def select_uniprot_variants(identifier, align_transcripts=False):
             seq_maps.append(ensembl_to_uniprot)
         else:
             message = "Sequences don't match! skipping... {}".format(enspro)
-        logging.warning(message)
-        seq_maps.append(None)
+            logging.warning(message)
+            seq_maps.append(None)
 
     # get the variants for the ensembl proteins that match the uniprot
     tables = []

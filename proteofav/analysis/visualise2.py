@@ -9,8 +9,8 @@ import pymol  ##TODO: This import kicks of pymol, consider it for in function.
 from pymol.cgo import *
 from scipy.spatial import ConvexHull
 
-from proteofav.analysis import clustered_table_to_partition_and_points, add_clusters_to_points
-from proteofav.analysis import drawBoundingBox
+from proteofav.analysis.clustering import clustered_table_to_partition_and_points, add_clusters_to_points
+from proteofav.analysis.pymol_scripts.drawBoundingBox import drawBoundingBox
 
 
 def view_table(table, show=None, show_group_by=None, biological_assembly=True):
