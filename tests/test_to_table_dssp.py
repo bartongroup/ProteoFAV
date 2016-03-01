@@ -3,11 +3,12 @@
 
 
 import unittest
-import numpy
 from os import path
 
-from library import scop_3to1
-from structures.to_table import _dssp, import_dssp_chains_ids
+import numpy
+
+from proteofav.library import scop_3to1
+from proteofav.structures import _dssp, _import_dssp_chains_ids
 
 
 class TestDSSPParser(unittest.TestCase):
@@ -18,7 +19,7 @@ class TestDSSPParser(unittest.TestCase):
         self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
         self.dssp_ins_code = path.join(path.dirname(__file__), "DSSP/3mg7.dssp")
         self.residues_parser = _dssp
-        self.fix_dssp_ignoring_chains_ids = import_dssp_chains_ids
+        self.fix_dssp_ignoring_chains_ids = _import_dssp_chains_ids
 
     def tearDown(self):
         """Remove testing framework."""

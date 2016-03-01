@@ -4,10 +4,12 @@
 
 import unittest
 from os import path
+
 import pandas as pd
 
-from variants.to_table import (_fetch_ensembl_variants, _ensembl_variant, select_uniprot_variants)
-from utils import is_valid_ensembl_id
+from proteofav.variants import (_fetch_ensembl_variants,
+                                _fetch_variant_characteristics_from_identifier,
+                                select_uniprot_variants)
 
 
 class TestENSEMBLParser(unittest.TestCase):
@@ -28,9 +30,8 @@ class TestENSEMBLParser(unittest.TestCase):
         self.variant_id_error3 = []
         self.ensembl_trascript = _fetch_ensembl_variants
         self.fetch_variant = _fetch_ensembl_variants
-        self.ensembl_variant = _ensembl_variant
+        self.ensembl_variant = _fetch_variant_characteristics_from_identifier
         self.uniprot_variants = select_uniprot_variants
-        self.isvalid = is_valid_ensembl_id
 
     def tearDown(self):
         """Remove testing framework."""
@@ -49,24 +50,6 @@ class TestENSEMBLParser(unittest.TestCase):
         self.ensembl_trascript = None
         self.fetch_variant = None
         self.uniprot_variants = None
-        self.isvalid = None
-
-    def test_ensembl_ids(self):
-        """
-        Testing input of invalid Ensembl/Variant identifiers.
-        """
-
-        self.assertTrue(self.isvalid(self.ensembl_id))
-        self.assertFalse(self.isvalid(self.ensembl_id_error1))
-        self.assertFalse(self.isvalid(self.ensembl_id_error2))
-        self.assertFalse(self.isvalid(self.ensembl_id_error3))
-        self.assertFalse(self.isvalid(self.ensembl_id_error4))
-        self.assertFalse(self.isvalid(self.ensembl_id_error5))
-
-        self.assertTrue(self.isvalid(self.variant_id, variant=True))
-        self.assertFalse(self.isvalid(self.variant_id_error1, variant=True))
-        self.assertFalse(self.isvalid(self.variant_id_error2, variant=True))
-        self.assertFalse(self.isvalid(self.variant_id_error3, variant=True))
 
     def test_querying_ensembl_transcript_variants(self):
         data = self.fetch_variant(self.ensembl_id, feature='transcript_variation')

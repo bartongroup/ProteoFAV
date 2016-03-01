@@ -1,11 +1,14 @@
 # This requirements file lists all third-party dependencies for this project.
 #
 # Run 'pip install -r requirements.txt' to install these dependencies
-scipy
-mock
 numpy
-biopython
 requests
-pandas
+pandas>=0.17
 lxml
+
+# Testing
+mock
+responses
+
+# Protein structure visualisation
 #pymol (not in pip; available through brew on Mac)

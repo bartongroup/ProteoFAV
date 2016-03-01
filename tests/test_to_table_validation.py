@@ -5,7 +5,7 @@
 import unittest
 from os import path
 
-from structures.to_table import _pdb_validation_to_table
+from proteofav.structures import _pdb_validation_to_table
 
 
 class TestValidationParser(unittest.TestCase):
@@ -14,7 +14,7 @@ class TestValidationParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.path_2pah = path.join(path.dirname(__file__),
-                                   "validation_xml/2pah_validation.xml")
+                                   "VALIDATION/2pah_validation.xml")
         self.parser = _pdb_validation_to_table
 
     def tearDown(self):

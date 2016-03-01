@@ -5,8 +5,9 @@
 import unittest
 from os import path
 
-from structures.to_table import (_sifts_regions, _sifts_residues, _uniprot_pdb_sifts_mapping,
-                                 _pdb_uniprot_sifts_mapping)
+from proteofav.structures import _sifts_residues, sifts_best
+from proteofav.utils import (_sifts_regions, _pdb_uniprot_sifts_mapping,
+                             _uniprot_pdb_sifts_mapping)
 
 
 class TestSIFTSParser(unittest.TestCase):
@@ -22,6 +23,7 @@ class TestSIFTSParser(unittest.TestCase):
         self.uniprot_id = 'P00439'
         self.pdb_uniprot = _pdb_uniprot_sifts_mapping
         self.uniprot_pdb = _uniprot_pdb_sifts_mapping
+        self.pdb_best = sifts_best
 
     def tearDown(self):
         """Remove testing framework."""
@@ -34,6 +36,7 @@ class TestSIFTSParser(unittest.TestCase):
         self.uniprot_id = None
         self.pdb_uniprot = None
         self.uniprot_uniprot = None
+        self.pdb_best = None
 
     def test_to_table_sifts_residues(self):
         """
@@ -129,6 +132,22 @@ class TestSIFTSParser(unittest.TestCase):
         self.assertTrue(type(data['coverage'][0]), float)
         self.assertTrue(type(data['resolution'][0]), float)
         self.assertTrue(type(data['tax_id'][0]), int)
+
+    def test_to_table_uniprot_pdb_sifts_best(self):
+        """
+        Testing the PDBe API for mapping between UniProt and PDB
+        accession identifiers.
+        """
+
+        data = self.pdb_best(self.uniprot_id, first=True)
+
+        # number of values
+        self.assertEqual(len(data), 10)
+
+        # number of keys (or columns)
+        self.assertIn('coverage', data)
+        self.assertIn('pdb_id', data)
+        self.assertIn('chain_id', data)
 
 
 if __name__ == '__main__':
