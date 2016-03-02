@@ -6,6 +6,8 @@ import colorsys
 import os
 import numpy as np
 from os import path
+import pandas as pd
+import itertools
 
 from ..config import defaults
 
@@ -157,3 +159,81 @@ def _mmcif_unit_cell(pdb_id):
     d = {k: v for k, v in l}
 
     return d
+
+
+def expand_dataframe(df, expand_column, id_column):
+    """
+    Take a pandas.DataFrame with a column that contains list elements and expand it so that each list element is in
+    its own row.
+
+    :param df: pandas.DataFrame
+    :param expand_column: Column to expand on.
+    :param id_column: Column to use as a unique key to merge the expanded rows back to the table.
+    :return: pandas.DataFrame with an extra column containing the list elements and extra rows as required.
+    """
+
+    def expand_row(row, expand_column, id_column):
+        column_values = row[expand_column] if isinstance(row[expand_column], list) else [row[expand_column]]
+        s = pd.Series(row[id_column], index=list(set(column_values)))
+        return s
+
+    expanded_rows = df.apply(expand_row, expand_column=expand_column, id_column=id_column, axis=1).stack()
+    expanded_rows = expanded_rows.to_frame().reset_index(level=1, drop=False)
+    expanded_rows.columns = [expand_column + '_expanded', id_column]
+    #expanded_rows.reset_index(drop=True, inplace=True)
+
+    expanded_df = df.merge(expanded_rows)
+
+    return expanded_df
+
+
+def collapse_dataframe(df, collapse_column, id_column, separator=';', drop_collapsed=True):
+    """
+    Collapse a DataFrame column via string concatenation by groups.
+
+    :param df: A pandas.DataFrame to be collapsed
+    :param collapse_column: The column of `df` to collapse
+    :param id_column: The column to use as grouping
+    :param separator: String to join unique elements of `collapse_column`
+    :param drop_collapsed: If True, remove the uncollapsed column and drop duplicates.
+    :return:
+    """
+    grouped = df[df[collapse_column].notnull()].groupby(id_column)
+    aggregated = grouped[collapse_column].agg(lambda x: separator.join(x.unique()))
+    aggregated = pd.DataFrame(aggregated)
+
+    if drop_collapsed:
+        df = df.drop(collapse_column, axis=1)
+        #df = df.drop_duplicates()
+
+    new_table = df.merge(aggregated, how='left', left_on=id_column, right_index=True,
+                         suffixes=('', '_collapsed'))
+
+    return new_table
+
+
+def list_series_to_tuples(series):
+    """
+    Convert list elements in a pandas.Series into tuples so that they are hashable.
+
+    :param series: A pandas.Series with list elements
+    :return: A pandas.Series with tuple elements
+    """
+    new_series = series.apply(lambda x: tuple(x) if isinstance(x, list) else x)
+    return new_series
+
+
+def ranges(i):
+    """
+    Takes a list of ints with potentially consecutive ranges and returns the ranges.
+
+    :param i: List of integers.
+    :return: List of tuples of the consecutive ranges.
+    """
+    ranges = []
+    for a, b in itertools.groupby(enumerate(i), lambda (x, y): y - x):
+        b = list(b)
+        ranges.append((b[0][1], b[-1][1]))
+    return ranges
+
+

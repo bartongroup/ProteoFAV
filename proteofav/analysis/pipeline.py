@@ -7,14 +7,14 @@ import sys
 
 sys.path.extend(['/Users/smacgowan/PycharmProjects/ProteoFAV'])
 
-from proteofav.analysis import query_uniprot
+from proteofav.analysis.query_uniprot import query_uniprot
 import argparse
 import cPickle as pickle
 import logging
 from proteofav import main
 import os
 import time
-from proteofav.utils import create_directory
+from proteofav.analysis.utils import create_directory
 from proteofav.analysis.utils import is_valid_file, create_directory
 
 if __name__ == '__main__':
