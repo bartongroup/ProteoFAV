@@ -64,9 +64,10 @@ def atom_dist(table, mask, cartesian=False):
 
 def select_valid_coordinates(table):
     """
+    Get coordinates out of a structure table.
 
-    :param table:
-    :return:
+    :param table: A ProteoFAV structure table.
+    :return: A tuple containing a filtered structure table [0] and the coordinate array [1]
     """
     real_cartn_mask = np.isfinite(table['Cartn_x'])
     table = table[real_cartn_mask]
@@ -77,11 +78,12 @@ def select_valid_coordinates(table):
 
 def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), gamma=1./3, **kwargs):
     """
+    Covert a scipy distance matrix into a similarity matrix.
 
     :param d: A reduced distance matrix, such as produced by `pdist` or the
      expanded, squarematrix form.
     :param method: The distance-to-similarity conversion to employ before MCL analysis.
-      Choose from: 'max_minus_d' or 'reciprocal'
+      Choose from: 'max_minus_d', 'reciprocal', 'exp_decay' or 'alt_reciprocal'
     :param threshold: The threshold to discard distances (i.e. remove edges)
      before conversion to similarities
     :param gamma: The gamma coefficient in the exponential decay transform (s = e^(-d * gamma)
@@ -206,6 +208,15 @@ def cluster_dict_to_partitions(cluster_dict):
 
 
 def merge_clusters_to_table(residue_ids, partition, target_table, multichain=False):
+    """
+    Annotate a structure table with cluster membership.
+
+    :param residue_ids:
+    :param partition:
+    :param target_table:
+    :param multichain:
+    :return:
+    """
     df = pd.DataFrame(residue_ids)
     df['Cluster'] = pd.Series(partition)
     target_table.UniProt_dbResNum = target_table.UniProt_dbResNum.astype('float')
@@ -390,6 +401,7 @@ def partition_to_sizes(part):
 
 def top_k_clusters(sizes, k=2):
     """
+    Get the number of sites clustered by the k biggest clusters.
 
     :param part:
     :return:
@@ -402,6 +414,7 @@ def top_k_clusters(sizes, k=2):
 
 def n_isolated(sizes):
     """
+    Get the number of singleton clusters.
 
     :param sizes:
     :return:
@@ -415,9 +428,10 @@ def n_50_clusters(sizes):
 
 def n_x_clusters(sizes, percent):
     """
+    Get the number of clusters required to account for a given percentage of residues.
 
     :param sizes:
-    :return: Minimum number of clusters that contains half the observations.
+    :return: Minimum number of clusters that contains 'percent'% the observations.
     """
     n_required = sum(sizes) / (100. / percent)  ## TODO: Not perfect for odd numbers
     sizes = list(sizes)
@@ -434,6 +448,7 @@ def cluster_size_stats(part, statistics=(np.mean, np.median, np.std, min, max, l
                                          top_k_clusters, n_isolated, n_50_clusters),
                        names=False):
     """
+    Calculate a bunch of statistics for the clusters sizes in a particular clustering.
 
     :param part:
     :param statistics:
@@ -470,6 +485,13 @@ def centroids(partition, observations):
 
 
 def member_indexes(partition, cluster_id):
+    """
+    Get the partition list indexes for residues in a given cluster.
+
+    :param partition:
+    :param cluster_id:
+    :return:
+    """
     return [i for i, x in enumerate(partition) if x == cluster_id]
 
 
@@ -544,6 +566,7 @@ def dunn(partition, observations):
 ##############################################################################
 def cluster_hull_volumes(partition, points):
     """
+    Calculate the volumes of the convex hulls defined by a clustering.
 
     :param partition:
     :param points:
@@ -584,6 +607,7 @@ def cluster_hull_volumes(partition, points):
 def bootstrap(table, methods, n_residues, n_phenotypes,
               samples=10, **kwargs):
     """
+    Cluster a random selection of residues a given number of times and return all the cluster partitions.
 
     :param table:
     :param methods:
@@ -605,6 +629,7 @@ def bootstrap(table, methods, n_residues, n_phenotypes,
 
 def bootstrap_stats(partitions, **kwargs):
     """
+    Collect cluster size stats from a list of cluster partitions.
 
     :param partitions:
     :param statistics:
@@ -617,6 +642,7 @@ def bootstrap_stats(partitions, **kwargs):
 
 def boot_pvalue(sample_stats, test):
     """
+    Calculate a p-Value for observing various cluster statistics against a random sample.
 
     :param sample_stats:
     :param test:
@@ -668,6 +694,7 @@ def plot_sample_distributions(results, names):
 def cluster_table(table, mask, method, sites_only=True, similarity='max_minus_d',
                   mask_column='resn', **kwargs):
     """
+    Cluster certain residues in a structure table.
 
     :param table:
     :param mask:
@@ -709,6 +736,20 @@ def cluster_table(table, mask, method, sites_only=True, similarity='max_minus_d'
 
 def test_cluster_significance(test_table, method, similarity, table, show_progress, n_samples, return_samples,
                               mask_column='resn', **kwargs):
+    """
+    Test the significance of the clusters in a clustered structure table by bootstrapping random residue selections.
+
+    :param test_table:
+    :param method:
+    :param similarity:
+    :param table:
+    :param show_progress:
+    :param n_samples:
+    :param return_samples:
+    :param mask_column:
+    :param kwargs:
+    :return:
+    """
     n_variants = sum(table[mask_column].notnull() & np.isfinite(table['Cartn_x']))
 
     # Diferent columns are present depending on what variant annotation was used
@@ -745,7 +786,13 @@ def test_cluster_significance(test_table, method, similarity, table, show_progre
 
 
 def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
+    """
 
+    :param test_part:
+    :param test_points:
+    :param sample_tables:
+    :return:
+    """
     # Parse the random sample cluster tables
     parsed_samples = [clustered_table_to_partition_and_points(i) for i in sample_tables]
 
@@ -786,6 +833,12 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
 
 
 def cluster_spatial_statistics(test_part, test_points):
+    """
+    
+    :param test_part:
+    :param test_points:
+    :return:
+    """
     obs_stats = []
     obs_stats.append(davies_bouldin(test_part, test_points))
     obs_stats.append(dunn(test_part, test_points))
