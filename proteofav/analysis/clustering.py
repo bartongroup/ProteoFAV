@@ -666,7 +666,7 @@ def plot_sample_distributions(results, names):
 # Convenience wrappers
 ##############################################################################
 def cluster_table(table, mask, method, sites_only=True, similarity='max_minus_d',
-                  **kwargs):
+                  mask_column='resn', **kwargs):
     """
 
     :param table:
@@ -695,7 +695,7 @@ def cluster_table(table, mask, method, sites_only=True, similarity='max_minus_d'
         # mask = np.array([True] * len(table))  #TODO: See above
 
     # Perform clustering
-    d, points, resids, unmapped_points = atom_dist(table, table.resn.notnull())
+    d, points, resids, unmapped_points = atom_dist(table, table[mask_column].notnull())
     links = linkage_cluster(d, methods=method, similarity=similarity, **kwargs)
     part = links[0][0]
 
@@ -708,10 +708,17 @@ def cluster_table(table, mask, method, sites_only=True, similarity='max_minus_d'
 
 
 def test_cluster_significance(test_table, method, similarity, table, show_progress, n_samples, return_samples,
-                              **kwargs):
-    n_variants = sum(table.resn.notnull() & np.isfinite(table['Cartn_x']))
-    n_phenotypes = len(table.disease.dropna().unique())
-    clean_table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id']).drop(['resn', 'mut', 'disease'],
+                              mask_column='resn', **kwargs):
+    n_variants = sum(table[mask_column].notnull() & np.isfinite(table['Cartn_x']))
+
+    # Diferent columns are present depending on what variant annotation was used
+    if mask_column == 'resn':
+        n_phenotypes = len(table.disease.dropna().unique())
+        variant_columns = ['resn', 'mut', 'disease']
+    elif mask_column =='variant_id':
+        n_phenotypes = 1
+        variant_columns = ['translation', 'variant_id', 'start', 'residues', 'from_aa', 'to_aa']
+    clean_table = table.drop_duplicates(subset=['UniProt_dbResNum', 'chain_id']).drop(variant_columns,
                                                                                       axis=1)
     clean_table = clean_table[np.isfinite(clean_table['Cartn_x'])]
     # Bootstrap samples
