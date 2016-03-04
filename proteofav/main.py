@@ -183,8 +183,11 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             if new_table.empty:
                 col_order = merged_table.columns.tolist()  # Get the column order once
             new_table = new_table.append(merged_table)
-        table = new_table.append(no_mapped_uniprot)[col_order]
-        table.set_index(['PDB_dbResNum'], inplace=True)
+        if not new_table.empty:
+            table = new_table.append(no_mapped_uniprot)[col_order]
+            table.set_index(['PDB_dbResNum'], inplace=True)
+        else:
+            pass
 
     if uniprot_variants:
         grouped_table = table.groupby('UniProt_dbAccessionId')
