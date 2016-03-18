@@ -44,16 +44,16 @@ def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
     :rtype: pandas.DataFrame
     """
     ensembl_endpoint = "overlap/translation/"
-    suported_feats = ['transcript_variation', 'somatic_transcript_variation']
+    supported_feats = ['transcript_variation', 'somatic_transcript_variation']
     if feature is None:
         raise NotImplementedError('Use two functions call to get both somatic'
                                   ' and germline variants.')
         # params = {'feature': supported_feats,
         #           'type': 'missense_variant'}
-    elif feature not in suported_feats:
+    elif feature not in supported_feats:
         raise NotImplementedError(
                 'feature argument should be one of {} or None for all'.format(
-                        ', '''.join(suported_feats)))
+                        ', '''.join(supported_feats)))
     else:
         params = {'feature': feature}
     url = defaults.api_ensembl + ensembl_endpoint + ensembl_ptn_id
@@ -126,7 +126,7 @@ def _fetch_variant_characteristics_from_identifier(identifier, species='human'):
     :return: pandas table dataframe
     """
     ensembl_endpoint = "variation/{}/".format(species)
-    # params = {'pops': '1', 'phenotypes': '1', 'genotypes': '1'}
+    # params = {'pops': '1', 'phenotypes': '1', 'genotypes': '1', 'population_genotypes': '1'}
     url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
     data = get_url_or_retry(url, json=True)
 
