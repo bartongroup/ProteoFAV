@@ -452,7 +452,7 @@ def parse_uniprot_variants(uniprot_id):
 # small differences
 
 
-def select_uniprot_variants(identifier, align_transcripts=False):
+def select_uniprot_variants(identifier, align_transcripts=False, reduced_annotations=True):
     """
     Summarise variants for a protein in the UniProt
 
@@ -514,9 +514,15 @@ def select_uniprot_variants(identifier, align_transcripts=False):
 
         # TODO: Shouldn't the default behaviour return all the columns?
         if not vars.empty:
-            tables.append(vars[['translation', 'id', 'start', 'residues']])
+            if reduced_annotations:
+                tables.append(vars[['translation', 'id', 'start', 'residues']])
+            else:
+                tables.append(vars)
         if not muts.empty:
-            tables.append(muts[['translation', 'id', 'start', 'residues']])
+            if reduced_annotations:
+                tables.append(muts[['translation', 'id', 'start', 'residues']])
+            else:
+                tables.append(muts)
 
     # Get variants from aligned sequences
     if align_transcripts:
@@ -532,7 +538,7 @@ def select_uniprot_variants(identifier, align_transcripts=False):
 
             if not var_table.empty:
                 tables.append(var_table)
-            if not var_table.empty:
+            if not mut_table.empty:
                 tables.append(mut_table)
 
     # to_unique = lambda series: series.unique()
