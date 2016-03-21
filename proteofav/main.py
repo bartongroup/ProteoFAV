@@ -22,7 +22,7 @@ logging.basicConfig(level=9,
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                  validate=True, add_validation=False, add_variants=None,
                  add_annotation=False, remove_redundant=False,
-                 uniprot_variants=False):
+                 uniprot_variants=False, atoms='CA'):
     """
     Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
@@ -49,6 +49,9 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
                         "uniprot_id or pdb_id")
+
+    if atoms == 'all' and validate:
+        raise TypeError("If selecting all atoms, validate must be False")
 
     if chain == 'all':
         # If we want to fetch all chains we can just find out what chains are
@@ -77,7 +80,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
                                               add_variants=add_variants,
                                               add_annotation=add_annotation,
                                               remove_redundant=remove_redundant,
-                                              uniprot_variants=uniprot_variants))
+                                              uniprot_variants=uniprot_variants,
+                                              atoms=atoms))
 
         return table
 
@@ -89,8 +93,10 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         pdb_id = best_pdb['pdb_id']
         chain = best_pdb['chain_id']
         log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
+    else:
+        pdb_id = pdb_id.lower()  # Nice to be able to handle this!
 
-    cif_table = select_cif(pdb_id, chains=chain, models=model)
+    cif_table = select_cif(pdb_id, chains=chain, models=model, atoms=atoms)
     cif_table['auth_seq_id'] = cif_table.index
 
     dssp_table = select_dssp(pdb_id, chains=chain)
@@ -140,6 +146,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
     # Sift data in used as base to keep not observed residues info.
     # TODO: this is inconsistent with other joins; should table be left?
     table = sifts_table.join(table)
+
     if validate:
         if not table['REF_dbResName'].any():
             raise ValueError('Empty Sifts sequence cannot be validated')
@@ -176,7 +183,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         grouped_table = table.groupby('UniProt_dbAccessionId')
         new_table = DataFrame()
         for structure_uniprot, part_table in grouped_table:
-            variants_table = select_uniprot_variants(structure_uniprot)
+            variants_table = select_uniprot_variants(structure_uniprot, reduced_annotations=False)
             variants_table[["start"]] = variants_table[["start"]].astype(float)
             part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
             merged_table = part_table.merge(variants_table, left_on="UniProt_dbResNum", right_on="start", how="left")
