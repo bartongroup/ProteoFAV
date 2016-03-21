@@ -103,6 +103,7 @@ def dist_to_sim(d, method='max_minus_d', threshold=float('inf'), gamma=1./3, **k
         if gamma <= 0:
             raise ValueError('Invalid gamma: must be >= 0')
         s = np.exp(-d * gamma)
+        s[d > threshold] = 0
 
     if method == 'alt_reciprocal':
         ##d[d > threshold] = float('inf')  #TODO: Any threshold here hides cluster structure. Why?
@@ -834,7 +835,7 @@ def collect_cluster_sample_statistics(test_part, test_points, sample_tables):
 
 def cluster_spatial_statistics(test_part, test_points):
     """
-    
+
     :param test_part:
     :param test_points:
     :return:
