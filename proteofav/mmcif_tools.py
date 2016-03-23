@@ -257,15 +257,19 @@ def _get_mmcif_bio_units(filename, most_likely=True):
                     if indexer > tmp_indexer:
                         tmp_indexer = indexer
                         index = i
+
+            # use the first entry
             else:
                 index = 0
+        else:
+            index = 0
 
-            for entry in assembly:
-                n_assembly[entry] = assembly[entry][index]
-            for entry in assembly_gen:
-                n_assembly_gen[entry] = assembly_gen[entry][index]
-                # for entry in oper_list:
-                #     n_oper_list[entry] = oper_list[entry][index]
+        for entry in assembly:
+            n_assembly[entry] = assembly[entry][index]
+        for entry in assembly_gen:
+            n_assembly_gen[entry] = assembly_gen[entry][index]
+            # for entry in oper_list:
+            #     n_oper_list[entry] = oper_list[entry][index]
 
     else:
         # if only one assembly is available
