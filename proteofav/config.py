@@ -44,10 +44,20 @@ class Defaults(object):
         self.__populate_attributes()
 
     def __populate_attributes(self):
+        logged_header = False
+        for var_name, var_par in self:
+            if var_par == "...":
+                if not logged_header:
+                    logger.warning(" Some parameters in the config.txt file need "
+                                   "to be provided...")
+                    logged_header = True
+                logger.warning(" Update the value for parameter {}"
+                               "...".format(var_name))
+            setattr(self, var_name, var_par)
+
+    def __iter__(self):
         for section in self.__config.sections():
             for var_name, var_par in self.__config.items(section):
-                if var_par == "...":
-                    logger.warning("Update the config.txt file...")
-                setattr(self, var_name, var_par)
+                yield var_name, var_par
 
 defaults = Defaults()
