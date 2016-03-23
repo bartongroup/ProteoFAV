@@ -1,12 +1,13 @@
 # example config file
 [Global]
-db_pdb = ...
-db_mmcif = ...
-db_dssp = ...
-db_sifts = ...
-db_validation = ...
-db_germline_variants = ...
-db_somatic_variants = ...
+db_pdb = /tmp/
+db_mmcif = /tmp/
+db_dssp = /tmp/
+db_sifts = /tmp/
+db_validation = /tmp/
+db_germline_variants = /tmp/
+db_somatic_variants = /tmp/
+tmp = /tmp/
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/
@@ -19,13 +20,16 @@ cif_fetch = http://www.ebi.ac.uk/pdbe/entry-files/
 dssp_fetch = ftp://ftp.cmbi.ru.nl//pub/molbio/data/dssp/
 sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 validation_fetch = http://www.ebi.ac.uk/pdbe/entry-files/download/
+uniprot_fetch = http://www.uniprot.org/uniprot/
 
 [Variables]
-contact_email = ...
+contact_email = user@proteofav.com
 cif_extension = _updated.cif
 dssp_extension = .dssp
 sifts_extension = .xml.gz
 validation_extension = _validation.xml
+gff_extension = .gff
+fasta_extension = .fasta
 
 
 # Not used at the moment
