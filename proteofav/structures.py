@@ -71,13 +71,18 @@ def _mmcif_atom(filename, delimiter=None):
     lines = "".join(lines)
 
     if delimiter is None:
-        return pd.read_table(StringIO(lines),
-                             delim_whitespace=True, low_memory=False,
-                             names=_header_mmcif, compression=None)
+        table = pd.read_table(StringIO(lines),
+                              delim_whitespace=True, low_memory=False,
+                              names=_header_mmcif, compression=None)
     else:
-        return pd.read_table(StringIO(lines),
-                             sep=str(delimiter), low_memory=False,
-                             names=_header_mmcif, compression=None)
+        table = pd.read_table(StringIO(lines),
+                              sep=str(delimiter), low_memory=False,
+                              names=_header_mmcif, compression=None)
+
+    # drop the 'esd' entries
+    excluded = [x for x in table.columns.values if x.endswith('_esd')]
+    table = table.drop(excluded, axis=1)
+    return table
 
 
 def _sifts_residues(filename, cols=None):
