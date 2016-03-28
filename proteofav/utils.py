@@ -91,7 +91,7 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     if isinstance(sources, str):
         sources = [sources]
     if not directory:
-        directory = defaults.temp
+        directory = defaults.tmp
     elif isinstance(directory, str):
         if not os.path.isdir(directory):
             raise IOError(directory + " is not a valid path.")
