@@ -116,12 +116,6 @@ class TestSIFTSParser(unittest.TestCase):
 
         data = self.uniprot_pdb(self.uniprot_id)
 
-        # number of values per column (or rows)
-        self.assertEqual(len(data), 17)
-
-        # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 10)
-
         # check whether there are particular keys
         self.assertIn('pdb_id', data.columns.values)
 
