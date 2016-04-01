@@ -5,13 +5,10 @@ from __future__ import print_function
 
 import logging
 
-from pandas import DataFrame
-
-from .library import to_single_aa
-from .structures import (select_cif, select_dssp, select_sifts,
-                         select_validation, sifts_best, _rcsb_description)
-from .variants import (select_uniprot_variants, _fetch_uniprot_variants,
-                       map_gff_features_to_sequence)
+from proteofav.library import to_single_aa
+from proteofav.structures import (select_cif, select_dssp, select_sifts,
+                                  select_validation, sifts_best)
+from proteofav.variants import (map_gff_features_to_sequence, select_variants)
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -19,67 +16,30 @@ logging.basicConfig(level=9,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
 
 
-def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
-                 validate=True, add_validation=False, add_variants=None,
-                 add_annotation=False, remove_redundant=False,
-                 uniprot_variants=False):
+def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='first',
+                 validate=True, drop_empty_cols=False, add_validation=False, add_annotation=False,
+                 add_ensembl_variants=None, add_uniprot_variants=False):
     """
     Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
 
-    :type remove_redundant: bool
-    :type add_annotation: bool
-    :type add_variants: bool
-    :type add_validation: bool
-    :type validate: bool
-    :type model: str or None
-    :type chain: str or None
-    :type pdb_id: str or None
-    :type uniprot_id: str or None
+    :param str or None uniprot_id: gives sifts best representative for this UniProt entry
+    :param str or None pdb_id: Entry to be loaded
+    :param str or None chain: Protein chain to loaded
+    :param str or None atoms: Atom to be selected in the
+    :param str or None model: Select the PDB entity, like in structures determined by NMR
+    :param bool add_validation: Attach the PDB validation table
+    :param bool validate: Whether to validate the protein sequence in different tables
+    :param bool drop_empty_cols: Whether to drop columns without positional information
+    :param bool add_ensembl_variants: Whether to add variant table from Ensembl
+    :param bool add_annotation: Whether to add variant table from Ensembl
+    :param bool add_uniprot_variants: Whether to add  variant table from UniProt
     :rtype: pandas.DataFrame
-    :param add_validation: join the PDB validation table?
-    :param uniprot_id: gives sifts best representative for this UniProt entry
-    :param pdb_id: Entry to be parsed
-    :param chain: Protein chain to be parsed
-    :param model: Which entity to use? Useful for multiple entities protein
-    structures determined by NMR
-    :param validate: Checks whether sequence is the same in all tables
-    :type uniprot_variants: bool
+
     """
     if not any((uniprot_id, pdb_id)):
         raise TypeError("One of the following arguments is expected:"
                         "uniprot_id or pdb_id")
-
-    if chain == 'all':
-        # If we want to fetch all chains we can just find out what chains are
-        # available in the specified PDB and then recursively call `merge_tables`
-        # until we got them all. This should only work for a PDB based query and we
-        # need to ensure that fields like 'chain_id' aren't dropped by 'remove_redundant'
-        if not pdb_id:
-            best_pdb = sifts_best(uniprot_id, first=True)
-            pdb_id = best_pdb['pdb_id']
-            if best_pdb is None:
-                logging.error('Could not process {}'.format(uniprot_id))
-                return None
-            log.info("Best structure: {} for {} ".format(pdb_id, uniprot_id))
-        if remove_redundant:
-            remove_redundant = False
-            log.warning("remove_redundant is ignored when chain='all' and is set to False")
-
-        chain_ids = _rcsb_description(pdb_id, tag='chain', key='id')
-        # TODO transition to chain = None strategy
-        table = DataFrame()
-        for current_chain in chain_ids:
-            table = table.append(merge_tables(uniprot_id=uniprot_id, pdb_id=pdb_id,
-                                              chain=current_chain, model=model,
-                                              validate=validate,
-                                              add_validation=add_validation,
-                                              add_variants=add_variants,
-                                              add_annotation=add_annotation,
-                                              remove_redundant=remove_redundant,
-                                              uniprot_variants=uniprot_variants))
-
-        return table
 
     if not pdb_id:
         best_pdb = sifts_best(uniprot_id, first=True)
@@ -90,7 +50,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
         chain = best_pdb['chain_id']
         log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
 
-    cif_table = select_cif(pdb_id, chains=chain, models=model)
+    cif_table = select_cif(pdb_id, chains=chain, models=model, atoms=atoms)
     cif_table['auth_seq_id'] = cif_table.index
 
     dssp_table = select_dssp(pdb_id, chains=chain)
@@ -168,47 +128,35 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             err = '{}|{} Cif and validation files have different sequences '
             raise ValueError(err.format(pdb_id, chain))
 
-    # Table preparations before adding variants
-    table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
-    no_mapped_uniprot = table[table.UniProt_dbAccessionId.isnull()]
+    # pragma
+    table.loc[:, 'UniProt_dbResNum'] = table.loc[:, 'UniProt_dbResNum'].fillna(-9999)
+    table.loc[:, 'UniProt_dbResNum'] = table.loc[:, 'UniProt_dbResNum'].astype(int)
 
-    if add_variants:
-        grouped_table = table.groupby('UniProt_dbAccessionId')
-        new_table = DataFrame()
-        for structure_uniprot, part_table in grouped_table:
-            variants_table = select_uniprot_variants(structure_uniprot)
-            variants_table[["start"]] = variants_table[["start"]].astype(float)
-            part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
-            merged_table = part_table.merge(variants_table, left_on="UniProt_dbResNum", right_on="start", how="left")
-            if new_table.empty:
-                col_order = merged_table.columns.tolist()  # Get the column order once
-            new_table = new_table.append(merged_table)
-        table = new_table.append(no_mapped_uniprot)[col_order]
-        table.set_index(['PDB_dbResNum'], inplace=True)
-
-    if uniprot_variants:
-        grouped_table = table.groupby('UniProt_dbAccessionId')
-        new_table = DataFrame()
-        for structure_uniprot, part_table in grouped_table:
-            variants = _fetch_uniprot_variants(structure_uniprot)
-            part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
-            merged_table = part_table.merge(variants, on='UniProt_dbResNum', how='left')
-            if new_table.empty:
-                col_order = merged_table.columns.tolist()  # Get the column order once
-            new_table = new_table.append(merged_table)
-        table = new_table.append(no_mapped_uniprot)[col_order]
-        table.set_index(['PDB_dbResNum'], inplace=True)
+    variant_features = []
+    if add_ensembl_variants:
+        variant_features.extend(['ensembl_somatic', 'ensembl_germline'])
+    if add_uniprot_variants:
+        variant_features.append(['uniprot'])
+    if variant_features:
+        for identifier in table['UniProt_dbAccessionId'].dropna().unique():
+            variants_table = select_variants(identifier, features=variant_features)
+            variants_table.reset_index(inplace=True)
+            variants_table['UniProt_dbAccessionId'] = identifier
+            variants_table.rename(columns={'start': 'UniProt_dbResNum'}, inplace=True)
+            table = table.merge(variants_table, how='left',
+                                on=['UniProt_dbResNum', 'UniProt_dbAccessionId'])
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
             uniprot_annotation = map_gff_features_to_sequence(identifier)
-            uniprot_annotation.index = uniprot_annotation.index.astype(float)
-            table = table.reset_index().merge(uniprot_annotation, how='left',
-                                              on="UniProt_dbResNum")
-            table.set_index(['PDB_dbResNum'], inplace=True)
+            uniprot_annotation.reset_index(inplace=True)
+            uniprot_annotation['UniProt_dbAccessionId'] = identifier
+            variants_table.rename(columns={'index': 'UniProt_dbResNum'}, inplace=True)
+            table = table.merge(uniprot_annotation,
+                                on=['UniProt_dbAccessionId', 'UniProt_dbResNum'])
 
     # non-positional information goes to an attribute
-    if remove_redundant:
+    if drop_empty_cols:
         for col in table:
             try:
                 value = table[col].dropna().unique()
@@ -227,5 +175,5 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='4v9d', chain='BD')
+    X2 = merge_tables(pdb_id='2pah', atoms=None)
     print(X.head())
