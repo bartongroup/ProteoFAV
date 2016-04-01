@@ -68,7 +68,7 @@ class TestUNIPROTParser(unittest.TestCase):
         are the ones we are expecting.
         """
 
-        data = self.uniprot_ensembl(self.uniprot_id)
+        data = self.uniprot_ensembl(self.uniprot_id, 'homo_sapiens')
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 1)
