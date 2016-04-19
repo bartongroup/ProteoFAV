@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 
-import cPickle as pickle
 import logging
 import os
 
@@ -57,10 +56,18 @@ def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
                         ', '''.join(suported_feats)))
     else:
         params = {'feature': feature}
-    url = defaults.api_ensembl + ensembl_endpoint + ensembl_ptn_id
 
-    rows = get_url_or_retry(url, json=True, **params)
-    return pd.DataFrame(rows)
+    # Check if available locally, otherwise query ensembl
+    table_json_path = defaults.db_ensembl_variants + ensembl_ptn_id + '.json'
+    if not os.path.isfile(table_json_path):
+        url = defaults.api_ensembl + ensembl_endpoint + ensembl_ptn_id
+        rows = get_url_or_retry(url, json=True, **params)
+        table = pd.DataFrame(rows)
+        table.to_json(table_json_path)
+    else:
+        table = pd.read_json(table_json_path)
+
+    return table
 
 
 def _fetch_uniprot_variants(identifier, _format='tab'):
@@ -73,47 +80,44 @@ def _fetch_uniprot_variants(identifier, _format='tab'):
     """
     # Check if query has already been saved
 
-    query_file_name = defaults.db_germline_variants + 'uniprot_variants_' + identifier + '.pkl'
-    if not os.path.isfile(query_file_name):
+    table_json_path = defaults.db_uniprot_variants + identifier + '.json'
+    if not os.path.isfile(table_json_path):
         url = defaults.api_uniprot + '?query=accession:' + identifier
         url += '&format=' + _format
         url += '&columns=feature(NATURAL+VARIANT)'
         result = get_url_or_retry(url)
-        with open(query_file_name, 'wb') as output:
-            pickle.dump(result, output, -1)
-    else:
-        # Read stored response
-        log.debug('Reloading stored response.')
-        result = pickle.load(open(query_file_name, 'rb'))
 
-    # Complicated parsing
-    records = result.replace('Natural variant\n', '').split('.; ')
-    variants = [['UniProt_dbResNum', 'resn', 'mut', 'disease']]
-    for record in records:
+        # Complicated parsing
+        records = result.replace('Natural variant\n', '').split('.; ')
+        variants = [['UniProt_dbResNum', 'resn', 'mut', 'disease']]
+        for record in records:
 
-        # Position and mutation
-        entry = record.split(' ')
-        resi = entry[1]
-        resn = entry[3]
-        if resn == 'Missing':
-            mut = 'NA'
-        else:
-            mut = entry[5]
-
-        # Label disease if specified
-        try:
-            ind = entry.index('(in')
-            if entry[ind + 1].startswith('dbSNP'):
-                disease = "Not present"
+            # Position and mutation
+            entry = record.split(' ')
+            resi = entry[1]
+            resn = entry[3]
+            if resn == 'Missing':
+                mut = 'NA'
             else:
-                disease = entry[ind + 1].replace(';', '').replace(').', '')
-        except ValueError:
-            disease = "Not found"
+                mut = entry[5]
 
-        variants.append([resi, resn, mut, disease])
+            # Label disease if specified
+            try:
+                ind = entry.index('(in')
+                if entry[ind + 1].startswith('dbSNP'):
+                    disease = "Not present"
+                else:
+                    disease = entry[ind + 1].replace(';', '').replace(').', '')
+            except ValueError:
+                disease = "Not found"
 
-    table = pd.DataFrame(variants, columns=variants.pop(0))
-    table.UniProt_dbResNum = table.UniProt_dbResNum.astype('float')
+            variants.append([resi, resn, mut, disease])
+
+        table = pd.DataFrame(variants, columns=variants.pop(0))
+        table.UniProt_dbResNum = table.UniProt_dbResNum.astype('float')
+        table.to_json(table_json_path)
+    else:
+        table = pd.read_json(table_json_path)
 
     return table
 
