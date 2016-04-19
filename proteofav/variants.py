@@ -464,92 +464,100 @@ def select_uniprot_variants(identifier, align_transcripts=False, reduced_annotat
     :param identifier: UniProt ID
     :return: table with variants, rows are residues
     """
-    # TODO FIX docstring
-    # get organism and sequence for the provided identifier
+    table_json_path = defaults.db_ensembl_variants + identifier + '.json'
+    if not os.path.isfile(table_json_path):
+        # TODO FIX docstring
+        # get organism and sequence for the provided identifier
 
-    # TODO use gff?
-    uni = _uniprot_info(identifier, cols=['organism', 'sequence'])
-    org = ('_'.join(uni.loc[0, 'Organism'].split()[-3:-1])).lower()
-    seq = uni.loc[0, 'Sequence']
+        # TODO use gff?
+        uni = _uniprot_info(identifier, cols=['organism', 'sequence'])
+        org = ('_'.join(uni.loc[0, 'Organism'].split()[-3:-1])).lower()
+        seq = uni.loc[0, 'Sequence']
 
-    # get the ensembl ids: this also validate this species as available
-    # through ensembl
-    ens = _uniprot_ensembl_mapping(identifier, species=org)
+        # get the ensembl ids: this also validate this species as available
+        # through ensembl
+        ens = _uniprot_ensembl_mapping(identifier, species=org)
 
-    # get the ensembl protein ids
-    ens_pros = ens.loc[0, 'TRANSLATION']
-    if not isinstance(ens_pros, list):
-        ens_pros = [ens_pros, ]
+        # get the ensembl protein ids
+        ens_pros = ens.loc[0, 'TRANSLATION']
+        if not isinstance(ens_pros, list):
+            ens_pros = [ens_pros, ]
 
-    # get the sequence of the ensembl protein
-    usable_indexes = []
-    aligned_indexes = []
-    seq_maps = []
+        # get the sequence of the ensembl protein
+        usable_indexes = []
+        aligned_indexes = []
+        seq_maps = []
 
-    for i, enspro in enumerate(ens_pros):
-        seq_pro = _sequence_from_ensembl_protein(enspro, protein=True)
+        for i, enspro in enumerate(ens_pros):
+            seq_pro = _sequence_from_ensembl_protein(enspro, protein=True)
 
-        # validate if the sequence of uniprot and ensembl protein matches
-        if _compare_sequences(seq, seq_pro, permissive=False):
-            usable_indexes.append(i)
-        elif _compare_sequences(seq, seq_pro, permissive=True):
-            usable_indexes.append(i)
-            seq_maps.append(None)
-            n_mismatches = _count_mismatches(seq, seq_pro)
-            message = "{0}: Sequences are of same length but have {1} mismatch(s)".format(enspro,
-                                                                                          n_mismatches)
-            logging.warning(message)
-        elif align_transcripts:
-            message = "Sequences don't match! Will attempt alignment... {}".format(enspro)
-            logging.warning(message)
-            aligned_indexes.append(i)
-            ensembl_to_uniprot = _map_sequence_indexes(seq_pro, seq)
-            seq_maps.append(ensembl_to_uniprot)
-        else:
-            message = "Sequences don't match! skipping... {}".format(enspro)
-            logging.warning(message)
-            seq_maps.append(None)
-
-    # get the variants for the ensembl proteins that match the uniprot
-    tables = []
-    for i in usable_indexes:
-        vars = _fetch_ensembl_variants(ens_pros[i], feature='transcript_variation')
-        muts = _fetch_ensembl_variants(ens_pros[i], feature='somatic_transcript_variation')
-
-        # TODO: Shouldn't the default behaviour return all the columns?
-        if not vars.empty:
-            if reduced_annotations:
-                tables.append(vars[['translation', 'id', 'start', 'residues']])
+            # validate if the sequence of uniprot and ensembl protein matches
+            if _compare_sequences(seq, seq_pro, permissive=False):
+                usable_indexes.append(i)
+            elif _compare_sequences(seq, seq_pro, permissive=True):
+                usable_indexes.append(i)
+                seq_maps.append(None)
+                n_mismatches = _count_mismatches(seq, seq_pro)
+                message = "{0}: Sequences are of same length but have {1} mismatch(s)".format(enspro,
+                                                                                              n_mismatches)
+                logging.warning(message)
+            elif align_transcripts:
+                message = "Sequences don't match! Will attempt alignment... {}".format(enspro)
+                logging.warning(message)
+                aligned_indexes.append(i)
+                ensembl_to_uniprot = _map_sequence_indexes(seq_pro, seq)
+                seq_maps.append(ensembl_to_uniprot)
             else:
-                tables.append(vars)
-        if not muts.empty:
-            if reduced_annotations:
-                tables.append(muts[['translation', 'id', 'start', 'residues']])
-            else:
-                tables.append(muts)
+                message = "Sequences don't match! skipping... {}".format(enspro)
+                logging.warning(message)
+                seq_maps.append(None)
 
-    # Get variants from aligned sequences
-    if align_transcripts:
-        for i in aligned_indexes:
+        # get the variants for the ensembl proteins that match the uniprot
+        tables = []
+        for i in usable_indexes:
             vars = _fetch_ensembl_variants(ens_pros[i], feature='transcript_variation')
             muts = _fetch_ensembl_variants(ens_pros[i], feature='somatic_transcript_variation')
 
-            var_table = vars[['translation', 'id', 'start', 'residues']]
-            mut_table = muts[['translation', 'id', 'start', 'residues']]
+            # TODO: Shouldn't the default behaviour return all the columns?
+            if not vars.empty:
+                if reduced_annotations:
+                    tables.append(vars[['translation', 'id', 'start', 'residues']])
+                else:
+                    tables.append(vars)
+            if not muts.empty:
+                if reduced_annotations:
+                    tables.append(muts[['translation', 'id', 'start', 'residues']])
+                else:
+                    tables.append(muts)
 
-            var_table.start = _apply_sequence_index_map(var_table.start, seq_maps[i])
-            mut_table.start = _apply_sequence_index_map(mut_table.start, seq_maps[i])
+        # Get variants from aligned sequences
+        if align_transcripts:
+            for i in aligned_indexes:
+                vars = _fetch_ensembl_variants(ens_pros[i], feature='transcript_variation')
+                muts = _fetch_ensembl_variants(ens_pros[i], feature='somatic_transcript_variation')
 
-            if not var_table.empty:
-                tables.append(var_table)
-            if not mut_table.empty:
-                tables.append(mut_table)
+                var_table = vars[['translation', 'id', 'start', 'residues']]
+                mut_table = muts[['translation', 'id', 'start', 'residues']]
 
-    # to_unique = lambda series: series.unique()
-    # return table.groupby('start').apply(to_unique)
-    table = pd.concat(tables, ignore_index=True)
+                var_table.start = _apply_sequence_index_map(var_table.start, seq_maps[i])
+                mut_table.start = _apply_sequence_index_map(mut_table.start, seq_maps[i])
+
+                if not var_table.empty:
+                    tables.append(var_table)
+                if not mut_table.empty:
+                    tables.append(mut_table)
+
+        # to_unique = lambda series: series.unique()
+        # return table.groupby('start').apply(to_unique)
+        table = pd.concat(tables, ignore_index=True)
+        table.to_json(table_json_path)
+    else:
+        table = pd.read_json(table_json_path)
+
+    # TODO: Is this neccessary here? It is useful...
     table.rename(columns={'id': 'variant_id'}, inplace=True)
     table = parse_mutation(table)
+
     return table
 
 
