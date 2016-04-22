@@ -41,15 +41,15 @@ def parse_mutation(variation_table, column_name='residues'):
     :param column_name: Name of column in variation_table that contains residue mutation
     :return: A pandas.DataFrame with the additional columns, 'from_aa' and 'to_aa'
     """
-    residues = variation_table[column_name]
+    residues = variation_table[column_name].fillna('')
     from_aa = []
     to_aa = []
     for i in residues:
         parsed = i.split('/')
         from_aa.append(parsed[0])
         to_aa.append(parsed[1:])
-    variation_table['from_aa'] = pd.Series(from_aa)
-    variation_table['to_aa'] = pd.Series(to_aa)
+    variation_table['from_aa'] = pd.Series(from_aa, index=residues.index)
+    variation_table['to_aa'] = pd.Series(to_aa, index=residues.index)
     
     return variation_table
 
