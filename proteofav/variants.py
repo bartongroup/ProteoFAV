@@ -464,7 +464,13 @@ def select_uniprot_variants(identifier, align_transcripts=False, reduced_annotat
     :param identifier: UniProt ID
     :return: table with variants, rows are residues
     """
-    table_json_path = defaults.db_ensembl_variants + identifier + '.json'
+    dbs = defaults.ensembl_variants_external_dbs.split(',') + [defaults.db_ensembl_variants]
+    for db in dbs:
+        if os.path.isdir(db):
+            table_json_path = db + identifier + '.json'
+            if os.path.isfile(table_json_path):
+                break
+
     if not os.path.isfile(table_json_path):
         # TODO FIX docstring
         # get organism and sequence for the provided identifier
