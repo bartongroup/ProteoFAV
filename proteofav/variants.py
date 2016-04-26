@@ -555,14 +555,18 @@ def select_uniprot_variants(identifier, align_transcripts=False, reduced_annotat
 
         # to_unique = lambda series: series.unique()
         # return table.groupby('start').apply(to_unique)
-        table = pd.concat(tables, ignore_index=True)
+        if len(tables) > 0:
+            table = pd.concat(tables, ignore_index=True)
+        else:
+            table = pd.DataFrame()
         table.to_json(table_json_path)
     else:
         table = pd.read_json(table_json_path)
 
     # TODO: Is this neccessary here? It is useful...
-    table.rename(columns={'id': 'variant_id'}, inplace=True)
-    table = parse_mutation(table)
+    if not table.empty:
+        table.rename(columns={'id': 'variant_id'}, inplace=True)
+        table = parse_mutation(table)
 
     return table
 
