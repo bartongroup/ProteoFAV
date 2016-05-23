@@ -6,11 +6,15 @@ import logging
 import re
 
 import pandas as pd
-import pymol
 
+from proteofav.main import log
 from proteofav.main import merge_tables
-from proteofav.variants import (_fetch_uniprot_variants,
-                                _fetch_variant_characteristics_from_identifiers)
+from proteofav.variants import _fetch_variant_characteristics_from_identifiers
+
+try:
+    import pymol
+except ImportError:
+    log.error('pymol not installed')
 
 __author__ = 'smacgowan'
 
@@ -74,7 +78,7 @@ def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):
 
     # Get variants for all chains
     residue_mappings = merge_tables(pdb_id=pdb_id, chain='all',
-                                    add_variants=True)
+                                    add_ensembl_variants=True)
     has_variant = residue_mappings.start.notnull()
 
     # If we're going to make selections from ensembl traits get that data now

@@ -24,16 +24,25 @@ def fetch_uniprot_sequence(uniprot_id):
     return _uniprot_info(uniprot_id, cols='sequence').iloc[0, 1]
 
 
-def fetch_uniprot_formal_specie(uniprot_id):
+def fetch_uniprot_formal_specie(uniprot_id, remove_isoform=True):
     """
     Get the species name of an organism expressing a protein.
 
+    :param remove_isoform:
     :param str uniprot_id: Uniprot accession
     :return str: the species name (two words)
     """
-    full_specie = _uniprot_info(uniprot_id, cols='organism').iloc[0, 1]
+    if remove_isoform:
+        uniprot_id = uniprot_id.split('-')[0]
 
-    return " ".join(full_specie.split()[0:2])
+    full_specie = _uniprot_info(uniprot_id, cols='organism').iloc[0, 1]
+    try:
+
+        return " ".join(full_specie.split()[0:2])
+    except AttributeError:
+        log.error('Could not retrieve {} information. Maybe it is obsolete?'.format(uniprot_id))
+
+        return ''
 
 
 def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
@@ -133,6 +142,10 @@ def map_gff_features_to_sequence(uniprot_id, query_type='', group_residues=True,
         lines.extend({'idx': i, 'annotation': annotation_writer(row)}
                      for i in range(row.START, row.END + 1))
     table = pd.DataFrame(lines)
+
+    if table.empty:
+        return table
+
     if group_residues:
 
         return table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
@@ -153,7 +166,7 @@ def _uniprot_to_ensembl_xref(uniprot_id, species='homo_sapiens'):
     """
 
     url = "{}xrefs/symbol/{}/{}?content-type=application/json".format(
-            defaults.api_ensembl, species, uniprot_id)
+        defaults.api_ensembl, species, uniprot_id)
 
     return pd.read_json(url)
 

@@ -120,9 +120,9 @@ class TestSIFTSParser(unittest.TestCase):
         self.assertIn('pdb_id', data.columns.values)
 
         # check the values of particular entries
-        self.assertTrue(data['pdb_id'][0] == '2pah')
-        self.assertEqual(data['chain_id'][0], 'A')
-        self.assertEqual(data['experimental_method'][0], 'X-ray diffraction')
+        self.assertEqual(data['pdb_id'].unique()[0], '2pah')
+        self.assertIn('A', data['chain_id'].unique())
+        self.assertIn('X-ray diffraction', data['experimental_method'].unique())
         self.assertTrue(type(data['coverage'][0]), float)
         self.assertTrue(type(data['resolution'][0]), float)
         self.assertTrue(type(data['tax_id'][0]), int)

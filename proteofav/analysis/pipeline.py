@@ -14,7 +14,7 @@ import logging
 from proteofav import main
 import os
 import time
-from proteofav.utils import create_directory
+import proteofav
 from proteofav.analysis.utils import is_valid_file, create_directory
 
 if __name__ == '__main__':
@@ -92,7 +92,8 @@ if __name__ == '__main__':
                 logger.info('Processing UniProt ID {} out of {}...'.format(protein_set.index(prot) + 1,
                                                                            len(protein_set)))
                 try:
-                    structure_table = main.merge_tables(uniprot_id=prot, chain='all', uniprot_variants=True)
+                    structure_table = main.merge_tables(uniprot_id=prot, chain='all',
+                                                        add_uniprot_variants=True)
                     structure_tables.append((prot, structure_table))
                     with open(table_file_name, 'wb') as output:
                         pickle.dump(structure_table, output, -1)

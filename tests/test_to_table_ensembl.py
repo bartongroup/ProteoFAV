@@ -7,9 +7,7 @@ from os import path
 
 import pandas as pd
 
-from proteofav.variants import (_fetch_ensembl_variants,
-                                _fetch_variant_characteristics_from_identifier,
-                                select_uniprot_variants)
+from proteofav.variants import _fetch_ensembl_variants
 
 
 class TestENSEMBLParser(unittest.TestCase):
@@ -30,8 +28,6 @@ class TestENSEMBLParser(unittest.TestCase):
         self.variant_id_error3 = []
         self.ensembl_trascript = _fetch_ensembl_variants
         self.fetch_variant = _fetch_ensembl_variants
-        self.ensembl_variant = _fetch_variant_characteristics_from_identifier
-        self.uniprot_variants = select_uniprot_variants
 
     def tearDown(self):
         """Remove testing framework."""
@@ -60,12 +56,6 @@ class TestENSEMBLParser(unittest.TestCase):
     def test_querying_ensembl_somatic_variants(self):
         data = self.fetch_variant(
                 self.ensembl_id, feature='somatic_transcript_variation')
-
-        # doesn't check anything about the output
-        self.assertIsInstance(data, pd.DataFrame)
-
-    def test_querying_ensembl_variant(self):
-        data = self.ensembl_variant(self.variant_id, species='human')
 
         # doesn't check anything about the output
         self.assertIsInstance(data, pd.DataFrame)

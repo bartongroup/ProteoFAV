@@ -5,9 +5,9 @@
 Command line application of the library.
 """
 
+import argparse
 import logging
 import sys
-import argparse
 
 from .main import merge_tables
 
@@ -38,8 +38,8 @@ log.setLevel()
 table = merge_tables(pdb_id=args.pdb, chain=args.chain,
                      add_annotation=args.add_annotation,
                      add_validation=args.add_validation,
-                     add_variants=args.add_variants,
-                     remove_redundant=args.remove_redundant)
+                     add_ensembl_variants=args.add_variants,
+                     drop_empty_cols=args.remove_redundant)
 
 table.to_csv(args.output)
 
