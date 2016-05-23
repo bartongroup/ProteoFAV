@@ -61,7 +61,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(len(data), 5317)
 
         # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 26)
+        self.assertEqual(len(data.columns.values), 21)
 
         # check whether there are particular keys
         self.assertIn('label_asym_id', data.columns.values)
@@ -131,7 +131,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(len(data), 5317 * 2)
 
         # number of keys (or columns); same number of columns
-        self.assertEqual(len(data.columns.values), 26)
+        self.assertEqual(len(data.columns.values), 21)
 
         # check whether there are particular keys
         self.assertIn('label_asym_id', data.columns.values)
@@ -152,7 +152,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(len(data), 5317 * 2)
 
         # number of keys (or columns); same number of columns
-        self.assertEqual(len(data.columns.values), 26)
+        self.assertEqual(len(data.columns.values), 21)
 
         # check whether there are particular keys
         self.assertIn('label_asym_id', data.columns.values)
@@ -173,7 +173,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(len(data), 5317 * 2)
 
         # number of keys (or columns); same number of columns
-        self.assertEqual(len(data.columns.values), 27)
+        self.assertEqual(len(data.columns.values), 22)
 
         # check whether there are particular keys
         self.assertIn('bio_unit_counter', data.columns.values)
