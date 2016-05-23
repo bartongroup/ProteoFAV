@@ -9,3 +9,5 @@ __pycache__
 config.txt
 .ipynb_checkpoints
 *.ipynb
+.tox/
+*.egg-info
