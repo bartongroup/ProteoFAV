@@ -5,13 +5,10 @@ from __future__ import print_function
 
 import logging
 
-from pandas import DataFrame
-
-from .library import to_single_aa
-from .structures import (select_cif, select_dssp, select_sifts,
-                         select_validation, sifts_best, _rcsb_description)
-from .variants import (select_uniprot_variants, _fetch_uniprot_variants,
-                       map_gff_features_to_sequence)
+from proteofav.library import to_single_aa
+from proteofav.structures import (select_cif, select_dssp, select_sifts,
+                                  select_validation, sifts_best)
+from proteofav.variants import (map_gff_features_to_sequence, select_variants)
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
@@ -19,67 +16,39 @@ logging.basicConfig(level=9,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
 
 
-def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
-                 validate=True, add_validation=False, add_variants=None,
-                 add_annotation=False, remove_redundant=False,
-                 uniprot_variants=False):
+def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='first',
+                 sequence_check='raise', drop_empty_cols=False, add_validation=False,
+                 add_annotation=False,
+                 add_ensembl_variants=None, add_uniprot_variants=False):
     """
     Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
 
-    :type remove_redundant: bool
-    :type add_annotation: bool
-    :type add_variants: bool
-    :type add_validation: bool
-    :type validate: bool
-    :type model: str or None
-    :type chain: str or None
-    :type pdb_id: str or None
-    :type uniprot_id: str or None
+    :param str or None uniprot_id: Fetch Sifts best (higher coverage) protein structure for
+    this UniProt entry
+    :param str or None pdb_id: Entry to be loaded
+    :param str or None chain: Protein chain to loaded
+    :param str or None atoms: Atom to be selected in the
+    :param str or None model: Select the PDB entity, like in structures determined by NMR
+    :param bool add_validation: Attach the PDB validation table
+    :param bool sequence_check='raise': Whether to compare sequence from different sources.
+    Choose from raise, warn or ignore.
+    :param bool drop_empty_cols: Whether to drop columns without positional information
+    :param bool add_ensembl_variants: Whether to add variant table from Ensembl
+    :param bool add_annotation: Whether to add variant table from Ensembl
+    :param bool add_uniprot_variants: Whether to add  variant table from UniProt
     :rtype: pandas.DataFrame
-    :param add_validation: join the PDB validation table?
-    :param uniprot_id: gives sifts best representative for this UniProt entry
-    :param pdb_id: Entry to be parsed
-    :param chain: Protein chain to be parsed
-    :param model: Which entity to use? Useful for multiple entities protein
-    structures determined by NMR
-    :param validate: Checks whether sequence is the same in all tables
-    :type uniprot_variants: bool
+
     """
     if not any((uniprot_id, pdb_id)):
-        raise TypeError("One of the following arguments is expected:"
-                        "uniprot_id or pdb_id")
+        raise TypeError('One of the following arguments is expected:'
+                        'uniprot_id or pdb_id')
 
-    if chain == 'all':
-        # If we want to fetch all chains we can just find out what chains are
-        # available in the specified PDB and then recursively call `merge_tables`
-        # until we got them all. This should only work for a PDB based query and we
-        # need to ensure that fields like 'chain_id' aren't dropped by 'remove_redundant'
-        if not pdb_id:
-            best_pdb = sifts_best(uniprot_id, first=True)
-            pdb_id = best_pdb['pdb_id']
-            if best_pdb is None:
-                logging.error('Could not process {}'.format(uniprot_id))
-                return None
-            log.info("Best structure: {} for {} ".format(pdb_id, uniprot_id))
-        if remove_redundant:
-            remove_redundant = False
-            log.warning("remove_redundant is ignored when chain='all' and is set to False")
+    if model != 'first':
+        raise NotImplementedError('Proteofav current implementation ignore alternative models.')
 
-        chain_ids = _rcsb_description(pdb_id, tag='chain', key='id')
-        # TODO transition to chain = None strategy
-        table = DataFrame()
-        for current_chain in chain_ids:
-            table = table.append(merge_tables(uniprot_id=uniprot_id, pdb_id=pdb_id,
-                                              chain=current_chain, model=model,
-                                              validate=validate,
-                                              add_validation=add_validation,
-                                              add_variants=add_variants,
-                                              add_annotation=add_annotation,
-                                              remove_redundant=remove_redundant,
-                                              uniprot_variants=uniprot_variants))
-
-        return table
+    if sequence_check not in ['raise', 'warn ' or 'ignore']:
+        sequence_check = 'raise'
 
     if not pdb_id:
         best_pdb = sifts_best(uniprot_id, first=True)
@@ -88,127 +57,103 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
             return None
         pdb_id = best_pdb['pdb_id']
         chain = best_pdb['chain_id']
-        log.info("Best structure, chain: {}|{} for {} ".format(pdb_id, chain, uniprot_id))
+        log.info('Best structure, chain: {}|{} for {} '.format(pdb_id, chain, uniprot_id))
 
-    cif_table = select_cif(pdb_id, chains=chain, models=model)
-    cif_table['auth_seq_id'] = cif_table.index
+    cif_table = select_cif(pdb_id, chains=chain, models=model, atoms=atoms)
 
     dssp_table = select_dssp(pdb_id, chains=chain)
-    if dssp_table.index.dtype == 'O' and cif_table.index.dtype != 'O':
-        dssp_table.index = dssp_table.index.astype(int)
 
-    table = cif_table.join(dssp_table)
+    cif_table.loc[:, 'label_seq_id'] = cif_table.loc[:, 'label_seq_id'].astype(int)
+    table = cif_table.merge(dssp_table, how='left',
+                            left_on=['auth_seq_id', 'auth_asym_id'],
+                            right_on=['icode', 'chain_id'])
 
-    if validate:
-        if not table['aa'].any():
-            raise ValueError('Empty DSSP sequence cannot be validated')
-        if not table['label_comp_id'].any():
-            raise ValueError('Empty Cif sequence cannot be validated')
-        table['dssp_aa'] = table.aa
-        # DSSP disulfite bonding cyteines as lower-cased pairs
-        # mask nans since they are not comparable
-        mask = table['dssp_aa'].isnull()
-        dssp_aa = table.dssp_aa.fillna('X')
-        lower_cased_aa = dssp_aa.str.islower()
+    if sequence_check == 'ignore' or atoms is None:
+        # sequence check not support for multiple atoms
+        pass
+    else:
+        # exchange lower cased aa's for  for cysteines
+        lower_cased_aa = table['aa'].str.islower()
         if lower_cased_aa.any():
-            table.loc[lower_cased_aa, 'dssp_aa'] = "C"
-        table['cif_aa'] = table['label_comp_id']
-        mask |= table['cif_aa'].isnull()
-        # mask the X in DSSP since you can't compare those
-        mask |= table.dssp_aa == 'X'
-        # From three letter to single letters or X if not a standard aa
-        table['cif_aa'] = table['cif_aa'].apply(to_single_aa.get, args='X')
+            table.loc[lower_cased_aa, 'aa'] = 'C'
+
+        mask = table['label_comp_id'].isnull() | table['aa'].isnull()
+        mask |= table['aa'] == 'X'
+        cif_seq = table['label_comp_id'].apply(to_single_aa.get, args='X')
+        dssp_seq = table['aa']
+
         # Check if the sequences are the same
-        if not (table['dssp_aa'][~mask] == table['cif_aa'][~mask]).all():
-            err = '{}|{} Cif and DSSP files have different sequences.'
-            raise ValueError(err.format(pdb_id, chain))
+        if not (dssp_seq[~mask] == cif_seq[~mask]).all():
+            log_msg = '{}|{} Cif and DSSP files have different sequences.'.format(pdb_id, chain)
+            if sequence_check == 'raise':
+                raise ValueError(log_msg)
+            else:
+                log.warn(log_msg)
 
     sifts_table = select_sifts(pdb_id, chains=chain)
     try:
         sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(int)
-        # TODO: Shouldn't the index be strictly defined no matter what?
-        sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+        table = sifts_table.merge(table, how='left',
+                                  left_on=['PDB_dbResNum', 'PDB_dbChainId'],
+                                  right_on=['auth_seq_id', 'auth_asym_id'])
+
     except ValueError:
-        # Means it has alpha numeric insertion code, use something else as index
-        sifts_table.set_index(['PDB_dbResNum'], inplace=True)
+        # PDB resnumber has a insertion code
         table.pdbx_PDB_ins_code = table.pdbx_PDB_ins_code.replace('?', '')
-
         table['index'] = table.auth_seq_id.astype(str) + table.pdbx_PDB_ins_code
-        # See Above
-        table.set_index(['index'], inplace=True)
+        table = table.merge(sifts_table, how='left',
+                            left_on=['index', 'auth_asym_id'],
+                            right_on=['PDB_dbResNum', 'PDB_dbChainId'])
 
-    # Sift data in used as base to keep not observed residues info.
-    # TODO: this is inconsistent with other joins; should table be left?
-    table = sifts_table.join(table)
-    if validate:
-        if not table['REF_dbResName'].any():
-            raise ValueError('Empty Sifts sequence cannot be validated')
-        # Mask here because Sifts conserve missing residues and other data don't
-        mask = table.cif_aa.isnull()
-        table['sifts_aa'] = table['REF_dbResName']
-        table['sifts_aa'] = table['sifts_aa'].apply(to_single_aa.get, args='X')
-        mask = mask | table['sifts_aa'].isnull()
+    if sequence_check == 'ignore' or atoms is None:
+        pass
+    else:
+        # Update reference sequence with the new table
+        mask = table['auth_comp_id'].isnull() | table['PDB_dbResName'].isnull()
+        cif_seq = table['auth_comp_id'].apply(to_single_aa.get, args='X')
+        sifts_seq = table['PDB_dbResName'].apply(to_single_aa.get, args='X')
 
         # Check if the sequences are the same
-        if not (table['cif_aa'][~mask] == table['sifts_aa'][~mask]).all():
-            err = '{}|{} Cif and Sifts files have different sequences '
-            raise ValueError(err.format(pdb_id, chain))
+        if not (sifts_seq[~mask] == cif_seq[~mask]).all():
+            log_msg = '{}|{} Cif and Sifts files have different sequences.'.format(pdb_id, chain)
+            if sequence_check == 'raise':
+                raise ValueError(log_msg)
+            else:
+                log.warn(log_msg)
+
     if add_validation:
         validation_table = select_validation(pdb_id, chains=chain)
-        validation_table.loc[:, 'val_resnum'] = validation_table.loc[:, 'val_resnum'].astype(int)
-        validation_table.set_index(['val_resnum'], inplace=True)
-        table = table.join(validation_table)
-        if not table['val_resname'].any():
-            raise ValueError('The validation file has empty sequence and cannot  be validated')
-        mask = table['cif_aa'].isnull()
-        table['val_aa'] = table['val_resname']
-        table['val_aa'] = table['val_aa'].apply(to_single_aa.get, args='X')
-        mask = mask | table['val_aa'].isnull()
-        if not (table['cif_aa'][~mask] == table['val_aa'][~mask]).all():
-            err = '{}|{} Cif and validation files have different sequences '
-            raise ValueError(err.format(pdb_id, chain))
+        validation_table.loc[:, 'validation_resnum'] = validation_table.loc[:,
+                                                       'validation_resnum'].astype(int)
+        table = table.merge(table, how='left',
+                            left_on=['PDB_dbResNum', 'PDB_dbChainId'],
+                            right_on=['validation_resnum', 'validation_chain'])
 
-    # Table preparations before adding variants
-    table[["UniProt_dbResNum"]] = table[["UniProt_dbResNum"]].astype(float)
-    no_mapped_uniprot = table[table.UniProt_dbAccessionId.isnull()]
-
-    if add_variants:
-        grouped_table = table.groupby('UniProt_dbAccessionId')
-        new_table = DataFrame()
-        for structure_uniprot, part_table in grouped_table:
-            variants_table = select_uniprot_variants(structure_uniprot)
-            variants_table[["start"]] = variants_table[["start"]].astype(float)
-            part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
-            merged_table = part_table.merge(variants_table, left_on="UniProt_dbResNum", right_on="start", how="left")
-            if new_table.empty:
-                col_order = merged_table.columns.tolist()  # Get the column order once
-            new_table = new_table.append(merged_table)
-        table = new_table.append(no_mapped_uniprot)[col_order]
-        table.set_index(['PDB_dbResNum'], inplace=True)
-
-    if uniprot_variants:
-        grouped_table = table.groupby('UniProt_dbAccessionId')
-        new_table = DataFrame()
-        for structure_uniprot, part_table in grouped_table:
-            variants = _fetch_uniprot_variants(structure_uniprot)
-            part_table = part_table.reset_index()  # Gives access to UniProt_dbResNum
-            merged_table = part_table.merge(variants, on='UniProt_dbResNum', how='left')
-            if new_table.empty:
-                col_order = merged_table.columns.tolist()  # Get the column order once
-            new_table = new_table.append(merged_table)
-        table = new_table.append(no_mapped_uniprot)[col_order]
-        table.set_index(['PDB_dbResNum'], inplace=True)
+    variant_features = []
+    if add_ensembl_variants:
+        variant_features.extend(['ensembl_somatic', 'ensembl_germline'])
+    if add_uniprot_variants:
+        variant_features.append(['uniprot'])
+    if variant_features:
+        for identifier in table['UniProt_dbAccessionId'].dropna().unique():
+            variants_table = select_variants(identifier, features=variant_features)
+            variants_table.reset_index(inplace=True)
+            variants_table['UniProt_dbAccessionId'] = identifier
+            variants_table.rename(columns={'start': 'UniProt_dbResNum'}, inplace=True)
+            table = table.merge(variants_table, how='left',
+                                on=['UniProt_dbResNum', 'UniProt_dbAccessionId'])
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
             uniprot_annotation = map_gff_features_to_sequence(identifier)
-            uniprot_annotation.index = uniprot_annotation.index.astype(float)
-            table = table.reset_index().merge(uniprot_annotation, how='left',
-                                              on="UniProt_dbResNum")
-            table.set_index(['PDB_dbResNum'], inplace=True)
+            uniprot_annotation.reset_index(inplace=True)
+            uniprot_annotation['UniProt_dbAccessionId'] = identifier
+            uniprot_annotation.rename(columns={'index': 'UniProt_dbResNum'}, inplace=True)
+            table = table.merge(uniprot_annotation, how='left',
+                                on=['UniProt_dbAccessionId', 'UniProt_dbResNum'])
 
     # non-positional information goes to an attribute
-    if remove_redundant:
+    if drop_empty_cols:
         for col in table:
             try:
                 value = table[col].dropna().unique()
@@ -227,5 +172,4 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, model='first',
 
 
 if __name__ == '__main__':
-    X = merge_tables(pdb_id='4v9d', chain='BD')
-    print(X.head())
+    pass

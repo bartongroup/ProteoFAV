@@ -74,41 +74,13 @@ class TestTableMerger(unittest.TestCase):
                    'occupancy': 'unique', 'B_iso_or_equiv': 'unique',
                    'id': 'unique'}
         self.cif = self.cif.groupby('auth_seq_id').agg(groupby)
-        n_cols = self.sifts.shape[1] + self.dssp.shape[1] + self.cif.shape[
-            1] + 2
-        # self.assertEqual(data.shape[1], n_cols,
-        #                  "Incorrect number of cols in camIV table in CA mode:"
-        #                  "{} instead {}.".format(data.shape[1], n_cols))
-        # this test is very unstable to number of columns return by cif
-        # TODO: improve this
-
-    # def test_camIV_list_mode(self):
-    #     pass
-    #
-    # def test_camIV_centroid_mode(self):
-    #     pass
-    #
-    # def test_dssp_3ovv(self):
-    #     pass
-    #
-    # def test_sift_3edv(self):
-    #     """
-    #     Example dbResNum is a string, therefore was not merging.
-    #     :return:
-    #     """
-    #     pass
 
     def test_merge_4ibw_A_with_alt_loc(self):
         """
         Test case in a structure with alt locations.
         """
-        # (81, 'P63094', 51, '3c16', 'C', 52,
-        # ValueError("invalid literal for long() with base 10: '63A'",))
         data = self.merge_table(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
-        self.sifts_path = path.join(path.dirname(__file__), "SIFTS/4ibw.xml")
-        self.sifts = self.sifts_to_table(self.sifts_path)
-        self.assertEqual(self.sifts.shape[0], data.shape[0])
 
     def test_merge_3mn5_with_insertion_code(self):
         """
@@ -130,37 +102,45 @@ class TestTableMerger(unittest.TestCase):
         self.assertFalse(data.empty)
 
     def test_merge_3fqd_A_no_pdbe_label_seq_id(self):
-        self.data = self.merge_table(pdb_id='3fqd', chain='A', validate=True)
+        self.data = self.merge_table(pdb_id='3fqd', chain='A')
         self.assertFalse(self.data.empty)
 
     def test_merge_3ehk_D_lowercased_dssp(self):
-        self.data = self.merge_table(pdb_id='3ehk', chain='D', validate=True)
+        self.data = self.merge_table(pdb_id='3ehk', chain='D')
         self.assertFalse(self.data.empty)
 
-    # !FIXME
     @unittest.expectedFailure
     def test_merge_4v9d_BD_excessive_chains(self):
-        data = self.merge_table(pdb_id='4v9d', chain='BD', validate=True)
+        """
+        DSSP files does not have BD chain. What can be done is mapping the Cif sequence to the
+        order of chain in DSSP but merge_tables won't support that by default.
+        """
+        data = self.merge_table(pdb_id='4v9d', chain='BD')
         self.assertFalse(data.empty)
 
     def test_merge_4abo_A_DSSP_missing_first_residue(self):
-        data = self.merge_table(pdb_id='4abo', chain='A', validate=True)
+        data = self.merge_table(pdb_id='4abo', chain='A')
         self.assertFalse(data.empty)
 
     def test_merge_4why_K_DSSP_index_as_object(self):
-        data = self.merge_table(pdb_id='4why', chain='K', validate=True)
+        data = self.merge_table(pdb_id='4why', chain='K')
         self.assertFalse(data.empty)
 
     def test_merge_2pm7_D_missing_residue_DSSP(self):
-        data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
+        data = self.merge_table(pdb_id='2pm7', chain='D')
         self.assertFalse(data.empty)
 
-    # !FIXME
     def test_merge_4myi_A_fail(self):
-        # TODO can we save it?
-        data = self.merge_table(pdb_id='2pm7', chain='D', validate=True)
-        # DSSP and Cif unaligned
-        # self.assertRaises(ValueError)
+        data = self.merge_table(pdb_id='2pm7', chain='D')
+        self.assertFalse(data.empty)
+
+        # TODO assert fails graciously without data
+        # TODO sequence_check='raise' assert raise
+        # TODO sequence_check='raise' assert warn
+        # TODO test_camIV_list_mode(self):
+        # TODO test_camIV_centroid_mode(self):
+        # TODO def test_dssp_3ovv(self):
+        # TODO def test_sift_3edv(self): Example dbResNum is a string, therefore was not merging.
 
 
 if __name__ == '__main__':

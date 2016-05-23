@@ -9,17 +9,17 @@ for better error handling. Both levels are covered by test cases.
 """
 
 import logging
-import pandas as pd
-from os import path
-from lxml import etree
 from StringIO import StringIO
+from os import path
+
+import pandas as pd
+from lxml import etree
 from requests import HTTPError
 from scipy.spatial import cKDTree
 
-
 from .config import defaults
-from .utils import fetch_files, get_url_or_retry
 from .library import scop_3to1
+from .utils import fetch_files, get_url_or_retry
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def _dssp(filename):
     if dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
-                filename))
+            filename))
     return dssp_table
 
 
@@ -133,7 +133,7 @@ def _sifts_residues(filename, cols=None):
                             # renaming all keys with dbSource prefix
                             try:
                                 k = "{}_{}".format(
-                                        annotation.attrib["dbSource"], k)
+                                    annotation.attrib["dbSource"], k)
                             except KeyError:
                                 k = "{}_{}".format("REF", k)
 
@@ -274,7 +274,7 @@ def _table_selector(table, column, value):
 
     if table.empty:
         raise ValueError('Column {} does not contain {} value(s)'.format(
-                column, value))
+            column, value))
     return table
 
 
@@ -332,8 +332,7 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
     try:
         cif_table = _mmcif_atom(cif_path)
     except IOError:
-        cif_path = fetch_files(pdb_id, sources='cif',
-                               directory=defaults.db_mmcif)[0]
+        cif_path = fetch_files(pdb_id, sources='cif', directory=defaults.db_mmcif)[0]
         cif_table = _mmcif_atom(cif_path)
 
     # select the models
@@ -357,32 +356,16 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
         cif_table = _residues_as_centroid(cif_table)
     elif atoms == 'backbone_centroid':
         cif_table = _table_selector(
-                cif_table, 'label_atom_id', ('CA', 'N', 'C', 'O'))
+            cif_table, 'label_atom_id', ('CA', 'N', 'C', 'O'))
         cif_table = _residues_as_centroid(cif_table)
     elif atoms:
         cif_table = _table_selector(cif_table, 'label_atom_id', atoms)
 
-    # from here we treat the corner cases for duplicated ids
-    # in case of alternative id, use the ones with maximum occupancy
-    if len(cif_table.label_alt_id.unique()) > 1:
-        idx = cif_table.groupby(['auth_seq_id']).occupancy.idxmax()
-        cif_table = cif_table.ix[idx]
-
-    # in case of insertion code, add it to the index
-    if len(cif_table.pdbx_PDB_ins_code.unique()) > 1:
-        cif_table['pdbx_PDB_ins_code'].replace("?", "", inplace=True)
-        cif_table['auth_seq_id'] = (cif_table['auth_seq_id'].astype(str) +
-                                    cif_table['pdbx_PDB_ins_code'])
-
-    # otherwise try using the pdbe_label_seq_id
-    if 'pdbe_label_seq_id' in cif_table:
-        if cif_table['pdbe_label_seq_id'].duplicated().any():
-            cif_table['auth_seq_id'] = cif_table['pdbe_label_seq_id']
-
     # id is the atom identifier and it is need for all atoms tables.
     if cif_table[UNIFIED_COL + ['id']].duplicated().any():
         log.error('Failed to find unique index for {}'.format(cif_path))
-    return cif_table.set_index(['auth_seq_id'])
+
+    return cif_table
 
 
 def select_dssp(pdb_id, chains=None):
@@ -410,15 +393,19 @@ def select_dssp(pdb_id, chains=None):
             # chain identifier, as 4v9d.
             dssp_table = _import_dssp_chains_ids(pdb_id)
             dssp_table = _table_selector(dssp_table, 'chain_id', chains)
+    # remove dssp line of transition between chains
+    dssp_table = dssp_table[dssp_table.aa != '!']
 
-    if dssp_table.index.name == 'icode':
-        if dssp_table.index.duplicated().any():
-            log.info('DSSP file for {} has not unique index'.format(pdb_id))
-        return dssp_table
-
-    if chains and dssp_table.icode.duplicated().any():
+    dssp_table.reset_index(inplace=True)
+    if dssp_table.duplicated(['icode', 'chain_id']).any():
         log.info('DSSP file for {} has not unique index'.format(pdb_id))
-    return dssp_table.set_index(['icode'])
+    try:
+        dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(int)
+    except ValueError:
+        log.warn("{} insertion code detected in the DSSP file.".format(pdb_id))
+        dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(str)
+
+    return dssp_table
 
 
 def select_sifts(pdb_id, chains=None):
@@ -438,10 +425,10 @@ def select_sifts(pdb_id, chains=None):
                                 directory=defaults.db_sifts)[0]
         sift_table = _sifts_residues(sift_path)
         # standardise column types
-        for col in sift_table:
-            #  bool columns
-            if col.startswith('is'):
-                sift_table[col].fillna(False)
+    for col in sift_table:
+        #  bool columns
+        if col.startswith('is'):
+            sift_table[col].fillna(False)
     if chains is None:
         return sift_table
     else:
@@ -466,7 +453,7 @@ def select_validation(pdb_id, chains=None):
     if chains:
         val_table = _table_selector(val_table, 'chain', chains)
     if not val_table.empty:
-        val_table.columns = ["val_" + name for name in val_table.columns]
+        val_table.columns = ["validation_" + name for name in val_table.columns]
         return val_table
     raise ValueError('Parsing {} resulted in a empty table'.format(val_path))
 
@@ -493,4 +480,5 @@ def sifts_best(uniprot_id, first=False):
 
 
 if __name__ == '__main__':
-    X = select_dssp('4v9d', chains='BD')
+    pass
+    # X = select_dssp('4v9d', chains='BD')

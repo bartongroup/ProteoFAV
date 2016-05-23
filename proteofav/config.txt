@@ -1,13 +1,11 @@
 # example config file
 [Global]
-db_pdb = /tmp/
-db_mmcif = /tmp/
-db_dssp = /tmp/
-db_sifts = /tmp/
-db_validation = /tmp/
-db_germline_variants = /tmp/
-db_somatic_variants = /tmp/
-tmp = /tmp/
+db_pdb = /Volumes/tbrittoborges/NOBACK/pdb_files/
+db_mmcif = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/mmcif/
+db_sifts = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/sifts_xml/
+db_dssp = /Volumes/gjb/db/NOBACK/local_databases/dssp/
+db_germline_variants = /Volumes/tbrittoborges/NOBACK/variants/from_proteofav
+db_somatic_variants = /Volumes/tbrittoborges/NOBACK/variants/from_proteofav
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/
@@ -20,26 +18,10 @@ cif_fetch = http://www.ebi.ac.uk/pdbe/entry-files/
 dssp_fetch = ftp://ftp.cmbi.ru.nl//pub/molbio/data/dssp/
 sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 validation_fetch = http://www.ebi.ac.uk/pdbe/entry-files/download/
-uniprot_fetch = http://www.uniprot.org/uniprot/
 
 [Variables]
-contact_email = user@proteofav.com
+contact_email = tbrittoborges@dundee.ac.uk
 cif_extension = _updated.cif
 dssp_extension = .dssp
 sifts_extension = .xml.gz
 validation_extension = _validation.xml
-gff_extension = .gff
-fasta_extension = .fasta
-
-
-# Not used at the moment
-#api_cath = http://www.cathdb.info/version/v4_0_0/api/rest/superfamily/
-#web_cath = http://www.cathdb.info/version/v4_0_0/superfamily/
-#rsync_pdb = rsync.ebi.ac.uk::pub/databases/rcsb/pdb/data/structures/divided/pdb/
-#rsync_cif = rsync.ebi.ac.uk::pub/databases/rcsb/pdb/data/structures/divided/mmCIF/
-#rsync_sifts = rsync.ebi.ac.uk::pub/databases/msd/sifts/split_xml/
-#rsync_dssp = rsync.cmbi.ru.nl::dssp/
-#ftp_sifts = ftp.ebi.ac.uk/pub/databases/msd/sifts/text/
-#ftp_obsolete = ftp.ebi.ac.uk/pub/databases/rcsb/pdb/data/status/obsolete.dat
-#http_uniprot_mapping = http://www.uniprot.org/mapping/
-#http_pdbe = http://www.ebi.ac.uk/pdbe/entry/pdb/
