@@ -122,7 +122,9 @@ class TestMMCIFParser(unittest.TestCase):
 
         # method == 1
         log.info("Method 1")
-        data = self.bio_unit_builder(self.example_mmcif,
+        info = self.mmcif_info_parser(self.example_mmcif)
+        cif = self.mmcif_atom_parser(self.example_mmcif)
+        data = self.bio_unit_builder(cif, info,
                                      most_likely=True,
                                      method=1)
 
@@ -143,7 +145,7 @@ class TestMMCIFParser(unittest.TestCase):
 
         # method == 2
         log.info("Method 2")
-        data = self.bio_unit_builder(self.example_mmcif,
+        data = self.bio_unit_builder(cif, info,
                                      most_likely=True,
                                      method=2)
 
@@ -164,7 +166,7 @@ class TestMMCIFParser(unittest.TestCase):
 
         # method == 3
         log.info("Method 3")
-        data = self.bio_unit_builder(self.example_mmcif,
+        data = self.bio_unit_builder(cif, info,
                                      most_likely=True,
                                      method=3)
 

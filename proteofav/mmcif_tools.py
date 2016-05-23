@@ -12,6 +12,32 @@ import pandas as pd
 from .structures import _mmcif_atom
 
 
+def _mmcif_tokenize(handle):
+    for line in handle:
+        if line.startswith("#"):
+            continue
+        elif line.startswith(";"):
+            token = line[1:].strip()
+            for line in handle:
+                line = line.strip()
+                if line == ';':
+                    break
+                token += line
+            yield token
+        else:
+            try:
+                tokens = shlex.split(line)
+            except ValueError:
+                # error "No closing quotation"
+                line = line.replace("'", '"')
+                # if odd - add a closing " to that line
+                if not line.count('"') % 2 == 0:
+                    line = '{}"'.format(line)
+                tokens = shlex.split(line)
+            for token in tokens:
+                yield token
+
+
 def _mmcif_info_to_dict(filename):
     """
     Parse a mmCIF file and return a ordered dictionaries
@@ -21,34 +47,6 @@ def _mmcif_info_to_dict(filename):
     :param filename: input CIF file
     :return: OrderedDict with main and leading keys
     """
-
-    if not path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
-
-    def _mmcif_tokenize(handle):
-        for line in handle:
-            if line.startswith("#"):
-                continue
-            elif line.startswith(";"):
-                token = line[1:].strip()
-                for line in handle:
-                    line = line.strip()
-                    if line == ';':
-                        break
-                    token += line
-                yield token
-            else:
-                try:
-                    tokens = shlex.split(line)
-                except ValueError:
-                    # error "No closing quotation"
-                    line = line.replace("'", '"')
-                    # if odd - add a closing " to that line
-                    if not line.count('"') % 2 == 0:
-                        line = '{}"'.format(line)
-                    tokens = shlex.split(line)
-                for token in tokens:
-                    yield token
 
     ordict = OrderedDict()
     with open(filename) as handle:
@@ -197,19 +195,19 @@ def _bio_unit_prepare_operation(operations, index1, index2):
     return operation
 
 
-def _get_mmcif_bio_units(filename, most_likely=True):
+def _get_mmcif_bio_units(cif_info, most_likely=True):
     """
     Method to get the most likely entry from a set of different
     likely biological assemblies. If most_likely is false gets the
     first available biological unit, if any.
 
-    :param filename: input CIF file
+    :param cif_info: parse info dictionary
     :param most_likely: apply simple rules to find the most likely bio unit
     :return:
     """
 
     # get the information dictionary
-    info = _mmcif_info_to_dict(filename)
+    info = cif_info
 
     # describes possible macromolecular assemblies
     try:
@@ -280,11 +278,12 @@ def _get_mmcif_bio_units(filename, most_likely=True):
     return n_assembly, n_assembly_gen, oper_list
 
 
-def _bio_unit_to_table(filename, most_likely=True, method=1):
+def _bio_unit_to_table(cif_table, cif_info, most_likely=True, method=1):
     """
     Generates a most likely biological assembly for the provided structure.
 
-    :param filename: input CIF file
+    :param cif_table: pandas table
+    :param cif_info: parsed info dict
     :param most_likely: apply simple rules to find the most likely bio unit
     :param method: defaults to 1 = Chain id goes from A to A.1, A.2
                                2 = Model is incremented from 1 to 1 and 2
@@ -293,7 +292,7 @@ def _bio_unit_to_table(filename, most_likely=True, method=1):
     """
 
     # get the atom lines from mmCIF file
-    atom_site_ref = _mmcif_atom(filename)
+    atom_site_ref = cif_table
     # get attributes
     attributes = atom_site_ref.columns.values
     # add a new column with Biological Unit Counter
@@ -302,7 +301,7 @@ def _bio_unit_to_table(filename, most_likely=True, method=1):
         attributes.append('bio_unit_counter')
 
     # get the biological assemblies from mmCIF file
-    assembly, assembly_gen, oper_list = _get_mmcif_bio_units(filename,
+    assembly, assembly_gen, oper_list = _get_mmcif_bio_units(cif_info,
                                                              most_likely=most_likely)
 
     if not assembly and not assembly_gen and not oper_list:
@@ -334,11 +333,11 @@ def _bio_unit_to_table(filename, most_likely=True, method=1):
         oper.append(oper_expression)
 
     # handles multiple operation assemblies, no Cartesian products (e.g., "(1-5)")
-    if parenCount == 1:
+    elif parenCount == 1:
         oper.extend(_bio_unit_parse_operation_expression(oper_expression))
 
     # handles Cartesian product expressions (e.g., "(X0)(1-60)")
-    if parenCount == 2:
+    elif parenCount == 2:
         # Break the expression into two parenthesized expressions and parse them
         temp = oper_expression.find(")")
         oper.extend(_bio_unit_parse_operation_expression(oper_expression[0:temp + 1]))
