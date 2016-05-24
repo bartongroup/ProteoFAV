@@ -10,7 +10,7 @@ from mock import patch
 
 from proteofav.config import Defaults
 from proteofav.main import merge_tables
-from proteofav.structures import _dssp, _sifts_residues, _mmcif_atom
+from proteofav.structures import _dssp, _sifts_residues_regions, _mmcif_atom
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class TestTableMerger(unittest.TestCase):
         """Initialize the framework for testing."""
 
         self.cif_to_table = _mmcif_atom
-        self.sifts_to_table = _sifts_residues
+        self.sifts_to_table = _sifts_residues_regions
         self.dssp_to_table = _dssp
 
         self.merge_table = merge_tables

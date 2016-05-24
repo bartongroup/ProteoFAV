@@ -85,94 +85,138 @@ def _mmcif_atom(filename, delimiter=None):
     return table
 
 
-def _sifts_residues(filename, cols=None):
+def _sifts_residues_regions(filename, cols=None,
+                            sources=('CATH', 'SCOP', 'Pfam', 'InterPro')):
     """
     Parses the residue fields of a SIFTS XML file to a pandas DataFrame.
 
     :param filename: input SIFTS xml file
+    :param cols: option to select a columns (post-parsing)
+    :param sources: option to select SIFTS dbSources
     :return: pandas table dataframe
     """
+
     # parsing sifts segments
     tree = etree.parse(filename)
     root = tree.getroot()
     namespace = root.nsmap[None]
-    nsmap = {'ns': namespace}
+    namespace_map = {'ns': namespace}
     cross_reference = "{{{}}}crossRefDb".format(namespace)
     residue_detail = "{{{}}}residueDetail".format(namespace)
+    db_reference = "{{{}}}db".format(namespace)
+    # db_detail = "{{{}}}dbDetail".format(namespace)
     rows = []
-    reference = root.attrib['dbCoordSys']
 
-    for segment in root.iterfind('.//ns:entity[@type="protein"]',
-                                 namespaces=nsmap):
-        for list_residue in segment.iterfind('.//ns:listResidue',
-                                             namespaces=nsmap):
-            for residue in list_residue:
-                # get residue annotations
-                residue_annotation = {}
-                # key, value pairs
-                for k, v in residue.attrib.items():
-                    # skipping dbSource
-                    if k == 'dbSource':
-                        continue
-                    # renaming all keys with dbSource prefix
-                    try:
-                        k = "{}_{}".format(residue.attrib["dbSource"], k)
-                    except KeyError:
-                        k = "{}_{}".format("REF", k)
-                    # adding to the dictionary
-                    residue_annotation[k] = v
-                # parse extra annotations for each residue
-                for annotation in residue:
-                    for k, v in annotation.attrib.items():
-                        # crossRefDb entries
-                        if annotation.tag == cross_reference:
-                            # skipping dbSource
-                            if k == 'dbSource':
-                                continue
+    sources += ('PDB', 'UniProt')
 
-                            # renaming all keys with dbSource prefix
-                            try:
-                                k = "{}_{}".format(
-                                    annotation.attrib["dbSource"], k)
-                            except KeyError:
-                                k = "{}_{}".format("REF", k)
+    for segment_list in root.iterfind('.//ns:entity[@type="protein"]',
+                                      namespaces=namespace_map):
 
-                        # residueDetail entries
-                        elif annotation.tag == residue_detail:
-                            if annotation.attrib["property"] == 'Annotation':
-                                k = 'is ' + annotation.text.lower()
-                                k = k.replace(' ', '_')
-                                v = True
-                            else:
-                                k = "_".join([annotation.attrib["dbSource"],
-                                              annotation.attrib["property"]])
+        entity_id = segment_list.attrib['entityId']
+        for segment in segment_list:
+            # 1st parse the regions found for this segment
+            regions_full = {}
+            for region_list in segment.iterfind('.//ns:listMapRegion',
+                                                namespaces=namespace_map):
+                region_source = {}
+                for region in region_list:
+                    # get region annotations
+                    # parse extra annotations for each region
+                    for annotation in region:
+                        for k, v in annotation.attrib.items():
+                            # db entries
+                            if annotation.tag == db_reference:
+                                if k == 'dbSource' and v in sources:
+                                    source = v
+                                else:
+                                    continue
+
+                                if source not in region_source:
+                                    region_source[source] = []
+                                try:
+                                    coord = annotation.attrib['dbCoordSys']
+                                except KeyError:
+                                    coord = '-'
+                                region_source[source].append([annotation.attrib['dbAccessionId'],
+                                                              region.attrib['start'],
+                                                              region.attrib['end'],
+                                                              coord])
+                regions_full[entity_id] = region_source
+
+            # 2nd parse each residue and
+            for list_residue in segment.iterfind('.//ns:listResidue',
+                                                 namespaces=namespace_map):
+                for residue in list_residue:
+                    # get residue annotations
+                    residue_annotation = {}
+                    # key, value pairs
+                    for k, v in residue.attrib.items():
+                        # skipping dbSource
+                        if k == 'dbSource' or k == 'dbCoordSys' or k == 'dbResName':
+                            continue
+
+                        k = "PDB_index"
+                        # adding to the dictionary
+                        residue_annotation[k] = v
+                        resnum = int(v)
+
+                    # parse extra annotations for each residue
+                    for annotation in residue:
+                        for k, v in annotation.attrib.items():
+                            # crossRefDb entries
+                            if annotation.tag == cross_reference:
+                                if annotation.attrib["dbSource"] in sources:
+                                    # skipping dbSource
+                                    if k == 'dbSource' or k == 'dbCoordSys':
+                                        continue
+                                    if (annotation.attrib["dbSource"] != "PDB" and
+                                            annotation.attrib["dbSource"] != "UniProt"):
+                                        if k == 'dbResName' or k == 'dbResNum' or k == 'dbChainId':
+                                            continue
+                                    if annotation.attrib["dbSource"] == "PDB" and k == "dbAccessionId":
+                                        continue
+
+                                    # adding a new column with the regionId from the 'regions'
+                                    if k == "dbAccessionId":
+                                        if annotation.attrib["dbSource"] in regions_full[entity_id]:
+                                            for c, entry in enumerate(regions_full[entity_id][annotation.attrib["dbSource"]]):
+                                                if v == entry[0]:
+                                                    start = int(entry[1])
+                                                    end = int(entry[2])
+                                                    if resnum in range(start, end + 1, 1):
+                                                        nk = "{}_regionId".format(annotation.attrib["dbSource"])
+                                                        nv = str(c + 1)
+                                                        residue_annotation[nk] = nv
+
+                                    # renaming all keys with dbSource prefix
+                                    k = "{}_{}".format(
+                                            annotation.attrib["dbSource"], k)
+
+                            if annotation.tag == residue_detail:
+                                k = "PDB_{}".format(annotation.attrib["property"])
                                 # value is the text field in the XML
                                 v = annotation.text
 
-                        # adding to the dictionary
-                        try:
-                            if v in residue_annotation[k]:
-                                continue
-                            residue_annotation[k].append(v)
-                        except KeyError:
-                            residue_annotation[k] = v
-                        except AttributeError:
-                            residue_annotation[k] = [residue_annotation[k]]
-                            residue_annotation[k].append(v)
-                        except TypeError:
-                            # bool column for annotation
-                            residue_annotation[k] = v
+                            # adding to the dictionary
+                            if "_" in k:
+                                try:
+                                    if v in residue_annotation[k]:
+                                        continue
+                                    residue_annotation[k].append(v)
+                                except KeyError:
+                                    residue_annotation[k] = v
+                                except AttributeError:
+                                    residue_annotation[k] = [residue_annotation[k]]
+                                    residue_annotation[k].append(v)
+                                except TypeError:
+                                    # bool column for annotation
+                                    residue_annotation[k] = v
 
-                rows.append(residue_annotation)
+                    rows.append(residue_annotation)
     if cols:
         data = pd.DataFrame(rows, columns=cols)
     else:
         data = pd.DataFrame(rows)
-    data.columns = [
-        # this should come from reference
-        col if not col.startswith("PDBe")
-        else col.replace(reference, "REF")
-        for col in data.columns]
     return data
 
 
@@ -248,6 +292,16 @@ def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
         # TODO: need to assess this
         idx = [j for j in idx if (j <= i - ig or j >= i + ig)]
         nearby.append(idx)
+        # for j in idx:
+        #     chain_i = str(df.loc[i, 'auth_asym_id'])
+        #     chain_j = str(df.loc[j, 'auth_asym_id'])
+        #     if chain_i != chain_j:
+        #
+        #         cont = [df.loc[i, ['auth_asym_id', 'auth_seq_id',
+        #                            'pdbx_PDB_ins_code', 'auth_comp_id' ]],
+        #                 df.loc[j, ['auth_asym_id', 'auth_seq_id',
+        #                            'pdbx_PDB_ins_code', 'auth_comp_id' ]]]
+        #         contacts.append(cont)
 
     df['contacts'] = nearby
     return df
@@ -416,14 +470,14 @@ def select_sifts(pdb_id, chains=None):
     :param chains: Protein structure chain
     :return: table read to be merged
     """
-    sift_path = path.join(defaults.db_sifts, pdb_id + '.xml')
+    sifts_path = path.join(defaults.db_sifts, pdb_id + '.xml')
 
     try:
-        sift_table = _sifts_residues(sift_path)
+        sift_table = _sifts_residues_regions(sifts_path)
     except IOError:
-        sift_path = fetch_files(pdb_id, sources='sifts',
+        sifts_path = fetch_files(pdb_id, sources='sifts',
                                 directory=defaults.db_sifts)[0]
-        sift_table = _sifts_residues(sift_path)
+        sift_table = _sifts_residues_regions(sifts_path)
         # standardise column types
     for col in sift_table:
         #  bool columns
@@ -470,7 +524,7 @@ def sifts_best(uniprot_id, first=False):
     url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
     try:
         response = get_url_or_retry(url, json=True)
-    except HTTPError, e:
+    except HTTPError as e:
         if e.response.status_code == 404:
             logging.error('No SIFTS mapping found for {}'.format(uniprot_id))
             return None

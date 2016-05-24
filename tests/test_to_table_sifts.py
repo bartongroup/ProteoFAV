@@ -5,8 +5,8 @@
 import unittest
 from os import path
 
-from proteofav.structures import _sifts_residues, sifts_best
-from proteofav.utils import (_sifts_regions, _pdb_uniprot_sifts_mapping,
+from proteofav.structures import _sifts_residues_regions, sifts_best
+from proteofav.utils import (_pdb_uniprot_sifts_mapping,
                              _uniprot_pdb_sifts_mapping)
 
 
@@ -16,8 +16,7 @@ class TestSIFTSParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_xml = path.join(path.dirname(__file__), "SIFTS/2pah.xml")
-        self.residues_parser = _sifts_residues
-        self.regions_parser = _sifts_regions
+        self.residues_parser = _sifts_residues_regions
 
         self.pdb_id = '2pah'
         self.uniprot_id = 'P00439'
@@ -30,7 +29,6 @@ class TestSIFTSParser(unittest.TestCase):
 
         self.example_xml = None
         self.residue_parser = None
-        self.region_parser = None
 
         self.pdb_id = None
         self.uniprot_id = None
@@ -38,55 +36,39 @@ class TestSIFTSParser(unittest.TestCase):
         self.uniprot_uniprot = None
         self.pdb_best = None
 
-    def test_to_table_sifts_residues(self):
+    def test_to_table_sifts_residues_and_regions(self):
         """
         Tests the parsing real SIFTS xml files.
-        This test focuses on the method that parses the residue entries.
+        This test focuses on the method that parses the residue entries
+        and the region entries.
 
         Some checks are made to whether the parsed keys and values
         are the ones we are expecting.
         """
 
-        data = self.residues_parser(self.example_xml)
+        data = self.residues_parser(self.example_xml,
+                                    sources=('CATH', 'SCOP', 'Pfam'))
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 670)
 
         # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 38)
+        self.assertEqual(len(data.columns.values), 17)
 
         # check whether there are particular keys
         self.assertIn('CATH_dbAccessionId', data.columns.values)
 
         # check the values for particular entries
         self.assertTrue(data['CATH_dbAccessionId'][0] == '1.10.800.10')
-        self.assertEqual(data['CATH_dbChainId'][0], 'A')
-        self.assertEqual(data['CATH_dbResName'][0], 'VAL')
-
-    def test_to_table_sifts_regions(self):
-        """
-        Tests the parsing real SIFTS xml files.
-        This test focuses on the method that parses the region entries.
-
-        Some checks are made to whether the parsed keys and values
-        are the ones we are expecting.
-        """
-
-        data = self.regions_parser(self.example_xml)
-
-        # number of values per column (or rows)
-        self.assertEqual(len(data), 13)
-
-        # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 24)
+        self.assertEqual(data['PDB_dbChainId'][0], 'A')
+        self.assertEqual(data['PDB_dbResName'][0], 'VAL')
 
         # check whether there are particular keys
-        self.assertIn('PDB_dbAccessionId', data.columns.values)
+        self.assertIn('UniProt_regionId', data.columns.values)
+        self.assertIn('CATH_regionId', data.columns.values)
 
         # check the values of particular entries
-        self.assertTrue(data['PDB_dbAccessionId'][0] == '2pah')
-        self.assertEqual(data['Start'][0], '1')
-        self.assertEqual(data['End'][0], '335')
+        self.assertTrue(data['CATH_regionId'][0] == '1')
 
     def test_to_table_pdb_uniprot_sifts_mapping(self):
         """
