@@ -1,11 +1,11 @@
 # example config file
 [Global]
-db_pdb = /Volumes/tbrittoborges/NOBACK/pdb_files/
-db_mmcif = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/mmcif/
-db_sifts = /Volumes/gjb/fmmarquesmadeira/NOBACK/DB/sifts_xml/
-db_dssp = /Volumes/gjb/db/NOBACK/local_databases/dssp/
-db_germline_variants = /Volumes/tbrittoborges/NOBACK/variants/from_proteofav
-db_somatic_variants = /Volumes/tbrittoborges/NOBACK/variants/from_proteofav
+db_pdb = ...
+db_mmcif = ...
+db_sifts = ...
+db_dssp = ...
+db_germline_variants = ...
+db_somatic_variants = ...
 
 [Addresses]
 api_pdbe = http://www.ebi.ac.uk/pdbe/api/
@@ -21,7 +21,7 @@ sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 validation_fetch = http://www.ebi.ac.uk/pdbe/entry-files/download/
 
 [Variables]
-contact_email = tbrittoborges@dundee.ac.uk
+contact_email = your@email.com
 cif_extension = _updated.cif
 bio_extension = .cif.gz
 dssp_extension = .dssp

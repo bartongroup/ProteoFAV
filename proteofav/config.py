@@ -47,20 +47,21 @@ class Defaults(object):
             raise IOError('Config file {} not available.'.format(config_file))
 
     def __populate_attributes(self):
-        logged_header = False
         for var_name, var_par in self:
-            if var_par == "...":
-                if not logged_header:
-                    logger.warning(" Some parameters in the config.txt file need "
-                                   "to be provided...")
-                    logged_header = True
-                logger.warning(" Update the value for parameter {}"
-                               "...".format(var_name))
             setattr(self, var_name, var_par)
 
     def __iter__(self):
+        logged_header = False
         for section in self.__config.sections():
             for var_name, var_par in self.__config.items(section):
+                if var_par == "...":
+                    if not logged_header:
+                        logger.warning(" Some parameters in the config.txt file need "
+                                       "to be updated...")
+                        logged_header = True
+                    logger.warning(" Update the value for parameter {}"
+                                   "...".format(var_name))
+                    var_par = '/tmp/'
                 yield var_name, var_par
 
     def update(self, config_file):
