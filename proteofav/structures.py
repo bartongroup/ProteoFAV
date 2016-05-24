@@ -19,7 +19,7 @@ from scipy.spatial import cKDTree
 
 from .config import defaults
 from .library import scop_3to1
-from .utils import fetch_files, get_url_or_retry
+from .utils import fetch_files, get_url_or_retry, get_preferred_assembly_id
 
 log = logging.getLogger(__name__)
 
@@ -82,6 +82,62 @@ def _mmcif_atom(filename, delimiter=None):
     # drop the 'esd' entries
     excluded = [x for x in table.columns.values if x.endswith('_esd')]
     table = table.drop(excluded, axis=1)
+    return table
+
+
+def _mmcif_fields(filename, field_name='exptl.',
+                  require_index=False):
+    """
+    Generic method that gets a particular field to pandas table.
+    :param filename: input mmCIF file
+    :param field_name: name of the field to be parsed
+    :param require_index: boolean for when lines need to start with and index ID
+      of any sort
+    :return: Pandas table
+    """
+    header = []
+    lines = []
+    with open(filename) as handle:
+        for line in handle:
+            if line.startswith(field_name):
+                break
+            last_line = line
+
+        if 'loop_' in last_line:
+            while line.startswith(field_name):
+                header.append(line.replace(field_name, '').rstrip())
+                line = handle.next()
+            while not line.startswith('#'):
+                lines.append(line.replace('"', "'"))
+                line = handle.next()
+        else:
+            while line.startswith(field_name):
+                line = line.replace(field_name, '').rstrip()
+                head, data = line.split(None, 1)
+                header.append(head)
+                lines.append(data)
+                line = handle.next()
+            lines = (' '.join(lines)).replace('"', "'")
+
+    if require_index:
+        # requires the lines to start with and index ID
+        nlines = []
+        for e in lines:
+            try:
+                int(e[0:2])
+                e = e.replace('\n', '')
+            except (TypeError, ValueError):
+                pass
+            nlines.append(e)
+        lines = ''.join(nlines)
+    else:
+        lines = ''.join(lines)
+
+    table = pd.read_table(StringIO(lines),
+                          names=header,
+                          delim_whitespace=True,
+                          quotechar="'",
+                          index_col=False)
     return table
 
 
@@ -369,25 +425,46 @@ def _import_dssp_chains_ids(pdb_id):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
+def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA',
+               biounit=False, assembly_id=None):
     """
     Produce table read from mmCIF file.
 
     :param atoms: Which atom should represent the structure
     :param pdb_id: PDB identifier
-    :param pdb_id: PDB identifier
     :param models: protein structure entity
     :param chains: protein structure chain
     :param lines: choice of ATOM, HETATMS or both (list).
+    :param biounit: boolean to use the preferred biounit available
+    :param assembly_id: only applies when biounit is True
     :return: Table read to be joined
     """
-    # load the table
-    cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
-    try:
-        cif_table = _mmcif_atom(cif_path)
-    except IOError:
-        cif_path = fetch_files(pdb_id, sources='cif', directory=defaults.db_mmcif)[0]
-        cif_table = _mmcif_atom(cif_path)
+
+    # asymmetric unit or biological unit?
+    if biounit:
+        if assembly_id is None:
+            # get the preferred bio assembly id from the PDBe API
+            assembly_id = get_preferred_assembly_id(pdb_id)
+
+        # load the table
+        cif_path = path.join(defaults.db_mmcif,
+                             pdb_id + '-assembly-' + assembly_id + '.cif')
+        print(cif_path)
+        try:
+            cif_table = _mmcif_atom(cif_path)
+        except IOError:
+            cif_path = fetch_files(pdb_id + '-assembly-' + assembly_id,
+                                   sources='bio', directory=defaults.db_mmcif)[0]
+            print(cif_path)
+            cif_table = _mmcif_atom(cif_path)
+    else:
+        # load the table
+        cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
+        try:
+            cif_table = _mmcif_atom(cif_path)
+        except IOError:
+            cif_path = fetch_files(pdb_id, sources='cif', directory=defaults.db_mmcif)[0]
+            cif_table = _mmcif_atom(cif_path)
 
     # select the models
     if models:

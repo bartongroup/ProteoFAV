@@ -16,7 +16,6 @@ from os import path
 import numpy as np
 import pandas as pd
 import requests
-from lxml import etree
 
 from .config import defaults
 from .library import valid_ensembl_species_variation
@@ -123,6 +122,52 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
                 filename = filename.replace('.gz', '')
         result.append(destination + filename)
     return result
+
+
+def _fetch_summary_properties_pdbe(pdbid, retry_in=(429,)):
+    """
+    Queries the PDBe api to get summary validation report.
+
+    :param pdbid: PDB ID
+    :param retry_in: http code for retrying connections
+    :return: dictionary
+    """
+    pdbe_endpoint = "pdb/entry/summary/"
+    url = defaults.api_pdbe + pdbe_endpoint + pdbid
+    rows = get_url_or_retry(url, retry_in=retry_in, json=True)
+    return rows
+
+
+def get_preferred_assembly_id(pdbid, verbose=False):
+    """
+    Gets the preferred assembly id for the given PDB ID, from the PDBe API.
+
+    :param pdbid: PDB ID
+    :param verbose: boolean
+    :return: str
+    """
+
+    # getting the preferred biological assembly from the PDBe API
+    try:
+        data = _fetch_summary_properties_pdbe(pdbid)
+    except Exception as e:
+        message = "Something went wrong for {}... {}".format(pdbid, e)
+        if verbose:
+            print(message)
+    try:
+        nassemblies = data[pdbid][0]["assemblies"]
+        if len(nassemblies) > 1:
+            for entry in nassemblies:
+                if entry["preferred"]:
+                    pref_assembly = entry["assembly_id"]
+                    break
+        else:
+            pref_assembly = data[pdbid][0]["assemblies"][0]["assembly_id"]
+    except Exception as e:
+        pref_assembly = "1"
+
+    bio_best = str(pref_assembly)
+    return bio_best
 
 
 ##############################################################################
@@ -491,4 +536,6 @@ def confirm_column_types(table):
 
 if __name__ == '__main__':
     # testing routines
+
+
     pass

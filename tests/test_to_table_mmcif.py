@@ -5,12 +5,19 @@
 import logging
 import sys
 import unittest
-from os import path, remove
+from mock import patch
+from os import path
 
-from proteofav.mmcif_tools import _bio_unit_to_table, _mmcif_info_to_dict
-from proteofav.structures import _mmcif_atom
+from proteofav.config import Defaults
+from proteofav.structures import _mmcif_atom, _mmcif_fields, select_cif
+from proteofav.utils import get_preferred_assembly_id
+
+log = logging.getLogger(__name__)
+
+defaults = Defaults("config.txt")
 
 
+@patch("proteofav.structures.defaults", defaults)
 class TestMMCIFParser(unittest.TestCase):
     """Test the mmCIF parser methods."""
 
@@ -18,16 +25,11 @@ class TestMMCIFParser(unittest.TestCase):
         """Initialize the framework for testing."""
         self.example_mmcif = path.join(path.dirname(__file__), "CIF/2pah.cif")
         self.mmcif_atom_parser = _mmcif_atom
-        self.mmcif_info_parser = _mmcif_info_to_dict
-        self.bio_unit_builder = _bio_unit_to_table
+        self.mmcif_info_parser = _mmcif_fields
         self.example_tsv_out = path.join(path.dirname(__file__), "CIF/2pah-bio.tsv")
-
-        self.pdb_id = '2pah'
-        self.pdb_id_error1 = ''
-        self.pdb_id_error2 = '1234 ads'
-        self.pdb_id_error3 = 1234
-        self.pdb_id_error4 = ()
-        self.pdb_id_error5 = []
+        self.select_cif = select_cif
+        self.best_assembly = get_preferred_assembly_id
+        self.pdbid = '2pah'
 
     def tearDown(self):
         """Remove testing framework."""
@@ -35,15 +37,10 @@ class TestMMCIFParser(unittest.TestCase):
         self.example_mmcif = None
         self.mmcif_atom_parser = None
         self.mmcif_info_parser = None
-        self.bio_unit_builder = None
         self.example_tsv_out = None
-
-        self.pdb_id = None
-        self.pdb_id_error1 = None
-        self.pdb_id_error2 = None
-        self.pdb_id_error3 = None
-        self.pdb_id_error4 = None
-        self.pdb_id_error5 = None
+        self.select_cif = None
+        self.best_assembly = None
+        self.pdbid = None
 
     def test_atom_to_table_mmcif(self):
         """
@@ -81,27 +78,27 @@ class TestMMCIFParser(unittest.TestCase):
         Parsing all lines other than ATOM/HETATOM lines.
         """
 
-        data = self.mmcif_info_parser(self.example_mmcif)
+        # describes possible macromolecular assemblies
+        assembly = self.mmcif_info_parser(self.example_mmcif,
+                                          field_name='_pdbx_struct_assembly.')
+        # check some data values
+        self.assertEqual(assembly.loc[0, 'details'], 'author_and_software_defined_assembly')
+        self.assertEqual(assembly.loc[0, 'oligomeric_details'], 'tetrameric')
+        self.assertEqual(assembly.loc[0, 'oligomeric_count'], 4)
 
-        # number of main dict keys
-        self.assertEqual(len(data), 66)
+        # details the generation of each macromolecular assembly
+        assembly_gen = self.mmcif_info_parser(self.example_mmcif,
+                                              field_name='_pdbx_struct_assembly_gen.')
+        # check some data values
+        self.assertEqual(assembly_gen.loc[0, 'asym_id_list'], 'A,C,B,D')
 
-        # check whether there are particular main keys
-        self.assertIn('pdbx_struct_assembly', data)
-
-        # number of leading keys for a testing main key
-        self.assertEqual(len(data['exptl_crystal']), 5)
-
-        # check whether there are particular leading keys
-        self.assertIn('oligomeric_details', data['pdbx_struct_assembly'])
-
-        # check the values for particular entries
-        self.assertEqual(data['pdbx_struct_assembly']['oligomeric_details'],
-                         'tetrameric')
-        self.assertEqual(data['pdbx_struct_assembly_gen']['asym_id_list'],
-                         'A,C,B,D')
-        self.assertEqual(data['pdbx_struct_oper_list']['symmetry_operation'],
-                         ['x,y,z', '-y,-x,-z+2/3'])
+        # details translation and rotation operations required to generate/transform
+        # assembly coordinates
+        oper_list = self.mmcif_info_parser(self.example_mmcif,
+                                           field_name='_pdbx_struct_oper_list.',
+                                           require_index=True)
+        # check some data values
+        self.assertEqual(oper_list.loc[0, 'type'], 'identity operation')
 
     def test_bio_unit_to_table_mmcif(self):
         """
@@ -115,84 +112,25 @@ class TestMMCIFParser(unittest.TestCase):
         a new pandas Dataframe with the new atoms.
         """
 
-        log = logging.getLogger("Biological.Assemblies")
+        # new approach that looks up the biological assemblies and
+        # gets the preferred one from the PDBe server instead of
+        # generating it locally
 
-        # uses _mmcif_atom, _mmcif_info_to_table, and
-        # other mmcif_tools that needed to be tested
+        # test loading the atom lines with biological assemblies
+        best_assembly = self.best_assembly(self.pdbid)
+        data = self.select_cif(self.pdbid, biounit=True,
+                               assembly_id=best_assembly)
 
-        # method == 1
-        log.info("Method 1")
-        info = self.mmcif_info_parser(self.example_mmcif)
-        cif = self.mmcif_atom_parser(self.example_mmcif)
-        data = self.bio_unit_builder(cif, info,
-                                     most_likely=True,
-                                     method=1)
-
-        # number of values per column (or rows);
-        # double number of rows: dimer to tetramer
-        self.assertEqual(len(data), 5317 * 2)
-
-        # number of keys (or columns); same number of columns
-        self.assertEqual(len(data.columns.values), 21)
-
-        # check whether there are particular keys
-        self.assertIn('label_asym_id', data.columns.values)
-
-        # check the values for particular entries
-        self.assertTrue(data.loc[1, 'label_asym_id'] == 'A.1')
-        self.assertEqual(data.loc[1, 'pdbx_PDB_model_num'], 1)
-        self.assertEqual(data['group_PDB'][0], 'ATOM')
-
-        # method == 2
-        log.info("Method 2")
-        data = self.bio_unit_builder(cif, info,
-                                     most_likely=True,
-                                     method=2)
-
-        # number of values per column (or rows);
-        # double number of rows: dimer to tetramer
-        self.assertEqual(len(data), 5317 * 2)
-
-        # number of keys (or columns); same number of columns
-        self.assertEqual(len(data.columns.values), 21)
-
-        # check whether there are particular keys
-        self.assertIn('label_asym_id', data.columns.values)
-
-        # check the values for particular entries
-        self.assertTrue(data.loc[1, 'label_asym_id'] == 'A')
-        self.assertEqual(data.loc[1, 'pdbx_PDB_model_num'], 1)
-        self.assertEqual(data['group_PDB'][0], 'ATOM')
-
-        # method == 3
-        log.info("Method 3")
-        data = self.bio_unit_builder(cif, info,
-                                     most_likely=True,
-                                     method=3)
-
-        # number of values per column (or rows);
-        # double number of rows: dimer to tetramer
-        self.assertEqual(len(data), 5317 * 2)
-
-        # number of keys (or columns); same number of columns
-        self.assertEqual(len(data.columns.values), 22)
-
-        # check whether there are particular keys
-        self.assertIn('bio_unit_counter', data.columns.values)
-
-        # check the values for particular entries
-        self.assertTrue(data.loc[1, 'label_asym_id'] == 'A')
-        self.assertEqual(data.loc[1, 'bio_unit_counter'], 1)
-        self.assertEqual(data['group_PDB'][0], 'ATOM')
-
-        # create a tsv file
-        data.to_csv(self.example_tsv_out, sep='\t')
-        self.assertTrue(path.isfile(self.example_tsv_out))
-        remove(self.example_tsv_out)
+        # check some values
+        # Biological assemblies from the PDBe come with updated chains
+        # (auth_aym_id and label_aym_id) and two extra columns with the
+        # original chain identifiers
+        self.assertIn('orig_label_asym_id', data)
+        self.assertIn('orig_auth_asym_id', data)
 
 
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stderr)
-    logging.getLogger("Biological.Assemblies").setLevel(logging.DEBUG)
+    logging.getLogger("mmCIF related methods").setLevel(logging.DEBUG)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestMMCIFParser)
     unittest.TextTestRunner(verbosity=2).run(suite)
