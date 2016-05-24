@@ -25,6 +25,7 @@ AttributeError: 'Defaults' object has no attribute 'email'"""
 
 from __future__ import print_function
 
+import tempfile
 import logging
 from os import path
 from ConfigParser import ConfigParser
@@ -61,7 +62,7 @@ class Defaults(object):
                         logged_header = True
                     logger.warning(" Update the value for parameter {}"
                                    "...".format(var_name))
-                    var_par = '/tmp/'
+                    var_par = tempfile.gettempdir()
                 yield var_name, var_par
 
     def update(self, config_file):
