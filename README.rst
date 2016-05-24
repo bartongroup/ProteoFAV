@@ -15,7 +15,7 @@ Working on documenting the package `docs`_...
 Dependencies
 ~~~~~~~~~~~~
 
-See the necessary `requirements`_.
+See the necessary `requirements`_ and `external_requirements`_ .
 
 Contributing and Bug tracking
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +28,7 @@ License
 
 See `license`_.
 
-
+.. _external_requirements: https://github.com/biomadeira/ProteoFAV/wiki/External-dependencies
 .. _requirements: https://github.com/biomadeira/ProteoFAV/blob/master/requirements.txt
 .. _license: https://github.com/biomadeira/ProteoFAV/blob/master/LICENSE.txt
 .. _issue tracker: https://github.com/biomadeira/ProteoFAV/issues
