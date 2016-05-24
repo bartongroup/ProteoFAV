@@ -139,103 +139,10 @@ class IDNotValidError(Exception):
 def raise_if_not_ok(response):
     """
 
-
     :param response:
     """
     if not response.ok:
         response.raise_for_status()
-
-
-def _sifts_regions(filename):
-    """
-    Parse the region field of the SIFTS XML file to a pandas dataframe.
-
-    :param filename: input SIFTS xml file path
-    :return: pandas table dataframe
-    """
-
-    if not path.isfile(filename):
-        raise IOError('File {} not found or unavailable.'.format(filename))
-
-    tree = etree.parse(filename)
-    root = tree.getroot()
-    namespace = 'http://www.ebi.ac.uk/pdbe/docs/sifts/eFamily.xsd'
-    namespace_map = {'ns': namespace}
-    db_reference = "{{{}}}db".format(namespace)
-    db_detail = "{{{}}}dbDetail".format(namespace)
-    rows = []
-    regions = {}
-
-    for segment in root.find('.//ns:entity[@type="protein"]',
-                             namespaces=namespace_map):
-        for region in segment.find('.//ns:listMapRegion',
-                                   namespaces=namespace_map):
-            # get region annotations
-            region_annotation = {}
-
-            # parse extra annotations for each region
-            for annotation in region:
-                for k, v in annotation.attrib.items():
-                    # db entries
-                    if annotation.tag == db_reference:
-                        # skipping dbSource
-                        if k == 'dbSource':
-                            continue
-
-                        start = region.attrib['start']
-                        end = region.attrib['end']
-                        coord = annotation.attrib.get('dbCoordSys', '')
-                        region_annotation['Start'] = start
-                        region_annotation['End'] = end
-
-                        # region id
-                        r = (start, end, coord)
-
-                        # renaming all keys with dbSource prefix
-                        k = "{}_{}".format(annotation.attrib["dbSource"], k)
-
-                    # dbDetail entries
-                    elif annotation.tag == db_detail:
-                        # joining dbSource and property keys
-                        k = "_".join([annotation.attrib["dbSource"],
-                                      annotation.attrib["property"]])
-                        # value is the text field in the XML
-                        v = annotation.text
-
-                    # adding to the dictionary
-                    try:
-                        if v in region_annotation[k]:
-                            continue
-                        region_annotation[k].append(v)
-                    except KeyError:
-                        region_annotation[k] = v
-                    except AttributeError:
-                        region_annotation[k] = [region_annotation[k]]
-                        region_annotation[k].append(v)
-
-                    if r not in regions:
-                        regions[r] = [region_annotation]
-                    else:
-                        regions[r].append(region_annotation)
-
-        # group regions together
-        for region in regions:
-            region_annotation = {}
-            for region_annot in regions[region]:
-                for k in region_annot:
-                    v = region_annot[k]
-                    try:
-                        if v in region_annotation[k]:
-                            continue
-                        region_annotation[k].append(v)
-                    except KeyError:
-                        region_annotation[k] = v
-                    except AttributeError:
-                        region_annotation[k] = [region_annotation[k]]
-                        region_annotation[k].append(v)
-
-            rows.append(region_annotation)
-    return pd.DataFrame(rows)
 
 
 def _pdb_uniprot_sifts_mapping(identifier):
@@ -429,7 +336,7 @@ def confirm_column_types(table):
     types can be preserved with the generic `object` dtype, so this will be used in preference for
     integer columns that can contain NaNs.
     """
-
+    # TODO: update this to accomodate the new sifts table headers
     column_types_long = {
         # SIFTs mappings
         'CATH_dbAccessionId': 'string',
