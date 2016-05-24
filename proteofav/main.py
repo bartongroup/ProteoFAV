@@ -31,7 +31,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
     :param str or None atoms: Atom to be selected in the
     :param str or None model: Select the PDB entity, like in structures determined by NMR
     :param bool add_validation: Attach the PDB validation table
-    :param bool sequence_check='raise': Whether to compare sequence from different sources.
+    :param str sequence_check: Whether to compare sequence from different sources.
     Choose from raise, warn or ignore.
     :param bool drop_empty_cols: Whether to drop columns without positional information
     :param bool add_ensembl_variants: Whether to add variant table from Ensembl

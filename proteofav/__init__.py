@@ -11,7 +11,8 @@ sequences and genetic variants.
 :copyright: (c) 2015-2016.
 :license: TBD, see LICENSE for more details.
 """
-# from .config import defaults
+
+from .config import defaults
 from .main import merge_tables
 # from .structures import *
 # from .variants import *

@@ -14,7 +14,7 @@ Usage
 http://www.ebi.ac.uk/pdbe/api/
 >>> from proteofav.config import Defaults
 >>> local_defaults = Defaults("config.txt")
->>> print(local_defaults.http_uniprot)
+>>> print(local_defaults.api_uniprot)
 http://www.uniprot.org/uniprot/
 >>> print(local_defaults.sifts_extension)
 .xml.gz
@@ -35,13 +35,16 @@ logger = logging.getLogger(__name__)
 
 
 class Defaults(object):
-    def __init__(self, config_file=None):
-        default_config = path.join(path.dirname(__file__), "config.txt")
+    def __init__(self, config_file='config.txt'):
+        config_file = path.join(path.dirname(__file__), config_file)
         config = ConfigParser()
-        config_default = config_file or default_config
-        config.read(config_default)
-        self.__config = config
-        self.__populate_attributes()
+        if path.isfile(config_file):
+            config.read(config_file)
+            self.__config = config
+            self.__populate_attributes()
+            self.config_file = config_file
+        else:
+            raise IOError('Config file {} not available.'.format(config_file))
 
     def __populate_attributes(self):
         logged_header = False
@@ -59,5 +62,9 @@ class Defaults(object):
         for section in self.__config.sections():
             for var_name, var_par in self.__config.items(section):
                 yield var_name, var_par
+
+    def update(self, config_file):
+        return self.__init__(config_file)
+
 
 defaults = Defaults()
