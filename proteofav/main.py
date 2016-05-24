@@ -19,7 +19,7 @@ logging.basicConfig(level=9,
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='first',
                  sequence_check='raise', drop_empty_cols=False, add_validation=False,
                  add_annotation=False,
-                 add_ensembl_variants=None, add_uniprot_variants=False):
+                 add_ensembl_variants=False, add_uniprot_variants=False):
     """
     Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.

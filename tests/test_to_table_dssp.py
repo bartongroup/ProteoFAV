@@ -58,7 +58,7 @@ class TestDSSPParser(unittest.TestCase):
             'CD', 'CE', 'CF', 'CG', 'CH', 'CI', 'CJ', 'CK', 'CL', 'CM', 'CN', 'CO', 'CP', 'CQ',
             'CR', 'CS', 'CT', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ', 'C0', 'C1', 'C2', 'C3', 'C4',
             'DC', 'DD', 'DE', 'DF', 'DG', 'DH', 'DI', 'DJ', 'DK', 'DL', 'DM', 'DN', 'DO', 'DP',
-            'DQ', 'DR', 'DS', 'DT', 'DU', 'DV' , 'DW', 'DX', 'DY', 'DZ', 'D0', 'D1', 'D2', 'D3',
+            'DQ', 'DR', 'DS', 'DT', 'DU', 'DV', 'DW', 'DX', 'DY', 'DZ', 'D0', 'D1', 'D2', 'D3',
             'D4')
         table = fix('4v9d')
         dssp_has_seq = table.aa.isin(scop_3to1.values())
