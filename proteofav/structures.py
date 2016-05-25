@@ -550,10 +550,11 @@ def select_sifts(pdb_id, chains=None):
     sifts_path = path.join(defaults.db_sifts, pdb_id + '.xml')
 
     try:
-        sift_table = _sifts_residues_regions(sifts_path)
+        sift_table = _sifts_residues_regions(sifts_path,
+                                             sources=('CATH', 'SCOP', 'Pfam'))
     except IOError:
         sifts_path = fetch_files(pdb_id, sources='sifts',
-                                directory=defaults.db_sifts)[0]
+                                 directory=defaults.db_sifts)[0]
         sift_table = _sifts_residues_regions(sifts_path)
         # standardise column types
     for col in sift_table:
