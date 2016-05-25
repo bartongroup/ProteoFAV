@@ -6,12 +6,13 @@ import logging
 
 import pandas as pd
 import requests
+from pandas.io.json import json_normalize
 
 from proteofav.config import defaults
 from proteofav.library import valid_ensembl_species
 from proteofav.uniprot import (map_gff_features_to_sequence, _uniprot_to_ensembl_xref,
                                fetch_uniprot_formal_specie, fetch_uniprot_sequence,
-                               _uniprot_info, _fetch_uniprot_gff)
+                               _uniprot_info)
 from proteofav.utils import (get_url_or_retry, check_local_or_fetch)
 
 log = logging.getLogger(__name__)
@@ -20,6 +21,27 @@ log = logging.getLogger(__name__)
 ##############################################################################
 # Private methods
 ##############################################################################
+def _fetch_ebi_variants(identifier):
+    """
+    Fetchs the varition data from EBI also used in the UniProt feature viwer
+    :param identifier: UniProt identifier
+    :return pandas.DataFrame: the table where each row is associated with a variation entry
+    """
+    endpoint = "variation/"
+    url = defaults.api_ebi_uniprot + endpoint + identifier
+    data = get_url_or_retry(url, json=True)
+    table = json_normalize(data, ['features'], meta=['accession', 'entryName'])
+
+    # flatten the xref field, which has the id column.
+    # ideally this could be normalised with:
+    # table = json_normalize(data, ['features', 'xref'] ...
+    # but this field is not present in all entries,
+
+    flat_xref = table['xrefs'].apply(pd.Series).stack().apply(pd.Series)
+    flat_xref.reset_index(level=1, drop=True, inplace=True)
+    return table.join(flat_xref)
+
+
 def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
     """Queries the Ensembl API for germline variants (mostly dbSNP) and somatic
     (mostly COSMIC) based on Ensembl Protein identifiers (e.g. ENSP00000326864).
