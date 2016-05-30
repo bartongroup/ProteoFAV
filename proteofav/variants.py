@@ -237,6 +237,22 @@ def _count_mismatches(sequence1, sequence2):
     return sum(i != j for i, j in zip(sequence1, sequence2))
 
 
+def _fetch_uniprot_variants_ebi(identifier, retry_in=(429,)):
+    """
+    Queries the EBI UniProt Variation API for variants.
+    based on UniProt identifiers (e.g. O15294).
+    :param identifier: UniProt ID
+    :param retry_in: http code for retrying connections
+    :return: pandas table dataframe
+    """
+
+    variation_endpoint = "variation/"
+    url = defaults.api_ebi_uniprot + variation_endpoint + identifier
+    rows = get_url_or_retry(url, retry_in=retry_in, json=True)
+    # return pd.DataFrame(rows)
+    return rows
+
+
 ##############################################################################
 # Public methods
 ##############################################################################
