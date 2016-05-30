@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
 import logging
 
 import pandas as pd
@@ -11,8 +9,7 @@ from pandas.io.json import json_normalize
 from proteofav.config import defaults
 from proteofav.library import valid_ensembl_species
 from proteofav.uniprot import (map_gff_features_to_sequence, _uniprot_to_ensembl_xref,
-                               fetch_uniprot_formal_specie, fetch_uniprot_sequence,
-                               _uniprot_info)
+                               fetch_uniprot_formal_specie, fetch_uniprot_sequence)
 from proteofav.utils import (get_url_or_retry, check_local_or_fetch)
 
 log = logging.getLogger(__name__)
@@ -21,9 +18,39 @@ log = logging.getLogger(__name__)
 ##############################################################################
 # Private methods
 ##############################################################################
-def _fetch_ebi_variants(identifier):
+def _fetch_icgc_variants(identifier):
     """
-    Fetchs the varition data from EBI also used in the UniProt feature viwer
+    Queries the ICGC data portal for the PanCancer variants based on Ensembl
+    transcript identifier.
+    :param str identifier: Ensembl transcript
+    :return pandas.DataFrame: pandas table dataframe
+    """
+    transition_regex = '(?P<ref>[A-Z])(?P<position>[0-9]+)(?P<new>[A-Z])'
+    variation_endpoint = "protein/"
+    url = defaults.api_icgc + variation_endpoint + identifier
+    # fetches a nested json
+    data = get_url_or_retry(url, json=True)
+    # normalise the data, making it flat
+    data = pd.io.json.json_normalize(
+        data['hits'],
+        ['transcripts'],
+        ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
+
+    data = data[data.id == identifier]
+    consequence = data.pop('consequence')
+    if consequence.index.duplicated().any():
+        log.warn('Joining ICGC variant data with its consequences data aborted:'
+                 ' Duplicated index for {}.'.format(identifier))
+    else:
+        data = data.join(consequence.apply(pd.Series), rsuffix='_protein')
+        transition = data.aaMutation.str.extract(transition_regex)
+        data = data.join(transition)
+
+    return data
+
+
+def _fetch_ebi_variants(identifier, flat_xrefs=True):
+    """Fetchs the varition data from EBI also used in the UniProt feature viwer
     :param identifier: UniProt identifier
     :return pandas.DataFrame: the table where each row is associated with a variation entry
     """
@@ -36,10 +63,11 @@ def _fetch_ebi_variants(identifier):
     # ideally this could be normalised with:
     # table = json_normalize(data, ['features', 'xref'] ...
     # but this field is not present in all entries,
-
-    flat_xref = table['xrefs'].apply(pd.Series).stack().apply(pd.Series)
-    flat_xref.reset_index(level=1, drop=True, inplace=True)
-    return table.join(flat_xref)
+    if flat_xrefs:
+        flat_xref = table['xrefs'].apply(pd.Series).stack().apply(pd.Series)
+        flat_xref.reset_index(level=1, drop=True, inplace=True)
+        table = table.join(flat_xref)
+    return table
 
 
 def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
@@ -210,24 +238,6 @@ def _match_uniprot_ensembl_seq(uniprot_id):
         uniprot_id))
 
 
-
-def _apply_sequence_index_map(indexes, imap):
-    """
-
-    :param indexes:
-    :param map:
-    :return:
-    """
-
-    # perform the raw translation
-    translation = []
-    for i in indexes:
-        equivalent = imap.get(i)
-        translation.append(equivalent)
-
-    return translation
-
-
 def _compare_sequences(sequence1, sequence2, permissive=True, n_mismatches=0):
     """Compares two given sequences in terms of length and sequence content.
 
@@ -345,97 +355,6 @@ def parse_uniprot_variants(uniprot_id):
 
     return table
 
-
-# TODO we need to figure out a manual function to map sequences that have
-# small differences
-def select_uniprot_variants(identifier, align_transcripts=False):
-    """
-    Summarise variants for a protein in the UniProt
-
-    :type align_transcripts: object
-    :param identifier: UniProt ID
-    :return: table with variants, rows are residues
-    """
-    # TODO FIX docstring
-    # get organism and sequence for the provided identifier
-
-    # TODO use gff?
-    uni = _uniprot_info(identifier, cols=['organism', 'sequence'])
-    org = ('_'.join(uni.loc[0, 'Organism'].split()[-3:-1])).lower()
-    seq = uni.loc[0, 'Sequence']
-
-    # get the ensembl ids: this also validate this species as available
-    # through ensembl
-    ens = _uniprot_ensembl_mapping(identifier, species=org)
-
-    # get the ensembl protein ids
-    ens_pros = ens.loc[0, 'TRANSLATION']
-    if not isinstance(ens_pros, list):
-        ens_pros = [ens_pros, ]
-
-    # get the sequence of the ensembl protein
-    usable_indexes = []
-    aligned_indexes = []
-    seq_maps = []
-
-    for i, enspro in enumerate(ens_pros):
-        seq_pro = _sequence_from_ensembl_protein(enspro, protein=True)
-
-        # validate if the sequence of uniprot and ensembl protein matches
-        if _compare_sequences(seq, seq_pro, permissive=False):
-            usable_indexes.append(i)
-        elif _compare_sequences(seq, seq_pro, permissive=True):
-            usable_indexes.append(i)
-            seq_maps.append(None)
-            n_mismatches = _count_mismatches(seq, seq_pro)
-            message = "{0}: Sequences are of same length but have {1} mismatch(s)".format(enspro,
-                                                                                          n_mismatches)
-            logging.warning(message)
-        elif align_transcripts:
-            message = "Sequences don't match! Will attempt alignment... {}".format(enspro)
-            logging.warning(message)
-            aligned_indexes.append(i)
-            ensembl_to_uniprot = _apply_sequence_index_map(seq_pro, seq)
-            seq_maps.append(ensembl_to_uniprot)
-        else:
-            message = "Sequences don't match! skipping... {}".format(enspro)
-            logging.warning(message)
-            seq_maps.append(None)
-
-    # get the variants for the ensembl proteins that match the uniprot
-    tables = []
-    for i in usable_indexes:
-        vars = _fetch_ensembl_variants(ens_pros[i], feature='transcript_variation')
-        muts = _fetch_ensembl_variants(ens_pros[i], feature='somatic_transcript_variation')
-
-        # TODO: From... TO... mutated residues as different columns in the table
-        # TODO: Shouldn't the default behaviour return all the columns?
-        if not vars.empty:
-            tables.append(vars[['translation', 'id', 'start', 'residues']])
-        if not muts.empty:
-            tables.append(muts[['translation', 'id', 'start', 'residues']])
-
-    # Get variants from aligned sequences
-    if align_transcripts:
-        for i in aligned_indexes:
-            vars = _fetch_ensembl_variants(ens_pros[i], feature='transcript_variation')
-            muts = _fetch_ensembl_variants(ens_pros[i], feature='somatic_transcript_variation')
-
-            var_table = vars[['translation', 'id', 'start', 'residues']]
-            mut_table = muts[['translation', 'id', 'start', 'residues']]
-
-            var_table.start = _apply_sequence_index_map(var_table.start, seq_maps[i])
-            mut_table.start = _apply_sequence_index_map(mut_table.start, seq_maps[i])
-
-            if not var_table.empty:
-                tables.append(var_table)
-            if not var_table.empty:
-                tables.append(mut_table)
-
-    # to_unique = lambda series: series.unique()
-    # return table.groupby('start').apply(to_unique)
-    table = pd.concat(tables)
-    return table
 
 if __name__ == '__main__':
     pass
