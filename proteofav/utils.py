@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 import gzip
-import json
 import logging
 import os
 import shutil
@@ -274,51 +273,6 @@ def _uniprot_pdb_sifts_mapping(identifier):
     for entry in information[identifier]:
         rows.append(entry)
     return pd.DataFrame(rows)
-
-
-def icgc_missense_variant(ensembl_gene_id):
-    """Fetch a gene missense variants from ICGC data portal.
-
-    :param ensembl_gene_id: ensembl gene accession
-    :type ensembl_gene_id: str
-    :return: DataFrame with one mutation per row.
-    :rtype : pandas.DataFrame
-
-    :Example:
-
-
-        >>> table = icgc_missense_variant('ENSG00000012048')
-        >>> table.loc[0, ['id', 'mutation', 'type', 'start']]
-        id                          MU601299
-        mutation                         G>A
-        type        single base substitution
-        start                       41245683
-        Name: 0, dtype: object
-
-
-    .. note:: ICGC doc https://dcc.icgc.org/docs/#!/genes/findMutations_get_8
-
-    """
-    base_url = defaults.api_icgc + ensembl_gene_id + "/mutations/"
-    headers = {'content-type': 'application/json'}
-    filt = json.dumps({"mutation": {"consequenceType": {"is": ['missense_variant']}}})
-    params = {"filters": filt}
-
-    # First counts the number of mutation entries
-    counts_resp = requests.get(base_url + "counts/", headers=headers, params=params)
-    raise_if_not_ok(counts_resp)
-    total = counts_resp.json()['Total']
-
-    # then iterate the pages of entries, max 100 entries per page
-    hits = []
-    params['size'] = 100
-    for i in range(total // 100 + 1):
-        params['from'] = i * 100 + 1
-        mutation_resp = requests.get(base_url, headers=headers, params=params)
-        raise_if_not_ok(mutation_resp)
-        hits.extend(mutation_resp.json()['hits'])
-
-    return pd.DataFrame(hits)
 
 
 def is_valid(identifier, database=None, url=None):
