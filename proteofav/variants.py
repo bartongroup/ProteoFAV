@@ -31,12 +31,15 @@ def _fetch_icgc_variants(identifier):
     # fetches a nested json
     data = get_url_or_retry(url, json=True)
     # normalise the data, making it flat
-    data = pd.io.json.json_normalize(
-        data['hits'],
-        ['transcripts'],
-        ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
+    try:
+        data = pd.io.json.json_normalize(
+            data['hits'],
+            ['transcripts'],
+            ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
+        data = data[data['id'] == identifier]
+    except (KeyError, TypeError):
+        log.error('No variant data retrieved for {}.'.format(identifier))
 
-    data = data[data.id == identifier]
     consequence = data.pop('consequence')
     if consequence.index.duplicated().any():
         log.warn('Joining ICGC variant data with its consequences data aborted:'
@@ -49,13 +52,13 @@ def _fetch_icgc_variants(identifier):
     return data
 
 
-def _fetch_ebi_variants(identifier, flat_xrefs=True):
+def _fetch_ebi_variants(ensembl_transcript_id, flat_xrefs=True):
     """Fetchs the varition data from EBI also used in the UniProt feature viwer
-    :param identifier: UniProt identifier
+    :param ensembl_transcript_id: UniProt identifier
     :return pandas.DataFrame: the table where each row is associated with a variation entry
     """
     endpoint = "variation/"
-    url = defaults.api_ebi_uniprot + endpoint + identifier
+    url = defaults.api_ebi_uniprot + endpoint + ensembl_transcript_id
     data = get_url_or_retry(url, json=True)
     table = json_normalize(data, ['features'], meta=['accession', 'entryName'])
 
@@ -148,15 +151,15 @@ def _fetch_variant_characteristics_from_identifiers(variant_ids, use_vep=False):
         return result
 
 
-def _sequence_from_ensembl_protein(identifier, protein=True):
+def _sequence_from_ensembl_protein(ensembl_id, protein=True):
     """
     Gets the sequence for an Ensembl identifier.
 
-    :param identifier: Ensembl ID
+    :param ensembl_id: Ensembl ID
     :return: sequence
     """
     ensembl_endpoint = "sequence/id/"
-    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
+    url = defaults.api_ensembl + ensembl_endpoint + str(ensembl_id)
     header = {'content-type': 'text/plain'}
     if protein:
         params = {'type': 'protein'}
@@ -166,40 +169,18 @@ def _sequence_from_ensembl_protein(identifier, protein=True):
     return sequence
 
 
-def _uniprot_ensembl_mapping(identifier, species=None):
+def _fetch_ensembl_transcript_id(ensembl_ptn_id):
     """
-    Uses the UniProt mapping service to try and get Ensembl IDs for the
-    UniProt accession identifier provided
+    Gets the parent transcript id for ensembl protein identifier.
 
-    :param identifier: UniProt accession identifier
-    :param species: Ensembl species
-    :return: pandas table dataframe
+    :param str ensembl_ptn_id: Ensembl ID
+    :return str: ensembl_trasncript id
     """
-    from library import valid_ensembl_species
-    if species not in valid_ensembl_species:
-        raise ValueError('Provided species {} is not valid'.format(species))
-
-    information = {}
-    rows = []
-
-    ensembl_endpoint = "xrefs/symbol/{}/".format(species)
-    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
-    data = get_url_or_retry(url, json=True)
-    for entry in data:
-        typ = entry['type'].upper()
-        eid = entry['id']
-        try:
-            if eid in information[typ]:
-                continue
-            information[typ].append(eid)
-        except KeyError:
-            information[typ] = eid
-        except AttributeError:
-            information[typ] = [information[typ]]
-            information[typ].append(eid)
-
-    rows.append(information)
-    return pd.DataFrame(rows)
+    ensembl_endpoint = "lookup/id/"
+    url = defaults.api_ensembl + ensembl_endpoint + str(ensembl_ptn_id)
+    header = {'content-type': 'application/json'}
+    response = get_url_or_retry(url, header=header, json=TypeError)
+    return response['Parent']
 
 
 def _match_uniprot_ensembl_seq(uniprot_id):
@@ -233,7 +214,8 @@ def _match_uniprot_ensembl_seq(uniprot_id):
     for ensembl_ptn_id in ensembl_ptn_ids:
         ensembl_ptn_seq = _sequence_from_ensembl_protein(ensembl_ptn_id)
         if _compare_sequences(uniprot_sequence, ensembl_ptn_seq, permissive=False):
-            return ensembl_ptn_id
+            ensembl_transcript_id = _fetch_ensembl_transcript_id(ensembl_ptn_id)
+            return ensembl_ptn_id, ensembl_transcript_id
     raise ValueError('No protein with the same sequence was retrivied from Ensembl {}'.format(
         uniprot_id))
 
@@ -272,13 +254,21 @@ def _count_mismatches(sequence1, sequence2):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_variants(uniprot_id, features=('uniprot', 'ensembl_somatic', 'ensembl_germline')):
+def select_variants(uniprot_id,
+                    features=('uniprot', 'ensembl_somatic', 'ensembl_germline', 'ebi', 'tcga')):
     """
 
     :param features:
     :param uniprot_id:
     """
-    ensembl_ptn_id = None
+    try:
+        ensembl_ptn_id, ensembl_transcript_id = _match_uniprot_ensembl_seq(uniprot_id)
+
+    except ValueError as e:
+        ensembl_ptn_id = None
+        # No Ensembl mapping
+        log.error(e)
+
     tables = []
     # use the uniprot natural variants as our reference (left) table
     if 'uniprot' in features:
@@ -291,17 +281,9 @@ def select_variants(uniprot_id, features=('uniprot', 'ensembl_somatic', 'ensembl
 
         tables.append(table_uni)
 
-    try:
-        ensembl_ptn_id = _match_uniprot_ensembl_seq(uniprot_id)
-
-    except ValueError as e:
-        # No Ensembl mapping
-        log.error(e)
-        return pd.concat(tables, axis=1)
 
     if 'ensembl_somatic' in features:
-        table_som = _fetch_ensembl_variants(
-            ensembl_ptn_id, feature='somatic_transcript_variation')
+        table_som = _fetch_ensembl_variants(ensembl_ptn_id, feature='somatic_transcript_variation')
 
         if not table_som.empty:
             table_som = table_som[table_som['type'] == 'coding_sequence_variant']
@@ -323,6 +305,27 @@ def select_variants(uniprot_id, features=('uniprot', 'ensembl_somatic', 'ensembl
             table_ger['germline_variants'] = None
 
         tables.append(table_ger)
+
+    if 'ebi' in features:
+        table_ebi = _fetch_ebi_variants(uniprot_id)
+        if not table_ebi.empty:
+            table_ebi = table_ebi.groupby('begin')['id'].apply(list)
+            table_ebi.name = 'ebi_variants'
+        else:
+            table_ebi['ebi_variants'] = None
+
+        tables.append(table_ebi)
+
+    if 'tcga' in features:
+        table_tcga = _fetch_icgc_variants(ensembl_transcript_id)
+        if not table_tcga.empty:
+            table_tcga = table_tcga.groupby('position')['_id'].apply(list)
+            table_tcga.name = 'tcga_variants'
+        else:
+            table_tcga['tcga_variants'] = None
+
+        tables.append(table_tcga)
+
 
     return pd.concat(tables, axis=1)
 
@@ -357,4 +360,5 @@ def parse_uniprot_variants(uniprot_id):
 
 
 if __name__ == '__main__':
+    X = select_variants('O15294')
     pass
