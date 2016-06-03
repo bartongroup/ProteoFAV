@@ -29,16 +29,14 @@ def _fetch_icgc_variants(identifier):
     variation_endpoint = "protein/"
     url = defaults.api_icgc + variation_endpoint + identifier
     # fetches a nested json
-    data = get_url_or_retry(url, json=True)
+
     # normalise the data, making it flat
-    try:
-        data = pd.io.json.json_normalize(
+    data = get_url_or_retry(url, json=True)
+    data = pd.io.json.json_normalize(
             data['hits'],
             ['transcripts'],
             ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
-        data = data[data['id'] == identifier]
-    except (KeyError, TypeError):
-        log.error('No variant data retrieved for {}.'.format(identifier))
+    data = data[data['id'] == identifier]
 
     consequence = data.pop('consequence')
     if consequence.index.duplicated().any():
@@ -59,18 +57,19 @@ def _fetch_ebi_variants(ensembl_transcript_id, flat_xrefs=True):
     """
     endpoint = "variation/"
     url = defaults.api_ebi_uniprot + endpoint + ensembl_transcript_id
+
     data = get_url_or_retry(url, json=True)
-    table = json_normalize(data, ['features'], meta=['accession', 'entryName'])
+    data = json_normalize(data, ['features'], meta=['accession', 'entryName'])
 
     # flatten the xref field, which has the id column.
     # ideally this could be normalised with:
     # table = json_normalize(data, ['features', 'xref'] ...
     # but this field is not present in all entries,
     if flat_xrefs:
-        flat_xref = table['xrefs'].apply(pd.Series).stack().apply(pd.Series)
+        flat_xref = data['xrefs'].apply(pd.Series).stack().apply(pd.Series)
         flat_xref.reset_index(level=1, drop=True, inplace=True)
-        table = table.join(flat_xref)
-    return table
+        data = data.join(flat_xref)
+    return data
 
 
 def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
@@ -95,6 +94,8 @@ def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
                    type: str ]
     :rtype: pandas.DataFrame
     """
+    if ensembl_ptn_id is None:
+        return pd.DataFrame(None)
     ensembl_endpoint = "overlap/translation/"
     supported_feats = ['transcript_variation', 'somatic_transcript_variation']
     if feature is None:
@@ -261,73 +262,77 @@ def select_variants(uniprot_id,
     :param features:
     :param uniprot_id:
     """
+    ensembl_ptn_id, ensembl_transcript_id = None, None
     try:
         ensembl_ptn_id, ensembl_transcript_id = _match_uniprot_ensembl_seq(uniprot_id)
 
     except ValueError as e:
-        ensembl_ptn_id = None
         # No Ensembl mapping
-        log.error(e)
+        log.error(e, exc_info=True)
 
     tables = []
     # use the uniprot natural variants as our reference (left) table
     if 'uniprot' in features:
-        table_uni = parse_uniprot_variants(uniprot_id)
-        if not table_uni.empty:
-            table_uni = table_uni['ids']
-            table_uni.name = 'uniprot_variants'
-        else:
-            table_uni['uniprot_variants'] = None
+        try:
+            table_uniprot = parse_uniprot_variants(uniprot_id)
+            table_uniprot = table_uniprot['ids']
+            table_uniprot.name = 'uniprot_variants'
+            tables.append(table_uniprot)
 
-        tables.append(table_uni)
+        except(requests.HTTPError, KeyError) as e:
+            log.error(e, exc_info=True)
+            pass
 
-
-    if 'ensembl_somatic' in features:
-        table_som = _fetch_ensembl_variants(ensembl_ptn_id, feature='somatic_transcript_variation')
-
-        if not table_som.empty:
+    if 'ensembl_somatic' in features and ensembl_transcript_id is not None:
+        try:
+            table_som = _fetch_ensembl_variants(
+                ensembl_ptn_id, feature='somatic_transcript_variation')
             table_som = table_som[table_som['type'] == 'coding_sequence_variant']
             table_som = table_som.groupby('start')['id'].apply(list)
             table_som.name = 'somatic_variants'
-        else:
-            table_som['somatic_variants'] = None
+            tables.append(table_som)
 
-        tables.append(table_som)
+        except(requests.HTTPError, KeyError) as e:
+            log.error(e, exc_info=True)
+            pass
 
-    if 'ensembl_germline' in features:
-        table_ger = _fetch_ensembl_variants(ensembl_ptn_id, feature='transcript_variation')
-
-        if not table_ger.empty:
+    if 'ensembl_germline' in features and ensembl_transcript_id is not None:
+        try:
+            table_ger = _fetch_ensembl_variants(
+                ensembl_ptn_id, feature='transcript_variation')
             table_ger = table_ger[table_ger['type'] == 'missense_variant']
             table_ger = table_ger.groupby('start')['id'].apply(list)
             table_ger.name = 'germline_variants'
-        else:
-            table_ger['germline_variants'] = None
+            tables.append(table_ger)
 
-        tables.append(table_ger)
+        except(requests.HTTPError, KeyError) as e:
+            log.error(e, exc_info=True)
+            pass
 
     if 'ebi' in features:
-        table_ebi = _fetch_ebi_variants(uniprot_id)
-        if not table_ebi.empty:
+        try:
+            table_ebi = _fetch_ebi_variants(uniprot_id)
             table_ebi = table_ebi.groupby('begin')['id'].apply(list)
             table_ebi.name = 'ebi_variants'
-        else:
-            table_ebi['ebi_variants'] = None
+            tables.append(table_ebi)
 
-        tables.append(table_ebi)
+        except(requests.HTTPError, KeyError):
+            log.error(e, exc_info=True)
 
-    if 'tcga' in features:
-        table_tcga = _fetch_icgc_variants(ensembl_transcript_id)
-        if not table_tcga.empty:
+    if 'tcga' in features and ensembl_ptn_id is not None:
+        try:
+            table_tcga = _fetch_icgc_variants(ensembl_transcript_id)
             table_tcga = table_tcga.groupby('position')['_id'].apply(list)
             table_tcga.name = 'tcga_variants'
-        else:
-            table_tcga['tcga_variants'] = None
+            tables.append(table_tcga)
 
-        tables.append(table_tcga)
+        except(requests.HTTPError, KeyError) as e:
+            log.error(e, exc_info=True)
 
-
-    return pd.concat(tables, axis=1)
+    try:
+        return pd.concat(tables, axis=1)
+    except ValueError:
+        raise ValueError('No variantes for {}'.format(uniprot_id))
 
 
 def parse_uniprot_variants(uniprot_id):
@@ -354,11 +359,8 @@ def parse_uniprot_variants(uniprot_id):
     table['transition'] = table['annotation'].str.findall(res_transition_group)
     table['ids'] = table['annotation'].str.findall(ids_group)
 
-    del table['annotation']
-
-    return table
+    return table.drop(['annotation'], axis=1)
 
 
 if __name__ == '__main__':
-    X = select_variants('O15294')
     pass
