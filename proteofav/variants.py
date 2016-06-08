@@ -37,6 +37,8 @@ def _fetch_icgc_variants(identifier):
             ['transcripts'],
             ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
     data = data[data['id'] == identifier]
+    data.drop(['id'], axis=1, inplace=True)
+    data.rename(columns={'_id': 'id'}, inplace=True)
 
     consequence = data.pop('consequence')
     if consequence.index.duplicated().any():
@@ -275,7 +277,7 @@ def select_variants(uniprot_id,
     if 'uniprot' in features:
         try:
             table_uniprot = parse_uniprot_variants(uniprot_id)
-            table_uniprot = table_uniprot['ids']
+            table_uniprot = table_uniprot['id']
             table_uniprot.name = 'uniprot_variants'
             tables.append(table_uniprot)
 
@@ -312,6 +314,8 @@ def select_variants(uniprot_id,
     if 'ebi' in features:
         try:
             table_ebi = _fetch_ebi_variants(uniprot_id)
+            table_ebi.dropna(subset=['begin'], inplace=True)
+            table_ebi.loc[:, 'begin'] = table_ebi.loc[:, 'begin'].astype(int)
             table_ebi = table_ebi.groupby('begin')['id'].apply(list)
             table_ebi.name = 'ebi_variants'
             tables.append(table_ebi)
@@ -322,7 +326,9 @@ def select_variants(uniprot_id,
     if 'tcga' in features and ensembl_ptn_id is not None:
         try:
             table_tcga = _fetch_icgc_variants(ensembl_transcript_id)
-            table_tcga = table_tcga.groupby('position')['_id'].apply(list)
+            table_tcga.dropna(subset=['position'], inplace=True)
+            table_tcga.loc[:, 'position'] = table_tcga.loc[:, 'position'].astype(int)
+            table_tcga = table_tcga.groupby('position')['id'].apply(list)
             table_tcga.name = 'tcga_variants'
             tables.append(table_tcga)
 
@@ -357,7 +363,7 @@ def parse_uniprot_variants(uniprot_id):
 
     table['disease'] = table['annotation'].str.findall(disease_group)
     table['transition'] = table['annotation'].str.findall(res_transition_group)
-    table['ids'] = table['annotation'].str.findall(ids_group)
+    table['id'] = table['annotation'].str.findall(ids_group)
 
     return table.drop(['annotation'], axis=1)
 
