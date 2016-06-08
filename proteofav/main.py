@@ -31,7 +31,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
     :param str or None atoms: Atom to be selected in the
     :param str or None model: Select the PDB entity, like in structures determined by NMR
     :param bool add_validation: Attach the PDB validation table
-    :param bool sequence_check='raise': Whether to compare sequence from different sources.
+    :param str sequence_check: Whether to compare sequence from different sources.
     Choose from raise, warn or ignore.
     :param bool drop_empty_cols: Whether to drop columns without positional information
     :param bool add_ensembl_variants: Whether to add variant table from Ensembl
@@ -123,8 +123,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
 
     if add_validation:
         validation_table = select_validation(pdb_id, chains=chain)
-        validation_table.loc[:, 'validation_resnum'] = validation_table.loc[:,
-                                                       'validation_resnum'].astype(int)
+        validation_table.loc[:, 'validation_resnum'] = validation_table.loc[
+                                                       :, 'validation_resnum'].astype(int)
         table = table.merge(table, how='left',
                             left_on=['PDB_dbResNum', 'PDB_dbChainId'],
                             right_on=['validation_resnum', 'validation_chain'])
