@@ -11,14 +11,8 @@ sequences and genetic variants.
 :copyright: (c) 2015-2016.
 :license: TBD, see LICENSE for more details.
 """
-# from .config import defaults
+from .analysis import clustering
 from .main import merge_tables
-# from .structures import *
-# from .variants import *
-# from .analysis import *
-# from . import utils
-# from . import library
-
 
 # Set default logging handler to avoid "No handler found" warnings.
 import logging

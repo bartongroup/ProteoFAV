@@ -259,10 +259,14 @@ def _count_mismatches(sequence1, sequence2):
 ##############################################################################
 def select_variants(uniprot_id,
                     features=('uniprot', 'ensembl_somatic', 'ensembl_germline', 'ebi', 'tcga')):
-    """
+    """Merge variants identifier in a table.
 
-    :param features:
-    :param uniprot_id:
+    :param str uniprot_id: Uniprot identifier
+    :param list features:
+
+    .. todo::
+    Instead the id, return any other column.
+
     """
     ensembl_ptn_id, ensembl_transcript_id = None, None
     try:
