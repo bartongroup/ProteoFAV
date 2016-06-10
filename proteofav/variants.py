@@ -18,6 +18,12 @@ log = logging.getLogger(__name__)
 ##############################################################################
 # Private methods
 ##############################################################################
+
+def _fetch_exac_varaints(ensembl_transcript_id):
+    endpoint = "transcript/variants_in_transcript/"
+    url = defaults.api_exact_hms + endpoint + ensembl_transcript_id
+    return pd.read_json(url)
+
 def _fetch_icgc_variants(identifier):
     """
     Queries the ICGC data portal for the PanCancer variants based on Ensembl
