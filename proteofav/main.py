@@ -16,14 +16,82 @@ logging.basicConfig(level=9,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
 
 
+def _merge_dssp(cif_table, pdb_id, chain, sequence_check):
+    dssp_table = select_dssp(pdb_id, chains=chain)
+
+    cif_table.loc[:, 'label_seq_id'] = cif_table.loc[:, 'label_seq_id'].astype(int)
+    table = cif_table.merge(dssp_table, how='left',
+                            left_on=['auth_seq_id', 'auth_asym_id'],
+                            right_on=['icode', 'chain_id'])
+
+    if sequence_check == 'ignore':
+        # sequence check not support for multiple atoms
+        pass
+    else:
+        # exchange lower cased aa's for  for cysteines
+        lower_cased_aa = table['aa'].str.islower()
+        if lower_cased_aa.any():
+            table.loc[lower_cased_aa, 'aa'] = 'C'
+
+        mask = table['label_comp_id'].isnull() | table['aa'].isnull()
+        mask |= table['aa'] == 'X'
+        cif_seq = table['label_comp_id'].apply(to_single_aa.get, args='X')
+        dssp_seq = table['aa']
+
+        # Check if the sequences are the same
+        if not (dssp_seq[~mask] == cif_seq[~mask]).all():
+            log_msg = '{}|{} Cif and DSSP files have different sequences.'.format(pdb_id, chain)
+            if sequence_check == 'raise':
+                raise ValueError(log_msg)
+            else:
+                log.warn(log_msg)
+    return table
+
+
+def _merge_sif(table, pdb_id, chain, sequence_check):
+    sifts_table = select_sifts(pdb_id, chains=chain)
+    try:
+        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(int)
+        table = sifts_table.merge(table, how='left',
+                                  left_on=['PDB_dbResNum', 'PDB_dbChainId'],
+                                  right_on=['auth_seq_id', 'auth_asym_id'])
+
+    except ValueError:
+        # PDB resnumber has a insertion code
+        table.pdbx_PDB_ins_code = table.pdbx_PDB_ins_code.replace('?', '')
+        table['index'] = table.auth_seq_id.astype(str) + table.pdbx_PDB_ins_code
+        table = table.merge(sifts_table, how='left',
+                            left_on=['index', 'auth_asym_id'],
+                            right_on=['PDB_dbResNum', 'PDB_dbChainId'])
+
+    if sequence_check == 'ignore':
+        pass
+    else:
+        # Update reference sequence with the new table
+        mask = table['auth_comp_id'].isnull() | table['PDB_dbResName'].isnull()
+        cif_seq = table['auth_comp_id'].apply(to_single_aa.get, args='X')
+        sifts_seq = table['PDB_dbResName'].apply(to_single_aa.get, args='X')
+
+        # Check if the sequences are the same
+        if not (sifts_seq[~mask] == cif_seq[~mask]).all():
+            log_msg = '{}|{} Cif and Sifts files have different sequences.'.format(pdb_id, chain)
+            if sequence_check == 'raise':
+                raise ValueError(log_msg)
+            else:
+                log.warn(log_msg)
+    return table
+
+
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='first',
                  sequence_check='raise', drop_empty_cols=False, add_validation=False,
-                 add_annotation=False,
-                 add_ensembl_variants=None, add_uniprot_variants=False):
+                 add_annotation=False, add_ensembl_variants=False, add_uniprot_variants=False,
+                 cif_file=None, ignore_DSSP=False):
     """
     Join multiple resource tables. If no pdb_id uses sifts_best_structure
     If no chain uses the first on.
 
+    :param ignore_DSSP: Whether to ignore DSSP merge or not
+    :param str or None cif_file: Overrides default fetching system for external cif files
     :param str or None uniprot_id: Fetch Sifts best (higher coverage) protein structure for
     this UniProt entry
     :param str or None pdb_id: Entry to be loaded
@@ -61,65 +129,10 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
 
     cif_table = select_cif(pdb_id, chains=chain, models=model, atoms=atoms)
 
-    dssp_table = select_dssp(pdb_id, chains=chain)
+    if not ignore_DSSP:
+        table = _merge_dssp(cif_table, pdb_id, chain, sequence_check)
 
-    cif_table.loc[:, 'label_seq_id'] = cif_table.loc[:, 'label_seq_id'].astype(int)
-    table = cif_table.merge(dssp_table, how='left',
-                            left_on=['auth_seq_id', 'auth_asym_id'],
-                            right_on=['icode', 'chain_id'])
-
-    if sequence_check == 'ignore' or atoms is None:
-        # sequence check not support for multiple atoms
-        pass
-    else:
-        # exchange lower cased aa's for  for cysteines
-        lower_cased_aa = table['aa'].str.islower()
-        if lower_cased_aa.any():
-            table.loc[lower_cased_aa, 'aa'] = 'C'
-
-        mask = table['label_comp_id'].isnull() | table['aa'].isnull()
-        mask |= table['aa'] == 'X'
-        cif_seq = table['label_comp_id'].apply(to_single_aa.get, args='X')
-        dssp_seq = table['aa']
-
-        # Check if the sequences are the same
-        if not (dssp_seq[~mask] == cif_seq[~mask]).all():
-            log_msg = '{}|{} Cif and DSSP files have different sequences.'.format(pdb_id, chain)
-            if sequence_check == 'raise':
-                raise ValueError(log_msg)
-            else:
-                log.warn(log_msg)
-
-    sifts_table = select_sifts(pdb_id, chains=chain)
-    try:
-        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(int)
-        table = sifts_table.merge(table, how='left',
-                                  left_on=['PDB_dbResNum', 'PDB_dbChainId'],
-                                  right_on=['auth_seq_id', 'auth_asym_id'])
-
-    except ValueError:
-        # PDB resnumber has a insertion code
-        table.pdbx_PDB_ins_code = table.pdbx_PDB_ins_code.replace('?', '')
-        table['index'] = table.auth_seq_id.astype(str) + table.pdbx_PDB_ins_code
-        table = table.merge(sifts_table, how='left',
-                            left_on=['index', 'auth_asym_id'],
-                            right_on=['PDB_dbResNum', 'PDB_dbChainId'])
-
-    if sequence_check == 'ignore' or atoms is None:
-        pass
-    else:
-        # Update reference sequence with the new table
-        mask = table['auth_comp_id'].isnull() | table['PDB_dbResName'].isnull()
-        cif_seq = table['auth_comp_id'].apply(to_single_aa.get, args='X')
-        sifts_seq = table['PDB_dbResName'].apply(to_single_aa.get, args='X')
-
-        # Check if the sequences are the same
-        if not (sifts_seq[~mask] == cif_seq[~mask]).all():
-            log_msg = '{}|{} Cif and Sifts files have different sequences.'.format(pdb_id, chain)
-            if sequence_check == 'raise':
-                raise ValueError(log_msg)
-            else:
-                log.warn(log_msg)
+    table = _merge_sif(table, pdb_id, chain, sequence_check)
 
     if add_validation:
         validation_table = select_validation(pdb_id, chains=chain)
@@ -131,7 +144,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
 
     variant_features = []
     if add_ensembl_variants:
-        variant_features.extend(['ensembl_somatic', 'ensembl_germline'])
+        variant_features.extend(['ensembl_somatic', 'ensembl_polymorphisms'])
     if add_uniprot_variants:
         variant_features.append(['uniprot'])
     if variant_features:

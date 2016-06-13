@@ -315,20 +315,23 @@ def _import_dssp_chains_ids(pdb_id):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA'):
+def select_cif(pdb_id=None, cif_path=None, models='first', chains=None, lines='ATOM', atoms='CA'):
     """
     Produce table read from mmCIF file.
 
-    :param atoms: Which atom should represent the structure
-    :param pdb_id: PDB identifier
-    :param pdb_id: PDB identifier
-    :param models: protein structure entity
-    :param chains: protein structure chain
-    :param lines: choice of ATOM, HETATMS or both (list).
+    :param str or None cif_path: path to the cif_file. Ignores pdb_id if given.
+    :param str or Nome atoms: Which atom should represent the structure
+    :param str or Nome pdb_id: PDB identifier
+    :param str or Nome models: protein structure entity
+    :param str or Nome chains: protein structure chain
+    :param str or Nome lines: choice of ATOM, HETATMS or both (list).
     :return: Table read to be joined
     """
     # load the table
-    cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
+    if cif_path is None:
+        cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
+    elif pdb_id:
+        raise TypeError("One of the following parameters is mandatory: pdb_id, cif_path.")
     try:
         cif_table = _mmcif_atom(cif_path)
     except IOError:
