@@ -5,7 +5,11 @@
 import logging
 import sys
 import unittest
-from mock import patch
+try:
+    from mock import patch
+except ImportError:
+    # python 3.5
+    from unittest.mock import patch
 from os import path
 
 from proteofav.config import Defaults

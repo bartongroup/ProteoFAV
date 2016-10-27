@@ -4,8 +4,16 @@
 Created on 17:26 19/02/2016 2016 
 Define auxiliary functions for interacting with Uniprot.
 """
-from StringIO import StringIO
-from urlparse import parse_qs
+try:
+    # python 2.7
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO, BytesIO
+try:
+    # python 2.7
+    from urlparse import parse_qs
+except ImportError:
+    from urllib.parse import parse_qs
 
 import pandas as pd
 
@@ -71,7 +79,11 @@ def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
     url = defaults.api_uniprot
     response = get_url_or_retry(url=url, retry_in=retry_in, **params)
     try:
-        data = pd.read_table(StringIO(response))
+        try:
+            data = pd.read_table(StringIO(response))
+        except TypeError:
+            # python 3.5
+            data = pd.read_table(BytesIO(response))
     except ValueError as e:
         log.error(e)
         data = response

@@ -1,7 +1,10 @@
 # coding=utf-8
 import unittest
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 from requests.exceptions import HTTPError
 
 from proteofav.uniprot import (fetch_uniprot_sequence, fetch_uniprot_formal_specie, _uniprot_info,
@@ -116,7 +119,11 @@ class UniprotTestCase(unittest.TestCase):
         last_field = 1004
 
         table = self.uniprot_info('P38995')
-        self.assertItemsEqual(table.columns, t_header.split(','))
+        try:
+            self.assertItemsEqual(table.columns, t_header.split(','))
+        except AttributeError:
+            # python 3.5
+            self.assertCountEqual(table.columns, t_header.split(','))
         self.assertEqual(table.iloc[0, 0], first_field)
         self.assertEqual(table.iloc[0, -1], last_field)
 
@@ -129,7 +136,7 @@ class UniprotTestCase(unittest.TestCase):
         self.assertTrue(set("NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP".split())
                         .issubset(table.columns))
         self.assertTrue(table['empty'].isnull().all())
-        self.assertTrue(table['END'].max() <= self.ccc2_sequence)
+        self.assertTrue(table['END'].max() <= len(self.ccc2_sequence))
 
     def test_map_uniprot_gff(self):
         table = self.map_gff_features_to_sequence('P38995')

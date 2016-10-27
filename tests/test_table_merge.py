@@ -6,7 +6,11 @@ import logging
 import unittest
 from os import path
 
-from mock import patch
+try:
+    from mock import patch
+except ImportError:
+    # python 3.5
+    from unittest.mock import patch
 
 from proteofav.config import Defaults
 from proteofav.main import merge_tables

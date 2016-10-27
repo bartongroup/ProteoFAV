@@ -13,6 +13,7 @@ from proteofav.uniprot import (map_gff_features_to_sequence, _uniprot_to_ensembl
                                fetch_uniprot_formal_specie, fetch_uniprot_sequence,
                                _uniprot_info, _fetch_uniprot_gff)
 from proteofav.utils import (get_url_or_retry, check_local_or_fetch)
+from proteofav.library import valid_ensembl_species
 
 log = logging.getLogger(__name__)
 
@@ -125,7 +126,7 @@ def _uniprot_ensembl_mapping(identifier, species=None):
     :param species: Ensembl species
     :return: pandas table dataframe
     """
-    from library import valid_ensembl_species
+
     if species not in valid_ensembl_species:
         raise ValueError('Provided species {} is not valid'.format(species))
 

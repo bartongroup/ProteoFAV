@@ -62,8 +62,11 @@ class TestDSSPParser(unittest.TestCase):
             'D4')
         table = fix('4v9d')
         dssp_has_seq = table.aa.isin(scop_3to1.values())
-        print table.loc[dssp_has_seq, 'chain_id'].unique()
-        self.assertItemsEqual(table.loc[dssp_has_seq, 'chain_id'].unique(), chains_4v9d)
+        try:
+            self.assertItemsEqual(table.loc[dssp_has_seq, 'chain_id'].unique(), chains_4v9d)
+        except NameError:
+            # python 3.5
+            self.assertCountEqual(table.loc[dssp_has_seq, 'chain_id'].unique(), chains_4v9d)
 
     def test_to_table_dssp_3mg7(self):
         """

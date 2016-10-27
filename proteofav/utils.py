@@ -110,7 +110,11 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
         filename = identifier + getattr(defaults, source + '_extension')
         url = getattr(defaults, source + '_fetch') + filename
         try:
-            urllib.urlretrieve(url, destination + filename)
+            try:
+                urllib.urlretrieve(url, destination + filename)
+            except AttributeError:
+                # python 3.5
+                urllib.request.urlretrieve(url, destination + filename)
         except IOError as e:
             log.error('Unable to retrieve {} for {}'.format(url, str(e)))
             raise
@@ -336,7 +340,11 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
         ensembl_endpoint = "lookup/id/"
     try:
         if identifier != '':
-            url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
+            try:
+                url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
+            except AttributeError:
+                # python 3.5
+                url = defaults.api_ensembl + ensembl_endpoint + urllib.parse.quote(identifier, safe='')
             data = get_url_or_retry(url, json=True)
             if 'error' in data:
                 return False

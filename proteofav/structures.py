@@ -9,7 +9,11 @@ for better error handling. Both levels are covered by test cases.
 """
 
 import logging
-from StringIO import StringIO
+try:
+    # python 2.7
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 from os import path
 
 import pandas as pd
@@ -97,7 +101,7 @@ def _mmcif_fields(filename, field_name='exptl.',
     """
     header = []
     lines = []
-    with open(filename) as handle:
+    with open(filename, "r+") as handle:
         for line in handle:
             if line.startswith(field_name):
                 break
@@ -106,17 +110,26 @@ def _mmcif_fields(filename, field_name='exptl.',
         if 'loop_' in last_line:
             while line.startswith(field_name):
                 header.append(line.replace(field_name, '').rstrip())
-                line = handle.next()
+                try:
+                    line = handle.next()
+                except AttributeError:
+                    line = next(handle)
             while not line.startswith('#'):
                 lines.append(line.replace('"', "'"))
-                line = handle.next()
+                try:
+                    line = handle.next()
+                except AttributeError:
+                    line = next(handle)
         else:
             while line.startswith(field_name):
                 line = line.replace(field_name, '').rstrip()
                 head, data = line.split(None, 1)
                 header.append(head)
                 lines.append(data)
-                line = handle.next()
+                try:
+                    line = handle.next()
+                except AttributeError:
+                    line = next(handle)
             lines = (' '.join(lines)).replace('"', "'")
 
     if require_index:

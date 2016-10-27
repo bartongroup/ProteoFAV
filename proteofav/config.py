@@ -28,7 +28,11 @@ from __future__ import print_function
 import tempfile
 import logging
 from os import path
-from ConfigParser import ConfigParser
+try:
+    # python 2.7
+    from ConfigParser import ConfigParser
+except ImportError:
+    from configparser import ConfigParser
 
 __all__ = ["defaults", "Defaults"]
 
