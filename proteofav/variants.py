@@ -6,6 +6,7 @@ import logging
 
 import pandas as pd
 import requests
+from pandas.io.json import json_normalize
 
 from proteofav.config import defaults
 from proteofav.library import valid_ensembl_species
@@ -21,6 +22,63 @@ log = logging.getLogger(__name__)
 ##############################################################################
 # Private methods
 ##############################################################################
+
+def _fetch_icgc_variants(identifier):
+    """
+    Queries the ICGC data portal for the PanCancer variants based on Ensembl
+    transcript identifier.
+    :param str identifier: Ensembl transcript
+    :return pandas.DataFrame: pandas table dataframe
+    """
+    transition_regex = '(?P<ref>[A-Z])(?P<position>[0-9]+)(?P<new>[A-Z])'
+    variation_endpoint = "protein/"
+    url = defaults.api_icgc + variation_endpoint + identifier
+    # fetches a nested json
+
+    # normalise the data, making it flat
+    data = get_url_or_retry(url, json=True)
+    data = pd.io.json.json_normalize(
+            data['hits'],
+            ['transcripts'],
+            ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
+    data = data[data['id'] == identifier]
+    data.drop(['id'], axis=1, inplace=True)
+    data.rename(columns={'_id': 'id'}, inplace=True)
+
+    consequence = data.pop('consequence')
+    if consequence.index.duplicated().any():
+        log.warn('Joining ICGC variant data with its consequences data aborted:'
+                 ' Duplicated index for {}.'.format(identifier))
+    else:
+        data = data.join(consequence.apply(pd.Series), rsuffix='_protein')
+        transition = data.aaMutation.str.extract(transition_regex)
+        data = data.join(transition)
+
+    return data
+
+
+def _fetch_ebi_variants(ensembl_transcript_id, flat_xrefs=True):
+    """Fetchs the varition data from EBI also used in the UniProt feature viwer
+    :param ensembl_transcript_id: UniProt identifier
+    :return pandas.DataFrame: the table where each row is associated with a variation entry
+    """
+    endpoint = "variation/"
+    url = defaults.api_ebi_uniprot + endpoint + ensembl_transcript_id
+
+    data = get_url_or_retry(url, json=True)
+    data = json_normalize(data, ['features'], meta=['accession', 'entryName'])
+
+    # flatten the xref field, which has the id column.
+    # ideally this could be normalised with:
+    # table = json_normalize(data, ['features', 'xref'] ...
+    # but this field is not present in all entries,
+    if flat_xrefs:
+        flat_xref = data['xrefs'].apply(pd.Series).stack().apply(pd.Series)
+        flat_xref.reset_index(level=1, drop=True, inplace=True)
+        data = data.join(flat_xref)
+    return data
+
+
 def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
     """Queries the Ensembl API for germline variants (mostly dbSNP) and somatic
     (mostly COSMIC) based on Ensembl Protein identifiers (e.g. ENSP00000326864).
