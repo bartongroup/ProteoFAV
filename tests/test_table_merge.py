@@ -55,11 +55,11 @@ class TestTableMerger(unittest.TestCase):
         self.assertIsNotNone(data)
         self.assertFalse(data.empty)
 
-        self.assertEqual(data.label_atom_id.dropna().unique()[0], 'CA' , 'Other atoms than CA')
+        self.assertEqual(data.label_atom_id.dropna().unique()[0], 'CA', 'Other atoms than CA')
 
         self.assertEqual(data.PDB_dbChainId.unique()[0], 'A', 'Other chain')
-        self.assertEqual(data.chain_id.dropna().unique(), 'A', 'Other chain')
-        self.assertEqual(data.PDB_dbChainId.dropna().unique(), 'A', 'Other chain')
+        self.assertEqual(data.chain_id.dropna().unique()[0], 'A', 'Other chain')
+        self.assertEqual(data.label_asym_id.dropna().unique()[0], 'A', 'Other chain')
 
         self.assertEqual(data.shape[0], 349, 'wrong number of rows')
         self.assertEqual(data.aa[~data.aa.isnull()].shape[0], 278, 'wrong number of residues')
@@ -68,13 +68,11 @@ class TestTableMerger(unittest.TestCase):
             326,
             'wrong number of residues')
 
-
     def test_merge_4ibw_A_with_alt_loc(self):
         """
         Test case in a structure with alt locations."""
         data = self.merge_table(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
-
 
     def test_merge_3mn5_with_insertion_code(self):
         """
@@ -103,10 +101,12 @@ class TestTableMerger(unittest.TestCase):
         self.data = self.merge_table(pdb_id='3ehk', chain='D')
         self.assertFalse(self.data.empty)
 
+    @unittest.expectedFailure
     def test_merge_4v9d_BD_excessive_chains(self):
         """
-        DSSP files does not have BD chain. What can be done is mapping the Cif sequence to the
-        order of chain in DSSP but merge_tables won't support that by default.
+        DSSP files does not have BD chain, since its chain naming only support one character.
+        Although its possible to map and reference the BD chain into the mmCIF table,
+        it is currently unsupported by merge_tables.
         """
         data = self.merge_table(pdb_id='4v9d', chain='BD')
         self.assertFalse(data.empty)
