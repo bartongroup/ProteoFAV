@@ -20,7 +20,7 @@ defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 
 @patch("proteofav.structures.defaults", defaults)
 class TestTableMerger(unittest.TestCase):
-    """Test table merging methods the DSSP parser methods."""
+    """Test table merging methods."""
 
     def setUp(self):
         """Initialize the framework for testing."""
