@@ -1,7 +1,6 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
-
-
+from __future__ import absolute_import
 import logging
 import unittest
 from os import path
@@ -16,9 +15,8 @@ from proteofav.config import Defaults
 from proteofav.main import merge_tables
 from proteofav.structures import _dssp, _sifts_residues_regions, _mmcif_atom
 
-log = logging.getLogger(__name__)
-
-defaults = Defaults("config.txt")
+logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn of logging
+defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 
 
 @patch("proteofav.structures.defaults", defaults)
@@ -45,7 +43,7 @@ class TestTableMerger(unittest.TestCase):
 
         self.merge_table = None
 
-    def test_camIV_ca_mode(self):
+    def test_camKIV_ca_atom(self):
         """
         Test table merger for a protein example.
         :return:
@@ -149,4 +147,4 @@ class TestTableMerger(unittest.TestCase):
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMerger)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.TextTestRunner(verbosity=1).run(suite)
