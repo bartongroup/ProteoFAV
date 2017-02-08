@@ -1,6 +1,5 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
 import logging
 import unittest
 from os import path
@@ -15,7 +14,7 @@ from proteofav.config import Defaults
 from proteofav.main import merge_tables
 from proteofav.structures import _dssp, _sifts_residues_regions, _mmcif_atom
 
-logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn of logging
+logging.getLogger('proteofav').setLevel(logging.INFO)  # turn of logging
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 
 
