@@ -21,7 +21,7 @@ defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 
 @patch("proteofav.structures.defaults", defaults)
 class TestTableMerger(unittest.TestCase):
-    """Test table merging methodsthe DSSP parser methods."""
+    """Test table merging methods the DSSP parser methods."""
 
     def setUp(self):
         """Initialize the framework for testing."""
@@ -43,46 +43,38 @@ class TestTableMerger(unittest.TestCase):
 
         self.merge_table = None
 
+    def test_empty(self):
+        """Test no argument cases."""
+        with self.assertRaises(TypeError):
+            self.merge_table(pdb_id=None)
+            self.merge_table(uniprot_id=None)
+
     def test_camKIV_ca_atom(self):
-        """
-        Test table merger for a protein example.
-        :return:
-        """
+        """Test table merger for a simple protein example."""
         data = self.merge_table(pdb_id="2w4o", chain="A")
         self.assertIsNotNone(data)
+        self.assertFalse(data.empty)
 
-        self.cif_path = path.join(path.dirname(__file__), "CIF/2w4o.cif")
-        self.sifts_path = path.join(path.dirname(__file__), "SIFTS/2w4o.xml")
-        self.dssp_path = path.join(path.dirname(__file__), "DSSP/2w4o.dssp")
-        self.cif = self.cif_to_table(self.cif_path)
-        self.sifts = self.sifts_to_table(self.sifts_path)
-        self.dssp = self.dssp_to_table(self.dssp_path)
+        self.assertEqual(data.label_atom_id.dropna().unique()[0], 'CA' , 'Other atoms than CA')
 
-        self.assertFalse(self.cif.empty)
-        self.assertFalse(self.sifts.empty)
-        self.assertFalse(self.dssp.empty)
+        self.assertEqual(data.PDB_dbChainId.unique()[0], 'A', 'Other chain')
+        self.assertEqual(data.chain_id.dropna().unique(), 'A', 'Other chain')
+        self.assertEqual(data.PDB_dbChainId.dropna().unique(), 'A', 'Other chain')
 
-        # number of rows (residues) is determined by the number of residues in
-        # cif file
-        chain = self.sifts
-        n_residues = chain.shape[0]
+        self.assertEqual(data.shape[0], 349, 'wrong number of rows')
+        self.assertEqual(data.aa[~data.aa.isnull()].shape[0], 278, 'wrong number of residues')
+        self.assertEqual(
+            data.UniProt_dbResName[~data.UniProt_dbResName.isnull()].shape[0],
+            326,
+            'wrong number of residues')
 
-        self.assertEqual(data.shape[0], n_residues)
-
-        # number of columns is given buy sum of cols in cif, dssp and sifts
-        groupby = {'label_comp_id': 'unique', 'label_atom_id': 'unique',
-                   'label_asym_id': 'unique', 'Cartn_x': 'unique',
-                   'Cartn_y': 'unique', 'Cartn_z': 'unique',
-                   'occupancy': 'unique', 'B_iso_or_equiv': 'unique',
-                   'id': 'unique'}
-        self.cif = self.cif.groupby('auth_seq_id').agg(groupby)
 
     def test_merge_4ibw_A_with_alt_loc(self):
         """
-        Test case in a structure with alt locations.
-        """
+        Test case in a structure with alt locations."""
         data = self.merge_table(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
+
 
     def test_merge_3mn5_with_insertion_code(self):
         """
@@ -111,7 +103,6 @@ class TestTableMerger(unittest.TestCase):
         self.data = self.merge_table(pdb_id='3ehk', chain='D')
         self.assertFalse(self.data.empty)
 
-    @unittest.expectedFailure
     def test_merge_4v9d_BD_excessive_chains(self):
         """
         DSSP files does not have BD chain. What can be done is mapping the Cif sequence to the
@@ -136,7 +127,6 @@ class TestTableMerger(unittest.TestCase):
         data = self.merge_table(pdb_id='2pm7', chain='D')
         self.assertFalse(data.empty)
 
-        # TODO assert fails graciously without data
         # TODO sequence_check='raise' assert raise
         # TODO sequence_check='raise' assert warn
         # TODO test_camIV_list_mode(self):
