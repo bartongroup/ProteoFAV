@@ -5,10 +5,13 @@
 import unittest
 from os import path
 
+import logging
 import numpy
 
 from proteofav.library import scop_3to1
 from proteofav.structures import _dssp, _import_dssp_chains_ids
+
+logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
 
 class TestDSSPParser(unittest.TestCase):
@@ -91,6 +94,10 @@ class TestDSSPParser(unittest.TestCase):
         self.assertEqual(self.data.ix[6402].phi, -57.8)
         self.assertEqual(self.data.ix[6402].psi, 360)
         self.assertNotEqual(self.data.ix[6402].psi, 800)
+
+    def test_empty(self):
+        with self.assertRaises(ValueError):
+            self.residues_parser(path.join(path.dirname(__file__), "DSSP/empty.dssp"))
 
 
 if __name__ == '__main__':
