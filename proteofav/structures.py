@@ -414,7 +414,6 @@ def _residues_as_centroid(table):
     columns_to_agg['auth_atom_id'] = 'unique'
     return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
 
-
 def _import_dssp_chains_ids(pdb_id):
     """Imports mmCIF chain identifier to DSSP.
 
@@ -533,10 +532,13 @@ def select_dssp(pdb_id, chains=None):
         try:
             dssp_table = _table_selector(dssp_table, 'chain_id', chains)
         except ValueError:
+            # TODO:
             # Could not find the correct PDB chain. It happens for protein structures with complex
             # chain identifier, as 4v9d.
-            dssp_table = _import_dssp_chains_ids(pdb_id)
-            dssp_table = _table_selector(dssp_table, 'chain_id', chains)
+            # dssp_table = _import_dssp_chains_ids(pdb_id)
+            # dssp_table = _table_selector(dssp_table, 'chain_id', chains)
+            log.error('Error loading DSSP file: Chain {} not in {}'.format(chains, pdb_id))
+            return None
     # remove dssp line of transition between chains
     dssp_table = dssp_table[dssp_table.aa != '!']
 
