@@ -73,6 +73,10 @@ class TestTableMerger(unittest.TestCase):
         data = self.merge_table(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
 
+    def test_camKIV_from_uniprot_id(self):
+        data = self.merge_table(uniprot_id='Q16566')
+        self.assertFalse(data.empty)
+
     def test_merge_3mn5_with_insertion_code(self):
         """
         Test case with insertion code
