@@ -1,11 +1,13 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
-
-
+import numpy as np
 import unittest
+import logging
 
 from proteofav.uniprot import _uniprot_info
 from proteofav.variants import _uniprot_ensembl_mapping
+
+logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
 
 class TestUNIPROTParser(unittest.TestCase):
@@ -49,7 +51,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.assertEqual(len(data), 1)
 
         # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 7)
+        self.assertEqual(len(data.columns.values), 8)
 
         # check whether there are particular keys
         self.assertIn('Sequence', data.columns.values)
@@ -81,6 +83,17 @@ class TestUNIPROTParser(unittest.TestCase):
 
         # check the values for particular entries
         self.assertEqual(data['GENE'][0], 'ENSG00000130669')
+
+    def test_obsolete_uniprot_accession(self):
+        data = self.uniprot_info('Q91887')
+        self.assertEqual(len(data), 1)
+
+        # number of keys (or columns)
+        self.assertEqual(len(data.columns.values), 8)
+
+        # check the values for particular entries
+        self.assertTrue(np.isnan(data.iloc[0, -1]))   # 'Length'
+        self.assertTrue(np.isnan(data.iloc[0, -1]))    # 'Status'
 
 
 if __name__ == '__main__':
