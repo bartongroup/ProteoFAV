@@ -4,6 +4,8 @@
 Created on 17:26 19/02/2016 2016 
 Define auxiliary functions for interacting with Uniprot.
 """
+from proteofav.structures import _table_selector
+
 try:
     # python 2.7
     from StringIO import StringIO
@@ -44,11 +46,12 @@ def fetch_uniprot_formal_specie(uniprot_id, remove_isoform=True):
         uniprot_id = uniprot_id.split('-')[0]
 
     full_specie = _uniprot_info(uniprot_id, cols='organism').iloc[0, 1]
-    try:
 
+    try:
         return " ".join(full_specie.split()[0:2])
     except AttributeError:
-        log.error('Could not retrieve {} information. Maybe it is obsolete?'.format(uniprot_id))
+        log.error('Could not retrieve {} information. Maybe obsolete UniProt accession?'.format(
+            uniprot_id))
 
         return ''
 
@@ -67,10 +70,10 @@ def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
     """
 
     if not cols:
-        cols = ('entry name', 'reviewed', 'protein names', 'genes', 'organism',
+        cols = ('id', 'entry name', 'reviewed', 'protein names', 'genes', 'organism',
                 'sequence', 'length')
     elif isinstance(cols, str):
-        cols = ('entry name', cols)
+        cols = ('id', cols)
 
     params = {'query': 'accession:' + str(uniprot_id),
               'columns': ",".join(cols),
@@ -86,9 +89,9 @@ def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
             data = pd.read_table(BytesIO(response))
     except ValueError as e:
         log.error(e)
-        data = response
-
-    return data
+        return None
+    # id column is called Entry in the table
+    return _table_selector(data, 'Entry', uniprot_id)
 
 
 def _fetch_uniprot_gff(uniprot_id):
