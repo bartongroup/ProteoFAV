@@ -14,7 +14,7 @@ from proteofav.config import Defaults
 from proteofav.main import merge_tables
 from proteofav.structures import _dssp, _sifts_residues_regions, _mmcif_atom
 
-logging.getLogger('proteofav').setLevel(logging.INFO)  # turn of logging
+logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 
 
@@ -67,14 +67,14 @@ class TestTableMerger(unittest.TestCase):
             326,
             'wrong number of residues')
 
+    def test_camKIV_from_uniprot_id(self):
+        data = self.merge_table(uniprot_id='Q16566')
+        self.assertFalse(data.empty)
+
     def test_merge_4ibw_A_with_alt_loc(self):
         """
         Test case in a structure with alt locations."""
         data = self.merge_table(pdb_id="4ibw", chain="A")
-        self.assertFalse(data.empty)
-
-    def test_camKIV_from_uniprot_id(self):
-        data = self.merge_table(uniprot_id='Q16566')
         self.assertFalse(data.empty)
 
     def test_merge_3mn5_with_insertion_code(self):

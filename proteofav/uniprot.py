@@ -4,8 +4,6 @@
 Created on 17:26 19/02/2016 2016 
 Define auxiliary functions for interacting with Uniprot.
 """
-from proteofav.structures import _table_selector
-
 try:
     # python 2.7
     from StringIO import StringIO
@@ -21,6 +19,7 @@ import pandas as pd
 
 from proteofav.config import defaults
 from proteofav.utils import get_url_or_retry, log
+from proteofav.structures import _table_selector
 
 
 def fetch_uniprot_sequence(uniprot_id):
