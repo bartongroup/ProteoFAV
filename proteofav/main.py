@@ -12,8 +12,7 @@ from proteofav.variants import (map_gff_features_to_sequence, select_variants)
 
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
-logging.basicConfig(level=9,
-                    format='%(asctime)s - %(levelname)s - %(message)s ')
+logging.basicConfig(level=9, format='%(asctime)s - %(levelname)s - %(message)s ')
 
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='first',

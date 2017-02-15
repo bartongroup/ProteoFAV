@@ -18,7 +18,6 @@ logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 
 
-@patch("proteofav.structures.defaults", defaults)
 class TestTableMerger(unittest.TestCase):
     """Test table merging methods."""
 
@@ -42,12 +41,14 @@ class TestTableMerger(unittest.TestCase):
 
         self.merge_table = None
 
+    @patch("proteofav.structures.defaults", defaults)
     def test_empty(self):
         """Test no argument cases."""
         with self.assertRaises(TypeError):
             self.merge_table(pdb_id=None)
             self.merge_table(uniprot_id=None)
 
+    @patch("proteofav.structures.defaults", defaults)
     def test_camKIV_ca_atom(self):
         """Test table merger for a simple protein example."""
         data = self.merge_table(pdb_id="2w4o", chain="A")
@@ -67,16 +68,14 @@ class TestTableMerger(unittest.TestCase):
             326,
             'wrong number of residues')
 
-    def test_camKIV_from_uniprot_id(self):
-        data = self.merge_table(uniprot_id='Q16566')
-        self.assertFalse(data.empty)
-
+    @patch("proteofav.structures.defaults", defaults)
     def test_merge_4ibw_A_with_alt_loc(self):
         """
         Test case in a structure with alt locations."""
         data = self.merge_table(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
 
+    @patch("proteofav.structures.defaults", defaults)
     def test_merge_3mn5_with_insertion_code(self):
         """
         Test case with insertion code
@@ -96,6 +95,7 @@ class TestTableMerger(unittest.TestCase):
         data = self.merge_table(pdb_id="3mn5", chain="A")
         self.assertFalse(data.empty)
 
+    @patch("proteofav.structures.defaults", defaults)
     def test_merge_3fqd_A_no_pdbe_label_seq_id(self):
         self.data = self.merge_table(pdb_id='3fqd', chain='A')
         self.assertFalse(self.data.empty)
@@ -104,6 +104,7 @@ class TestTableMerger(unittest.TestCase):
         self.data = self.merge_table(pdb_id='3ehk', chain='D')
         self.assertFalse(self.data.empty)
 
+    @patch("proteofav.structures.defaults", defaults)
     @unittest.expectedFailure
     def test_merge_4v9d_BD_excessive_chains(self):
         """
@@ -114,28 +115,74 @@ class TestTableMerger(unittest.TestCase):
         data = self.merge_table(pdb_id='4v9d', chain='BD')
         self.assertFalse(data.empty)
 
+    @patch("proteofav.structures.defaults", defaults)
     def test_merge_4abo_A_DSSP_missing_first_residue(self):
         data = self.merge_table(pdb_id='4abo', chain='A')
         self.assertFalse(data.empty)
 
+    @patch("proteofav.structures.defaults", defaults)
     def test_merge_4why_K_DSSP_index_as_object(self):
         data = self.merge_table(pdb_id='4why', chain='K')
         self.assertFalse(data.empty)
 
+    @patch("proteofav.structures.defaults", defaults)
     def test_merge_2pm7_D_missing_residue_DSSP(self):
         data = self.merge_table(pdb_id='2pm7', chain='D')
         self.assertFalse(data.empty)
 
+    @patch("proteofav.structures.defaults", defaults)
     def test_merge_4myi_A_fail(self):
         data = self.merge_table(pdb_id='2pm7', chain='D')
         self.assertFalse(data.empty)
 
-        # TODO sequence_check='raise' assert raise
-        # TODO sequence_check='raise' assert warn
+    @patch("proteofav.structures.defaults", defaults)
+    def test_camKIV_wrong_chain(self):
+        with self.assertRaises(ValueError):
+            self.merge_table(pdb_id='2w4o', chain='D')
+
+    @patch("proteofav.structures.defaults", defaults)
+    def test_camKIV_wrong_atom(self):
+        with self.assertRaises(ValueError):
+            self.merge_table(pdb_id='2w4o', chain='A', atoms=['CC'])
+
+    @patch("proteofav.structures.defaults", defaults)
+    def test_camKIV_atom_list(self):
         # TODO test_camIV_list_mode(self):
+        data = self.merge_table(pdb_id='2w4o', chain='A', atoms=['CA', 'CB'])
+        self.assertFalse(data.empty)
+
+    @patch("proteofav.structures.defaults", defaults)
+    def test_camKIV_atom_centroid(self):
         # TODO test_camIV_centroid_mode(self):
-        # TODO def test_dssp_3ovv(self):
+        data = self.merge_table(pdb_id='2w4o', chain='A', atoms='centroid')
+        self.assertFalse(data.empty)
+
+    @patch("proteofav.structures.defaults", defaults)
+    def test_3edv_string_index(self):
         # TODO def test_sift_3edv(self): Example dbResNum is a string, therefore was not merging.
+        pass
+
+    def test_camKIV_from_uniprot_id(self):
+        defaults.api_pdbe = 'http://www.ebi.ac.uk/pdbe/api/'
+        with patch('proteofav.structures.defaults', defaults):
+            data = self.merge_table(uniprot_id='Q16566')
+            self.assertFalse(data.empty)
+
+    @patch("proteofav.structures.defaults", defaults)
+    def test_sequence_check_raise(self):
+        # The first and the second residues in the cif file were swaped to GLY
+        # so they can't be checked with dssp and sift sequences
+        badcif_path = path.join(path.dirname(__file__), "CIF/2w4o_with_error.cif")
+        baddata = self.cif_to_table(badcif_path)
+
+        with patch("proteofav.structures._mmcif_atom", return_value=baddata):
+            with self.assertRaises(ValueError):
+                data = self.merge_table(pdb_id='2w4o')
+
+        #
+    # def test_sequence_check_warn(self):
+    #     # TODO sequence_check='warn'
+    #     pass
 
 
 if __name__ == '__main__':
