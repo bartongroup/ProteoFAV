@@ -1,5 +1,9 @@
-recursive-include docs *.rst
+include AUTHORS.rst
+
+include CONTRIBUTING.rst
+include HISTORY.rst
+
 include README.rst
 include LICENSE.txt
-#include CHANGELOG.rst
 include tests
+recursive-include docs *.rst
