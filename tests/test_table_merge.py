@@ -177,13 +177,9 @@ class TestTableMerger(unittest.TestCase):
 
         with patch("proteofav.structures._mmcif_atom", return_value=baddata):
             with self.assertRaises(ValueError):
-                data = self.merge_table(pdb_id='2w4o')
-
-        #
-    # def test_sequence_check_warn(self):
-    #     # TODO sequence_check='warn'
-    #     pass
-
+                self.merge_table(pdb_id='2w4o')
+            # data = self.merge_table(pdb_id='2w4o', sequence_check='warn') # todo try capture warn
+            # self.assertFalse(data.empty)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMerger)
