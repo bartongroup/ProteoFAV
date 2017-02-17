@@ -4,9 +4,10 @@ Usage
 
 ProteoFAV works both as a module and a command line tool.
 
-from the command line use::
+From the command line use::
 
     python PycharmProjects/ProteoFAV/ --pdb=2w4o --chain=A test.csv
+
 
 To use ProteoFAV in a project::
 
