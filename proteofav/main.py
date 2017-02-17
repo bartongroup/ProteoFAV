@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
-
-from __future__ import print_function
-
+import argparse
 import logging
 
-from proteofav.library import to_single_aa
-from proteofav.structures import (select_cif, select_dssp, select_sifts,
-                                  select_validation, sifts_best)
-from proteofav.variants import (map_gff_features_to_sequence, select_variants)
+import sys
 
-log = logging.getLogger(__name__)
-logging.captureWarnings(True)
-logging.basicConfig(level=9, format='%(asctime)s - %(levelname)s - %(message)s ')
+from .library import to_single_aa
+from .structures import (select_cif,
+                         select_dssp,
+                         select_sifts,
+                         select_validation,
+                         sifts_best)
 
+from .variants import (map_gff_features_to_sequence,
+                       select_variants)
+__all__= ['merge_tables', 'parse_args', 'main']
+log = logging.getLogger('proteofav.config')
 
 def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='first',
                  sequence_check='raise', drop_empty_cols=False, add_validation=False,
@@ -139,7 +141,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
             variants_table.reset_index(inplace=True)
             variants_table['UniProt_dbAccessionId'] = identifier
             variants_table.rename(columns={'start': 'UniProt_dbResNum'}, inplace=True)
-            table = table.merge(variants_table, how='left',
+            table = table.merge(variants_table,
+                                 how='left',
                                 on=['UniProt_dbResNum', 'UniProt_dbAccessionId'])
 
     if add_annotation:
@@ -148,7 +151,8 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
             uniprot_annotation.reset_index(inplace=True)
             uniprot_annotation['UniProt_dbAccessionId'] = identifier
             uniprot_annotation.rename(columns={'index': 'UniProt_dbResNum'}, inplace=True)
-            table = table.merge(uniprot_annotation, how='left',
+            table = table.merge(uniprot_annotation,
+                                how='left',
                                 on=['UniProt_dbAccessionId', 'UniProt_dbResNum'])
 
     # non-positional information goes to an attribute
@@ -170,5 +174,72 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
     return table
 
 
+def parse_args(args):
+    usage = """ProteFAV: a Python framework to process and integrate protein structure and
+    features to genetic variants."""
+    out_choices = ['csv', 'json', 'tab']  # TODO add JALVIEW and chimera
+    parser = argparse.ArgumentParser(description=__doc__, usage=usage)
+    parser.add_argument('--pdb', type=str, default=None,
+                        help='Protein data bank identifier.' )
+    parser.add_argument('--chain', type=str, default=None,
+                        help='Protein structure chain identifier.')
+    parser.add_argument('--uniprot', type=str, default=None,
+                        help='UniProt knowledgebase accession.')
+    parser.add_argument('--type', choices=out_choices, default='csv', dest="out_type",
+                        help='File format for the output.')
+    parser.add_argument('output', help='Path to the output file.')
+    parser.add_argument('-v', '--verbose', action='store_true', help="Show more verbose logging.")
+    parser.add_argument('-l', '--log', default=sys.stderr,
+                        help="Path to the logfile.")
+    parser.add_argument('--add_annotation', action='store_true',
+                        help="Whether to merge annotation information to the output.")
+    parser.add_argument('--add_validation', action='store_true',
+                        help="Whether to merge protein structure validation information to the "
+                             "output.")
+    parser.add_argument('--add_variants', action='store_true',
+                        help="Whether to merge genetic variant information to the output.")
+    parser.add_argument('--remove_redundant', action='store_true',
+                        help="Whether to remove columns with redundant information from the "
+                             "output.")
+
+    return parser.parse_args(args)
+
+
+def main():
+    """
+
+    :param args: command line arguments
+    :return: None
+    """
+    args = parse_args(sys.argv[1:])
+
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(stream=args.log, level=level,
+                        format='%(asctime)s - %(levelname)s - %(message)s ')
+
+    if args.output is None:
+        log.error("Provide a path for the output file.")
+        return 1
+
+
+    table = merge_tables(pdb_id=args.pdb,
+                         chain=args.chain,
+                         uniprot_id=args.uniprot,
+                         add_annotation=args.add_annotation,
+                         add_validation=args.add_validation,
+                         add_ensembl_variants=args.add_variants,
+                         drop_empty_cols=args.remove_redundant)
+
+    if args.out_type == 'csv':
+        table.to_csv(args.output)
+    elif args.out_type in {'jalview', 'chimera'}:
+        raise NotImplementedError
+    else:
+        if hasattr(table, "to_" + args.out_type):
+            fun = getattr(table, "to_" + args.out_type)
+            fun(args.output)
+    return 0
+
+
 if __name__ == '__main__':
-    pass
+    sys.exit(main())

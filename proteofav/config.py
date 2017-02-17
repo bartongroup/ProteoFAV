@@ -28,6 +28,9 @@ from __future__ import print_function
 import tempfile
 import logging
 from os import path
+
+import sys
+
 try:
     # python 2.7
     from ConfigParser import ConfigParser
@@ -35,8 +38,10 @@ except ImportError:
     from configparser import ConfigParser
 
 __all__ = ["defaults", "Defaults"]
-
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
+logging.captureWarnings(True)
+logging.basicConfig(stream=sys.stderr, level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s ')
 
 
 class Defaults(object):
@@ -61,10 +66,10 @@ class Defaults(object):
             for var_name, var_par in self.__config.items(section):
                 if var_par == "...":
                     if not logged_header:
-                        logger.warning(" Some parameters in the config.txt file need "
+                        log.warning(" Some parameters in the config.txt file need "
                                        "to be updated...")
                         logged_header = True
-                    logger.warning(" Update the value for parameter {}"
+                    log.warning(" Update the value for parameter {}"
                                    "...".format(var_name))
                     var_par = tempfile.gettempdir()
                 yield var_name, var_par

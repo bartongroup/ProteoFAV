@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import gzip
 import json
 import logging
@@ -11,7 +9,7 @@ import shutil
 import socket
 import time
 import urllib
-from os import path
+
 
 import numpy as np
 import pandas as pd
@@ -20,9 +18,13 @@ import requests
 from .config import defaults
 from .library import valid_ensembl_species_variation
 
-# TODO what is this for?
+__all__= ["get_url_or_retry", "check_local_or_fetch", "fetch_files", "get_preferred_assembly_id",
+          "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
+          "_uniprot_pdb_sifts_mapping", "icgc_missense_variant", "is_valid",
+          "is_valid_ensembl_id", "confirm_column_types"]
+
 socket.setdefaulttimeout(15)
-log = logging.getLogger(__name__)
+log = logging.getLogger('proteofav.config')
 
 
 def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **params):
@@ -55,7 +57,6 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **para
         time.sleep(wait)
         return get_url_or_retry(url, retry_in, wait, json, header, **params)
     else:
-        print(response.url)
         log.error(response.status_code)
         response.raise_for_status()
 
@@ -157,7 +158,7 @@ def get_preferred_assembly_id(pdbid, verbose=False):
     except Exception as e:
         message = "Something went wrong for {}... {}".format(pdbid, e)
         if verbose:
-            print(message)
+            log.error(message)
     try:
         nassemblies = data[pdbid][0]["assemblies"]
         if len(nassemblies) > 1:
@@ -543,7 +544,4 @@ def confirm_column_types(table):
 
 
 if __name__ == '__main__':
-    # testing routines
-
-
     pass

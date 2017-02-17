@@ -4,6 +4,8 @@
 Created on 17:26 19/02/2016 2016 
 Define auxiliary functions for interacting with Uniprot.
 """
+import logging
+
 try:
     # python 2.7
     from StringIO import StringIO
@@ -21,6 +23,10 @@ from proteofav.config import defaults
 from proteofav.utils import get_url_or_retry, log
 from proteofav.structures import _table_selector
 
+__all__ = ["fetch_uniprot_sequence", "fetch_uniprot_formal_specie", "_uniprot_info",
+           "_fetch_uniprot_gff", "map_gff_features_to_sequence", "_uniprot_to_ensembl_xref"]
+log = logging.getLogger('proteofav.config')
+
 
 def fetch_uniprot_sequence(uniprot_id):
     """
@@ -28,6 +34,11 @@ def fetch_uniprot_sequence(uniprot_id):
 
     :param str uniprot_id: Uniprot accession
     :return str: the sequence
+
+    :Example:
+    >>> print(fetch_uniprot_formal_specie('P17612'))
+    Homo sapiens
+
     """
 
     return _uniprot_info(uniprot_id, cols='sequence').iloc[0, 1]
@@ -35,11 +46,16 @@ def fetch_uniprot_sequence(uniprot_id):
 
 def fetch_uniprot_formal_specie(uniprot_id, remove_isoform=True):
     """
-    Get the species name of an organism expressing a protein.
+    Gets the species name of an organism expressing a protein.
 
-    :param remove_isoform:
+    :param Bool remove_isoform: whether to remove the isoform identifier.
     :param str uniprot_id: Uniprot accession
-    :return str: the species name (two words)
+    :return: the species name (two words)
+    :rtype: str or None
+
+    :Example:
+    >>> print(fetch_uniprot_sequence('P17612'))[:20]
+    MGNAAAAKKGSEQESVKEFL
     """
     if remove_isoform:
         uniprot_id = uniprot_id.split('-')[0]
@@ -51,8 +67,7 @@ def fetch_uniprot_formal_specie(uniprot_id, remove_isoform=True):
     except AttributeError:
         log.error('Could not retrieve {} information. Maybe obsolete UniProt accession?'.format(
             uniprot_id))
-
-        return ''
+        return None
 
 
 def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
@@ -81,11 +96,10 @@ def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
     url = defaults.api_uniprot
     response = get_url_or_retry(url=url, retry_in=retry_in, **params)
     try:
-        try:
-            data = pd.read_table(StringIO(response))
-        except TypeError:
-            # python 3.5
-            data = pd.read_table(BytesIO(response))
+        data = pd.read_table(StringIO(response))
+    except TypeError:
+        # python 3.5
+        data = pd.read_table(BytesIO(response))
     except ValueError as e:
         log.error(e)
         return None
@@ -186,5 +200,4 @@ def _uniprot_to_ensembl_xref(uniprot_id, species='homo_sapiens'):
 
 
 if __name__ == '__main__':
-    # testing routines
     pass

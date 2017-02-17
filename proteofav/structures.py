@@ -25,7 +25,11 @@ from .config import defaults
 from .library import scop_3to1
 from .utils import fetch_files, get_url_or_retry, get_preferred_assembly_id
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('proteofav.config')
+__all__ = ['_dssp', '_mmcif_atom', '_sifts_residues_regions', '_pdb_validation_to_table',
+           '_rcsb_description', '_get_contacts_from_table', '_table_selector',
+           # '_residues_as_centroid', '_import_dssp_chains_ids',
+           'select_cif', 'select_dssp', 'select_sifts',  'select_validation', 'sifts_best']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 
@@ -628,4 +632,3 @@ def sifts_best(uniprot_id, first=False):
 
 if __name__ == '__main__':
     pass
-    # X = select_dssp('4v9d', chains='BD')

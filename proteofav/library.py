@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+__all__= ["single_letter_aa", "three_letter_aa", "scop_3to1", "to_single_aa",
+          "valid_ensembl_species", "valid_ensembl_species_variation"]
+
 single_letter_aa = list('ACDEFGHIKLMNPQRSTVWY-TDHSM')
 
 three_letter_aa = ["ALA", "CYS", "ASP", "GLU", "PHE", "GLY", "HIS", "ILE",

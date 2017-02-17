@@ -72,12 +72,14 @@ class UniprotTestCase(unittest.TestCase):
 
     def test_mock_a_ptn_sequence(self):
         """
+        Test _uniprot_info table parsing with a Mock request.
+
          ..note:
-        http://www.uniprot.org/uniprot/?query=accession%3AP38995&contact=
-        "&columns=entry+name%2Csequence%2C&format=tab
+        query=accession%3AP38995&contact=%20"&columns=id%2Csequence%2C&format=tab
         """
 
-        table = ("Entry name	Sequence\nATU2_YEAST	" + self.ccc2_sequence)
+        table = """Entry	Sequence\nP38995	""" + self.ccc2_sequence
+
 
         with mock.patch('proteofav.utils.requests') as mock_get:
             mock_get.get.return_value.ok = True
@@ -90,12 +92,12 @@ class UniprotTestCase(unittest.TestCase):
 
     def test_mock_a_ptn_organism_name(self):
         """
-        Mock a Uniprot get for an information table. Test wether the table is
-        parsed correctly
+        Test whether the UniProt info table is parsed correctly by mocking the request.
+
+        ..note:: query=accession%3AP38995&contact=%20"&columns=id%2Corganism%2C&format=tab
         """
         ccc2_organism = 'Saccharomyces cerevisiae'
-        table = """Entry name	Organism\nATU2_YEAST	Saccharomyces cerevisiae (strain ATCC
-        204508 / S288c) (Baker's yeast)"""
+        table = """Entry	Organism\nP38995	Saccharomyces cerevisiae (strain ATCC 204508 / S288c) (Baker's yeast)"""
 
         with mock.patch('proteofav.utils.requests') as mock_get:
             mock_get.get.return_value.ok = True
@@ -104,7 +106,8 @@ class UniprotTestCase(unittest.TestCase):
             self.assertEqual(self.get_uniprot_organism('P38995'), ccc2_organism)
 
             mock_get.get.assert_called_once_with('http://www.uniprot.org/uniprot/',
-                                                 headers=mock.ANY, params=mock.ANY)
+                                                 headers=mock.ANY,
+                                                 params=mock.ANY)
 
     def test_uniprot_info_with_defaults(self):
         """
@@ -114,16 +117,14 @@ class UniprotTestCase(unittest.TestCase):
          Intentionally get info from Uniprot. An Uniprot update may break this.
         """
 
-        t_header = "Entry name,Status,Protein names,Gene names,Organism,Sequence,Length"
-        first_field = "ATU2_YEAST"
+        cols = ("Entry", "Entry name", "Status", "Protein names", "Gene names", "Organism",
+                "Sequence", "Length")
+
+        first_field = "P38995"
         last_field = 1004
 
         table = self.uniprot_info('P38995')
-        try:
-            self.assertItemsEqual(table.columns, t_header.split(','))
-        except AttributeError:
-            # python 3.5
-            self.assertCountEqual(table.columns, t_header.split(','))
+        self.assertEqual(set(table.columns), set(cols))
         self.assertEqual(table.iloc[0, 0], first_field)
         self.assertEqual(table.iloc[0, -1], last_field)
 

@@ -9,14 +9,22 @@ import requests
 from pandas.io.json import json_normalize
 
 from proteofav.config import defaults
-from proteofav.library import valid_ensembl_species
-from proteofav.uniprot import (map_gff_features_to_sequence, _uniprot_to_ensembl_xref,
-                               fetch_uniprot_formal_specie, fetch_uniprot_sequence,
-                               _uniprot_info, _fetch_uniprot_gff)
-from proteofav.utils import (get_url_or_retry, check_local_or_fetch)
+from proteofav.uniprot import (map_gff_features_to_sequence,
+                               _uniprot_to_ensembl_xref,
+                               fetch_uniprot_formal_specie,
+                               fetch_uniprot_sequence,
+                               _uniprot_info)
+from proteofav.utils import (get_url_or_retry,
+                             check_local_or_fetch)
 from proteofav.library import valid_ensembl_species
 
-log = logging.getLogger(__name__)
+__all__ = ["_fetch_icgc_variants", "_fetch_ebi_variants", "_fetch_ensembl_variants",
+           "_fetch_variant_characteristics_from_identifiers",
+           "_sequence_from_ensembl_protein", "_uniprot_ensembl_mapping",
+           "_match_uniprot_ensembl_seq", "_apply_sequence_index_map",
+           "_compare_sequences", "_count_mismatches", "_fetch_uniprot_variants_ebi",
+           "select_variants", "parse_uniprot_variants",  "select_uniprot_variants"]
+log = logging.getLogger('proteofav.config')
 
 
 ##############################################################################
@@ -245,7 +253,6 @@ def _match_uniprot_ensembl_seq(uniprot_id):
             return ensembl_ptn_id
     raise ValueError('No protein with the same sequence was retrivied from Ensembl {}'.format(
         uniprot_id))
-
 
 
 def _apply_sequence_index_map(indexes, imap):
