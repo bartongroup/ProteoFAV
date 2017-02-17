@@ -6,13 +6,12 @@ ProteoFAV works both as a module and a command line tool.
 
 from the command line use::
 
-
-
+    python PycharmProjects/ProteoFAV/ --pdb=2w4o --chain=A test.csv
 
 To use ProteoFAV in a project::
 
     import proteofav
 
-Or
+To import a protected method - do it at your own risk - use::
 
-
+    from proteofav.uniprot import _uniprot_info
