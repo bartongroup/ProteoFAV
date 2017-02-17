@@ -19,8 +19,10 @@ ProteoFAV
      :alt: Updates
 
 
+ProteFAV: protein feature aggregation and variants
 
-Exploring the power of `Pandas`_ to work with protein structures, features and genetic variants.
+ is a Python framework to process and integrate protein structure and features to
+    genetic variants. The tool relies heavily in `Pandas`_ library .
 
 
 Example usage
