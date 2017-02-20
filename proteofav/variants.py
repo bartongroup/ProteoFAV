@@ -38,7 +38,7 @@ def _fetch_icgc_variants(identifier):
     :param str identifier: Ensembl transcript
     :return pandas.DataFrame: pandas table dataframe
     """
-    transition_regex = '(?P<ref>[A-Z])(?P<position>[0-9]+)(?P<new>[A-Z])'
+    transition_regex = '(?P<ref>[A-Z])(?P<position>[0-9]+)(?P<new>[A-Z\*])?'
     variation_endpoint = "protein/"
     url = defaults.api_icgc + variation_endpoint + identifier
     # fetches a nested json
@@ -46,9 +46,9 @@ def _fetch_icgc_variants(identifier):
     # normalise the data, making it flat
     data = get_url_or_retry(url, json=True)
     data = pd.io.json.json_normalize(
-            data['hits'],
-            ['transcripts'],
-            ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
+        data['hits'],
+        ['transcripts'],
+        ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
     data = data[data['id'] == identifier]
     data.drop(['id'], axis=1, inplace=True)
     data.rename(columns={'_id': 'id'}, inplace=True)
