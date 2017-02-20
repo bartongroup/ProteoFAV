@@ -10,7 +10,6 @@ import socket
 import time
 import urllib
 
-
 import numpy as np
 import pandas as pd
 import requests
@@ -18,10 +17,10 @@ import requests
 from .config import defaults
 from .library import valid_ensembl_species_variation
 
-__all__= ["get_url_or_retry", "check_local_or_fetch", "fetch_files", "get_preferred_assembly_id",
-          "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
-          "_uniprot_pdb_sifts_mapping", "icgc_missense_variant", "is_valid",
-          "is_valid_ensembl_id", "confirm_column_types"]
+__all__ = ["get_url_or_retry", "check_local_or_fetch", "fetch_files", "get_preferred_assembly_id",
+           "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
+           "_uniprot_pdb_sifts_mapping", "icgc_missense_variant", "is_valid",
+           "is_valid_ensembl_id", "confirm_column_types"]
 
 socket.setdefaulttimeout(15)
 log = logging.getLogger('proteofav.config')
@@ -305,7 +304,7 @@ def is_valid(identifier, database=None, url=None):
         # not the best approach
         try:
             raise IDNotValidError('{} not found at {}: (url check:{}'.format(
-                    identifier, database, r.url))
+                identifier, database, r.url))
         except IDNotValidError:
             return False
     else:
@@ -345,7 +344,8 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
                 url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
             except AttributeError:
                 # python 3.5
-                url = defaults.api_ensembl + ensembl_endpoint + urllib.parse.quote(identifier, safe='')
+                url = defaults.api_ensembl + ensembl_endpoint + urllib.parse.quote(identifier,
+                                                                                   safe='')
             data = get_url_or_retry(url, json=True)
             if 'error' in data:
                 return False

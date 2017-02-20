@@ -20,7 +20,7 @@ except ImportError:
 import pandas as pd
 
 from proteofav.config import defaults
-from proteofav.utils import get_url_or_retry, log
+from proteofav.utils import get_url_or_retry
 from proteofav.structures import _table_selector
 
 __all__ = ["fetch_uniprot_sequence", "fetch_uniprot_formal_specie", "_uniprot_info",

@@ -49,13 +49,28 @@ def _dssp(filename):
                    (103, 109), (109, 115))
     # simplified headers for the table
     dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi", "psi")
-    dssp_table = pd.read_fwf(filename, skiprows=28, names=dssp_header,
-                             colspecs=cols_widths, index_col=0, compression=None)
+    dssp_table = pd.read_fwf(filename,
+                             skiprows=28,
+                             names=dssp_header,
+                             colspecs=cols_widths,
+                             index_col=0,
+                             compression=None)
     if dssp_table.empty:
         log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
         raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
             filename))
     return dssp_table
+
+
+def yield_lines(filename):
+    """
+    Custom function for iterating over line from filename
+    :param filename: path to filename
+    """
+
+    with open(filename) as lines:
+        for line in lines:
+            yield line
 
 
 def _mmcif_atom(filename, delimiter=None):
@@ -68,24 +83,27 @@ def _mmcif_atom(filename, delimiter=None):
     # parsing atom lines
     _header_mmcif = []
     lines = []
-    with open(filename) as inlines:
-        for line in inlines:
-            if line.startswith("_atom_site."):
-                _header_mmcif.append(line.split('.')[1].rstrip())
-            elif line.startswith("ATOM"):
-                lines.append(line)
-            elif line.startswith("HETATM"):
-                lines.append(line)
+    for line in yield_lines(filename):
+        if line.startswith("_atom_site."):
+            _header_mmcif.append(line.split('.')[1].rstrip())
+        elif line.startswith("ATOM"):
+            lines.append(line)
+        elif line.startswith("HETATM"):
+            lines.append(line)
     lines = "".join(lines)
 
     if delimiter is None:
         table = pd.read_table(StringIO(lines),
-                              delim_whitespace=True, low_memory=False,
-                              names=_header_mmcif, compression=None)
+                              delim_whitespace=True,
+                              low_memory=False,
+                              names=_header_mmcif,
+                              compression=None)
     else:
         table = pd.read_table(StringIO(lines),
-                              sep=str(delimiter), low_memory=False,
-                              names=_header_mmcif, compression=None)
+                              sep=str(delimiter),
+                              low_memory=False,
+                              names=_header_mmcif,
+                              compression=None)
 
     # drop the 'esd' entries
     excluded = [x for x in table.columns.values if x.endswith('_esd')]

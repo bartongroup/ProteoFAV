@@ -53,7 +53,7 @@ class Defaults(object):
             self.__config = config
             self.__populate_attributes()
             self.config_file = config_file
-        else:
+        else:     # pragma: no cover
             raise IOError('Config file {} not available.'.format(config_file))
 
     def __populate_attributes(self):
