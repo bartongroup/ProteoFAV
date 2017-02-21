@@ -47,11 +47,10 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **para
         header.update({"Content-Type": "application/json"})
     response = requests.get(url, headers=header, params=params)
 
-    if response.ok:
-        if json:
-            return response.json()
-        else:
-            return response.content
+    if response.ok and json:
+        return response.json()
+    elif response.ok:
+        return response.content
     elif response.status_code in retry_in:
         time.sleep(wait)
         return get_url_or_retry(url, retry_in, wait, json, header, **params)

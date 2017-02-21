@@ -13,7 +13,7 @@ api_rcsb = http://www.rcsb.org/pdb/rest/
 api_uniprot = http://www.uniprot.org/uniprot/
 api_ensembl = http://rest.ensembl.org/
 api_icgc = https://dcc.icgc.org/api/v1/
-api_ebi_uniprot = http://www.ebi.ac.uk/uniprot/api/
+api_ebi_uniprot = http://www.ebi.ac.uk/proteins/api/
 
 cif_fetch = http://www.ebi.ac.uk/pdbe/entry-files/
 bio_fetch = http://www.ebi.ac.uk/pdbe/static/entry/download/

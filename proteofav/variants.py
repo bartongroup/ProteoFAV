@@ -22,8 +22,8 @@ __all__ = ["_fetch_icgc_variants", "_fetch_ebi_variants", "_fetch_ensembl_varian
            "_fetch_variant_characteristics_from_identifiers",
            "_sequence_from_ensembl_protein", "_uniprot_ensembl_mapping",
            "_match_uniprot_ensembl_seq", "_apply_sequence_index_map",
-           "_compare_sequences", "_count_mismatches", "_fetch_uniprot_variants_ebi",
-           "select_variants", "parse_uniprot_variants",  "select_uniprot_variants"]
+           "_compare_sequences", "_count_mismatches",
+           "select_variants", "parse_uniprot_variants", "select_uniprot_variants"]
 log = logging.getLogger('proteofav.config')
 
 
@@ -42,7 +42,6 @@ def _fetch_icgc_variants(identifier):
     variation_endpoint = "protein/"
     url = defaults.api_icgc + variation_endpoint + identifier
     # fetches a nested json
-
     # normalise the data, making it flat
     data = get_url_or_retry(url, json=True)
     data = pd.io.json.json_normalize(
@@ -54,7 +53,7 @@ def _fetch_icgc_variants(identifier):
     data.rename(columns={'_id': 'id'}, inplace=True)
 
     consequence = data.pop('consequence')
-    if consequence.index.duplicated().any():
+    if consequence.index.duplicated().any():  # pragma: no cover
         log.warn('Joining ICGC variant data with its consequences data aborted:'
                  ' Duplicated index for {}.'.format(identifier))
     else:
@@ -65,13 +64,18 @@ def _fetch_icgc_variants(identifier):
     return data
 
 
-def _fetch_ebi_variants(ensembl_transcript_id, flat_xrefs=True):
-    """Fetchs the varition data from EBI also used in the UniProt feature viwer
-    :param ensembl_transcript_id: UniProt identifier
-    :return pandas.DataFrame: the table where each row is associated with a variation entry
+def _fetch_ebi_variants(uniprot_idd, flat_xrefs=True):
+    """
+    Fetchs the variant data from EBI. This datasource is also used in the UniProt feature viewer
+    :param bool flat_xrefs: whether to parse or not the cross-reference field that indicates
+    data provenance.
+    :param uniprot_idd: UniProt accession
+    :return pd.DataFrame: the table where each row is associated with a variation entry
+    .. note::
+    if flat_xrefs is true multiple rows are produced with the same index to
     """
     endpoint = "variation/"
-    url = defaults.api_ebi_uniprot + endpoint + ensembl_transcript_id
+    url = defaults.api_ebi_uniprot + endpoint + uniprot_idd
 
     data = get_url_or_retry(url, json=True)
     data = json_normalize(data, ['features'], meta=['accession', 'entryName'])
@@ -117,8 +121,8 @@ def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
         # params = {'feature': supported_feats,
         #           'type': 'missense_variant'}
     elif feature not in supported_feats:
-        raise NotImplementedError('feature argument should be one of {} or None for all'
-                                  ''.format(', '''.join(supported_feats)))
+        raise NotImplementedError('feature argument should be one of {} '.format(', '''.join(
+            supported_feats)))
     else:
         params = {'feature': feature}
     url = defaults.api_ensembl + ensembl_endpoint + ensembl_ptn_id
@@ -160,7 +164,6 @@ def _fetch_variant_characteristics_from_identifiers(variant_ids, use_vep=False):
         headers = {"Content-Type": "application/json"}
         params = {"phenotypes": 1}
         url = defaults.api_ensembl + ensembl_endpoint
-        # TODO should use
         result = get_url_or_retry(url, json=True, header=headers, **params)
         return result
 
@@ -179,8 +182,8 @@ def _sequence_from_ensembl_protein(identifier, protein=True):
         params = {'type': 'protein'}
     else:
         params = {}
-    sequence = get_url_or_retry(url, header=header, **params)
-    return sequence
+
+    return get_url_or_retry(url, header=header, **params)
 
 
 def _uniprot_ensembl_mapping(identifier, species=None):
@@ -255,7 +258,7 @@ def _match_uniprot_ensembl_seq(uniprot_id):
         uniprot_id))
 
 
-def _apply_sequence_index_map(indexes, imap):
+def _apply_sequence_index_map(indexes, imap):  # TODO revise
     """
 
     :param indexes:
@@ -301,22 +304,6 @@ def _count_mismatches(sequence1, sequence2):
     :return: The number of mismatches between sequences 1 and 2.
     """
     return sum(i != j for i, j in zip(sequence1, sequence2))
-
-
-def _fetch_uniprot_variants_ebi(identifier, retry_in=(429,)):
-    """
-    Queries the EBI UniProt Variation API for variants.
-    based on UniProt identifiers (e.g. O15294).
-    :param identifier: UniProt ID
-    :param retry_in: http code for retrying connections
-    :return: pandas table dataframe
-    """
-
-    variation_endpoint = "variation/"
-    url = defaults.api_ebi_uniprot + variation_endpoint + identifier
-    rows = get_url_or_retry(url, retry_in=retry_in, json=True)
-    # return pd.DataFrame(rows)
-    return rows
 
 
 ##############################################################################
@@ -448,8 +435,8 @@ def select_uniprot_variants(identifier, align_transcripts=False):
             usable_indexes.append(i)
             seq_maps.append(None)
             n_mismatches = _count_mismatches(seq, seq_pro)
-            message = "{0}: Sequences are of same length but have {1} mismatch(s)".format(enspro,
-                                                                                          n_mismatches)
+            message = "{0}: Sequences are of same length but have {1} mismatch(s)".format(
+                enspro, n_mismatches)
             logging.warning(message)
         elif align_transcripts:
             message = "Sequences don't match! Will attempt alignment... {}".format(enspro)
@@ -496,6 +483,7 @@ def select_uniprot_variants(identifier, align_transcripts=False):
     # return table.groupby('start').apply(to_unique)
     table = pd.concat(tables)
     return table
+
 
 if __name__ == '__main__':
     pass
