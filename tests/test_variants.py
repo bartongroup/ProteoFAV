@@ -141,14 +141,10 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertEqual(data.loc[1, 'type'], 'coding_sequence_variant')
 
     def test_sequence_from_ensembl_protein(self):
-        response = """MGNAAAAKKGSEQESVKEFLAKAKEDFLKKWESPAQNTAHLDQFERIKTLGTGSFGRVMLVKHKETGNHYAMKILDKQKVVKLKQIEHTLNEKRILQAVNFPFLVKLEFSFKDNSNLYMVMEYVPGGEMFSHLRRIGRFSEPHARFYAAQIVLTFEYLHSLDLIYRDLKPENLLIDQQGYIQVTDFGFAKRVKGRTWTLCGTPEYLAPEIILSKGYNKAVDWWALGVLIYEMAAGYPPFFADQPIQIYEKIVSGKVRFPSHFSSDLKDLLRNLLQVDLTKRFGNLKNGVNDIKNHKWFATTDWIAIYQRKVEAPFIPKFKGPGDTSNFDDYEEEEIRVSINEKCGKEFSEF """
-        mock_response = mock.Mock()
-        mock_response.return_value.ok = True
-        mock_response.return_value.status = 200
-        mock_response.return_value.content = response
+        response = 'MGNAAAAKKGSEQESVKEFLAKAKEDFLKKWESPAQNTAHLDQFER'
 
-        with mock.patch('proteofav.utils.requests.get') as mock_get:
-            mock_get.return_value = mock_response
+        with mock.patch('proteofav.variants.get_url_or_retry') as mock_get:
+            mock_get.return_value = response
             sequence = self.sequence_from_ensembl_protein('XXXXXX')  # ENSP00000309591
         self.assertEqual(sequence, response)
 
@@ -179,7 +175,6 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertTrue(self.compare_sequences('AAA', 'AAC', n_mismatches=1))
 
     def test_compare_sequences_correct_bad(self):
-        self.assertFalse(self.compare_sequences('A', 'AAA'))
         self.assertFalse(self.compare_sequences('AAC', 'AAA'))
 
     def test_count_mismatches(self):
