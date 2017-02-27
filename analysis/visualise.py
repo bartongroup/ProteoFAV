@@ -6,9 +6,12 @@ import logging
 import re
 
 import pandas as pd
+import requests
 
+from proteofav.config import defaults
 from proteofav.main import log
 from proteofav.main import merge_tables
+from proteofav.utils import get_url_or_retry
 
 try:
     import pymol
@@ -16,6 +19,43 @@ except ImportError:
     log.error('pymol not installed')
 
 __author__ = 'smacgowan'
+
+
+def _fetch_variant_characteristics_from_identifiers(variant_ids, use_vep=False):
+    """
+    Retrieves variant annotation from ENSEMBL.
+
+    :param variant_ids: Ensembl Variant identifier
+    :param use_vep: whether to use predicted variants from VEP
+    :return:
+    """
+
+    # POST if given a list of ids
+    if isinstance(variant_ids, (list, pd.Series)):
+        # Remove any nans from the list
+        variant_ids = [i for i in variant_ids if not str(i) == 'nan']
+
+        ensembl_endpoint = "variation/homo_sapiens"
+        if use_vep:
+            ensembl_endpoint = "vep/human/id"
+        url = defaults.api_ensembl + ensembl_endpoint
+        headers = {"Content-Type": "application/json",
+                   "Accept": "application/json"}
+        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") \
+               + ', "phenotypes" : 1 }'  # FIXME
+        data = data.replace("'", "\"")
+        result = requests.post(url, headers=headers, data=data)
+        return result
+    # GET if given single id
+    if isinstance(variant_ids, str):
+        ensembl_endpoint = "variation/homo_sapiens/" + variant_ids
+        if use_vep:
+            ensembl_endpoint = "vep/human/id/" + variant_ids
+        headers = {"Content-Type": "application/json"}
+        params = {"phenotypes": 1}
+        url = defaults.api_ensembl + ensembl_endpoint
+        result = get_url_or_retry(url, json=True, header=headers, **params)
+        return result
 
 
 def visualise(pdb_id, assembly=False, use_ensembl=False, use_uniprot=False):

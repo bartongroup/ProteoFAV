@@ -5,7 +5,6 @@
 import logging
 
 import pandas as pd
-import requests
 from pandas.io.json import json_normalize
 
 from proteofav.config import defaults
@@ -21,7 +20,6 @@ from proteofav.library import valid_ensembl_species
 __all__ = ["_fetch_icgc_variants",
            "_fetch_ebi_variants",
            "_fetch_ensembl_variants",
-           "_fetch_variant_characteristics_from_identifiers",
            "_sequence_from_ensembl_protein",
            "_uniprot_ensembl_mapping",
            "_match_uniprot_ensembl_seq",
@@ -136,44 +134,6 @@ def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
 
     rows = get_url_or_retry(url, json=True, **params)
     return pd.DataFrame(rows)
-
-
-def _fetch_variant_characteristics_from_identifiers(variant_ids, use_vep=False):
-    """
-    Retrieves variant annotation from ENSEMBL.
-
-    :param variant_ids: Ensembl Variant identifier
-    :param use_vep: whether to use predicted variants from VEP
-    :return:
-    """
-
-    # POST if given a list of ids
-    if isinstance(variant_ids, (list, pd.Series)):
-        # Remove any nans from the list
-        variant_ids = [i for i in variant_ids if not str(i) == 'nan']
-
-        ensembl_endpoint = "variation/homo_sapiens"
-        if use_vep:
-            ensembl_endpoint = "vep/human/id"
-        url = defaults.api_ensembl + ensembl_endpoint
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json"}
-        data = '{ "ids" : ' + str(variant_ids).replace("u'", "'") \
-               + ', "phenotypes" : 1 }'  # FIXME
-        data = data.replace("'", "\"")
-        result = requests.post(url, headers=headers, data=data)
-        return result
-    # GET if given single id
-    if isinstance(variant_ids, str):
-        ensembl_endpoint = "variation/homo_sapiens/" + variant_ids
-        if use_vep:
-            ensembl_endpoint = "vep/human/id/" + variant_ids
-        headers = {"Content-Type": "application/json"}
-        params = {"phenotypes": 1}
-        url = defaults.api_ensembl + ensembl_endpoint
-        result = get_url_or_retry(url, json=True, header=headers, **params)
-        return result
-
 
 def _sequence_from_ensembl_protein(identifier, protein=True):
     """
