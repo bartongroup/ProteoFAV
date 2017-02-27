@@ -26,7 +26,7 @@ socket.setdefaulttimeout(15)
 log = logging.getLogger('proteofav.config')
 
 
-def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **params):
+def get_url_or_retry(url, retry_in=None, wait=1, n_retries=10, json=False, header=None, **params):
     """
     Fetch an url using Requests or retry fetching it if the server is
         complaining with retry_in error.
@@ -36,6 +36,7 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **para
     :param header: dictionary with head params
     :param url: url to be fetched as a string
     :param wait: sleeping between tries in seconds
+    :param n_retries: number of retry attempts
     :param params: request.get kwargs.
     :return: url content or url content in json data structure.
     """
@@ -51,9 +52,9 @@ def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **para
         return response.json()
     elif response.ok:
         return response.content
-    elif response.status_code in retry_in:
+    elif response.status_code in retry_in and n_retries >= 0:
         time.sleep(wait)
-        return get_url_or_retry(url, retry_in, wait, json, header, **params)
+        return get_url_or_retry(url, retry_in, (n_retries - 1), wait, json, header, **params)
     else:
         log.error(response.status_code)
         response.raise_for_status()
