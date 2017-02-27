@@ -158,7 +158,6 @@ def merge_tables(uniprot_id=None,
     if variant_features:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
             variants_table = select_variants(identifier, features=variant_features)
-            # TODO: Add select_uniprot_variants?
             variants_table.reset_index(inplace=True)
             variants_table['UniProt_dbAccessionId'] = identifier
             variants_table.rename(columns={'start': 'UniProt_dbResNum'}, inplace=True)

@@ -35,7 +35,7 @@ log = logging.getLogger('proteofav.config')
 ##############################################################################
 # Private methods
 ##############################################################################
-# TODO: not used anywhere (only in tests)
+
 def _fetch_icgc_variants(identifier):
     """
     Queries the ICGC data portal for the PanCancer variants based on Ensembl
@@ -69,7 +69,6 @@ def _fetch_icgc_variants(identifier):
     return data
 
 
-# TODO: not used anywhere (only in tests)
 def _fetch_ebi_variants(uniprot_idd, flat_xrefs=True):
     """
     Fetchs the variant data from EBI. This datasource is also used in the UniProt feature viewer
@@ -223,6 +222,7 @@ def _match_uniprot_ensembl_seq(uniprot_id):
         ensembl_ptn_seq = _sequence_from_ensembl_protein(ensembl_ptn_id)
         if _compare_sequences(uniprot_sequence, ensembl_ptn_seq, permissive=False):
             return ensembl_ptn_id
+    raise ValueError('No protein with the same sequence was retrivied from Ensembl {}'.format(
     raise ValueError('No protein with the same sequence was retrieved from Ensembl {}'.format(
         uniprot_id))
 
@@ -342,7 +342,6 @@ def parse_uniprot_variants(uniprot_id):
                    ids: list of str]
     :rtype: pandas.DataFrame
     """
-    # TODO: fix this! this method does do anything
     check_local_or_fetch(uniprot_id)
 
     disease_group = '\[\'In ([?P<disease>a-zA-Z0-9_ ]+)[.;]'
@@ -363,7 +362,6 @@ def parse_uniprot_variants(uniprot_id):
     return table
 
 
-# TODO: not used anywhere (only in tests)
 # TODO we need to figure out a manual function to map sequences that have
 # small differences
 def select_uniprot_variants(identifier, align_transcripts=False):
