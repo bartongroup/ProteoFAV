@@ -135,6 +135,7 @@ def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
     rows = get_url_or_retry(url, json=True, **params)
     return pd.DataFrame(rows)
 
+
 def _sequence_from_ensembl_protein(identifier, protein=True):
     """
     Gets the sequence for an Ensembl identifier.
@@ -222,6 +223,7 @@ def _match_uniprot_ensembl_seq(uniprot_id):
         if _compare_sequences(uniprot_sequence, ensembl_ptn_seq, permissive=False):
             return ensembl_ptn_id
     raise ValueError('No protein with the same sequence was retrivied from Ensembl {}'.format(
+    raise ValueError('No protein with the same sequence was retrieved from Ensembl {}'.format(
         uniprot_id))
 
 
