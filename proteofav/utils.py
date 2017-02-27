@@ -130,6 +130,7 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     return result
 
 
+# TODO: not used anywhere
 def _fetch_summary_properties_pdbe(pdbid, retry_in=(429,)):
     """
     Queries the PDBe api to get summary validation report.
@@ -179,6 +180,8 @@ def get_preferred_assembly_id(pdbid, verbose=False):
 ##############################################################################
 # Some other utils not currently in use
 ##############################################################################
+# TODO: methods not used anywhere (some only in tests) - remove all?
+
 class IDNotValidError(Exception):
     """
     Base class for database related exceptions.

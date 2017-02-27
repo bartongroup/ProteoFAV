@@ -111,6 +111,7 @@ def _mmcif_atom(filename, delimiter=None):
     return table
 
 
+# TODO: not used anywhere (only in tests)
 def _mmcif_fields(filename, field_name='exptl.',
                   require_index=False):
     """
@@ -338,6 +339,7 @@ def _pdb_validation_to_table(filename, global_parameters=False):
     return df
 
 
+# TODO: not used anywhere
 def _rcsb_description(pdb_id, tag, key):
     """
     Gets description from RCSB PDB api.
@@ -360,6 +362,7 @@ def _rcsb_description(pdb_id, tag, key):
     return values
 
 
+# TODO: not used anywhere
 def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
     """
     Just a simple testing distance measure.
@@ -436,6 +439,8 @@ def _residues_as_centroid(table):
     columns_to_agg['auth_atom_id'] = 'unique'
     return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
 
+
+# TODO: not used anywhere (only in tests)
 def _import_dssp_chains_ids(pdb_id):
     """Imports mmCIF chain identifier to DSSP.
 
