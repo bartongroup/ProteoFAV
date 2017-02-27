@@ -9,7 +9,6 @@ import pandas as pd
 
 from proteofav.main import log
 from proteofav.main import merge_tables
-from proteofav.variants import _fetch_variant_characteristics_from_identifiers
 
 try:
     import pymol
