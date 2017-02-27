@@ -18,12 +18,19 @@ from proteofav.utils import (get_url_or_retry,
                              check_local_or_fetch)
 from proteofav.library import valid_ensembl_species
 
-__all__ = ["_fetch_icgc_variants", "_fetch_ebi_variants", "_fetch_ensembl_variants",
+__all__ = ["_fetch_icgc_variants",
+           "_fetch_ebi_variants",
+           "_fetch_ensembl_variants",
            "_fetch_variant_characteristics_from_identifiers",
-           "_sequence_from_ensembl_protein", "_uniprot_ensembl_mapping",
-           "_match_uniprot_ensembl_seq", "_apply_sequence_index_map",
-           "_compare_sequences", "_count_mismatches",
-           "select_variants", "parse_uniprot_variants", "select_uniprot_variants"]
+           "_sequence_from_ensembl_protein",
+           "_uniprot_ensembl_mapping",
+           "_match_uniprot_ensembl_seq",
+           "_apply_sequence_index_map",
+           "_compare_sequences",
+           "_count_mismatches",
+           "select_variants",
+           "parse_uniprot_variants",
+           "select_uniprot_variants"]
 log = logging.getLogger('proteofav.config')
 
 

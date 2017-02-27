@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
----------
-config.py
----------
+Defines the methods that load and validate user configuration parameters, such
+    as data resources web address or local and remote file paths.
 
-This defines the methods that load and validate user defined
-parameters.
-Usage
 >>> from proteofav.config import defaults
 >>> print(defaults.api_pdbe)
 http://www.ebi.ac.uk/pdbe/api/
@@ -21,7 +16,9 @@ http://www.uniprot.org/uniprot/
 >>> print(local_defaults.email)
 Traceback (most recent call last):
 ...
-AttributeError: 'Defaults' object has no attribute 'email'"""
+AttributeError: 'Defaults' object has no attribute 'email'
+
+"""
 
 from __future__ import print_function
 
@@ -45,6 +42,18 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO,
 
 
 class Defaults(object):
+    """
+    Container for configuration parameters. The object attributes receive
+        the values parsed from the config file. Can also be set on the run.
+
+    >>> from proteofav.config import defaults
+    >>> print(defaults.api_pdbe)
+    http://www.ebi.ac.uk/pdbe/api/
+    >>> defaults.api_pdbe = 'test'
+    >>> print(defaults.api_pdbe)
+    test #
+
+    """
     def __init__(self, config_file='config.txt'):
         config_file = path.join(path.dirname(__file__), config_file)
         config = ConfigParser()

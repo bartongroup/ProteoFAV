@@ -14,31 +14,51 @@ from .structures import (select_cif,
 
 from .variants import (map_gff_features_to_sequence,
                        select_variants)
-__all__= ['merge_tables', 'parse_args', 'main']
+
+__all__ = ['merge_tables',
+           'parse_args',
+           'main']
 log = logging.getLogger('proteofav.config')
 
-def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='first',
-                 sequence_check='raise', drop_empty_cols=False, add_validation=False,
-                 add_annotation=False,
-                 add_ensembl_variants=False, add_uniprot_variants=False):
-    """
-    Join multiple resource tables. If no pdb_id uses sifts_best_structure
-    If no chain uses the first on.
 
-    :param str or None uniprot_id: Fetch Sifts best (higher coverage) protein structure for
-    this UniProt entry
-    :param str or None pdb_id: Entry to be loaded
-    :param str or None chain: Protein chain to loaded
-    :param str or None atoms: Atom to be selected in the
-    :param str or None model: Select the PDB entity, like in structures determined by NMR
-    :param bool add_validation: Attach the PDB validation table
-    :param str sequence_check: Whether to compare sequence from different sources.
-    Choose from raise, warn or ignore.
-    :param bool drop_empty_cols: Whether to drop columns without positional information
-    :param bool add_ensembl_variants: Whether to add variant table from Ensembl
-    :param bool add_annotation: Whether to add variant table from Ensembl
-    :param bool add_uniprot_variants: Whether to add  variant table from UniProt
-    :rtype: pandas.DataFrame
+def merge_tables(uniprot_id=None,
+                 pdb_id=None,
+                 chain=None,
+                 atoms='CA',
+                 model='first',
+                 sequence_check='raise',
+                 drop_empty_cols=False,
+                 add_validation=False,
+                 add_annotation=False,
+                 add_ensembl_variants=False,
+                 add_uniprot_variants=False):
+    """
+    Automatically merge data tables from various resources. If no pdb_id set
+        sifts_best_structure, which is sorted by sequence coverage.
+        If no chain is set, uses the first one.
+
+    :param pdb_id: Entry to be loaded
+    :type pdb_id: str or None
+    :param uniprot_id: Select PDB entry with highest sequence
+        coverage for a UniProt protein sequence
+    :type uniprot_id: str or None
+    :param chain: Protein chain to loaded
+    :type chain: str or None
+    :param atoms: Atom to be selected in the
+    :type atoms: str or None
+    :param model: Select the PDB entity, like in structures determined by NMR
+    :type model: str or None
+    :param bool: add_validation: Attach the PDB validation table
+    :param bool: sequence_check: Whether to compare sequence from different
+        sources. Choose from raise, warn or ignore
+    :param bool: drop_empty_cols: Whether to drop columns without positional
+        information
+    :param bool: add_ensembl_variants: Whether to add variant table from Ensembl
+    :param bool: add_annotation: Whether to add variant table from Ensembl
+    :param bool: add_uniprot_variants: Whether to add  variant table from
+        UniProt
+    :raises: ValueError
+    :rtype: pd.DataFrame
 
     """
     if not any((uniprot_id, pdb_id)):
@@ -142,7 +162,7 @@ def merge_tables(uniprot_id=None, pdb_id=None, chain=None, atoms='CA', model='fi
             variants_table['UniProt_dbAccessionId'] = identifier
             variants_table.rename(columns={'start': 'UniProt_dbResNum'}, inplace=True)
             table = table.merge(variants_table,
-                                 how='left',
+                                how='left',
                                 on=['UniProt_dbResNum', 'UniProt_dbAccessionId'])
 
     if add_annotation:
@@ -180,7 +200,7 @@ def parse_args(args):
     out_choices = ['csv', 'json', 'tab']  # TODO add JALVIEW and chimera
     parser = argparse.ArgumentParser(description=__doc__, usage=usage)
     parser.add_argument('--pdb', type=str, default=None,
-                        help='Protein data bank identifier.' )
+                        help='Protein data bank identifier.')
     parser.add_argument('--chain', type=str, default=None,
                         help='Protein structure chain identifier.')
     parser.add_argument('--uniprot', type=str, default=None,
@@ -220,7 +240,6 @@ def main():
     if args.output is None:
         log.error("Provide a path for the output file.")
         return 1
-
 
     table = merge_tables(pdb_id=args.pdb,
                          chain=args.chain,

@@ -29,7 +29,7 @@ log = logging.getLogger('proteofav.config')
 def get_url_or_retry(url, retry_in=None, wait=1, json=False, header=None, **params):
     """
     Fetch an url using Requests or retry fetching it if the server is
-    complaining with retry_in error.
+        complaining with retry_in error.
 
     :param retry_in: list or array of http status codes
     :param json: boolean
@@ -75,16 +75,18 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     Small routine to fetch data files from their respective repositories.
 
     Use defaults to fetch files from servers. Defaults server are defined in
-     the default config.txt. Returns None since it has side effects.
+        the default config.txt. Returns None since it has side effects.
 
     Created on 11:41 24/07/15 2015
     :param identifier: protein identifier as PDB identifier
     :param directory: path to download. The default downloads all files to
-     default.temp folder. If is a string and valid path downloads all files to
-     that folder. If its a iterable and all valid path downloads to the
-     respective folders
+        default.temp folder. If is a string and valid path downloads all files
+        to that folder. If its a iterable and all valid path downloads to the
+        respective folders
     :param sources: where to fetch the data. Must be in the config file.
-    :return: None
+    :return: list of path
+    :rtype: list
+    :raise: TypeError
     """
     if isinstance(sources, str):
         sources = [sources]

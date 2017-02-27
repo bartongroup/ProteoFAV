@@ -1,7 +1,7 @@
 ProteoFAV
 =========
 
-**ProteFAV: protein feature aggregation and variants**
+**Protein feature aggregation and variants**
 
 
 .. image:: https://img.shields.io/pypi/v/proteofav.svg
@@ -19,11 +19,15 @@ ProteoFAV
      :alt: Updates
 
 
-ProteFAV: protein feature aggregation and variants
+ProteFAV is a Python framework to fetch, process and integrate protein structure and features
+to genetic variants. The tool relies heavily in `Pandas`_ library.
 
- is a Python framework to process and integrate protein structure and features to
-    genetic variants. The tool relies heavily in `Pandas`_ library .
+ProteFAV benefits
+~~~~~~~~~~~~~~~~~
 
+- Fast
+- Scalable
+- Ready
 
 Example usage
 ~~~~~~~~~~~~~
@@ -33,7 +37,8 @@ Working on documenting the package `docs`_...
 Dependencies
 ~~~~~~~~~~~~
 
-See the necessary `requirements`_.
+The framework was developed to support Python 2.7+ and Python 3.4+. Check
+`requirements`_ for necessary requirements.
 
 Contributing and Bug tracking
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,8 +52,8 @@ License
 See `license`_.
 
 
-.. _requirements: https://github.com/biomadeira/ProteoFAV/blob/master/requirements.txt
-.. _license: https://github.com/biomadeira/ProteoFAV/blob/master/LICENSE.txt
-.. _issue tracker: https://github.com/biomadeira/ProteoFAV/issues
-.. _docs: https://github.com/biomadeira/ProteoFAV/blob/master/docs/index.rst
+.. _requirements: https://github.com/bartongroup/ProteoFAV/blob/master/requirements.txt
+.. _license: https://github.com/bartongroup/ProteoFAV/blob/master/LICENSE.txt
+.. _issue tracker: https://github.com/bartongroup/ProteoFAV/issues
+.. _docs: https://github.com/bartongroup/ProteoFAV/blob/master/docs/index.rst
 .. _Pandas: http://pandas.pydata.org/

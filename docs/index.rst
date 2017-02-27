@@ -1,16 +1,30 @@
 ProteoFAV documentation
 =======================
 
-Contents:
-
-.. toctree::
-   :maxdepth: 2
+Documentation:
+--------------
 
    readme
+   proteofav
+   history
+   contributing
+   authors
 
-Indices and tables
-==================
+
+Table of Contents
+=================
+
+.. toctree::
+   :maxdepth: 5
+
+   readme
+   proteofav
+   history
+   contributing
+   authors
+
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

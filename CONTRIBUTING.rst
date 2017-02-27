@@ -5,22 +5,24 @@ Contributing
 ============
 
 Contributions are welcome, and they are greatly appreciated! Every
-little bit helps, and credit will always be given.
-
-You can contribute in many ways:
+    little bit helps, and credit will always be given. You can
+    contribute in many ways.
 
 Types of Contributions
 ----------------------
 
-Please check GitHub issue tracker for bugs.
+Please check GitHub issue tracker for:
+
+- bugs
+- features
+- enhacements
 
 Style
 -----
 
 Wrap line over 99 (79 if possible). Lines with more than 79 characters
-are harder to read in ipython and command line. Else, we try to keep the
-pep8 standards. Private functions start with an underline. At this time
-we are not using \_\_ALL\_\_.
+are harder to read in the command line. Else, we try to keep the
+pep8 standards. Private functions start with an underline.
 
 Naming Conventions
 ------------------
@@ -43,8 +45,8 @@ Use the following template:
 ::
 
     def df_encoder(data, descriptor=None, col_names=None):
-        """Encode a pandas DataFrame with a descriptor. Similar to one hot encoding,
-        however it preserves encoding between columns.
+        """Encode a pandas DataFrame with a descriptor. Similar to one hot
+            encoding, however it preserves encoding between columns.
 
         :param descriptor: dict like descriptor to be applied to the columns
         :type descriptor:
@@ -53,7 +55,7 @@ Use the following template:
         :param col_names: names for the new columns
         :type col_names: list of [str,]
         :return: table with encoded data
-        :rtype : pandas.DataFrame
+        :rtype : pd.DataFrame
 
         :Example:
 
@@ -70,11 +72,13 @@ Use the following template:
          """
 
 If the function returns a pandas.DataFrame, is good practice to add
-which columns: dtype you expect, so we can keep track of it: def
-\_fetch\_ensembl\_variants(ensembl\_ptn\_id, feature=None):
+    which columns: dtype you expect, so we can keep track of it. Since
+    there is no common standard for Pandas column annotation, we are
+    still deciding the best approach:
 
 ::
 
+    def fetch_ensembl_variants(ensembl_ptn_id, feature=None):
     """Queries the Ensembl API for germline variants (mostly dbSNP) and somatic
     (mostly COSMIC) based on Ensembl Protein identifiers (e.g. ENSP00000326864).
 
@@ -100,14 +104,16 @@ which columns: dtype you expect, so we can keep track of it: def
 Columns type pragma
 -------------------
 
-Culumn type normalisation is a central issue in ProteoFAV. There is no simple way to make column
- type consintent across all data files. Some pragmatic rules to deal with NANs (Not an number)
- in non float columns are defined here, but open to change. NAN in Python are always floats. If
-  one has to operate with integers or string, it must eliminate the NAN’s, and in ProteoFAV we use
-  the following rules:
-\* If is a sequence index: -9999
-\* If is a sequence column NAN’s: ‘X’
-\* If is another string column: ’’ (empty string)
+Culumn type normalisation is a central issue in ProteoFAV. There is no simple
+    way to make column type consintent across all data files. Some pragmatic
+    rules to deal with NANs (Not an number) in non float columns are defined
+    here, but open to change. NAN in Python are always floats. If one has to
+    operate with integers or string, it must eliminate the NAN’s, and in
+    ProteoFAV we use the following rules:
+
+* If is a sequence index: -9999
+* If is a sequence column NAN’s: ‘X’
+* If is another string column: ’’ (empty string)
 
 Testing
 -------
