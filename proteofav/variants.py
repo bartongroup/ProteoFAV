@@ -222,7 +222,6 @@ def _match_uniprot_ensembl_seq(uniprot_id):
         ensembl_ptn_seq = _sequence_from_ensembl_protein(ensembl_ptn_id)
         if _compare_sequences(uniprot_sequence, ensembl_ptn_seq, permissive=False):
             return ensembl_ptn_id
-    raise ValueError('No protein with the same sequence was retrivied from Ensembl {}'.format(
     raise ValueError('No protein with the same sequence was retrieved from Ensembl {}'.format(
         uniprot_id))
 
