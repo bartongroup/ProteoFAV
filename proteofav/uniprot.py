@@ -82,7 +82,6 @@ def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
     :type retry_in: list of [int]
     :return pandas.DataFrame: table from Uniprot.
     Default table columns:
-
     :raises requests.HTTPError: when hits a bad status_code
     """
 
@@ -128,27 +127,30 @@ def _fetch_uniprot_gff(uniprot_id):
     return data.merge(groups, left_index=True, right_index=True)
 
 
-def map_gff_features_to_sequence(uniprot_id, query_type='', group_residues=True,
+def map_gff_features_to_sequence(uniprot_id,
+                                 query_type='',
+                                 group_residues=True,
                                  drop_types=('Helix', 'Beta strand', 'Turn', 'Chain')):
     """
     Map Uniprot GFF features to the protein sequence.
 
     :param str uniprot_id: Uniprot accession
-    :param query_type: If one requires just one type of feature, they can
-    :type query_type: str or None
+    :param str query_type: Select type of feature
     :param bool group_residues: by default each row in the resulting table,
         maps to a residue. When set to False, each row represent a feature
         per residue.
+
     :param tuple drop_types: Filter out some of the features, important to
-    remove fetures that spam
-    :return pd.DataFrame: table. Columns vary with GFF file.
+        remove fetures that spam.
+
+    :return pd.DataFrame: table. Columns will depend on paramenters.
     """
 
     def annotation_writer(gff_row):
         """
         Establish a set of rules to annotate Uniprot GFF.
 
-        :param pandas.Series gff_row: each line in the GFF file.
+        :param pd.Series gff_row: each line in the GFF file.
         :return str: template filled with type-specific fields.
         """
         if not gff_row.ID and not gff_row.Note:

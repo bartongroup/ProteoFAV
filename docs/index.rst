@@ -4,6 +4,8 @@ ProteoFAV documentation
 Documentation:
 --------------
 
+   installation
+   usage
    readme
    proteofav
    history
@@ -17,6 +19,8 @@ Table of Contents
 .. toctree::
    :maxdepth: 5
 
+   installation
+   usage
    readme
    proteofav
    history

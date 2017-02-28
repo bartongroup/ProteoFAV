@@ -64,10 +64,10 @@ def _dssp(filename):
 
 def yield_lines(filename):
     """
-    Custom function for iterating over line from filename
+    Custom function for iterating over line from filename.
     :param filename: path to filename
+    :return None:
     """
-
     with open(filename) as lines:
         for line in lines:
             yield line

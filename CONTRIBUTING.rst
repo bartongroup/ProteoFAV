@@ -21,21 +21,20 @@ Style
 -----
 
 Wrap line over 99 (79 if possible). Lines with more than 79 characters
-are harder to read in the command line. Else, we try to keep the
-pep8 standards. Private functions start with an underline.
+    are harder to read in the command line. Else, we try to keep the
+    pep8 standards. Private functions start with an underline.
 
 Naming Conventions
 ------------------
 
-Functions that: \* get data from a resources should start with
-\*\*fetch/\_fetch\ ** \* load and process python objects
-**\ select/\_select\*\*
+Functions that: get data from a resources should start with **fetch/\_fetch**.
+ To load and process python objects **select/\_select**.
 
-Python code is also documentation! So use explanatory function names: \*
-ensembl\_ptn\_id instead identifier
+Python code is also documentation, hence explicit variable names are
+    recommended: **ensembl\_ptn\_id** instead **identifier**.
 
 If the resource has its own name for a field or value, try to keep, for
-consistency.
+    consistency.
 
 Docstrings
 ----------

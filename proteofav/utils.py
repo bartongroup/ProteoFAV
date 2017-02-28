@@ -9,6 +9,10 @@ import shutil
 import socket
 import time
 import urllib
+try:
+    from urllib import quote as urllib_quote
+except ImportError:
+    from urllib.parse import quote as urllib_quote
 
 import numpy as np
 import pandas as pd
@@ -74,19 +78,17 @@ def check_local_or_fetch(identifier, update=False):
 def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     """
     Small routine to fetch data files from their respective repositories.
+        Use defaults to fetch files from servers. Defaults server are defined
+        in the default config.txt. Returns None since it has side effects.
 
-    Use defaults to fetch files from servers. Defaults server are defined in
-        the default config.txt. Returns None since it has side effects.
-
-    Created on 11:41 24/07/15 2015
     :param identifier: protein identifier as PDB identifier
     :param directory: path to download. The default downloads all files to
         default.temp folder. If is a string and valid path downloads all files
         to that folder. If its a iterable and all valid path downloads to the
         respective folders
+
     :param sources: where to fetch the data. Must be in the config file.
-    :return: list of path
-    :rtype: list
+    :return list: list of paths
     :raise: TypeError
     """
     if isinstance(sources, str):
@@ -237,13 +239,9 @@ def _uniprot_pdb_sifts_mapping(identifier):
 def icgc_missense_variant(ensembl_gene_id):
     """Fetch a gene missense variants from ICGC data portal.
 
-    :param ensembl_gene_id: ensembl gene accession
-    :type ensembl_gene_id: str
-    :return: DataFrame with one mutation per row.
-    :rtype : pandas.DataFrame
-
-    :Example:
-
+    :param str ensembl_gene_id: ensembl gene accession
+    :return pd.DataFrame: DataFrame with one mutation per row.
+    :example:
 
         >>> table = icgc_missense_variant('ENSG00000012048')
         >>> table.loc[0, ['id', 'mutation', 'type', 'start']]
@@ -253,9 +251,7 @@ def icgc_missense_variant(ensembl_gene_id):
         start                       41245683
         Name: 0, dtype: object
 
-
     .. note:: ICGC doc https://dcc.icgc.org/docs/#!/genes/findMutations_get_8
-
     """
     base_url = defaults.api_icgc + ensembl_gene_id + "/mutations/"
     headers = {'content-type': 'application/json'}
@@ -342,12 +338,7 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
         ensembl_endpoint = "lookup/id/"
     try:
         if identifier != '':
-            try:
-                url = defaults.api_ensembl + ensembl_endpoint + urllib.quote(identifier, safe='')
-            except AttributeError:
-                # python 3.5
-                url = defaults.api_ensembl + ensembl_endpoint + urllib.parse.quote(identifier,
-                                                                                   safe='')
+            url = defaults.api_ensembl + ensembl_endpoint + urllib_quote(identifier, safe='')
             data = get_url_or_retry(url, json=True)
             if 'error' in data:
                 return False
@@ -363,34 +354,41 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
 def confirm_column_types(table):
     """
     Check a table's column types against a defined column name/type dictionary
-    and correct them if necessary.
+        and correct them if necessary.
 
-    :param table: A pandas data frame produced by a to_* function
-    :return: A pandas data frame of the same data with correct column types
+    :param pd.DataFrame table: A table produced by ProteoFAV
+    :return pd.DataFrame: the table with the same data, but normalised column types
 
-    .. note::
-    There are fewer pandas `dtypes` than the corresponding numpy type classes, but all numpy types
-    can be accommodated.
+    .. note:: There are fewer pandas `dtypes` than the corresponding numpy
+        type, but all numpy types can be accommodated.
 
-    NaNs and Upcasting:
-    The upcasting of dtypes on columns that contain NaNs has been an issue and can lead to
-    inconsistencies between the column types of different tables that contain equivalent data.
-    E.g., a `merged_table` from a PDB entry may have NaNs in UniProt_dbResNum and so is cast to
-    float64 whilst a UniProt variants table will have no NaNs in this field and so remains int64
-    by default. The main issue here is that it creates additional work for merging these tables as
-    the keys must be of the same type. It's also a problem if you want to test elements say for
-    example you expect to be testing integer equality but the values have been coerced to floats.
+    - NaNs and Upcasting:
 
-    Ideally then we need to ensure that all equivalent column types are by default the least
-    generic dtype that can contain all possible values that can be seen in the column, i.e. if
-    NaNs are possible then even when not present, a column of integers that can contain NaNs
-    should always be at least float.
+    The upcasting of dtypes on columns that contain NaNs has been an issue and
+        can lead to inconsistencies between the column types of different
+        tables that contain equivalent data. E.g., a `merged_table` from a PDB
+        entry may have NaNs in UniProt_dbResNum and so is cast to float64
+        whilst a UniProt variants table will have no NaNs in this field and
+        so remains int64 by default. The main issue here is that it creates
+        additional work for merging these tables as the keys must be of the
+        same type. It's also a problem if you want to test elements say for
+        example you expect to be testing integer equality but the values have
+        been coerced to floats.
 
-    dtypes and element types:
-    It seems that coercion to certain dtypes alters the element types too. For instance, int64 ->
-    float64 will make an equivalent change to individual value types. However, the original element
-    types can be preserved with the generic `object` dtype, so this will be used in preference for
-    integer columns that can contain NaNs.
+    Ideally then we need to ensure that all equivalent column types are by
+        default the least generic dtype that can contain all possible values
+        that can be seen in the column, i.e. if NaNs are possible then even
+        when not present, a column of integers that can contain NaNs should
+        always be at least float.
+
+    - dtypes and element types:
+
+    It seems that coercion to certain dtypes alters the element types too.
+        For instance, int64 -> float64 will make an equivalent change to
+        individual value types. However, the original element types can be
+        preserved with the generic `object` dtype, so this will be used in
+        preference for integer columns that can contain NaNs.
+
     """
     # TODO: update this to accomodate the new sifts table headers
     column_types_long = {

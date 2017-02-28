@@ -16,3 +16,4 @@ To use ProteoFAV in a project::
 To import a protected method - do it at your own risk - use::
 
     from proteofav.uniprot import _uniprot_info
+
