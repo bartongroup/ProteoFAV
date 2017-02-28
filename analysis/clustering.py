@@ -17,16 +17,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.cluster.hierarchy as hac
-from main import merge_tables
+from proteofav.main import merge_tables
 from mcl.mcl_clustering import mcl
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial import ConvexHull
 from scipy.spatial.distance import pdist, squareform, euclidean
 from scipy.spatial.qhull import QhullError
 
-from proteofav.analysis.random_annotations import add_random_disease_variants
-from proteofav.analysis.utils import _get_colors, _autoscale_axes, _fractional_to_cartesian
-from proteofav.analysis.utils import delete_file, _get_colors, _fractional_to_cartesian, \
+from analysis.random_annotations import add_random_disease_variants
+from analysis.utils import delete_file, _get_colors, _fractional_to_cartesian, \
     _autoscale_axes
 
 __author__ = 'smacgowan'

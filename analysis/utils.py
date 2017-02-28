@@ -7,7 +7,7 @@ import os
 import numpy as np
 from os import path
 
-from ..config import defaults
+from proteofav.config import defaults
 
 
 def is_valid_file(parser, arg):
