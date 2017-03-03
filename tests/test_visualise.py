@@ -3,18 +3,19 @@ import unittest
 
 import pandas as pd
 
-from proteofav.visualise import make_chimera_attribute_file
+from proteofav.visualise import make_chimera_attribute_file, make_chimera_command_file
 
 
 class TestVisualiser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         # self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
-        self.chimera_file = make_chimera_attribute_file
+        self.chimera_attribute = make_chimera_attribute_file
+        self.chimera_command = make_chimera_command_file
 
     def tearDown(self):
         """Remove testing framework."""
-        self.chimera_file = None
+        self.chimera_attribute = None
 
     def test_make_chimera_attribute_file(self):
 
@@ -29,16 +30,32 @@ class TestVisualiser(unittest.TestCase):
     :4	4.4
     :5	22.1"""
 
-        lines = self.chimera_file(example)
+        lines = self.chimera_attribute(example)
         self.assertEqual(lines, result)
 
     def test_raises_chimera_attribute_file(self):
 
         with self.assertRaises(TypeError):
-            self.chimera_file(None)
+            self.chimera_attribute(None)
 
         with self.assertRaises(NotImplementedError):
-            lines = self.chimera_file(pd.Series(['0']), recipient='atoms')
+            lines = self.chimera_attribute(pd.Series(['0']), recipient='atoms')
+
+    def test_make_chimera_command_file(self):
+        result = "open here\ncolor green,r helix\ncolor yellow,r strand\ncolor gray,r coil\n"
+        lines = self.chimera_command('here')
+        self.assertEqual(lines, result)
+
+        result = "open here\n"
+        lines = self.chimera_command('here', color_secondary_structure=False)
+        self.assertEqual(lines, result)
+
+        result = "open here\ntest\ncolor green,r helix\ncolor yellow,r strand\ncolor gray,r coil\n"
+        lines = self.chimera_command('here', content='test\n')
+        self.assertEqual(lines, result)
+
+    def test_visualise_chimera(self):
+        pass  # TODO
 
 
 

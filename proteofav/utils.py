@@ -8,8 +8,6 @@ import os
 import shutil
 import socket
 import time
-import urllib
-
 try:
     from urllib import quote as urllib_quote
     from urllib import urlretrieve
@@ -28,9 +26,8 @@ __all__ = ["get_url_or_retry", "check_local_or_fetch", "fetch_files", "get_prefe
            "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
            "_uniprot_pdb_sifts_mapping", "icgc_missense_variant", "is_valid",
            "is_valid_ensembl_id", "confirm_column_types"]
-
-socket.setdefaulttimeout(15)
 log = logging.getLogger('proteofav.config')
+socket.setdefaulttimeout(15)  # avoid infinite hanging
 
 
 def get_url_or_retry(url, retry_in=None, wait=1, n_retries=10, json=False, header=None, **params):

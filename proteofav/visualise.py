@@ -2,19 +2,21 @@
 # -*- coding: utf-8
 """
 Created on 18:07 28/02/2017 2017 
-Methods for generating files for third party visualisation solutions.
+Methods aiming to integrate ProteoFAV table to viewers such as UFSC Chimera and Jalview.
 """
 import logging
+import os
 
 from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
 
+
 def make_chimera_attribute_file(column, recipient='residues', match_mode="1 - to - 1"):
     """
     Write a UFSC Chimera attribute file. It assumes that the pd.Series index
         matches to the residue number in the target protein structure.
-    :param pd.Series column: column with attributes
+    :param pd.Series column: column with attributes in data and recipient in the index
     :param str recipient: level of attribute assignment. Choice from atoms,
         residues and molecules.
     :param str match_mode:
@@ -50,32 +52,60 @@ def make_chimera_attribute_file(column, recipient='residues', match_mode="1 - to
     return template.format(name=name, match_mode=match_mode, recipient=recipient) + lines
 
 
-def make_chimera_command_file(table, color_secondary_structure=True):
+def make_chimera_command_file(filename, content='', color_secondary_structure=True):
     """
     Creates a Chimera command file for protein structure visualisation.
 
-    :param table:
-    :param color_secondary_structure:
-    :return:
+    :param str filename: path to mmcif file
+    :param content: personalised content of the chimera command file
+    :type content: str or iterable
+    :param bool color_secondary_structure: wheter to append secondary structure coloring
+    :return str: lines to be written to file
 
-    .. TODO:: Select models, chains, residues and select atoms:
+    .. todo:: Select models, chains, residues and select atoms:
         display #{model_n}:{start}-{stop}.{chain}@ca
 
     """
-    defaults.db_mmcif
-    line = "open {filename}"
 
+    line = "open {filename}\n".format(filename=filename)
+
+    if isinstance(content, str):
+        line += content
+    elif hasattr(content, '__iter__'):
+        line += "\n".join(content)
 
     if color_secondary_structure:
-        closing_lines = "color green,a helix\ncolor yellow,a strand\ncolor gray,a coil\n"
+        line += "color green,r helix\ncolor yellow,r strand\ncolor gray,r coil\n"
+
+    return line
 
 
-def write_file(content, file):
+def visualise_chimera(filename, column, **kwargs):
+    """
+    Creates an attribute file and a command file to observed a ProteoFAV processed data in UFSC
+    Chimera.
+
+    :param str filename: path to mmcif file
+    :param pd.Series column: column with attributes in data and recipient in the index
+    :return None: callback
     """
 
+    attribute_file_content = make_chimera_attribute_file(column, **kwargs)
+    name = column.name
+    write_file(attribute_file_content, '{}.chimera_attrFile'.format(name))
 
-    :param str content:
-    :param str file:
+    attribute_line = 'defattr {}.chimera_attrFile'.format(name)
+    command_file_content = make_chimera_command_file(filename, content=attribute_line)
+    basename = os.path.basename(filename)
+    write_file(command_file_content, "{}.com".format(basename.split('.')[0]))
+
+
+def write_file(content, filename):  # pragma: no cover
     """
-    with open(file, 'w') as open_file:
+    Write content to a new file.
+
+    :param str content: lines of the file as a string
+    :param str filename: path to the file
+    """
+    with open(filename, 'w') as open_file:
         open_file.write(content)
