@@ -9,17 +9,20 @@ import shutil
 import socket
 import time
 import urllib
+
 try:
     from urllib import quote as urllib_quote
-except ImportError:
+    from urllib import urlretrieve
+except ImportError:  # python 3.5
     from urllib.parse import quote as urllib_quote
+    from urllib.request import urlretrieve
 
 import numpy as np
 import pandas as pd
 import requests
 
-from .config import defaults
-from .library import valid_ensembl_species_variation
+from proteofav.config import defaults
+from proteofav.library import valid_ensembl_species_variation
 
 __all__ = ["get_url_or_retry", "check_local_or_fetch", "fetch_files", "get_preferred_assembly_id",
            "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
@@ -64,17 +67,6 @@ def get_url_or_retry(url, retry_in=None, wait=1, n_retries=10, json=False, heade
         response.raise_for_status()
 
 
-def check_local_or_fetch(identifier, update=False):
-    """
-
-    :param update:
-    :param identifier:
-    :return:
-    """
-    # TODO fetch what?
-    pass
-
-
 def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     """
     Small routine to fetch data files from their respective repositories.
@@ -114,11 +106,7 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
         filename = identifier + getattr(defaults, source + '_extension')
         url = getattr(defaults, source + '_fetch') + filename
         try:
-            try:
-                urllib.urlretrieve(url, destination + filename)
-            except AttributeError:
-                # python 3.5
-                urllib.request.urlretrieve(url, destination + filename)
+            urlretrieve(url, destination + filename)
         except IOError as e:
             log.error('Unable to retrieve {} for {}'.format(url, str(e)))
             raise
@@ -362,8 +350,7 @@ def confirm_column_types(table):
     .. note:: There are fewer pandas `dtypes` than the corresponding numpy
         type, but all numpy types can be accommodated.
 
-    - NaNs and Upcasting:
-
+    NaNs and Upcasting:
     The upcasting of dtypes on columns that contain NaNs has been an issue and
         can lead to inconsistencies between the column types of different
         tables that contain equivalent data. E.g., a `merged_table` from a PDB
@@ -381,8 +368,7 @@ def confirm_column_types(table):
         when not present, a column of integers that can contain NaNs should
         always be at least float.
 
-    - dtypes and element types:
-
+    dtypes and element types:
     It seems that coercion to certain dtypes alters the element types too.
         For instance, int64 -> float64 will make an equivalent change to
         individual value types. However, the original element types can be
@@ -390,6 +376,7 @@ def confirm_column_types(table):
         preference for integer columns that can contain NaNs.
 
     """
+
     # TODO: update this to accomodate the new sifts table headers
     column_types_long = {
         # SIFTs mappings

@@ -13,8 +13,7 @@ from proteofav.uniprot import (map_gff_features_to_sequence,
                                fetch_uniprot_formal_specie,
                                fetch_uniprot_sequence,
                                _uniprot_info)
-from proteofav.utils import (get_url_or_retry,
-                             check_local_or_fetch)
+from proteofav.utils import get_url_or_retry
 from proteofav.library import valid_ensembl_species
 
 __all__ = ["_fetch_icgc_variants",
@@ -341,7 +340,6 @@ def parse_uniprot_variants(uniprot_id):
                    ids: list of str]
     :rtype: pandas.DataFrame
     """
-    check_local_or_fetch(uniprot_id)
 
     disease_group = '\[\'In ([?P<disease>a-zA-Z0-9_ ]+)[.;]'
     res_transition_group = '(?P<ref>[A-Z]+)->(?P<new>[A-Z]+)'

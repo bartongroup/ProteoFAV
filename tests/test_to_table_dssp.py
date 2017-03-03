@@ -28,6 +28,7 @@ class TestDSSPParser(unittest.TestCase):
         """Remove testing framework."""
 
         self.example_dssp = None
+        self.dssp_ins_code = None
         self.residues_parser = None
         self.fix_dssp_ignoring_chains_ids = None
 
