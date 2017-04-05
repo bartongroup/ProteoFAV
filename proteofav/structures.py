@@ -21,9 +21,9 @@ from lxml import etree
 from requests import HTTPError
 from scipy.spatial import cKDTree
 
-from .config import defaults
-from .library import scop_3to1
-from .utils import fetch_files, get_url_or_retry, get_preferred_assembly_id
+from proteofav.config import defaults
+from proteofav.library import scop_3to1
+from proteofav.utils import fetch_files, get_url_or_retry, get_preferred_assembly_id
 
 log = logging.getLogger('proteofav.config')
 __all__ = ['_dssp', '_mmcif_atom', '_sifts_residues_regions', '_pdb_validation_to_table',
