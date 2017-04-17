@@ -7,3 +7,4 @@ include README.rst
 include LICENSE.txt
 include tests
 recursive-include docs *.rst
+include config.txt
