@@ -4,6 +4,7 @@
 Created on 18:07 28/02/2017 2017 
 Methods aiming to integrate ProteoFAV table to viewers such as UFSC Chimera and Jalview.
 """
+from __future__ import absolute_import
 import logging
 import os
 

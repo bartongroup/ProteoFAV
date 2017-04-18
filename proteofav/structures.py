@@ -7,7 +7,7 @@ as a pandas.DataFrame. Also include wrapper functions that select and index
 the information. Prefers the use o the wrapper instead the private functions
 for better error handling. Both levels are covered by test cases.
 """
-
+from __future__ import absolute_import
 import logging
 try:
     # python 2.7
@@ -483,13 +483,12 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA',
         # load the table
         cif_path = path.join(defaults.db_mmcif,
                              pdb_id + '-assembly-' + assembly_id + '.cif')
-        print(cif_path)
+
         try:
             cif_table = _mmcif_atom(cif_path)
         except IOError:
             cif_path = fetch_files(pdb_id + '-assembly-' + assembly_id,
                                    sources='bio', directory=defaults.db_mmcif)[0]
-            print(cif_path)
             cif_table = _mmcif_atom(cif_path)
     else:
         # load the table
