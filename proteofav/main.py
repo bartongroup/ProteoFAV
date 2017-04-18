@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
 import argparse
+import click
 import logging
 
 import sys
@@ -19,6 +20,7 @@ __all__ = ['merge_tables',
            'parse_args',
            'main']
 log = logging.getLogger('proteofav.config')
+out_choices = ['csv', 'json', 'tab']  # TODO add JALVIEW and chimera
 
 
 def merge_tables(uniprot_id=None,
@@ -225,38 +227,53 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main():
+@click.command()
+@click.option('--pdb', type=str, default=None, help='Protein data bank identifier.')
+@click.option('--chain', type=str, default=None, help='Protein structure chain identifier.')
+@click.option('--uniprot', type=str, default=None, help='UniProt knowledgebase accession.')
+@click.option('--output_type', choices=out_choices, default='csv', dest="out_type",
+              help='File format for the output.')
+@click.option('-v', '--verbose', action='store_true', help="Show more verbose logging.")
+@click.option('-l', '--log', default=sys.stderr, help="Path to the logfile.")
+@click.option('--add_annotation', action='store_true',
+              help="Whether to merge annotation information to the output.")
+@click.option('--add_validation', action='store_true',
+              help="Whether to merge protein structure validation information to the output.")
+@click.option('--add_variants', action='store_true',
+              help="Whether to merge genetic variant information to the output.")
+@click.option('--remove_redundant', action='store_true',
+              help="Whether to remove columns with redundant information from the output.")
+@click.argument ('output', type=click.Path(exists=False))
+def main(pdb, chain, uniprot, output_type, verbose, log, add_annotation, add_validation,
+         add_variants, remove_redundants, output):
+    """
+    Path to the output file. Use `-` for stdout
     """
 
-    :param args: command line arguments
-    :return: None
-    """
-    args = parse_args(sys.argv[1:])
-
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(stream=args.log, level=level,
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(stream=log, level=level,
                         format='%(asctime)s - %(levelname)s - %(message)s ')
 
-    if args.output is None:
+    if output is None:
         log.error("Provide a path for the output file.")
         return 1
 
-    table = merge_tables(pdb_id=args.pdb,
-                         chain=args.chain,
-                         uniprot_id=args.uniprot,
-                         add_annotation=args.add_annotation,
-                         add_validation=args.add_validation,
-                         add_ensembl_variants=args.add_variants,
-                         drop_empty_cols=args.remove_redundant)
+    table = merge_tables(pdb_id=pdb,
+                         chain=chain,
+                         uniprot_id=uniprot,
+                         add_annotation=add_annotation,
+                         add_validation=add_validation,
+                         add_ensembl_variants=add_variants,
+                         drop_empty_cols=remove_redundants)
 
-    if args.out_type == 'csv':
-        table.to_csv(args.output)
-    elif args.out_type in {'jalview', 'chimera'}:
+    if output_type == 'csv':
+        table.to_csv(output)
+    elif output_type in {'jalview', 'chimera'}:
         raise NotImplementedError
     else:
-        if hasattr(table, "to_" + args.out_type):
-            fun = getattr(table, "to_" + args.out_type)
-            fun(args.output)
+        if hasattr(table, "to_" + output_type):
+            fun = getattr(table, "to_" + output_type)
+            fun(output)
     return 0
 
 
