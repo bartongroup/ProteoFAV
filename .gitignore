@@ -1,7 +1,6 @@
 .idea
 env
 *.pyc
-*/*.pyc
 *.py.*
 ._*
 .DS_Store
@@ -11,3 +10,8 @@ config.txt
 *.ipynb
 .tox/
 *.egg-info
+docs/_build/
+docs/_static/
+docs/_templates/
+notebooks/
+proteofav/analysis/
