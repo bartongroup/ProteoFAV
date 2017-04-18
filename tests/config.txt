@@ -1,6 +1,6 @@
 [Global]
-db_mmcif = CIF/
-db_sifts = SIFTS/
-db_dssp = DSSP/
+db_mmcif = ...
+db_sifts = ...
+db_dssp = ...
 
 [Addresses]
