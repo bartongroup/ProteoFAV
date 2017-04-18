@@ -20,7 +20,7 @@ __all__ = ['merge_tables',
            'parse_args',
            'main']
 log = logging.getLogger('proteofav.config')
-out_choices = ['csv', 'json', 'tab']  # TODO add JALVIEW and chimera
+
 
 
 def merge_tables(uniprot_id=None,
@@ -196,67 +196,35 @@ def merge_tables(uniprot_id=None,
     return table
 
 
-def parse_args(args):
-    usage = """ProteFAV: a Python framework to process and integrate protein structure and
-    features to genetic variants."""
-    out_choices = ['csv', 'json', 'tab']  # TODO add JALVIEW and chimera
-    parser = argparse.ArgumentParser(description=__doc__, usage=usage)
-    parser.add_argument('--pdb', type=str, default=None,
-                        help='Protein data bank identifier.')
-    parser.add_argument('--chain', type=str, default=None,
-                        help='Protein structure chain identifier.')
-    parser.add_argument('--uniprot', type=str, default=None,
-                        help='UniProt knowledgebase accession.')
-    parser.add_argument('--type', choices=out_choices, default='csv', dest="out_type",
-                        help='File format for the output.')
-    parser.add_argument('output', help='Path to the output file.')
-    parser.add_argument('-v', '--verbose', action='store_true', help="Show more verbose logging.")
-    parser.add_argument('-l', '--log', default=sys.stderr,
-                        help="Path to the logfile.")
-    parser.add_argument('--add_annotation', action='store_true',
-                        help="Whether to merge annotation information to the output.")
-    parser.add_argument('--add_validation', action='store_true',
-                        help="Whether to merge protein structure validation information to the "
-                             "output.")
-    parser.add_argument('--add_variants', action='store_true',
-                        help="Whether to merge genetic variant information to the output.")
-    parser.add_argument('--remove_redundant', action='store_true',
-                        help="Whether to remove columns with redundant information from the "
-                             "output.")
-
-    return parser.parse_args(args)
-
-
 @click.command()
 @click.option('--pdb', type=str, default=None, help='Protein data bank identifier.')
 @click.option('--chain', type=str, default=None, help='Protein structure chain identifier.')
 @click.option('--uniprot', type=str, default=None, help='UniProt knowledgebase accession.')
-@click.option('--output_type', choices=out_choices, default='csv', dest="out_type",
+@click.option('--output_type', default='csv',
+              type=click.Choice(['csv', 'json', 'tab']),  # TODO add JALVIEW and chimera
               help='File format for the output.')
-@click.option('-v', '--verbose', action='store_true', help="Show more verbose logging.")
+@click.option('-v', '--verbose', is_flag=True, help="Show more verbose logging.")
 @click.option('-l', '--log', default=sys.stderr, help="Path to the logfile.")
-@click.option('--add_annotation', action='store_true',
+@click.option('--add_annotation', is_flag=True,
               help="Whether to merge annotation information to the output.")
-@click.option('--add_validation', action='store_true',
+@click.option('--add_validation', is_flag=True,
               help="Whether to merge protein structure validation information to the output.")
-@click.option('--add_variants', action='store_true',
+@click.option('--add_variants', is_flag=True,
               help="Whether to merge genetic variant information to the output.")
-@click.option('--remove_redundant', action='store_true',
+@click.option('--remove_redundants', is_flag=True,
               help="Whether to remove columns with redundant information from the output.")
-@click.argument ('output', type=click.Path(exists=False))
+@click.argument ('output', type=click.File('wb'))
 def main(pdb, chain, uniprot, output_type, verbose, log, add_annotation, add_validation,
          add_variants, remove_redundants, output):
     """
-    Path to the output file. Use `-` for stdout
+    ProteFAV: a Python framework to process and integrate protein structure and
+    features to genetic variants. 
+    OUTPUT: Path to the output file. Use `-` for stdout
     """
 
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(stream=log, level=level,
                         format='%(asctime)s - %(levelname)s - %(message)s ')
-
-    if output is None:
-        log.error("Provide a path for the output file.")
-        return 1
 
     table = merge_tables(pdb_id=pdb,
                          chain=chain,
