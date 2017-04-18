@@ -7,7 +7,6 @@ env
 __pycache__
 config.txt
 .ipynb_checkpoints
-*.ipynb
 .tox/
 *.egg-info
 docs/_build/

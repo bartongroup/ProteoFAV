@@ -25,26 +25,38 @@ setup(
     version=__version__,
     packages=find_packages(),
 
-    # # Packaging options.
-    package_data={'': ['*.ipynb', '*.rst']},
+    # Packaging options.
+    # package_data={'': ['*.ipynb', '*.rst']},
+    include_package_data=True,
+    py_modules=['proteofav.main'],
 
     # Package dependencies.
-    install_requires=['pandas', 'requests', 'scipy', 'numpy', 'lxml'],
+    install_requires=['pandas>=0.17',
+                      'requests>=2.12',
+                      'lxml>=3.6',
+                      'click>=6',
+                      'scipy'
+                      ],
+    test_requires=['mock', 'python_version>"3.4"'], #
 
     # Tests.
     test_suite='tests',
 
-    # Test dependencies.
-    test_requires=['mock;python_version<"3.4"'],
-
     # Metadata for PyPI.
     author=__authors__,
     author_email='tbrittoborges@dundee.ac.uk',
-    license='TBD',
+    license='LICENSE.txt',
+    entry_points={
+        "console_scripts": ["proteofav-setup=proteofav.main:setup",
+                            "proteofav=proteofav.main:main",
+                            ]
+        },
     url='https://github.com/bartongroup/ProteoFAV/tree/master',
+    download_url="https://github.com/bartongroup/ProteoFAV/archive/master.zip",
     keywords='bioinformatics structural-biology data-analysis python pandas',
     description='PROtein Feature Aggregation and Variants.',
     long_description=open('README.rst').read(),
+
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
