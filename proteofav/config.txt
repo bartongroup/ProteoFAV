@@ -22,7 +22,7 @@ sifts_fetch = ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/xml/
 validation_fetch = http://www.ebi.ac.uk/pdbe/entry-files/download/
 
 [Variables]
-contact_email = your@email.com
+contact_email = ...
 cif_extension = _updated.cif
 bio_extension = .cif.gz
 dssp_extension = .dssp
