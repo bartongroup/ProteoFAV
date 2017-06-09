@@ -48,8 +48,7 @@ setup(
     license='LICENSE.txt',
     entry_points={
         "console_scripts": ["proteofav-setup=proteofav.main:setup",
-                            "proteofav=proteofav.main:main",
-                            ]
+                            "proteofav=proteofav.main:main"]
         },
     url='https://github.com/bartongroup/ProteoFAV/tree/master',
     download_url="https://github.com/bartongroup/ProteoFAV/archive/master.zip",
