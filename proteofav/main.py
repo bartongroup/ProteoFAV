@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8
-import argparse
+from __future__ import absolute_import
 import logging
-
 import sys
 
-from .library import to_single_aa
-from .structures import (select_cif,
-                         select_dssp,
-                         select_sifts,
-                         select_validation,
-                         sifts_best)
+import click
 
-from .variants import (map_gff_features_to_sequence,
-                       select_variants)
+from proteofav.library import to_single_aa
+from proteofav.structures import (select_cif,
+                                  select_dssp,
+                                  select_sifts,
+                                  select_validation,
+                                  sifts_best)
+
+from proteofav.variants import (map_gff_features_to_sequence,
+                                select_variants)
 
 __all__ = ['merge_tables',
            'parse_args',
@@ -37,10 +38,16 @@ def merge_tables(uniprot_id=None,
         sifts_best_structure, which is sorted by sequence coverage.
         If no chain is set, uses the first one.
 
+    :param bool add_ensembl_variants: Whether to add variant table from Ensembl 
+    :param bool add_validation: whether to merge PDB validation information
+    :param bool add_annotation: whether to merge UniProt GFF information
+    :param bool drop_empty_cols: whether to drop columns without useful information 
+    :param str sequence_check: how to handle sequence inconsistencies. Choose from raise, 
+    warn or ignore  
     :param pdb_id: Entry to be loaded
     :type pdb_id: str or None
     :param uniprot_id: Select PDB entry with highest sequence
-        coverage for a UniProt protein sequence
+        coverage for the selected UniProt protein sequence
     :type uniprot_id: str or None
     :param chain: Protein chain to loaded
     :type chain: str or None
@@ -48,18 +55,6 @@ def merge_tables(uniprot_id=None,
     :type atoms: str or None
     :param model: Select the PDB entity, like in structures determined by NMR
     :type model: str or None
-    :param bool: add_validation: Attach the PDB validation table
-    :param bool: sequence_check: Whether to compare sequence from different
-        sources. Choose from raise, warn or ignore
-    :param bool: drop_empty_cols: Whether to drop columns without positional
-        information
-    :param bool: add_ensembl_variants: Whether to add variant table from Ensembl
-    :param bool: add_annotation: Whether to add variant table from Ensembl
-    :param bool: add_uniprot_variants: Whether to add  variant table from
-        UniProt
-    :raises: ValueError
-    :rtype: pd.DataFrame
-
     """
     if not any((uniprot_id, pdb_id)):
         raise TypeError('One of the following arguments is expected:'
@@ -194,71 +189,86 @@ def merge_tables(uniprot_id=None,
     return table
 
 
-def parse_args(args):
-    usage = """ProteFAV: a Python framework to process and integrate protein structure and
-    features to genetic variants."""
-    out_choices = ['csv', 'json', 'tab']  # TODO add JALVIEW and chimera
-    parser = argparse.ArgumentParser(description=__doc__, usage=usage)
-    parser.add_argument('--pdb', type=str, default=None,
-                        help='Protein data bank identifier.')
-    parser.add_argument('--chain', type=str, default=None,
-                        help='Protein structure chain identifier.')
-    parser.add_argument('--uniprot', type=str, default=None,
-                        help='UniProt knowledgebase accession.')
-    parser.add_argument('--type', choices=out_choices, default='csv', dest="out_type",
-                        help='File format for the output.')
-    parser.add_argument('output', help='Path to the output file.')
-    parser.add_argument('-v', '--verbose', action='store_true', help="Show more verbose logging.")
-    parser.add_argument('-l', '--log', default=sys.stderr,
-                        help="Path to the logfile.")
-    parser.add_argument('--add_annotation', action='store_true',
-                        help="Whether to merge annotation information to the output.")
-    parser.add_argument('--add_validation', action='store_true',
-                        help="Whether to merge protein structure validation information to the "
-                             "output.")
-    parser.add_argument('--add_variants', action='store_true',
-                        help="Whether to merge genetic variant information to the output.")
-    parser.add_argument('--remove_redundant', action='store_true',
-                        help="Whether to remove columns with redundant information from the "
-                             "output.")
-
-    return parser.parse_args(args)
-
-
-def main():
+@click.command()
+@click.option('--pdb', type=str, default=None, help='Protein data bank identifier.')
+@click.option('--chain', type=str, default=None, help='Protein structure chain identifier.')
+@click.option('--uniprot', type=str, default=None, help='UniProt KnowledgeBase accession.')
+@click.option('--output_type', default='csv',
+              type=click.Choice(['csv', 'json', 'tab']),  # TODO add JALVIEW and chimera
+              help='File format for the output.')
+@click.option('-v', '--verbose', is_flag=True, help="Show more verbose logging.")
+@click.option('-l', '--log', default=sys.stderr, help="Path to the logfile.",
+              type=click.File('wb'))
+@click.option('--add_annotation', is_flag=True,
+              help="Whether to merge annotation information to the output.")
+@click.option('--add_validation', is_flag=True,
+              help="Whether to merge protein structure validation information to the output.")
+@click.option('--add_variants', is_flag=True,
+              help="Whether to merge genetic variant information to the output.")
+@click.option('--remove_redundant', is_flag=True,
+              help="Whether to remove columns with redundant information from the output.")
+@click.argument('output', type=click.File('wb'))
+def main(pdb, chain, uniprot, output_type, verbose, log, add_annotation, add_validation,
+         add_variants, remove_redundant, output):
+    """
+    ProteFAV: a Python framework to process and integrate protein structure and
+    features to genetic variants.
+    OUTPUT: Path to the output file. Use `-` for stdout
     """
 
-    :param args: command line arguments
-    :return: None
-    """
-    args = parse_args(sys.argv[1:])
-
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(stream=args.log, level=level,
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(stream=log, level=level,
                         format='%(asctime)s - %(levelname)s - %(message)s ')
 
-    if args.output is None:
-        log.error("Provide a path for the output file.")
-        return 1
+    table = merge_tables(pdb_id=pdb,
+                         chain=chain,
+                         uniprot_id=uniprot,
+                         add_annotation=add_annotation,
+                         add_validation=add_validation,
+                         add_ensembl_variants=add_variants,
+                         drop_empty_cols=remove_redundant)
 
-    table = merge_tables(pdb_id=args.pdb,
-                         chain=args.chain,
-                         uniprot_id=args.uniprot,
-                         add_annotation=args.add_annotation,
-                         add_validation=args.add_validation,
-                         add_ensembl_variants=args.add_variants,
-                         drop_empty_cols=args.remove_redundant)
-
-    if args.out_type == 'csv':
-        table.to_csv(args.output)
-    elif args.out_type in {'jalview', 'chimera'}:
+    if output_type == 'csv':
+        table.to_csv(output)
+    elif output_type in {'jalview', 'chimera'}:
         raise NotImplementedError
     else:
-        if hasattr(table, "to_" + args.out_type):
-            fun = getattr(table, "to_" + args.out_type)
-            fun(args.output)
-    return 0
+        if hasattr(table, "to_" + output_type):
+            fun = getattr(table, "to_" + output_type)
+            fun(output)
+    sys.exit(0)
 
 
-if __name__ == '__main__':
-    sys.exit(main())
+@click.command()
+@click.confirmation_option()
+def setup():
+    from proteofav.config import Defaults
+    from os import path
+
+    defaults = Defaults(path.join(path.dirname(__file__), 'config.txt'))
+    default_db = path.expanduser("~/Downloads/")
+
+    items = {k: v for k, v in defaults.__dict__.items() if k.startswith('db')}
+    for attr, value in items.items():
+        new_value = click.prompt(
+            'Please enter a writable path for {}: '.format(attr),
+            type=click.Path(writable=True),
+            default=default_db)
+        setattr(defaults, attr, new_value)
+
+        if new_value != default_db:
+            default_db = new_value
+
+    new_email = click.prompt(
+        'Please enter a valid email',
+        type=str)
+    if new_email:
+        setattr(defaults, 'contact_email', new_email)
+
+    defaults.write()
+    log.info('Config file updated')
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    pass

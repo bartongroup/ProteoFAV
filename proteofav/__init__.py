@@ -14,4 +14,4 @@ sequences and genetic variants.
 __title__ = 'proteofav'
 __version__ = '0.1.0'
 __license__ = 'TBD'
-__credits__ = [u'Fábio Madeira', u'Thiago Britto-Borges', u'Stuart MacGowan']
+__authors__ = [u'Fábio Madeira', u'Thiago Britto-Borges', u'Stuart MacGowan']

@@ -18,19 +18,40 @@ ProteoFAV
      :target: https://pyup.io/repos/github/tbrittoborges/proteofav/
      :alt: Updates
 
-
 ProteFAV is a Python framework to fetch, process and integrate protein structure and features
-to genetic variants. The tool relies heavily in `Pandas`_ library.
+to genetic variants. The tool relies heavily in `Pandas`_ library to quickly load protein data i
+into DataFrames for data analysis in Python or exported and analysed elswhere. It excels
+on integration of the protein features, structural data and genetic variation.
 
-ProteFAV benefits
-~~~~~~~~~~~~~~~~~
+Installation and developing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Fast
-- Scalable
-- Ready
+With conda:
+    conda-env create -n proteofav -f path/to/ProteoFAV/requirements.txt
+    source activate proteofav
+    cd path/to/ProteoFAV
+    pip install .
 
-Example usage
+for developing and testing. Test dependencies should be resolved with:
+    python setup.py develop --user
+
+Tests are run with:
+    cd path/to/ProteoFAV/tests
+    python -m unittest discover
+
+
+Configuration
 ~~~~~~~~~~~~~
+
+After installing run:
+    proteofav-setup
+
+To set-up the download directories for mmCIF (db_mmcif), SIFTS (db_sifts), DSSP (db_dssp),
+Ensembl Germline (db_germline_variants) and Ensembl Somatic (db_somatic_variants) in the
+config.txt, otherwise ProteoFAV will download files to temporary directories.
+
+Usage
+~~~~~
 
 Working on documenting the package `docs`_...
 
@@ -38,7 +59,12 @@ Dependencies
 ~~~~~~~~~~~~
 
 The framework was developed to support Python 2.7+ and Python 3.4+. Check
-`requirements`_ for necessary requirements.
+`requirements`_ for specific requirements.
+
+Package architecture
+~~~~~~~~~~~~~~~~~~~~
+
+TBA
 
 Contributing and Bug tracking
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,6 +77,14 @@ License
 
 See `license`_.
 
+Future directions
+~~~~~~~~~~~~~~~~~
+
+We are currently working for several features and improvements:
+- Using Python's object orientation to generalise the data integration, and so merge table
+routine will get smarter
+- Adding new file parsers and extending the functionality for user provider
+- Extending parsers to support to edge cases
 
 .. _requirements: https://github.com/bartongroup/ProteoFAV/blob/master/requirements.txt
 .. _license: https://github.com/bartongroup/ProteoFAV/blob/master/LICENSE.txt

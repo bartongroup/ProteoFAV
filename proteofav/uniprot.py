@@ -4,6 +4,7 @@
 Created on 17:26 19/02/2016 2016 
 Define auxiliary functions for interacting with Uniprot.
 """
+from __future__ import absolute_import
 import logging
 
 try:

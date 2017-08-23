@@ -16,8 +16,12 @@ from proteofav.structures import _dssp, _sifts_residues_regions, _mmcif_atom
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
+defaults.db_cif = path.join(path.dirname(__file__), "CIF/")
+defaults.db_sifts = path.join(path.dirname(__file__), "SIFTS/")
+defaults.db_dssp = path.join(path.dirname(__file__), "DSSP/")
 
 
+@patch("proteofav.structures.defaults", defaults)
 class TestTableMerger(unittest.TestCase):
     """Test table merging methods."""
 
@@ -178,8 +182,9 @@ class TestTableMerger(unittest.TestCase):
         with patch("proteofav.structures._mmcif_atom", return_value=baddata):
             with self.assertRaises(ValueError):
                 self.merge_table(pdb_id='2w4o')
-            # data = self.merge_table(pdb_id='2w4o', sequence_check='warn') # todo try capture warn
-            # self.assertFalse(data.empty)
+                # data = self.merge_table(pdb_id='2w4o', sequence_check='warn') # todo try capture warn
+                # self.assertFalse(data.empty)
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMerger)
