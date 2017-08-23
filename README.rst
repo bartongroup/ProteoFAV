@@ -47,8 +47,8 @@ After installing run:
     proteofav-setup
 
 To set-up the download directories for mmCIF (db_mmcif), SIFTS (db_sifts), DSSP (db_dssp),
-Ensembl Germline (db_germline_variants) and Ensembl Somatic (db_somatic_variants) in the config.txt.
-
+Ensembl Germline (db_germline_variants) and Ensembl Somatic (db_somatic_variants) in the
+config.txt, otherwise ProteoFAV will download files to temporary directories.
 
 Usage
 ~~~~~
