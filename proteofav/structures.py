@@ -86,7 +86,7 @@ def _mmcif_atom(filename, delimiter=None):
     for line in yield_lines(filename):
         if line.startswith("_atom_site."):
             _header_mmcif.append(line.split('.')[1].rstrip())
-        elif line.startswith("ATOM"):
+        elif line.startswith("ATOM") or "ATOM" in line[0:6]:
             lines.append(line)
         elif line.startswith("HETATM"):
             lines.append(line)
