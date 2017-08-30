@@ -6,18 +6,6 @@ import pandas as pd
 from proteofav.visualise import make_chimera_attribute_file, make_chimera_command_file
 
 
-expected_chimera_attribute_file = """\
-# Generated with ProteoFAV
-    attribute: test
-    match mode: 1 - to - 1
-    recipient: residues
-    :1	32.4
-	:2	46.2
-	:3	52.5
-	:4	4.4
-	:5	22.1\
-"""
-
 
 class TestVisualiser(unittest.TestCase):
     def setUp(self):
@@ -31,14 +19,16 @@ class TestVisualiser(unittest.TestCase):
         self.chimera_attribute = None
 
     def test_make_chimera_attribute_file(self):
+        expected = ('# Generated with ProteoFAV\n    attribute: test\n    match mode: 1 - to - '
+                    '1\n    recipient: residues\n    '
+                    ':1\t32.4\n\t:2\t46.2\n\t:3\t52.5\n\t:4\t4.4\n\t:5\t22.1')
 
-        example = pd.Series([32.4, 46.2, 52.5, 4.4, 22.1], index = range(1, 6), name='test')
+        example = pd.Series([32.4, 46.2, 52.5, 4.4, 22.1], index=range(1, 6), name='test')
 
         lines = self.chimera_attribute(example)
-        self.assertEqual(lines, expected_chimera_attribute_file)
+        self.assertEqual(lines, expected)
 
     def test_raises_chimera_attribute_file(self):
-
         with self.assertRaises(TypeError):
             self.chimera_attribute(None)
 
@@ -60,7 +50,6 @@ class TestVisualiser(unittest.TestCase):
 
     def test_visualise_chimera(self):
         pass  # TODO
-
 
 
 if __name__ == '__main__':
