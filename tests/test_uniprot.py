@@ -59,7 +59,7 @@ class UniprotTestCase(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_raise_for_not_found(self):
-        with mock.patch('utils.requests.get') as mock_get:
+        with mock.patch('proteofav.utils.requests.get') as mock_get:
             with self.assertRaises(HTTPError) as context:
                 mock_get.get.return_value.ok = False
                 mock_get.get.return_value.status = 404

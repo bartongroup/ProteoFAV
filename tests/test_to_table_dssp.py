@@ -80,21 +80,21 @@ class TestDSSPParser(unittest.TestCase):
         self.assertFalse(self.data.empty, 'Empty DataFrame for example with '
                                           'insertion code.')
 
-        self.assertEqual(self.data.ix[3303].icode, '102A')
-        self.assertEqual(self.data.ix[3303].aa, 'I')
-        self.assertEqual(self.data.ix[3303].ss, 'H')
-        self.assertEqual(self.data.ix[3303].acc, 55)
-        self.assertEqual(self.data.ix[3303].phi, -92.9)
-        self.assertEqual(self.data.ix[3303].psi, -50.1)
-        self.assertNotEqual(self.data.ix[3303].icode, 102)
+        self.assertEqual(self.data.loc[3303, 'icode'], '102A')
+        self.assertEqual(self.data.loc[3303, 'aa'], 'I')
+        self.assertEqual(self.data.loc[3303, 'ss'], 'H')
+        self.assertEqual(self.data.loc[3303, 'acc'], 55)
+        self.assertEqual(self.data.loc[3303, 'phi'], -92.9)
+        self.assertEqual(self.data.loc[3303, 'psi'], -50.1)
+        self.assertNotEqual(self.data.loc[3303, 'icode'], 102)
 
-        self.assertEqual(self.data.ix[6402].icode, '187J')
-        self.assertEqual(self.data.ix[6402].aa, 'L')
-        self.assertTrue(numpy.isnan(self.data.ix[6402].ss))
-        self.assertEqual(self.data.ix[6402].acc, 92)
-        self.assertEqual(self.data.ix[6402].phi, -57.8)
-        self.assertEqual(self.data.ix[6402].psi, 360)
-        self.assertNotEqual(self.data.ix[6402].psi, 800)
+        self.assertEqual(self.data.loc[6402, 'icode'], '187J')
+        self.assertEqual(self.data.loc[6402, 'aa'], 'L')
+        self.assertTrue(numpy.isnan(self.data.loc[6402, 'ss']))
+        self.assertEqual(self.data.loc[6402, 'acc'], 92)
+        self.assertEqual(self.data.loc[6402, 'phi'], -57.8)
+        self.assertEqual(self.data.loc[6402, 'psi'], 360)
+        self.assertNotEqual(self.data.loc[6402, 'psi'], 800)
 
     def test_empty(self):
         with self.assertRaises(ValueError):

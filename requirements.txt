@@ -2,6 +2,7 @@
 #
 # Run 'pip install -r requirements.txt' to install these dependencies
 # TODO add six
+python>=3
 pandas>=0.17
 requests>=2.12
 lxml>=3.6

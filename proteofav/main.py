@@ -104,7 +104,7 @@ def merge_tables(uniprot_id=None,
             if sequence_check == 'raise':
                 raise ValueError(log_msg)
             else:
-                log.warn(log_msg)
+                log.warning(log_msg)
 
     sifts_table = select_sifts(pdb_id, chains=chain)
     try:
@@ -135,7 +135,7 @@ def merge_tables(uniprot_id=None,
             if sequence_check == 'raise':
                 raise ValueError(log_msg)
             else:
-                log.warn(log_msg)
+                log.warning(log_msg)
 
     if add_validation:
         validation_table = select_validation(pdb_id, chains=chain)

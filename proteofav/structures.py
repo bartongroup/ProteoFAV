@@ -569,7 +569,7 @@ def select_dssp(pdb_id, chains=None):
     try:
         dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(int)
     except ValueError:
-        log.warn("{} insertion code detected in the DSSP file.".format(pdb_id))
+        log.warning("{} insertion code detected in the DSSP file.".format(pdb_id))
         dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(str)
 
     return dssp_table

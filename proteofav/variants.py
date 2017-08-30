@@ -57,8 +57,8 @@ def _fetch_icgc_variants(identifier):
 
     consequence = data.pop('consequence')
     if consequence.index.duplicated().any():  # pragma: no cover
-        log.warn('Joining ICGC variant data with its consequences data aborted:'
-                 ' Duplicated index for {}.'.format(identifier))
+        log.warning('Joining ICGC variant data with its consequences data aborted:'
+                    ' Duplicated index for {}.'.format(identifier))
     else:
         data = data.join(consequence.apply(pd.Series), rsuffix='_protein')
         transition = data.aaMutation.str.extract(transition_regex)
