@@ -527,5 +527,44 @@ def confirm_column_types(table):
     return table
 
 
+def row_selector(data, key=None, value=None, method="isin"):
+    """
+    Generic method to filter columns
+    :param data: pandas DataFrame
+    :param key: pandas DataFrame column name
+    :param value: value(s) to be looked for
+    :param method: operator method
+    :return:
+    """
+
+    table = data
+    assert type(table) is pd.core.frame.DataFrame
+    if ((key is not None and value is not None) or
+            (key is not None and method == 'first')):
+        assert type(key) is str
+        assert type(method) is str
+        if key in table:
+            if method == "isin":
+                assert hasattr(value, '__iter__')
+                table = table.loc[table[key].isin(value)]
+            elif method == "equals":
+                # assert type(values) is str
+                table = table.loc[table[key] == value]
+            elif method == "diffs":
+                table = table.loc[table[key] != value]
+            elif method == "first":
+                value = table[key].iloc[0]
+                table = table.loc[table[key] == value]
+        else:
+            log.debug("%s not in the DataFrame...", key)
+
+    if table.empty:
+        message = 'Your filters resulted in an empty DataFrame...'
+        log.debug(message)
+        raise ValueError(message)
+
+    return table
+
+
 if __name__ == '__main__':
     pass
