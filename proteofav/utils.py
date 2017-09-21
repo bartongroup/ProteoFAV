@@ -566,7 +566,8 @@ def row_selector(data, key=None, value=None, method="isin"):
     return table
 
 
-def constrain_column_types(data, col_type_dict=None, nan_value_dict=None):
+def constrain_column_types(data, col_type_dict=None, nan_value_dict=None,
+                           replace_value_dict=None):
     """
     Helper method that helps in constrain data types for the
     various DataFrame columns.
@@ -574,6 +575,8 @@ def constrain_column_types(data, col_type_dict=None, nan_value_dict=None):
     :param data: pandas DataFrame
     :param col_type_dict: (dict) optional defines common types
     :param nan_value_dict: (dict) optional new value passed to replace NaNs
+    :param replace_value_dict: (dict) optional new value passed to replace
+        specific values
     :return: modified pandas DataFrame
     """
 
@@ -588,6 +591,10 @@ def constrain_column_types(data, col_type_dict=None, nan_value_dict=None):
         if nan_value_dict is not None and col in nan_value_dict:
             if table[col].isnull().any().any():
                 table[col] = table[col].fillna(nan_value_dict[col])
+        if replace_value_dict is not None and col in replace_value_dict:
+            table[col] = table[col].replace(replace_value_dict[col][0],
+                                            replace_value_dict[col][1])
+
     return table
 
 

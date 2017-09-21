@@ -90,6 +90,7 @@ class TestUTILS(unittest.TestCase):
                   'value': 'int64',
                   'label': 'object'}
         dnans = {'type': 0.0}
+        dreplaces = {'label': ['1', 'i']}
 
         self.mock_df = self.constrain_column_types(self.mock_df, dtypes)
         self.assertEqual(self.mock_df["type"].dtype, np.float64)
@@ -100,6 +101,11 @@ class TestUTILS(unittest.TestCase):
                                                    nan_value_dict=dnans)
         self.assertEqual(self.mock_df["type"].dtype, np.float64)
         self.assertEqual(self.mock_df.loc[2, "type"], 0.0)
+
+        self.mock_df = self.constrain_column_types(self.mock_df, dtypes, dnans,
+                                                   replace_value_dict=dreplaces)
+        self.assertEqual(self.mock_df["label"].dtype, np.object)
+        self.assertEqual(self.mock_df.loc[0, "label"], "i")
 
     def test_exclude_columns(self):
         self.assertEqual(len(self.mock_df.columns), 3)
