@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import logging
 import unittest
@@ -11,9 +12,15 @@ try:
 except ImportError:
     from unittest.mock import patch, MagicMock
 
-from proteofav.utils import row_selector
+from proteofav.config import Defaults
+from proteofav.utils import (row_selector, InputFileHandler, OutputFileHandler)
+
+log = logging.getLogger(__name__)
+
+defaults = Defaults("config.txt")
 
 
+@patch("proteofav.structures.defaults", defaults)
 class TestUTILS(unittest.TestCase):
     """Test the utility methods."""
 
@@ -22,6 +29,8 @@ class TestUTILS(unittest.TestCase):
 
         requests_cache.uninstall_cache()
         self.row_selector = row_selector
+        self.InputFileHandler = InputFileHandler
+        self.OutputFileHandler = OutputFileHandler
 
         logging.disable(logging.DEBUG)
 
@@ -29,6 +38,8 @@ class TestUTILS(unittest.TestCase):
         """Remove testing framework."""
 
         self.row_selector = None
+        self.InputFileHandler = None
+        self.OutputFileHandler = None
 
         logging.disable(logging.NOTSET)
 
@@ -46,6 +57,25 @@ class TestUTILS(unittest.TestCase):
         self.assertEqual(len(d.index), 2)
         d = self.row_selector(data, key='value', value=(2, 3), method='isin')
         self.assertEqual(len(d.index), 2)
+
+    def test_inputfilehandler(self):
+        valid = os.path.join(os.path.dirname(__file__), "CIF/2pah.cif")
+        self.InputFileHandler(valid)
+
+        invalid = os.path.join(os.path.dirname(__file__), "CIF/null.cif")
+        with self.assertRaises(IOError) or self.assertRaises(OSError):
+            self.InputFileHandler(invalid)
+
+    def test_outputfilehandler(self):
+        valid = os.path.join(os.path.dirname(__file__), "CIF/2pah.cif")
+        self.OutputFileHandler(valid, overwrite=True)
+
+        with self.assertRaises(OSError):
+            self.OutputFileHandler(valid, overwrite=False)
+
+        invalid = os.path.join(os.path.dirname(__file__), "CIF/NEW_DIR/null.cif")
+        with self.assertRaises(OSError):
+            self.InputFileHandler(invalid)
 
 
 if __name__ == '__main__':
