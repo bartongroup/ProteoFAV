@@ -89,6 +89,7 @@ class TestUTILS(unittest.TestCase):
         dtypes = {'type': 'float64',
                   'value': 'int64',
                   'label': 'object'}
+        dnans = {'type': 0.0}
 
         self.mock_df = self.constrain_column_types(self.mock_df, dtypes)
         self.assertEqual(self.mock_df["type"].dtype, np.float64)
@@ -96,7 +97,7 @@ class TestUTILS(unittest.TestCase):
         self.assertEqual(self.mock_df["label"].dtype, np.object)
 
         self.mock_df = self.constrain_column_types(self.mock_df, dtypes,
-                                                   nan_value=0.0)
+                                                   nan_value_dict=dnans)
         self.assertEqual(self.mock_df["type"].dtype, np.float64)
         self.assertEqual(self.mock_df.loc[2, "type"], 0.0)
 

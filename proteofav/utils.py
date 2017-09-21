@@ -566,27 +566,28 @@ def row_selector(data, key=None, value=None, method="isin"):
     return table
 
 
-def constrain_column_types(data, dictionary, nan_value=None):
+def constrain_column_types(data, col_type_dict=None, nan_value_dict=None):
     """
     Helper method that helps in constrain data types for the
     various DataFrame columns.
 
     :param data: pandas DataFrame
-    :param dictionary: (dict) defines common types
-    :param nan_value: optional new value passed to replace NaNs
+    :param col_type_dict: (dict) optional defines common types
+    :param nan_value_dict: (dict) optional new value passed to replace NaNs
     :return: modified pandas DataFrame
     """
 
     table = data
     for col in table:
-        if col in dictionary:
+        if col_type_dict is not None and col in col_type_dict:
             try:
-                table[col] = table[col].astype(dictionary[col])
+                table[col] = table[col].astype(col_type_dict[col])
             except (ValueError, KeyError):
                 # probably there are some NaNs in there
                 pass
-            if table[col].isnull().any().any() and nan_value is not None:
-                table[col] = table[col].fillna(nan_value)
+        if nan_value_dict is not None and col in nan_value_dict:
+            if table[col].isnull().any().any():
+                table[col] = table[col].fillna(nan_value_dict[col])
     return table
 
 
