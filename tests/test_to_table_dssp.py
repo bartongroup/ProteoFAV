@@ -9,7 +9,8 @@ import logging
 import numpy
 
 from proteofav.library import scop_3to1
-from proteofav.structures import _parse_dssp_from_file, _import_dssp_chains_ids
+from proteofav.structures import _import_dssp_chains_ids
+from proteofav.parsers import parse_dssp_from_file
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
@@ -21,7 +22,7 @@ class TestDSSPParser(unittest.TestCase):
         """Initialize the framework for testing."""
         self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
         self.dssp_ins_code = path.join(path.dirname(__file__), "DSSP/3mg7.dssp")
-        self.residues_parser = _parse_dssp_from_file
+        self.residues_parser = parse_dssp_from_file
         self.fix_dssp_ignoring_chains_ids = _import_dssp_chains_ids
 
     def tearDown(self):
