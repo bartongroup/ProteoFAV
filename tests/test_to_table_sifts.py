@@ -5,7 +5,7 @@
 import unittest
 from os import path
 
-from proteofav.structures import _sifts_residues_regions, sifts_best
+from proteofav.structures import _parse_sifts_residues_from_file, sifts_best
 from proteofav.utils import (_pdb_uniprot_sifts_mapping,
                              _uniprot_pdb_sifts_mapping)
 
@@ -16,7 +16,7 @@ class TestSIFTSParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_xml = path.join(path.dirname(__file__), "SIFTS/2pah.xml")
-        self.residues_parser = _sifts_residues_regions
+        self.residues_parser = _parse_sifts_residues_from_file
 
         self.pdb_id = '2pah'
         self.uniprot_id = 'P00439'
