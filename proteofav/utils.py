@@ -646,5 +646,65 @@ class OutputFileHandler(object):
             raise OSError("File '%s' cannot be written..." % self.__filename)
 
 
+def fetch_from_url_or_retry(url, json=True, headers=None, post=False, data=None,
+                            retry_in=None, wait=1, n_retries=10, stream=False, **params):
+    """
+    Fetch an url using Requests or retry fetching it if the server is
+    complaining with retry_in error. There is a limit to the number of retries.
+
+    Retry code examples: 429, 500 and 503
+
+    :param url: url to be fetched as a string
+    :param json: json output
+    :param headers: dictionary
+    :param post: boolean
+    :param data: dictionary: only if post is True
+    :param retry_in: http codes for retrying
+    :param wait: sleeping between tries in seconds
+    :param n_retries: number of retry attempts
+    :param stream: boolean
+    :param params: request.get kwargs.
+    :return: url content
+    """
+
+    if retry_in is None:
+        retry_in = ()
+    else:
+        assert type(retry_in) is tuple or type(retry_in) is list
+
+    if headers is None:
+        headers = {}
+    else:
+        assert type(headers) is dict
+
+    if json:
+        headers.update({"Content-Type": "application/json"})
+    else:
+        if "Content-Type" not in headers:
+            headers.update({"Content-Type": "text/plain"})
+
+    if post:
+        if data is not None:
+            assert type(data) is dict or type(data) is str
+            response = requests.post(url, headers=headers, data=data, params=params)
+        else:
+            return None
+    else:
+        response = requests.get(url, headers=headers, params=params, stream=stream)
+
+    if response.ok:
+        return response
+    elif response.status_code in retry_in and n_retries >= 0:
+        time.sleep(wait)
+        return fetch_from_url_or_retry(url, json, headers, post, data, retry_in, wait,
+                                       (n_retries - 1), stream, **params)
+    else:
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            log.debug("%s: Unable to retrieve %s for %s",
+                      response.status_code, url, e)
+
+
 if __name__ == '__main__':
     pass
