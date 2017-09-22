@@ -20,6 +20,7 @@ import pandas as pd
 from lxml import etree
 from requests import HTTPError
 from scipy.spatial import cKDTree
+from string import ascii_uppercase
 
 from proteofav.config import defaults
 from proteofav.library import scop_3to1
@@ -116,6 +117,131 @@ def _parse_mmcif_atoms_from_file(filename):
     table = pd.read_table(StringIO(lines), delim_whitespace=True, low_memory=False,
                           names=header, compression=None, converters=all_str,
                           keep_default_na=False)
+    return table
+
+
+def _parse_pdb_atoms_from_file(inputfile):
+    """
+    Parse PDB ATOM and HETATM lines.
+
+    :param inputfile: path to the PDB file
+    :return: returns a pandas DataFrame
+    """
+
+    log.info("Parsing PDB atoms from lines...")
+
+    # example lines
+    """
+    MODEL        1
+    ATOM      0  N   SER A  -1     104.083  78.916  -1.349  1.00 61.47           N
+    ATOM      1  N   VAL A 118      -7.069  21.943  18.770  1.00 56.51           N  
+    ATOM      2  CA  VAL A 118      -7.077  21.688  20.244  1.00 59.09           C  
+    ATOM      3  C   VAL A 118      -5.756  21.077  20.700  1.00 44.63           C  
+    ATOM      4  O   VAL A 118      -5.346  20.029  20.204  1.00 59.84           O
+    """
+
+    if not path.isfile(inputfile):
+        raise IOError("{} not available or could not be read...".format(inputfile))
+
+    # parsing atom lines, converting it to mmcif-style headers
+    lines = []
+    modelnumb = '1'
+    with open(inputfile) as inlines:
+        for line in inlines:
+            line = line.rstrip()
+            line = line[0:78]
+            if line.startswith("MODEL"):
+                modelnumb = line.split()[1]
+            elif line.startswith("ATOM"):
+                lines.append(line + "%s" % modelnumb)
+            elif line.startswith("HETATM"):
+                lines.append(line + "%s" % modelnumb)
+    lines = "\n".join(lines)
+
+    header = ('group_PDB', 'id', 'label_atom_id', 'label_alt_id', 'label_comp_id',
+              'label_asym_id', 'label_seq_id_full', 'label_seq_id',
+              'pdbx_PDB_ins_code', 'Cartn_x', 'Cartn_y', 'Cartn_z',
+              'occupancy', 'B_iso_or_equiv', 'type_symbol', 'auth_atom_id', 'auth_comp_id',
+              'auth_asym_id', 'auth_seq_id_full', 'auth_seq_id', 'pdbx_PDB_model_num')
+
+    # https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/tutorials/pdbintro.html
+    widths = ((0, 6), (6, 11), (12, 16), (16, 17), (17, 20), (21, 22), (22, 27), (22, 26), (26, 27),
+              (30, 38), (38, 46), (46, 54), (54, 60), (60, 66), (76, 78),  # (72, 76), ('seg_id')
+              (12, 16), (17, 20), (21, 22), (22, 27), (22, 26), (78, 79))
+
+    all_str = {key: str for key in header}
+    table = pd.read_fwf(StringIO(lines), names=header, colspecs=widths,
+                        compression=None, converters=all_str, keep_default_na=False)
+
+    # fixes the 'pdbx_PDB_ins_code'
+    table = _fix_pdb_ins_code(table)
+    # fixes the 'label_alt_id
+    table = _fix_label_alt_id(table)
+    # fixes 'type_symbol' if missing
+    table = _fix_type_symbol(table)
+
+    return table
+
+
+def _fix_pdb_ins_code(table):
+    """
+    Utility that fixes the 'pdbx_PDB_ins_code' column to match is expected
+    in the mmcif format.
+
+    :param table: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    ins_codes = []
+    for i in table.index:
+        value = table.loc[i, "pdbx_PDB_ins_code"]
+        if value == '' or value == ' ' or value == '?':
+            value = '?'
+        ins_codes.append(value)
+    table["pdbx_PDB_ins_code"] = ins_codes
+    table['pdbx_PDB_ins_code'] = table['pdbx_PDB_ins_code'].fillna('?').astype(str)
+    return table
+
+
+def _fix_label_alt_id(table):
+    """
+    Utility that fixes the 'label_alt_id' column to match what is
+    expected in the mmCIF format.
+
+    :param table: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    alt_locs = []
+    for i in table.index:
+        value = table.loc[i, "label_alt_id"]
+        if value == '' or value == ' ' or value == '?':
+            value = '.'
+        alt_locs.append(value)
+    table["label_alt_id"] = alt_locs
+    table['label_alt_id'] = table['label_alt_id'].fillna('.').astype(str)
+    return table
+
+
+def _fix_type_symbol(table):
+    """
+    Utility that fixes the 'type_symbol' column to match what is
+    expected in the mmCIF format - when missing in the Structure.
+
+    :param table: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    def get_type_symbol(table, key, key_fix):
+        # this maybe a bit crude way of assigning this value
+        if table[key] != " " and table[key] != "" and len(table[key]):
+            return table[key]
+        else:
+            return ''.join([x for x in table[key_fix] if x in ascii_uppercase])[0]
+
+    table.is_copy = False
+    table['type_symbol'] = table.apply(get_type_symbol, axis=1,
+                                       args=('type_symbol', 'label_atom_id'))
     return table
 
 
