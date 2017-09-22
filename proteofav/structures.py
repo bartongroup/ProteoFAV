@@ -27,7 +27,7 @@ from proteofav.utils import fetch_files, get_url_or_retry, get_preferred_assembl
 from proteofav.utils import row_selector
 
 log = logging.getLogger('proteofav.config')
-__all__ = ['_dssp', '_mmcif_atom', '_sifts_residues_regions', '_pdb_validation_to_table',
+__all__ = ['_dssp', '_parse_mmcif_atoms_from_file', '_sifts_residues_regions', '_pdb_validation_to_table',
            '_rcsb_description', '_get_contacts_from_table',
            # '_residues_as_centroid', '_import_dssp_chains_ids',
            'select_cif', 'select_dssp', 'select_sifts',  'select_validation', 'sifts_best']
@@ -74,41 +74,48 @@ def yield_lines(filename):
             yield line
 
 
-def _mmcif_atom(filename, delimiter=None):
+def _parse_mmcif_atoms_from_file(filename):
     """
-    Parse mmCIF ATOM and HETEROATOM lines to a pandas DataFrame.
+    Parse mmCIF ATOM and HETATM lines.
 
-    :param filename: input CIF file path
-    :return: pandas table dataframe
+    :param filename: path to the mmCIF file
+    :return: returns a pandas DataFrame
     """
+
+    log.info("Parsing mmCIF atoms from lines...")
+
+    # example lines with some problems
+    """
+    _atom_site.pdbx_PDB_model_num
+    _atom_site.pdbe_label_seq_id
+    _atom_site.orig_label_asym_id
+    _atom_site.orig_auth_asym_id
+    ATOM 1 N N . VAL A 1 1 ? -7.069 21.943 18.770 1.0 56.51 ? ? ? ? ? ? 118 VAL A N 1 1 A A
+    ATOM 2 C CA . VAL A 1 1 ? -7.077 21.688 20.244 1.0 59.09 ? ? ? ? ? ? 118 VAL A CA 1 1 A A
+    ATOM 3 C C . VAL A 1 1 ? -5.756 21.077 20.700 1.0 44.63 ? ? ? ? ? ? 118 VAL A C 1 1 A A
+    ATOM 4 O O . VAL A 1 1 ? -5.346 20.029 20.204 1.0 59.84 ? ? ? ? ? ? 118 VAL A O 1 1 A A
+    """
+
+    if not path.isfile(filename):
+        raise IOError("{} not available or could not be read...".format(filename))
+
     # parsing atom lines
-    _header_mmcif = []
+    header = []
     lines = []
-    for line in yield_lines(filename):
-        if line.startswith("_atom_site."):
-            _header_mmcif.append(line.split('.')[1].rstrip())
-        elif line.startswith("ATOM") or "ATOM" in line[0:6]:
-            lines.append(line)
-        elif line.startswith("HETATM"):
-            lines.append(line)
+    with open(filename) as inlines:
+        for line in inlines:
+            if line.startswith("_atom_site."):
+                header.append(line.split('.')[1].rstrip())
+            elif line.startswith("ATOM") or "ATOM" in line[0:6]:
+                lines.append(line)
+            elif line.startswith("HETATM"):
+                lines.append(line)
     lines = "".join(lines)
 
-    if delimiter is None:
-        table = pd.read_table(StringIO(lines),
-                              delim_whitespace=True,
-                              low_memory=False,
-                              names=_header_mmcif,
-                              compression=None)
-    else:
-        table = pd.read_table(StringIO(lines),
-                              sep=str(delimiter),
-                              low_memory=False,
-                              names=_header_mmcif,
-                              compression=None)
-
-    # drop the 'esd' entries
-    excluded = [x for x in table.columns.values if x.endswith('_esd')]
-    table = table.drop(excluded, axis=1)
+    all_str = {key: str for key in header}
+    table = pd.read_table(StringIO(lines), delim_whitespace=True, low_memory=False,
+                          names=header, compression=None, converters=all_str,
+                          keep_default_na=False)
     return table
 
 
@@ -461,19 +468,19 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA',
                              pdb_id + '-assembly-' + assembly_id + '.cif')
 
         try:
-            cif_table = _mmcif_atom(cif_path)
+            cif_table = _parse_mmcif_atoms_from_file(cif_path)
         except IOError:
             cif_path = fetch_files(pdb_id + '-assembly-' + assembly_id,
                                    sources='bio', directory=defaults.db_mmcif)[0]
-            cif_table = _mmcif_atom(cif_path)
+            cif_table = _parse_mmcif_atoms_from_file(cif_path)
     else:
         # load the table
         cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
         try:
-            cif_table = _mmcif_atom(cif_path)
+            cif_table = _parse_mmcif_atoms_from_file(cif_path)
         except IOError:
             cif_path = fetch_files(pdb_id, sources='cif', directory=defaults.db_mmcif)[0]
-            cif_table = _mmcif_atom(cif_path)
+            cif_table = _parse_mmcif_atoms_from_file(cif_path)
 
     # select the models
     if models:
