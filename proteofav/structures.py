@@ -163,11 +163,11 @@ def _parse_mmcif_atoms_from_file(filename):
     return table
 
 
-def _parse_pdb_atoms_from_file(inputfile):
+def _parse_pdb_atoms_from_file(filename):
     """
     Parse PDB ATOM and HETATM lines.
 
-    :param inputfile: path to the PDB file
+    :param filename: path to the PDB file
     :return: returns a pandas DataFrame
     """
 
@@ -183,13 +183,13 @@ def _parse_pdb_atoms_from_file(inputfile):
     ATOM      4  O   VAL A 118      -5.346  20.029  20.204  1.00 59.84           O
     """
 
-    if not path.isfile(inputfile):
-        raise IOError("{} not available or could not be read...".format(inputfile))
+    if not path.isfile(filename):
+        raise IOError("{} not available or could not be read...".format(filename))
 
     # parsing atom lines, converting it to mmcif-style headers
     lines = []
     modelnumb = '1'
-    with open(inputfile) as inlines:
+    with open(filename) as inlines:
         for line in inlines:
             line = line.rstrip()
             line = line[0:78]
@@ -764,6 +764,7 @@ def _residues_as_centroid(table):
                       if col not in UNIFIED_COL}
     columns_to_agg['auth_atom_id'] = 'unique'
     return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
+
 
 def _import_dssp_chains_ids(pdb_id):
     """Imports mmCIF chain identifier to DSSP.
