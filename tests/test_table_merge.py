@@ -12,7 +12,7 @@ except ImportError:
 
 from proteofav.config import Defaults
 from proteofav.main import merge_tables
-from proteofav.structures import _dssp, _sifts_residues_regions, _parse_mmcif_atoms_from_file
+from proteofav.structures import _parse_dssp_from_file, _sifts_residues_regions, _parse_mmcif_atoms_from_file
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
@@ -30,7 +30,7 @@ class TestTableMerger(unittest.TestCase):
 
         self.cif_to_table = _parse_mmcif_atoms_from_file
         self.sifts_to_table = _sifts_residues_regions
-        self.dssp_to_table = _dssp
+        self.dssp_to_table = _parse_dssp_from_file
 
         self.merge_table = merge_tables
 
