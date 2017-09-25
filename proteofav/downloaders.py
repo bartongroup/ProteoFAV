@@ -108,7 +108,7 @@ def _download_structure_from_pdbe(identifier, pdb=False, bio=False, override=Fal
 
 def _download_sifts_from_ebi(identifier, override=False):
     """
-    Downloads a sifts xml from the EBI FTP to the filesystem.
+    Downloads a SIFTS xml from the EBI FTP to the filesystem.
 
     :param identifier: (str) PDB ID
     :param override: (boolean)
@@ -126,7 +126,7 @@ def _download_sifts_from_ebi(identifier, override=False):
 
 def _download_dssp_from_cmbi(identifier, override=False):
     """
-    Downloads a pre-computed dssp from the CMBI Netherlands FTP
+    Downloads a pre-computed DSSP from the CMBI Netherlands FTP
     to the filesystem.
 
     :param identifier: (str) PDB ID

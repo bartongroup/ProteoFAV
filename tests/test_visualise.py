@@ -10,7 +10,7 @@ from proteofav.visualise import make_chimera_attribute_file, make_chimera_comman
 class TestVisualiser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
-        # self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
+        # self.example_dssp = path.join(path.dirname(__file__), "dssp/1iej.dssp")
         self.chimera_attribute = make_chimera_attribute_file
         self.chimera_command = make_chimera_command_file
 

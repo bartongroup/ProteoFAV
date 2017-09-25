@@ -67,21 +67,21 @@ class TestUTILS(unittest.TestCase):
         self.assertEqual(len(d.index), 2)
 
     def test_inputfilehandler(self):
-        valid = os.path.join(os.path.dirname(__file__), "CIF/2pah.cif")
+        valid = os.path.join(os.path.dirname(__file__), "mmcif/2pah.cif")
         self.InputFileHandler(valid)
 
-        invalid = os.path.join(os.path.dirname(__file__), "CIF/null.cif")
+        invalid = os.path.join(os.path.dirname(__file__), "mmcif/null.cif")
         with self.assertRaises(IOError) or self.assertRaises(OSError):
             self.InputFileHandler(invalid)
 
     def test_outputfilehandler(self):
-        valid = os.path.join(os.path.dirname(__file__), "CIF/2pah.cif")
+        valid = os.path.join(os.path.dirname(__file__), "mmcif/2pah.cif")
         self.OutputFileHandler(valid, overwrite=True)
 
         with self.assertRaises(OSError):
             self.OutputFileHandler(valid, overwrite=False)
 
-        invalid = os.path.join(os.path.dirname(__file__), "CIF/NEW_DIR/null.cif")
+        invalid = os.path.join(os.path.dirname(__file__), "mmcif/NEW_DIR/null.cif")
         with self.assertRaises(OSError):
             self.InputFileHandler(invalid)
 

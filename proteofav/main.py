@@ -100,7 +100,7 @@ def merge_tables(uniprot_id=None,
 
         # Check if the sequences are the same
         if not (dssp_seq[~mask] == cif_seq[~mask]).all():
-            log_msg = '{}|{} Cif and DSSP files have different sequences.'.format(pdb_id, chain)
+            log_msg = '{}|{} mmCIF and DSSP files have different sequences.'.format(pdb_id, chain)
             if sequence_check == 'raise':
                 raise ValueError(log_msg)
             else:

@@ -226,7 +226,7 @@ def _fetch_ensembl_sequence_from_id(identifier, retry_in=(429,)):
 
 def _fetch_best_structures_pdbe(identifier, retry_in=(429,)):
     """
-    Queries the PDBe API sifts mappings best_structures endpoint.
+    Queries the PDBe API SIFTS mappings best_structures endpoint.
 
     :param identifier: UniProt ID
     :param retry_in: http code for retrying connections

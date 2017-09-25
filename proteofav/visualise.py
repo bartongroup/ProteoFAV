@@ -57,7 +57,7 @@ def make_chimera_command_file(filename, content='', color_secondary_structure=Tr
     """
     Creates a Chimera command file for protein structure visualisation.
 
-    :param str filename: path to mmcif file
+    :param str filename: path to mmCIF file
     :param content: personalised content of the chimera command file
     :type content: str or iterable
     :param bool color_secondary_structure: wheter to append secondary structure coloring
@@ -86,7 +86,7 @@ def visualise_chimera(filename, column, **kwargs):
     Creates an attribute file and a command file to observed a ProteoFAV processed data in UFSC
     Chimera.
 
-    :param str filename: path to mmcif file
+    :param str filename: path to mmCIF file
     :param pd.Series column: column with attributes in data and recipient in the index
     :return None: callback
     """

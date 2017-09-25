@@ -16,7 +16,7 @@ class TestSIFTSParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_xml = path.join(path.dirname(__file__), "SIFTS/2pah.xml")
+        self.example_xml = path.join(path.dirname(__file__), "sifts/2pah.xml")
         self.residues_parser = parse_sifts_residues_from_file
 
         self.pdb_id = '2pah'

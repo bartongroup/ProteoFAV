@@ -20,8 +20,8 @@ class TestDSSPParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
-        self.dssp_ins_code = path.join(path.dirname(__file__), "DSSP/3mg7.dssp")
+        self.example_dssp = path.join(path.dirname(__file__), "dssp/1iej.dssp")
+        self.dssp_ins_code = path.join(path.dirname(__file__), "dssp/3mg7.dssp")
         self.residues_parser = parse_dssp_from_file
         self.fix_dssp_ignoring_chains_ids = _import_dssp_chains_ids
 
@@ -99,7 +99,7 @@ class TestDSSPParser(unittest.TestCase):
 
     def test_empty(self):
         with self.assertRaises(ValueError):
-            self.residues_parser(path.join(path.dirname(__file__), "DSSP/empty.dssp"))
+            self.residues_parser(path.join(path.dirname(__file__), "dssp/empty.dssp"))
 
 
 if __name__ == '__main__':
