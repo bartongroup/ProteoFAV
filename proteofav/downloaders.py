@@ -5,7 +5,7 @@ import gzip
 import shutil
 import logging
 
-from proteofav.fetchers import get_preferred_assembly_id
+from proteofav.fetchers import _get_preferred_assembly_id
 
 from proteofav.config import defaults as config
 
@@ -61,7 +61,7 @@ class Downloader(object):
                      self.outputfile_origin, self.outputfile)
 
 
-def download_structure_from_pdbe(identifier, pdb=False, bio=False, override=False):
+def _download_structure_from_pdbe(identifier, pdb=False, bio=False, override=False):
     """
     Downloads a structure from the PDBe to the filesystem.
 
@@ -74,14 +74,16 @@ def download_structure_from_pdbe(identifier, pdb=False, bio=False, override=Fals
 
     if pdb:
         filename = "{}.pdb".format(identifier)
+        outputfile = os.path.join(config.db_pdb, filename)
+        os.makedirs(os.path.join(config.db_pdb), exist_ok=True)
     else:
         if bio:
             filename = "{}_bio.cif.gz".format(identifier)
         else:
             filename = "{}.cif".format(identifier)
 
-    outputfile = os.path.join(config.db_root, config.db_pdbx, filename)
-    os.makedirs(os.path.join(config.db_root, config.db_pdbx), exist_ok=True)
+        outputfile = os.path.join(config.db_mmcif, filename)
+        os.makedirs(os.path.join(config.db_mmcif), exist_ok=True)
 
     if pdb:
         url_endpoint = "entry-files/download/pdb{}.ent".format(identifier)
@@ -90,7 +92,7 @@ def download_structure_from_pdbe(identifier, pdb=False, bio=False, override=Fals
             # atom lines only?
             # url_endpoint = ("static/entry/download/"
             #                "{}-assembly-{}_atom_site.cif.gz".format(identifier, pref))
-            pref = get_preferred_assembly_id(identifier=identifier)
+            pref = _get_preferred_assembly_id(identifier=identifier)
             url_endpoint = ("static/entry/download/"
                             "{}-assembly-{}.cif.gz".format(identifier, pref))
         else:
@@ -102,48 +104,40 @@ def download_structure_from_pdbe(identifier, pdb=False, bio=False, override=Fals
     url = url_root + url_endpoint
     Downloader(url=url, filename=outputfile,
                decompress=True, override=override)
-    return
 
 
-def download_sifts_from_ebi(identifier, override=False):
+def _download_sifts_from_ebi(identifier, override=False):
     """
-    Downloads a SIFTS xml from the EBI FTP to the filesystem.
+    Downloads a sifts xml from the EBI FTP to the filesystem.
 
     :param identifier: (str) PDB ID
     :param override: (boolean)
     :return: (side effects)
     """
-
-    filename = "{}.xml.gz".format(identifier)
-    outputfile = os.path.join(config.db_root, config.db_sifts, filename)
-    os.makedirs(os.path.join(config.db_root, config.db_sifts), exist_ok=True)
-
     url_root = config.ftp_sifts
     url_endpoint = "{}.xml.gz".format(identifier)
     url = url_root + url_endpoint
+    filename = "{}.xml.gz".format(identifier)
+    outputfile = os.path.join(config.db_sifts, filename)
+    os.makedirs(os.path.join(config.db_sifts), exist_ok=True)
     Downloader(url=url, filename=outputfile,
                decompress=True, override=override)
-    return
 
 
-def download_dssp_from_cmbi(identifier, override=False):
+def _download_dssp_from_cmbi(identifier, override=False):
     """
-    Downloads a pre-computed DSSP from the CMBI Netherlands FTP
+    Downloads a pre-computed dssp from the CMBI Netherlands FTP
     to the filesystem.
 
     :param identifier: (str) PDB ID
     :param override: (boolean)
     :return: (side effects)
     """
-
-    filename = "{}.dssp".format(identifier)
-    outputfile = os.path.join(config.db_root, config.db_dssp, filename)
-    os.makedirs(os.path.join(config.db_root, config.db_dssp), exist_ok=True)
-
     url_root = config.ftp_dssp
     url_endpoint = "{}.dssp".format(identifier)
     url = url_root + url_endpoint
+    filename = "{}.dssp".format(identifier)
+    outputfile = os.path.join(config.db_dssp, filename)
+    os.makedirs(os.path.join(config.db_dssp), exist_ok=True)
     Downloader(url=url, filename=outputfile,
                decompress=True, override=override)
-    return
-
