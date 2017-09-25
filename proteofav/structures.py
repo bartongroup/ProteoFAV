@@ -8,25 +8,23 @@ the information. Prefers the use o the wrapper instead the private functions
 for better error handling. Both levels are covered by test cases.
 """
 from __future__ import absolute_import
+import os
 import logging
-try:
-    # python 2.7
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-from os import path
-
 import pandas as pd
 from lxml import etree
+from io import StringIO
 from requests import HTTPError
 from scipy.spatial import cKDTree
-from string import ascii_uppercase
-from collections import OrderedDict
+from proteofav.parsers import parse_mmcif_atoms_from_file
+from proteofav.parsers import parse_dssp_from_file
+from proteofav.parsers import parse_sifts_residues_from_file
 
-from proteofav.config import defaults
-from proteofav.library import scop_3to1
-from proteofav.utils import fetch_files, get_url_or_retry, get_preferred_assembly_id
+from proteofav.utils import fetch_files
+from proteofav.utils import get_url_or_retry
+from proteofav.utils import get_preferred_assembly_id
 from proteofav.utils import row_selector
+
+from proteofav.config import defaults as config
 
 log = logging.getLogger('proteofav.config')
 __all__ = ['_pdb_validation_to_table',
@@ -154,7 +152,7 @@ def _rcsb_description(pdb_id, tag, key):
     :param key: key name as defined in the api
     :return: list of values
     """
-    api = defaults.api_rcsb
+    api = config.api_rcsb
     endpoint = 'describeMol'
     query = '?structureId=' + pdb_id
 
@@ -264,23 +262,23 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA',
             assembly_id = get_preferred_assembly_id(pdb_id)
 
         # load the table
-        cif_path = path.join(defaults.db_mmcif,
+        cif_path = os.path.join(config.db_mmcif,
                              pdb_id + '-assembly-' + assembly_id + '.cif')
 
         try:
-            cif_table = _parse_mmcif_atoms_from_file(cif_path)
+            cif_table = parse_mmcif_atoms_from_file(cif_path)
         except IOError:
             cif_path = fetch_files(pdb_id + '-assembly-' + assembly_id,
-                                   sources='bio', directory=defaults.db_mmcif)[0]
-            cif_table = _parse_mmcif_atoms_from_file(cif_path)
+                                   sources='bio', directory=config.db_mmcif)[0]
+            cif_table = parse_mmcif_atoms_from_file(cif_path)
     else:
         # load the table
-        cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
+        cif_path = os.pathjoin(config.db_mmcif, pdb_id + '.cif')
         try:
-            cif_table = _parse_mmcif_atoms_from_file(cif_path)
+            cif_table = parse_mmcif_atoms_from_file(cif_path)
         except IOError:
-            cif_path = fetch_files(pdb_id, sources='cif', directory=defaults.db_mmcif)[0]
-            cif_table = _parse_mmcif_atoms_from_file(cif_path)
+            cif_path = fetch_files(pdb_id, sources='cif', directory=config.db_mmcif)[0]
+            cif_table = parse_mmcif_atoms_from_file(cif_path)
 
     # select the models
     if models:
@@ -323,12 +321,12 @@ def select_dssp(pdb_id, chains=None):
     :param chains: PDB protein chain
     :return: pandas dataframe
     """
-    dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
+    dssp_path = os.path.join(config.db_dssp, pdb_id + '.dssp')
     try:
-        dssp_table = _parse_dssp_from_file(dssp_path)
+        dssp_table = parse_dssp_from_file(dssp_path)
     except IOError:
-        dssp_path = fetch_files(pdb_id, sources='dssp', directory=defaults.db_dssp)[0]
-        dssp_table = _parse_dssp_from_file(dssp_path)
+        dssp_path = fetch_files(pdb_id, sources='dssp', directory=config.db_dssp)[0]
+        dssp_table = parse_dssp_from_file(dssp_path)
     except StopIteration:
         raise IOError('{} is unreadable.'.format(dssp_path))
 
@@ -366,14 +364,14 @@ def select_sifts(pdb_id, chains=None):
     :param chains: Protein structure chain
     :return: table read to be merged
     """
-    sifts_path = path.join(defaults.db_sifts, pdb_id + '.xml')
+    sifts_path = os.path.join(config.db_sifts, pdb_id + '.xml')
 
     try:
-        sift_table = _parse_sifts_residues_from_file(sifts_path)
+        sift_table = parse_sifts_residues_from_file(sifts_path)
     except IOError:
         sifts_path = fetch_files(pdb_id, sources='sifts',
-                                 directory=defaults.db_sifts)[0]
-        sift_table = _parse_sifts_residues_from_file(sifts_path)
+                                 directory=config.db_sifts)[0]
+        sift_table = parse_sifts_residues_from_file(sifts_path)
         # standardise column types
     for col in sift_table:
         #  bool columns
@@ -393,11 +391,11 @@ def select_validation(pdb_id, chains=None):
     :param chains: PDB protein chain
     :return: pandas dataframe
     """
-    val_path = path.join(defaults.db_validation, pdb_id + defaults.validation_extension)
+    val_path = os.path.join(config.db_validation, pdb_id + config.validation_extension)
     try:
         val_table = _pdb_validation_to_table(val_path)
     except IOError:
-        val_path = fetch_files(pdb_id, sources='validation', directory=defaults.db_pdb)[0]
+        val_path = fetch_files(pdb_id, sources='validation', directory=config.db_pdb)[0]
         val_table = _pdb_validation_to_table(val_path)
 
     if chains:
@@ -417,7 +415,7 @@ def sifts_best(uniprot_id, first=False):
     :return: url content or url content in json data structure.
     """
     sifts_endpoint = "mappings/best_structures/"
-    url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
+    url = config.api_pdbe + sifts_endpoint + str(uniprot_id)
     try:
         response = get_url_or_retry(url, json=True)
     except HTTPError as e:
