@@ -32,7 +32,7 @@ class Fetcher(object):
         return self.response
 
 
-def _fetch_summary_properties_pdbe(identifier, retry_in=(429,)):
+def fetch_summary_properties_pdbe(identifier, retry_in=(429,)):
     """
     Queries the PDBe API to get summary properties.
 
@@ -48,7 +48,7 @@ def _fetch_summary_properties_pdbe(identifier, retry_in=(429,)):
     return b.response
 
 
-def _fetch_uniprot_id_from_name(identifier, retry_in=(429,)):
+def fetch_uniprot_id_from_name(identifier, retry_in=(429,)):
     """
     Retrieve UniProt ID from Name.
 
@@ -64,7 +64,7 @@ def _fetch_uniprot_id_from_name(identifier, retry_in=(429,)):
     return b.response
 
 
-def _fetch_uniprot_species_from_id(identifier, retry_in=(429,)):
+def fetch_uniprot_species_from_id(identifier, retry_in=(429,)):
     """
     Retrieve Species from UniProt ID.
 
@@ -80,7 +80,7 @@ def _fetch_uniprot_species_from_id(identifier, retry_in=(429,)):
     return b.response
 
 
-def _fetch_uniprot_variants_ebi(identifier, retry_in=(429,)):
+def fetch_uniprot_variants_ebi(identifier, retry_in=(429,)):
     """
     Queries the EBI Proteins API for variants.
     based on UniProt identifiers (e.g. O15294).
@@ -97,8 +97,8 @@ def _fetch_uniprot_variants_ebi(identifier, retry_in=(429,)):
     return b.response
 
 
-def _fetch_ensembl_uniprot_ensembl_mapping(identifier, retry_in=(429,),
-                                           species='homo_sapiens'):
+def fetch_ensembl_uniprot_ensembl_mapping(identifier, retry_in=(429,),
+                                          species='homo_sapiens'):
     """
     Uses the Ensembl REST mapping service to try and get Ensembl IDs for
     the UniProt accession identifier provided.
@@ -121,7 +121,7 @@ def _fetch_ensembl_uniprot_ensembl_mapping(identifier, retry_in=(429,),
     return b.response
 
 
-def _fetch_ensembl_ensembl_uniprot_mapping(identifier, retry_in=(429,)):
+def fetch_ensembl_ensembl_uniprot_mapping(identifier, retry_in=(429,)):
     """
     Uses the Ensembl REST mapping service to try and get UniProt IDs for
     the Ensembl Protein accession identifier provided.
@@ -141,7 +141,7 @@ def _fetch_ensembl_ensembl_uniprot_mapping(identifier, retry_in=(429,)):
     return b.response
 
 
-def _fetch_ensembl_transcript_variants(identifier, retry_in=(429,)):
+def fetch_ensembl_transcript_variants(identifier, retry_in=(429,)):
     """
     Queries the Ensembl REST API for transcript variants (mostly from dbSNP).
     based on Ensembl Protein identifiers (e.g. ENSP00000275603).
@@ -160,7 +160,7 @@ def _fetch_ensembl_transcript_variants(identifier, retry_in=(429,)):
     return b.response
 
 
-def _fetch_ensembl_somatic_variants(identifier, retry_in=(429,)):
+def fetch_ensembl_somatic_variants(identifier, retry_in=(429,)):
     """
     Queries the Ensembl REST API for somatic variants (mostly from COSMIC).
     based on Ensembl Protein identifiers (e.g. ENSP00000275603).
@@ -178,8 +178,8 @@ def _fetch_ensembl_somatic_variants(identifier, retry_in=(429,)):
     return b.response
 
 
-def _fetch_ensembl_variants_by_id(identifier, retry_in=(429,),
-                                  species='homo_sapiens'):
+def fetch_ensembl_variants_by_id(identifier, retry_in=(429,),
+                                 species='homo_sapiens'):
     """
     Queries the Ensembl API for variant IDs (e.g rs376845802 or COSM302853).
 
@@ -208,7 +208,7 @@ def _fetch_ensembl_variants_by_id(identifier, retry_in=(429,),
         return b.response
 
 
-def _fetch_ensembl_sequence_from_id(identifier, retry_in=(429,)):
+def fetch_ensembl_sequence_from_id(identifier, retry_in=(429,)):
     """
     Queries the Ensembl REST API for the sequence of a Ensembl Protein ID.
 
@@ -224,7 +224,7 @@ def _fetch_ensembl_sequence_from_id(identifier, retry_in=(429,)):
     return b.response
 
 
-def _fetch_best_structures_pdbe(identifier, retry_in=(429,)):
+def fetch_best_structures_pdbe(identifier, retry_in=(429,)):
     """
     Queries the PDBe API SIFTS mappings best_structures endpoint.
 
@@ -240,7 +240,7 @@ def _fetch_best_structures_pdbe(identifier, retry_in=(429,)):
     return b.response
 
 
-def _get_preferred_assembly_id(identifier):
+def get_preferred_assembly_id(identifier):
     """
     Gets the preferred assembly id for the given PDB ID, from the PDBe API.
 
@@ -251,7 +251,7 @@ def _get_preferred_assembly_id(identifier):
     # getting the preferred biological assembly from the PDBe API
     pref_assembly = "1"
     try:
-        data = _fetch_summary_properties_pdbe(identifier)
+        data = fetch_summary_properties_pdbe(identifier)
     except Exception as e:
         log.debug("Something went wrong for %s... %s", identifier, e)
     try:
@@ -273,7 +273,7 @@ def _get_preferred_assembly_id(identifier):
     return bio_best
 
 
-def _get_ensembl_protein_id_from_mapping(data):
+def get_ensembl_protein_id_from_mapping(data):
     """
     Gets a list of Ensembl IDs from a 'xrefs/symbol/' mapping.
 
@@ -289,7 +289,7 @@ def _get_ensembl_protein_id_from_mapping(data):
     return ensps
 
 
-def _get_uniprot_id_from_mapping(data, full_entry=False, uniprot_id=None):
+def get_uniprot_id_from_mapping(data, full_entry=False, uniprot_id=None):
     """
     Gets a list of UniProt IDs from a '"xrefs/id/"' mapping.
 
@@ -324,7 +324,7 @@ def _get_uniprot_id_from_mapping(data, full_entry=False, uniprot_id=None):
     return uniprots
 
 
-def _get_preferred_uniprot_id_from_mapping(data):
+def get_preferred_uniprot_id_from_mapping(data):
     """
     Takes a list of Ensembl xrefs/ids mapped from a UniProt ID
     and gets the preferred entry (Many-to-one), based on seq
@@ -356,8 +356,8 @@ def _get_preferred_uniprot_id_from_mapping(data):
     return best_match
 
 
-def _get_preferred_ensembl_id_from_mapping(identifiers, cached=False,
-                                           uniprot_id=None):
+def get_preferred_ensembl_id_from_mapping(identifiers, cached=False,
+                                          uniprot_id=None):
     """
     Takes a list of Ensembl xrefs/ids mapped from a UniProt ID
     and gets the preferred entry (Many-to-one), based on seq
@@ -375,10 +375,10 @@ def _get_preferred_ensembl_id_from_mapping(identifiers, cached=False,
     prev_identity = 0
     prev_coverage = 0
     for ix, ensp in enumerate(identifiers):
-        info = _fetch_ensembl_ensembl_uniprot_mapping(ensp).json()
+        info = fetch_ensembl_ensembl_uniprot_mapping(ensp).json()
         # gets the mapping for a specific uniprot
-        data = _get_uniprot_id_from_mapping(info, full_entry=True,
-                                            uniprot_id=uniprot_id)
+        data = get_uniprot_id_from_mapping(info, full_entry=True,
+                                           uniprot_id=uniprot_id)
         for entry in data:
             if ('ensembl_identity' in entry and 'xref_identity' in entry and
                         'xref_start' in entry and 'xref_end' in entry):
@@ -394,7 +394,7 @@ def _get_preferred_ensembl_id_from_mapping(identifiers, cached=False,
     return best_match
 
 
-def _get_ensembl_species_from_uniprot(data):
+def get_ensembl_species_from_uniprot(data):
     """
     Gets a Species Name from a UniProt organism lookup.
 

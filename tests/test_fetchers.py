@@ -1,34 +1,31 @@
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 import logging
 import unittest
 import requests_cache
 
 from proteofav.fetchers import (Fetcher,
-                                _fetch_best_structures_pdbe,
-                                _fetch_uniprot_variants_ebi,
-                                _fetch_summary_properties_pdbe,
-                                _fetch_uniprot_id_from_name,
-                                _fetch_uniprot_species_from_id,
-                                _fetch_ensembl_uniprot_ensembl_mapping,
-                                _fetch_ensembl_ensembl_uniprot_mapping,
-                                _fetch_ensembl_transcript_variants,
-                                _fetch_ensembl_somatic_variants,
-                                _fetch_ensembl_variants_by_id,
-                                _fetch_ensembl_sequence_from_id,
-                                _get_preferred_assembly_id,
+                                fetch_best_structures_pdbe,
+                                fetch_uniprot_variants_ebi,
+                                fetch_summary_properties_pdbe,
+                                fetch_uniprot_id_from_name,
+                                fetch_uniprot_species_from_id,
+                                fetch_ensembl_uniprot_ensembl_mapping,
+                                fetch_ensembl_ensembl_uniprot_mapping,
+                                fetch_ensembl_transcript_variants,
+                                fetch_ensembl_somatic_variants,
+                                fetch_ensembl_variants_by_id,
+                                fetch_ensembl_sequence_from_id,
+                                get_preferred_assembly_id,
 
-                                _get_ensembl_protein_id_from_mapping,
-                                _get_uniprot_id_from_mapping,
-                                _get_preferred_uniprot_id_from_mapping,
-                                _get_preferred_ensembl_id_from_mapping,
-                                _get_ensembl_species_from_uniprot)
+                                get_ensembl_protein_id_from_mapping,
+                                get_uniprot_id_from_mapping,
+                                get_preferred_uniprot_id_from_mapping,
+                                get_preferred_ensembl_id_from_mapping,
+                                get_ensembl_species_from_uniprot)
 
 from proteofav.config import defaults as config
-
-root = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestFetchers(unittest.TestCase):
@@ -47,24 +44,24 @@ class TestFetchers(unittest.TestCase):
         self.ensemblid = "ENSP00000448059"
         self.varid = "rs750420403"
         self.Fetcher = Fetcher
-        self.fetch_best_structures_pdbe = _fetch_best_structures_pdbe
-        self.fetch_summary_properties_pdbe = _fetch_summary_properties_pdbe
-        self.fetch_preferred_assembly_id = _get_preferred_assembly_id
-        self.fetch_uniprot_variants_ebi = _fetch_uniprot_variants_ebi
-        self.fetch_uniprot_id_from_name = _fetch_uniprot_id_from_name
-        self.fetch_uniprot_species_from_id = _fetch_uniprot_species_from_id
-        self.fetch_ensembl_uniprot_ensembl_mapping = _fetch_ensembl_uniprot_ensembl_mapping
-        self.fetch_ensembl_ensembl_uniprot_mapping = _fetch_ensembl_ensembl_uniprot_mapping
-        self.fetch_ensembl_transcript_variants = _fetch_ensembl_transcript_variants
-        self.fetch_ensembl_somatic_variants = _fetch_ensembl_somatic_variants
-        self.fetch_ensembl_variants_by_id = _fetch_ensembl_variants_by_id
-        self.fetch_ensembl_sequence_from_id = _fetch_ensembl_sequence_from_id
+        self.fetch_best_structures_pdbe = fetch_best_structures_pdbe
+        self.fetch_summary_properties_pdbe = fetch_summary_properties_pdbe
+        self.fetch_preferred_assembly_id = get_preferred_assembly_id
+        self.fetch_uniprot_variants_ebi = fetch_uniprot_variants_ebi
+        self.fetch_uniprot_id_from_name = fetch_uniprot_id_from_name
+        self.fetch_uniprot_species_from_id = fetch_uniprot_species_from_id
+        self.fetch_ensembl_uniprot_ensembl_mapping = fetch_ensembl_uniprot_ensembl_mapping
+        self.fetch_ensembl_ensembl_uniprot_mapping = fetch_ensembl_ensembl_uniprot_mapping
+        self.fetch_ensembl_transcript_variants = fetch_ensembl_transcript_variants
+        self.fetch_ensembl_somatic_variants = fetch_ensembl_somatic_variants
+        self.fetch_ensembl_variants_by_id = fetch_ensembl_variants_by_id
+        self.fetch_ensembl_sequence_from_id = fetch_ensembl_sequence_from_id
 
-        self.get_ensembl_protein_id_from_mapping = _get_ensembl_protein_id_from_mapping
-        self.get_uniprot_id_from_mapping = _get_uniprot_id_from_mapping
-        self.get_preferred_uniprot_id_from_mapping = _get_preferred_uniprot_id_from_mapping
-        self.get_preferred_ensembl_id_from_mapping = _get_preferred_ensembl_id_from_mapping
-        self.get_ensembl_species_from_uniprot = _get_ensembl_species_from_uniprot
+        self.get_ensembl_protein_id_from_mapping = get_ensembl_protein_id_from_mapping
+        self.get_uniprot_id_from_mapping = get_uniprot_id_from_mapping
+        self.get_preferred_uniprot_id_from_mapping = get_preferred_uniprot_id_from_mapping
+        self.get_preferred_ensembl_id_from_mapping = get_preferred_ensembl_id_from_mapping
+        self.get_ensembl_species_from_uniprot = get_ensembl_species_from_uniprot
 
         logging.disable(logging.DEBUG)
 
