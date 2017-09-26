@@ -6,6 +6,7 @@ import shutil
 import logging
 import tempfile
 
+from proteofav.utils import InputFileHandler
 from proteofav.utils import OutputFileHandler
 
 from proteofav.config import defaults as config
@@ -23,7 +24,8 @@ class Downloader(object):
 
         self._url = url
         self._filename = filename
-        self._tempfile = tempfile.NamedTemporaryFile(dir=config.db_tmp).name
+        # self._tempfile = tempfile.NamedTemporaryFile(dir=config.db_tmp).name
+        self._tempfile = tempfile.NamedTemporaryFile().name
         self._decompress = decompress
         self._override = overwrite
 
@@ -45,6 +47,7 @@ class Downloader(object):
             except (AttributeError, ImportError):
                 import urllib
                 urllib.urlretrieve(self._url, self._tempfile)
+            InputFileHandler(self._tempfile)
             with open(self._tempfile, 'rb') as infile, \
                     open(self._filename, 'wb') as outfile:
                 shutil.copyfileobj(infile, outfile)
@@ -53,9 +56,11 @@ class Downloader(object):
             log.debug("Unable to retrieve %s for %s", self._url, e)
 
     def _uncompress(self):
+        InputFileHandler(self._filename)
         with open(self._filename, 'rb') as infile, \
                 open(self._tempfile, 'wb') as outfile:
             shutil.copyfileobj(infile, outfile)
+        InputFileHandler(self._tempfile)
         with gzip.open(self._tempfile, 'rb') as infile, \
                 open(self._filename, 'wb') as outfile:
             shutil.copyfileobj(infile, outfile)
