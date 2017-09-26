@@ -4,8 +4,9 @@ import os
 import gzip
 import shutil
 import logging
+import tempfile
 
-from proteofav.fetchers import _get_preferred_assembly_id
+from proteofav.utils import OutputFileHandler
 
 from proteofav.config import defaults as config
 
@@ -13,131 +14,50 @@ log = logging.getLogger('proteofav')
 
 
 class Downloader(object):
-    def __init__(self, url, filename, decompress=True, override=False):
+    def __init__(self, url, filename, decompress=True, overwrite=False):
         """
-        :param url: (str) Full web-address
-        :param filename: (str) Output filename
+        :param filename: (str) Output _filename
         :param decompress: (boolean) Decompresses the file
-        :param override: (boolean) Overrides any existing file, if available
+        :param overwrite: (boolean) Overrides any existing file, if available
         """
 
-        self.url = url
-        self.outputfile = filename
-        self.outputfile_origin = filename
-        self.decompress = decompress
-        self.override = override
+        self._url = url
+        self._filename = filename
+        self._tempfile = tempfile.NamedTemporaryFile(dir=config.db_tmp).name
+        self._decompress = decompress
+        self._override = overwrite
 
-        if self.decompress:
-            if self.outputfile_origin.endswith('.gz'):
-                self.outputfile = self.outputfile_origin.rstrip('.gz')
+        OutputFileHandler(self._filename, overwrite=overwrite)
+        OutputFileHandler(self._tempfile, overwrite=overwrite)
 
-        if not os.path.exists(self.outputfile) or self.override:
-            self._download()
-            if self.outputfile_origin.endswith('.gz') and self.decompress:
-                self._decompress()
-        else:
-            log.info("%s already available...", self.outputfile)
+        self._download()
+        if self._decompress:
+            self._uncompress()
 
     def _download(self):
         try:
             try:
                 import urllib.request
                 from urllib.error import URLError, HTTPError
-                with urllib.request.urlopen(self.url) as response, \
-                        open(self.outputfile_origin, 'wb') as outfile:
+                with urllib.request.urlopen(self._url) as response, \
+                        open(self._tempfile, 'wb') as outfile:
                     shutil.copyfileobj(response, outfile)
             except (AttributeError, ImportError):
                 import urllib
-                urllib.urlretrieve(self.url, self.outputfile_origin)
+                urllib.urlretrieve(self._url, self._tempfile)
+            with open(self._tempfile, 'rb') as infile, \
+                    open(self._filename, 'wb') as outfile:
+                shutil.copyfileobj(infile, outfile)
+                os.remove(self._tempfile)
         except (URLError, HTTPError, IOError, Exception) as e:
-            log.debug("Unable to retrieve %s for %s", self.url, e)
+            log.debug("Unable to retrieve %s for %s", self._url, e)
 
-    def _decompress(self):
-        with gzip.open(self.outputfile_origin, 'rb') as infile, \
-                open(self.outputfile, 'wb') as outfile:
+    def _uncompress(self):
+        with open(self._filename, 'rb') as infile, \
+                open(self._tempfile, 'wb') as outfile:
             shutil.copyfileobj(infile, outfile)
-            os.remove(self.outputfile_origin)
-            log.info("Decompressed %s to %s",
-                     self.outputfile_origin, self.outputfile)
-
-
-def _download_structure_from_pdbe(identifier, pdb=False, bio=False, override=False):
-    """
-    Downloads a structure from the PDBe to the filesystem.
-
-    :param identifier: (str) PDB ID
-    :param pdb: (boolean) PDB formatted if True, otherwise mmCIF format
-    :param bio: (boolean) if true downloads the preferred Biological Assembly
-    :param override: (boolean)
-    :return: (side effects)
-    """
-
-    if pdb:
-        filename = "{}.pdb".format(identifier)
-        outputfile = os.path.join(config.db_pdb, filename)
-        os.makedirs(os.path.join(config.db_pdb), exist_ok=True)
-    else:
-        if bio:
-            filename = "{}_bio.cif.gz".format(identifier)
-        else:
-            filename = "{}.cif".format(identifier)
-
-        outputfile = os.path.join(config.db_mmcif, filename)
-        os.makedirs(os.path.join(config.db_mmcif), exist_ok=True)
-
-    if pdb:
-        url_endpoint = "entry-files/download/pdb{}.ent".format(identifier)
-    else:
-        if bio:
-            # atom lines only?
-            # url_endpoint = ("static/entry/download/"
-            #                "{}-assembly-{}_atom_site.cif.gz".format(identifier, pref))
-            pref = _get_preferred_assembly_id(identifier=identifier)
-            url_endpoint = ("static/entry/download/"
-                            "{}-assembly-{}.cif.gz".format(identifier, pref))
-        else:
-            # original mmCIF?
-            # url_endpoint = "entry-files/download/{}.cif".format(pdbid)
-            url_endpoint = "entry-files/download/{}_updated.cif".format(identifier)
-
-    url_root = config.http_pdbe
-    url = url_root + url_endpoint
-    Downloader(url=url, filename=outputfile,
-               decompress=True, override=override)
-
-
-def _download_sifts_from_ebi(identifier, override=False):
-    """
-    Downloads a SIFTS xml from the EBI FTP to the filesystem.
-
-    :param identifier: (str) PDB ID
-    :param override: (boolean)
-    :return: (side effects)
-    """
-    url_root = config.ftp_sifts
-    url_endpoint = "{}.xml.gz".format(identifier)
-    url = url_root + url_endpoint
-    filename = "{}.xml.gz".format(identifier)
-    outputfile = os.path.join(config.db_sifts, filename)
-    os.makedirs(os.path.join(config.db_sifts), exist_ok=True)
-    Downloader(url=url, filename=outputfile,
-               decompress=True, override=override)
-
-
-def _download_dssp_from_cmbi(identifier, override=False):
-    """
-    Downloads a pre-computed DSSP from the CMBI Netherlands FTP
-    to the filesystem.
-
-    :param identifier: (str) PDB ID
-    :param override: (boolean)
-    :return: (side effects)
-    """
-    url_root = config.ftp_dssp
-    url_endpoint = "{}.dssp".format(identifier)
-    url = url_root + url_endpoint
-    filename = "{}.dssp".format(identifier)
-    outputfile = os.path.join(config.db_dssp, filename)
-    os.makedirs(os.path.join(config.db_dssp), exist_ok=True)
-    Downloader(url=url, filename=outputfile,
-               decompress=True, override=override)
+        with gzip.open(self._tempfile, 'rb') as infile, \
+                open(self._filename, 'wb') as outfile:
+            shutil.copyfileobj(infile, outfile)
+            os.remove(self._tempfile)
+            log.info("Decompressed %s", self._filename)
