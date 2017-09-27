@@ -13,7 +13,7 @@ except ImportError:
 from os import path
 
 from proteofav.config import Defaults
-from proteofav.structures import _mmcif_fields, select_cif
+from proteofav.structures import _mmcif_fields, select_pdb_mmcif
 from proteofav.parsers import parse_mmcif_atoms_from_file
 from proteofav.utils import get_preferred_assembly_id
 
@@ -32,7 +32,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.mmcif_atom_parser = parse_mmcif_atoms_from_file
         self.mmcif_info_parser = _mmcif_fields
         self.example_tsv_out = path.join(path.dirname(__file__), "mmcif/2pah-bio.tsv")
-        self.select_cif = select_cif
+        self.select_cif = select_pdb_mmcif
         self.best_assembly = get_preferred_assembly_id
         self.pdbid = '2pah'
 

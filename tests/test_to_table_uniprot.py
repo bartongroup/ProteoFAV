@@ -4,8 +4,7 @@ import numpy as np
 import unittest
 import logging
 
-from proteofav.uniprot import _uniprot_info
-from proteofav.variants import _uniprot_ensembl_mapping
+from proteofav.fetchers import _uniprot_info, _fetch_uniprot_ensembl_mapping
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
@@ -22,7 +21,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_id_error4 = ()
         self.uniprot_id_error5 = []
         self.uniprot_info = _uniprot_info
-        self.uniprot_ensembl = _uniprot_ensembl_mapping
+        self.uniprot_ensembl = _fetch_uniprot_ensembl_mapping
 
     def tearDown(self):
         """Remove testing framework."""

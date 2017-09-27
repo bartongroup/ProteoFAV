@@ -1,8 +1,15 @@
 # -*- coding: utf-8
 
 import logging
+import pandas as pd
+from io import BytesIO
+from io import StringIO
+from urllib.parse import parse_qs
+from pandas.io.json import json_normalize
 
 from proteofav.utils import fetch_from_url_or_retry
+from proteofav.utils import row_selector
+from proteofav.library import valid_ensembl_species
 from proteofav.library import valid_ensembl_species_variation
 
 from proteofav.config import defaults as config
@@ -404,3 +411,330 @@ def get_ensembl_species_from_uniprot(data):
     organism = str(data.content, encoding='utf-8').split('\n')[1]
     species = '_'.join(organism.split()[0:2]).lower()
     return species
+
+
+def fetch_uniprot_sequence(uniprot_id):
+    """
+    Gets current sequence of a Uniprot entry.
+
+    :param str uniprot_id: Uniprot accession
+    :return str: the sequence
+
+    >>> print(fetch_uniprot_formal_specie('P17612'))
+    Homo sapiens
+
+    """
+
+    return _uniprot_info(uniprot_id, cols='sequence').iloc[0, 1]
+
+
+def fetch_uniprot_formal_specie(uniprot_id, remove_isoform=True):
+    """
+    Gets the species name of an organism expressing a protein.
+
+    :param Bool remove_isoform: whether to remove the isoform identifier.
+    :param str uniprot_id: Uniprot accession
+    :return: the species name (two words)
+    :rtype: str or None
+
+    >>> print(fetch_uniprot_sequence('P17612'))[:20]
+    MGNAAAAKKGSEQESVKEFL
+
+    """
+    if remove_isoform:
+        uniprot_id = uniprot_id.split('-')[0]
+
+    full_specie = _uniprot_info(uniprot_id, cols='organism').iloc[0, 1]
+
+    try:
+        return " ".join(full_specie.split()[0:2])
+    except AttributeError:
+        log.error('Could not retrieve {} information. Maybe obsolete UniProt accession?'.format(
+            uniprot_id))
+        return None
+
+
+def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
+    """
+    Retrieve Uniprot information from the database.
+
+    :param str uniprot_id: Uniprot accession identifier
+    :param retry_in: iterable of status_code to be retried upon error.
+    :type retry_in: list of [int]
+    :return pandas.DataFrame: table from Uniprot.
+    Default table columns:
+    :raises requests.HTTPError: when hits a bad status_code
+    """
+
+    if not cols:
+        cols = ('id', 'entry name', 'reviewed', 'protein names', 'genes', 'organism',
+                'sequence', 'length')
+    elif isinstance(cols, str):
+        cols = ('id', cols)
+
+    params = {'query': 'accession:' + str(uniprot_id),
+              'columns': ",".join(cols),
+              'format': 'tab',
+              'contact': ""}
+    url = config.api_uniprot
+    response = fetch_from_url_or_retry(url=url, retry_in=retry_in, **params)
+    try:
+        data = pd.read_table(StringIO(response))
+    except TypeError:
+        # python 3.5
+        data = pd.read_table(BytesIO(response))
+    except ValueError as e:
+        log.error(e)
+        return None
+    # id column is called Entry in the table
+    return row_selector(data, 'Entry', uniprot_id)
+
+
+def _fetch_uniprot_gff(uniprot_id):
+    """
+    Retrieve Uniprot data from the GFF file.
+
+    :param str uniprot_id: Uniprot accession
+    :return pandas.DataFrame: table
+    :raises requests.HTTPError: when hits a bad status_code
+    """
+    url = config.api_uniprot + uniprot_id + ".gff"
+    cols = "NAME SOURCE TYPE START END SCORE STRAND FRAME GROUP empty".split()
+
+    data = pd.read_table(url, skiprows=2, names=cols)
+    groups = data.GROUP.apply(parse_qs)
+    groups = pd.DataFrame.from_records(groups)
+
+    return data.merge(groups, left_index=True, right_index=True)
+
+
+def map_gff_features_to_sequence(uniprot_id,
+                                 query_type='',
+                                 group_residues=True,
+                                 drop_types=('Helix', 'Beta strand', 'Turn', 'Chain')):
+    """
+    Map Uniprot GFF features to the protein sequence.
+
+    :param str uniprot_id: Uniprot accession
+    :param str query_type: Select type of feature
+    :param bool group_residues: by default each row in the resulting table,
+        maps to a residue. When set to False, each row represent a feature
+        per residue.
+
+    :param tuple drop_types: Filter out some of the features, important to
+        remove fetures that spam.
+
+    :return pd.DataFrame: table. Columns will depend on paramenters.
+    """
+
+    def annotation_writer(gff_row):
+        """
+        Establish a set of rules to annotate Uniprot GFF.
+
+        :param pd.Series gff_row: each line in the GFF file.
+        :return str: template filled with type-specific fields.
+        """
+        if not gff_row.ID and not gff_row.Note:
+            return gff_row.TYPE
+        elif not gff_row.ID:
+
+            return '{0.TYPE}: {0.Note}'.format(gff_row)
+        elif not gff_row.Note:
+
+            return '{0.TYPE} ({0.ID})'.format(gff_row)
+        else:
+
+            return '{0.TYPE}: {0.Note} ({0.ID})'.format(gff_row)
+
+    table = _fetch_uniprot_gff(uniprot_id)
+    if query_type:
+        table = table[table.TYPE == query_type]
+    elif drop_types:
+        table = table[~table.TYPE.isin(drop_types)]
+
+    lines = []
+    for i, row in table.iterrows():
+        lines.extend({'idx': i, 'annotation': annotation_writer(row)}
+                     for i in range(row.START, row.END + 1))
+    table = pd.DataFrame(lines)
+
+    if table.empty:
+        return table
+
+    if group_residues:
+
+        return table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
+    else:
+
+        return table
+
+
+def _uniprot_to_ensembl_xref(uniprot_id, species='homo_sapiens'):
+    """
+    Return Gene, transcripts and translational ids from Ensembl to Uniprot.
+    Ensembl -> Uniprot reference is ideal because Ensembl database change more
+    often the Uniprot'smove quicker than Uniprot.
+
+    :param str uniprot_id: Uniprot accession
+    :param str species: species name
+    :return pandas.DataFrame: table with columns
+    """
+
+    url = "{}xrefs/symbol/{}/{}?content-type=application/json".format(
+        config.api_ensembl, species, uniprot_id)
+
+    return pd.read_json(url)
+
+
+def _fetch_icgc_variants(identifier):
+    """
+    Queries the ICGC data portal for the PanCancer variants based on Ensembl
+    transcript identifier.
+    :param str identifier: Ensembl transcript
+    :return pandas.DataFrame: pandas table dataframe
+    """
+    transition_regex = '(?P<ref>[A-Z])(?P<position>[0-9]+)(?P<new>[A-Z\*])?'
+    variation_endpoint = "protein/"
+    url = config.api_icgc + variation_endpoint + identifier
+    # fetches a nested json
+    # normalise the data, making it flat
+    data = fetch_from_url_or_retry(url, json=True)
+    data = pd.io.json.json_normalize(
+        data['hits'],
+        ['transcripts'],
+        ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
+    data = data[data['id'] == identifier]
+    data.drop(['id'], axis=1, inplace=True)
+    data.rename(columns={'_id': 'id'}, inplace=True)
+
+    consequence = data.pop('consequence')
+    if consequence.index.duplicated().any():  # pragma: no cover
+        log.warning('Joining ICGC variant data with its consequences data aborted:'
+                    ' Duplicated index for {}.'.format(identifier))
+    else:
+        data = data.join(consequence.apply(pd.Series), rsuffix='_protein')
+        transition = data.aaMutation.str.extract(transition_regex)
+        data = data.join(transition)
+
+    return data
+
+
+def _fetch_ebi_variants(uniprot_idd, flat_xrefs=True):
+    """
+    Fetchs the variant data from EBI. This datasource is also used in the UniProt feature viewer
+    :param bool flat_xrefs: whether to parse or not the cross-reference field that indicates
+    data provenance.
+    :param uniprot_idd: UniProt accession
+    :return pd.DataFrame: the table where each row is associated with a variation entry
+    .. note::
+    if flat_xrefs is true multiple rows are produced with the same index to
+    """
+    endpoint = "variation/"
+    url = config.api_ebi_uniprot + endpoint + uniprot_idd
+
+    data = fetch_from_url_or_retry(url, json=True)
+    data = json_normalize(data, ['features'], meta=['accession', 'entryName'])
+
+    # flatten the xref field, which has the id column.
+    # ideally this could be normalised with:
+    # table = json_normalize(data, ['features', 'xref'] ...
+    # but this field is not present in all entries,
+    if flat_xrefs:
+        flat_xref = data['xrefs'].apply(pd.Series).stack().apply(pd.Series)
+        flat_xref.reset_index(level=1, drop=True, inplace=True)
+        data = data.join(flat_xref)
+    return data
+
+
+def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
+    """Queries the Ensembl API for germline variants (mostly dbSNP) and somatic
+    (mostly COSMIC) based on Ensembl Protein identifiers (e.g. ENSP00000326864).
+
+    :param ensembl_ptn_id: Ensembl accession to a protein: ENSP00000XXXXXX
+    :return: table[Parent: str,
+                   allele§: str,
+                   clinical_significance: list,
+                   codons: str,
+                   end: int,
+                   feature_type: str,
+                   id: str,
+                   minor_allele_frequency: float ,
+                   polyphen: float,
+                   residues: str,
+                   seq_region_name: str,
+                   sift: float,
+                   start: int,
+                   translation: str,
+                   type: str ]
+    :rtype: pandas.DataFrame
+    """
+    ensembl_endpoint = "overlap/translation/"
+    supported_feats = ['transcript_variation', 'somatic_transcript_variation']
+    if feature is None:
+        raise NotImplementedError('Use two functions call to get both somatic'
+                                  ' and germline variants.')
+        # params = {'feature': supported_feats,
+        #           'type': 'missense_variant'}
+    elif feature not in supported_feats:
+        raise NotImplementedError('feature argument should be one of {} '.format(', '''.join(
+            supported_feats)))
+    else:
+        params = {'feature': feature}
+    url = config.api_ensembl + ensembl_endpoint + ensembl_ptn_id
+
+    rows = fetch_from_url_or_retry(url, json=True, **params)
+    return pd.DataFrame(rows)
+
+
+def _fetch_sequence_from_ensembl_protein(identifier, protein=True):
+    """
+    Gets the sequence for an Ensembl identifier.
+
+    :param identifier: Ensembl ID
+    :return: sequence
+    """
+    ensembl_endpoint = "sequence/id/"
+    url = config.api_ensembl + ensembl_endpoint + str(identifier)
+    header = {'content-type': 'text/plain'}
+    if protein:
+        params = {'type': 'protein'}
+    else:
+        params = {}
+
+    return fetch_from_url_or_retry(url, header=header, **params)
+
+
+def _fetch_uniprot_ensembl_mapping(identifier, species=None):
+    """
+    Uses the UniProt mapping service to try and get Ensembl IDs for the
+    UniProt accession identifier provided
+
+    :param identifier: UniProt accession identifier
+    :param species: Ensembl species
+    :return: pandas table dataframe
+    """
+
+    if species not in valid_ensembl_species:
+        raise ValueError('Provided species {} is not valid'.format(species))
+
+    information = {}
+    rows = []
+
+    ensembl_endpoint = "xrefs/symbol/{}/".format(species)
+    url = config.api_ensembl + ensembl_endpoint + str(identifier)
+    data = fetch_from_url_or_retry(url, json=True)
+    for entry in data:
+        typ = entry['type'].upper()
+        eid = entry['id']
+        try:
+            if eid in information[typ]:
+                continue
+            information[typ].append(eid)
+        except KeyError:
+            information[typ] = eid
+        except AttributeError:
+            information[typ] = [information[typ]]
+            information[typ].append(eid)
+
+    rows.append(information)
+    return pd.DataFrame(rows)

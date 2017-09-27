@@ -7,7 +7,7 @@ from os import path
 
 import pandas as pd
 
-from proteofav.variants import _fetch_ensembl_variants
+from proteofav.fetchers import _fetch_ensembl_variants
 
 
 class TestENSEMBLParser(unittest.TestCase):

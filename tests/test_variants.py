@@ -8,9 +8,10 @@ except ImportError:
     import unittest.mock as mock
 
 from proteofav.config import Defaults
-from proteofav.variants import (_fetch_icgc_variants, _fetch_ebi_variants, _fetch_ensembl_variants,
-                                _sequence_from_ensembl_protein, _match_uniprot_ensembl_seq,
+from proteofav.variants import (_match_uniprot_ensembl_seq,
                                 _compare_sequences, _count_mismatches, parse_uniprot_variants)
+from proteofav.fetchers import _fetch_icgc_variants, _fetch_ebi_variants, _fetch_ensembl_variants, \
+    _fetch_sequence_from_ensembl_protein
 
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 
@@ -24,7 +25,7 @@ class VariantsTestCase(unittest.TestCase):
         self.fetch_icgc_variants = _fetch_icgc_variants
         self.fetch_ebi_variants = _fetch_ebi_variants
         self.fetch_ensembl_variants = _fetch_ensembl_variants
-        self.sequence_from_ensembl_protein = _sequence_from_ensembl_protein
+        self.sequence_from_ensembl_protein = _fetch_sequence_from_ensembl_protein
         self.match_uniprot_ensembl_seq = _match_uniprot_ensembl_seq
         self.compare_sequences = _compare_sequences
         self.count_mismatches = _count_mismatches
@@ -150,7 +151,7 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
 
     @mock.patch('proteofav.variants.fetch_uniprot_formal_specie', return_value='homo_sapiens')
     @mock.patch('proteofav.variants.fetch_uniprot_sequence', return_value='ABC')
-    @mock.patch('proteofav.variants._sequence_from_ensembl_protein', return_value='ABC')
+    @mock.patch('proteofav.variants._fetch_sequence_from_ensembl_protein', return_value='ABC')
     def test_match_uniprot_ensembl_seq(self, mock_fun, mock_fun1, mock_fun2):
         import pandas as pd
 

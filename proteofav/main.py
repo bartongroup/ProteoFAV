@@ -7,14 +7,14 @@ import sys
 import click
 
 from proteofav.library import to_single_aa
-from proteofav.structures import (select_cif,
-                                  select_dssp,
-                                  select_sifts,
+from proteofav.structures import (select_pdb_mmcif,
                                   select_validation,
                                   sifts_best)
+from proteofav.sifts import select_sifts
+from proteofav.dssp import select_dssp
 
-from proteofav.variants import (map_gff_features_to_sequence,
-                                select_variants)
+from proteofav.variants import (select_variants)
+from proteofav.fetchers import map_gff_features_to_sequence
 
 __all__ = ['merge_tables',
            'parse_args',
@@ -75,7 +75,7 @@ def merge_tables(uniprot_id=None,
         chain = best_pdb['chain_id']
         log.info('Best structure, chain: {}|{} for {} '.format(pdb_id, chain, uniprot_id))
 
-    cif_table = select_cif(pdb_id, chains=chain, models=model, atoms=atoms)
+    cif_table = select_pdb_mmcif(pdb_id, chains=chain, models=model, atoms=atoms)
 
     dssp_table = select_dssp(pdb_id, chains=chain)
 

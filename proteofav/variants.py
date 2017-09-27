@@ -1,26 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+
 import logging
 
 import pandas as pd
-from pandas.io.json import json_normalize
 
-from proteofav.config import defaults
-from proteofav.uniprot import (map_gff_features_to_sequence,
-                               _uniprot_to_ensembl_xref,
-                               fetch_uniprot_formal_specie,
-                               fetch_uniprot_sequence,
-                               _uniprot_info)
-from proteofav.utils import get_url_or_retry
+from proteofav.fetchers import fetch_uniprot_sequence
+from proteofav.fetchers import fetch_uniprot_formal_specie
+from proteofav.fetchers import _uniprot_info
+from proteofav.fetchers import map_gff_features_to_sequence
+from proteofav.fetchers import _uniprot_to_ensembl_xref
+from proteofav.fetchers import _fetch_ensembl_variants
+from proteofav.fetchers import _fetch_sequence_from_ensembl_protein
+from proteofav.fetchers import _fetch_uniprot_ensembl_mapping
 from proteofav.library import valid_ensembl_species
 
-__all__ = ["_fetch_icgc_variants",
-           "_fetch_ebi_variants",
-           "_fetch_ensembl_variants",
-           "_sequence_from_ensembl_protein",
-           "_uniprot_ensembl_mapping",
-           "_match_uniprot_ensembl_seq",
+__all__ = ["_match_uniprot_ensembl_seq",
            "_apply_sequence_index_map",
            "_compare_sequences",
            "_count_mismatches",
@@ -33,161 +29,6 @@ log = logging.getLogger('proteofav.config')
 ##############################################################################
 # Private methods
 ##############################################################################
-
-def _fetch_icgc_variants(identifier):
-    """
-    Queries the ICGC data portal for the PanCancer variants based on Ensembl
-    transcript identifier.
-    :param str identifier: Ensembl transcript
-    :return pandas.DataFrame: pandas table dataframe
-    """
-    transition_regex = '(?P<ref>[A-Z])(?P<position>[0-9]+)(?P<new>[A-Z\*])?'
-    variation_endpoint = "protein/"
-    url = defaults.api_icgc + variation_endpoint + identifier
-    # fetches a nested json
-    # normalise the data, making it flat
-    data = get_url_or_retry(url, json=True)
-    data = pd.io.json.json_normalize(
-        data['hits'],
-        ['transcripts'],
-        ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
-    data = data[data['id'] == identifier]
-    data.drop(['id'], axis=1, inplace=True)
-    data.rename(columns={'_id': 'id'}, inplace=True)
-
-    consequence = data.pop('consequence')
-    if consequence.index.duplicated().any():  # pragma: no cover
-        log.warning('Joining ICGC variant data with its consequences data aborted:'
-                    ' Duplicated index for {}.'.format(identifier))
-    else:
-        data = data.join(consequence.apply(pd.Series), rsuffix='_protein')
-        transition = data.aaMutation.str.extract(transition_regex)
-        data = data.join(transition)
-
-    return data
-
-
-def _fetch_ebi_variants(uniprot_idd, flat_xrefs=True):
-    """
-    Fetchs the variant data from EBI. This datasource is also used in the UniProt feature viewer
-    :param bool flat_xrefs: whether to parse or not the cross-reference field that indicates
-    data provenance.
-    :param uniprot_idd: UniProt accession
-    :return pd.DataFrame: the table where each row is associated with a variation entry
-    .. note::
-    if flat_xrefs is true multiple rows are produced with the same index to
-    """
-    endpoint = "variation/"
-    url = defaults.api_ebi_uniprot + endpoint + uniprot_idd
-
-    data = get_url_or_retry(url, json=True)
-    data = json_normalize(data, ['features'], meta=['accession', 'entryName'])
-
-    # flatten the xref field, which has the id column.
-    # ideally this could be normalised with:
-    # table = json_normalize(data, ['features', 'xref'] ...
-    # but this field is not present in all entries,
-    if flat_xrefs:
-        flat_xref = data['xrefs'].apply(pd.Series).stack().apply(pd.Series)
-        flat_xref.reset_index(level=1, drop=True, inplace=True)
-        data = data.join(flat_xref)
-    return data
-
-
-def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
-    """Queries the Ensembl API for germline variants (mostly dbSNP) and somatic
-    (mostly COSMIC) based on Ensembl Protein identifiers (e.g. ENSP00000326864).
-
-    :param ensembl_ptn_id: Ensembl accession to a protein: ENSP00000XXXXXX
-    :return: table[Parent: str,
-                   allele§: str,
-                   clinical_significance: list,
-                   codons: str,
-                   end: int,
-                   feature_type: str,
-                   id: str,
-                   minor_allele_frequency: float ,
-                   polyphen: float,
-                   residues: str,
-                   seq_region_name: str,
-                   sift: float,
-                   start: int,
-                   translation: str,
-                   type: str ]
-    :rtype: pandas.DataFrame
-    """
-    ensembl_endpoint = "overlap/translation/"
-    supported_feats = ['transcript_variation', 'somatic_transcript_variation']
-    if feature is None:
-        raise NotImplementedError('Use two functions call to get both somatic'
-                                  ' and germline variants.')
-        # params = {'feature': supported_feats,
-        #           'type': 'missense_variant'}
-    elif feature not in supported_feats:
-        raise NotImplementedError('feature argument should be one of {} '.format(', '''.join(
-            supported_feats)))
-    else:
-        params = {'feature': feature}
-    url = defaults.api_ensembl + ensembl_endpoint + ensembl_ptn_id
-
-    rows = get_url_or_retry(url, json=True, **params)
-    return pd.DataFrame(rows)
-
-
-def _sequence_from_ensembl_protein(identifier, protein=True):
-    """
-    Gets the sequence for an Ensembl identifier.
-
-    :param identifier: Ensembl ID
-    :return: sequence
-    """
-    ensembl_endpoint = "sequence/id/"
-    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
-    header = {'content-type': 'text/plain'}
-    if protein:
-        params = {'type': 'protein'}
-    else:
-        params = {}
-
-    return get_url_or_retry(url, header=header, **params)
-
-
-def _uniprot_ensembl_mapping(identifier, species=None):
-    """
-    Uses the UniProt mapping service to try and get Ensembl IDs for the
-    UniProt accession identifier provided
-
-    :param identifier: UniProt accession identifier
-    :param species: Ensembl species
-    :return: pandas table dataframe
-    """
-
-    if species not in valid_ensembl_species:
-        raise ValueError('Provided species {} is not valid'.format(species))
-
-    information = {}
-    rows = []
-
-    ensembl_endpoint = "xrefs/symbol/{}/".format(species)
-    url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
-    data = get_url_or_retry(url, json=True)
-    for entry in data:
-        typ = entry['type'].upper()
-        eid = entry['id']
-        try:
-            if eid in information[typ]:
-                continue
-            information[typ].append(eid)
-        except KeyError:
-            information[typ] = eid
-        except AttributeError:
-            information[typ] = [information[typ]]
-            information[typ].append(eid)
-
-    rows.append(information)
-    return pd.DataFrame(rows)
-
-
 def _match_uniprot_ensembl_seq(uniprot_id):
     """Matches a Uniprot sequence to a identical Ensembl sequence making the
     residue mapping trivial.
@@ -217,7 +58,7 @@ def _match_uniprot_ensembl_seq(uniprot_id):
 
     uniprot_sequence = fetch_uniprot_sequence(uniprot_id)
     for ensembl_ptn_id in ensembl_ptn_ids:
-        ensembl_ptn_seq = _sequence_from_ensembl_protein(ensembl_ptn_id)
+        ensembl_ptn_seq = _fetch_sequence_from_ensembl_protein(ensembl_ptn_id)
         if _compare_sequences(uniprot_sequence, ensembl_ptn_seq, permissive=False):
             return ensembl_ptn_id
     raise ValueError('No protein with the same sequence was retrieved from Ensembl {}'.format(
@@ -378,7 +219,7 @@ def select_uniprot_variants(identifier, align_transcripts=False):
 
     # get the ensembl ids: this also validate this species as available
     # through ensembl
-    ens = _uniprot_ensembl_mapping(identifier, species=org)
+    ens = _fetch_uniprot_ensembl_mapping(identifier, species=org)
 
     # get the ensembl protein ids
     ens_pros = ens.loc[0, 'TRANSLATION']
@@ -391,7 +232,7 @@ def select_uniprot_variants(identifier, align_transcripts=False):
     seq_maps = []
 
     for i, enspro in enumerate(ens_pros):
-        seq_pro = _sequence_from_ensembl_protein(enspro, protein=True)
+        seq_pro = _fetch_sequence_from_ensembl_protein(enspro, protein=True)
 
         # validate if the sequence of uniprot and ensembl protein matches
         if _compare_sequences(seq, seq_pro, permissive=False):
