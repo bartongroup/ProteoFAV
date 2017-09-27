@@ -217,6 +217,29 @@ aa_codes_1to3_extended = {
     '-': '---',
 }
 
+aa_default_atoms = {
+    'ALA': ['N', 'O', 'CA', 'C', 'CB'],
+    'CYS': ['N', 'O', 'CA', 'C', 'SG', 'CB'],
+    'ASP': ['N', 'O', 'CA', 'C', 'CG', 'OD2', 'OD1', 'CB'],
+    'GLU': ['N', 'O', 'CA', 'C', 'CD', 'CG', 'OE1', 'CB', 'OE2'],
+    'PHE': ['N', 'O', 'CA', 'C', 'CE1', 'CD1', 'CZ', 'CG', 'CB', 'CE2', 'CD2'],
+    'GLY': ['N', 'O', 'CA', 'C'],
+    'HIS': ['N', 'O', 'CA', 'C', 'CB', 'CG', 'ND1', 'CD2', 'CE1', 'NE2'],
+    'LYS': ['N', 'O', 'CA', 'C', 'NZ', 'CD', 'CE', 'CG', 'CB'],
+    'ILE': ['N', 'O', 'CA', 'C', 'CG2', 'CD1', 'CB', 'CG1'],
+    'LEU': ['N', 'O', 'CA', 'C', 'CD2', 'CD1', 'CG', 'CB'],
+    'MET': ['N', 'O', 'CA', 'C', 'SD', 'CG', 'CB', 'CE'],
+    'ASN': ['N', 'O', 'CA', 'C', 'ND2', 'OD1', 'CB', 'CG'],
+    'PRO': ['N', 'O', 'CA', 'C', 'CD', 'CG', 'CB'],
+    'GLN': ['N', 'O', 'CA', 'C', 'CD', 'NE2', 'OE1', 'CB', 'CG'],
+    'ARG': ['N', 'O', 'CA', 'C', 'CZ', 'CD', 'NE', 'CG', 'CB'],
+    'SER': ['N', 'O', 'CA', 'C', 'CB', 'OG'],
+    'THR': ['N', 'O', 'CA', 'C', 'OG1', 'CG2', 'CB'],
+    'VAL': ['N', 'O', 'CA', 'C', 'CB', 'CG2', 'CG1'],
+    'TYR': ['N', 'O', 'CA', 'C', 'CE1', 'CD1', 'CZ', 'CG', 'CB', 'CE2', 'CD2'],
+    'TRP': ['N', 'O', 'CA', 'C', 'NE1', 'CZ3', 'CD1', 'CE3', 'CG', 'CB', 'CZ2', 'CE2', 'CD2'],
+}
+
 # obtained from biopython at
 # https://github.com/biopython/biopython/blob/master/Bio/PDB/DSSP.py
 # Miller max acc: Miller et al. 1987 http://dx.doi.org/10.1016/0022-2836(87)90038-6
@@ -366,6 +389,44 @@ _dtypes_convert = {
     float: 'float64',
     str: 'object'
 }
+
+_pdbx_types = {
+    'group_PDB': str,
+    'id': int,
+    'type_symbol': str,
+    'label_atom_id': str,
+    'label_alt_id': str,
+    'label_comp_id': str,
+    'label_asym_id': str,
+    'label_entity_id': str,
+    'label_seq_id': str,
+    'new_asym_id': str,
+    'new_seq_id': str,
+    'pdbx_PDB_ins_code': str,
+    'Cartn_x': float,
+    'Cartn_y': float,
+    'Cartn_z': float,
+    'occupancy': float,
+    'B_iso_or_equiv': float,
+    'Cartn_x_esd': float,
+    'Cartn_y_esd': float,
+    'Cartn_z_esd': float,
+    'occupancy_esd': float,
+    'B_iso_or_equiv_esd': float,
+    'pdbx_formal_charge': int,
+    'auth_seq_id': str,
+    'auth_comp_id': str,
+    'auth_asym_id': str,
+    'auth_atom_id': str,
+    'pdbx_PDB_model_num': str,
+    'pdbe_label_seq_id': str,
+    'orig_label_asym_id': str,
+    'orig_auth_asym_id': str,
+    'auth_seq_id_full': str,
+    'label_seq_id_full': str,
+    'contact_indexes': str,
+}
+
 _dssp_types = {
     'LINE': int,
     'RES': str,
@@ -441,5 +502,6 @@ _sifts_types = {
     'Pfam_dbAccessionId': str
 }
 
+pdbx_types = {k: _dtypes_convert[v] for k, v in _pdbx_types.items()}
 dssp_types = {k: _dtypes_convert[v] for k, v in _dssp_types.items()}
 sifts_types = {k: _dtypes_convert[v] for k, v in _sifts_types.items()}
