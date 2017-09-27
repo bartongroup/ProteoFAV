@@ -7,8 +7,12 @@ except ImportError:
     import unittest.mock as mock
 from requests.exceptions import HTTPError
 
-from proteofav.fetchers import fetch_uniprot_sequence, fetch_uniprot_formal_specie, _uniprot_info, _fetch_uniprot_gff, \
-    map_gff_features_to_sequence, _uniprot_to_ensembl_xref
+from proteofav.fetchers import (fetch_uniprot_sequence,
+                                fetch_uniprot_formal_specie,
+                                _uniprot_info,
+                                _fetch_uniprot_gff,
+                                map_gff_features_to_sequence,
+                                _uniprot_to_ensembl_xref)
 from proteofav.utils import get_url_or_retry
 
 

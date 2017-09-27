@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import json
 import logging
 import unittest
 import requests_cache
+from unittest import mock
 
 from proteofav.fetchers import (Fetcher,
                                 fetch_best_structures_pdbe,
@@ -23,7 +25,12 @@ from proteofav.fetchers import (Fetcher,
                                 get_uniprot_id_from_mapping,
                                 get_preferred_uniprot_id_from_mapping,
                                 get_preferred_ensembl_id_from_mapping,
-                                get_ensembl_species_from_uniprot)
+                                get_ensembl_species_from_uniprot,
+
+                                _fetch_sequence_from_ensembl_protein,
+                                _fetch_icgc_variants,
+                                _fetch_ebi_variants,
+                                _fetch_ensembl_variants)
 
 from proteofav.config import defaults as config
 
@@ -63,6 +70,10 @@ class TestFetchers(unittest.TestCase):
         self.get_preferred_ensembl_id_from_mapping = get_preferred_ensembl_id_from_mapping
         self.get_ensembl_species_from_uniprot = get_ensembl_species_from_uniprot
 
+        self.fetch_icgc_variants = _fetch_icgc_variants
+        self.fetch_ebi_variants = _fetch_ebi_variants
+        self.fetch_ensembl_variants = _fetch_ensembl_variants
+
         logging.disable(logging.DEBUG)
 
     def tearDown(self):
@@ -94,6 +105,10 @@ class TestFetchers(unittest.TestCase):
         self.get_preferred_uniprot_id_from_mapping = None
         self.get_preferred_ensembl_id_from_mapping = None
         self.get_ensembl_species_from_uniprot = None
+
+        self.fetch_icgc_variants = None
+        self.fetch_ebi_variants = None
+        self.fetch_ensembl_variants = None
 
         logging.disable(logging.NOTSET)
 
@@ -203,6 +218,86 @@ class TestFetchers(unittest.TestCase):
         r = self.get_ensembl_protein_id_from_mapping(info.json())
         best_match = self.get_preferred_ensembl_id_from_mapping(r)
         self.assertEqual(best_match, 'ENSP00000448059')
+
+    def test_fetch_ebi_variants_parsing(self):
+        raw_response = """{"accession":"P17612", "entryName":"KAPCA_HUMAN", "sequence":
+        "MGNAAAAKKGSEQESVKEFLAKAKEDFLKKWESPAQNTAHLDQFERIKTLGTGSFGRVMLVKHKETGNHYAMKILDKQKVVKLKQIEHTLNEKRILQAVNFPFLVKLEFSFKDNSNLYMVMEYVPGGEMFSHLRRIGRFSEPHARFYAAQIVLTFEYLHSLDLIYRDLKPENLLIDQQGYIQVTDFGFAKRVKGRTWTLCGTPEYLAPEIILSKGYNKAVDWWALGVLIYEMAAGYPPFFADQPIQIYEKIVSGKVRFPSHFSSDLKDLLRNLLQVDLTKRFGNLKNGVNDIKNHKWFATTDWIAIYQRKVEAPFIPKFKGPGDTSNFDDYEEEEIRVSINEKCGKEFSEF",                    "sequenceChecksum":"13793750284533818795", "taxid":9606,                   "features":[{"type":"VARIANT","ftId":"VAR_040591","alternativeSequence":"V","begin":"41","end":"41","xrefs":[{"name":"dbSNP","id":"rs56029020","url":"http://www.ncbi.nlm.nih.gov/SNP/snp_ref.cgi?type=rs&rs=rs56029020"},{"name":"Ensembl","id":"rs56029020","url":"http://www.ensembl.org/id/rs56029020"}],"wildType":"L","somaticStatus":0,"consequenceType":"missense","sourceType":"uniprot"},{"type":"VARIANT","alternativeSequence":"I","begin":"252","end":"252","xrefs":[{"name":"ExAC","id":"rs760535486","url":"http://exac.broadinstitute.org/awesome?query=rs760535486"}],"wildType":"V","polyphenPrediction":"benign","polyphenScore":0.025,"siftPrediction":"tolerated","siftScore":0.21,"somaticStatus":0,"cytogeneticBand":"19p13.12","consequenceType":"missense", "genomicLocation":"NC_000019.10:g.14097372C>T","sourceType":"large_scale_study"}]} """
+        mock_response = mock.Mock()
+        mock_response.return_value.ok = True
+        mock_response.return_value.status = 200
+        mock_response.json.return_value = json.loads(raw_response)
+
+        with mock.patch('proteofav.utils.requests.get') as mock_get:
+            mock_get.return_value = mock_response
+            data = self.fetch_ebi_variants('P17612')
+
+        self.assertEqual(data.shape, (3, 21))
+        # deal with duplicated index - two data sources for the first variant
+        data = data.reset_index().drop_duplicates(subset='index', keep='last').set_index(
+            'index')
+        self.assertEqual(data.shape, (2, 21))
+        self.assertEqual(data.loc[0, 'begin'], "41")
+        # TODO check why it not parsing thois one as float
+        self.assertEqual(data.loc[0, 'end'], "41")
+        self.assertEqual(data.loc[0, 'consequenceType'], 'missense')
+        self.assertEqual(data.loc[0, 'sourceType'], 'uniprot')
+        self.assertEqual(data.loc[1, 'sourceType'], 'large_scale_study')
+        self.assertEqual(data.loc[0, 'id'], 'rs56029020')
+        self.assertEqual(data.loc[1, 'id'], 'rs760535486')
+
+    def test_fetch_ensembl_variants_transcript_variation_parsing(self):
+        raw_response = """[{"polyphen":0.908,"sift":0.06,"feature_type":"transcript_variation","clinical_significance":[],"Parent":
+"ENST00000288602","codons":"Cca/Gca","end":622,"seq_region_name":"ENSP00000288602","residues":"P/A","minor_allele_frequency":
+null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"missense_variant","start":622}
+,{"polyphen":0.95,"sift":0,"feature_type":"transcript_variation","clinical_significance":["pathogenic"],"Parent"
+:"ENST00000288602","codons":"Gca/Cca","end":246,"seq_region_name":"ENSP00000288602","residues":"A/P",
+"minor_allele_frequency":null,"id":"rs180177034","translation":"ENSP00000288602","allele":"C/G","type":"missense_variant","start":246}]"""
+        mock_response = mock.Mock()
+        mock_response.return_value.ok = True
+        mock_response.return_value.status = 200
+        mock_response.json.return_value = json.loads(raw_response)
+
+        with mock.patch('proteofav.utils.requests.get') as mock_get:
+            mock_get.return_value = mock_response
+            data = self.fetch_ensembl_variants('XXXXX',  # ENSP00000309591
+                                               feature='transcript_variation')
+
+        self.assertEqual(data.shape, (2, 15))
+        self.assertEqual(data.loc[0, 'Parent'], 'ENST00000288602')
+        self.assertEqual(data.loc[0, 'end'], 622)
+        self.assertEqual(data.loc[1, 'sift'], 0)
+        self.assertEqual(data.loc[1, 'start'], 246)
+        self.assertEqual(data.loc[1, 'type'], 'missense_variant')
+
+    def test_fetch_ensembl_variants_somatic_transcript_variation_parsing(self):
+        raw_response = """[{"polyphen":null,"sift":null,
+        "feature_type":"somatic_transcript_variation","clinical_significance":[],
+        "Parent":"ENST00000288602","codons":"","end":433,
+        "seq_region_name":"ENSP00000288602","residues":"","minor_allele_frequency":null,
+        "id":"COSM3832072","translation":"ENSP00000288602","allele":"COSMIC_MUTATION",
+        "type":"coding_sequence_variant","start":433},{"polyphen":null,"sift":null,
+        "feature_type":"somatic_transcript_variation","clinical_significance":[],
+        "Parent":"ENST00000288602","codons":"","end":698,
+        "seq_region_name":"ENSP00000288602","residues":"","minor_allele_frequency":null,
+        "id":"COSM452456","translation":"ENSP00000288602","allele":"COSMIC_MUTATION",
+        "type":"coding_sequence_variant","start":698}] """
+        mock_response = mock.Mock()
+        mock_response.return_value.ok = True
+        mock_response.return_value.status = 200
+        mock_response.json.return_value = json.loads(raw_response)
+
+        with mock.patch('proteofav.utils.requests.get') as mock_get:
+            mock_get.return_value = mock_response
+            data = self.fetch_ensembl_variants('XXXXX',  # ENSP00000309591
+                                               feature='somatic_transcript_variation')
+
+        self.assertEqual(data.shape, (2, 15))
+        self.assertEqual(data.loc[0, 'Parent'], 'ENST00000288602')
+        self.assertEqual(data.loc[0, 'allele'], 'COSMIC_MUTATION')
+        self.assertEqual(data.loc[0, 'start'], 433)
+        self.assertEqual(data.loc[0, 'type'], 'coding_sequence_variant')
+        self.assertEqual(data.loc[1, 'clinical_significance'], [])
+        self.assertEqual(data.loc[1, 'type'], 'coding_sequence_variant')
 
 
 if __name__ == '__main__':
