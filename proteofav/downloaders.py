@@ -9,22 +9,19 @@ import tempfile
 from proteofav.utils import InputFileHandler
 from proteofav.utils import OutputFileHandler
 
-from proteofav.config import defaults as config
-
 log = logging.getLogger('proteofav')
 
 
 class Downloader(object):
     def __init__(self, url, filename, decompress=True, overwrite=False):
         """
-        :param filename: (str) Output _filename
+        :param filename: (str) Output filename
         :param decompress: (boolean) Decompresses the file
         :param overwrite: (boolean) Overrides any existing file, if available
         """
 
         self._url = url
         self._filename = filename
-        # self._tempfile = tempfile.NamedTemporaryFile(dir=config.db_tmp).name
         self._tempfile = tempfile.NamedTemporaryFile().name
         self._decompress = decompress
         self._override = overwrite

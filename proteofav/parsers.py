@@ -1,12 +1,13 @@
 # -*- coding: utf-8
 
-import os
 import logging
 import pandas as pd
 from lxml import etree
 from io import StringIO
 from string import ascii_uppercase
 from collections import OrderedDict
+
+from proteofav.utils import InputFileHandler
 
 log = logging.getLogger('proteofav')
 
@@ -33,8 +34,7 @@ def parse_mmcif_atoms_from_file(filename):
     ATOM 4 O O . VAL A 1 1 ? -5.346 20.029 20.204 1.0 59.84 ? ? ? ? ? ? 118 VAL A O 1 1 A A
     """
 
-    if not os.path.isfile(filename):
-        raise IOError("{} not available or could not be read...".format(filename))
+    InputFileHandler(filename)
 
     # parsing atom lines
     header = []
@@ -77,8 +77,7 @@ def parse_pdb_atoms_from_file(filename):
     ATOM      4  O   VAL A 118      -5.346  20.029  20.204  1.00 59.84           O
     """
 
-    if not os.path.isfile(filename):
-        raise IOError("{} not available or could not be read...".format(filename))
+    InputFileHandler(filename)
 
     # parsing atom lines, converting it to mmcif-style headers
     lines = []
@@ -120,6 +119,7 @@ def parse_pdb_atoms_from_file(filename):
     return table
 
 
+# TODO fix for speed
 def _fix_pdb_ins_code(table):
     """
     Utility that fixes the 'pdbx_PDB_ins_code' column to match is expected
@@ -140,6 +140,7 @@ def _fix_pdb_ins_code(table):
     return table
 
 
+# TODO fix for speed
 def _fix_label_alt_id(table):
     """
     Utility that fixes the 'label_alt_id' column to match what is
@@ -160,6 +161,7 @@ def _fix_label_alt_id(table):
     return table
 
 
+# TODO fix for speed
 def _fix_type_symbol(table):
     """
     Utility that fixes the 'type_symbol' column to match what is
@@ -214,8 +216,7 @@ def parse_dssp_from_file(filename):
       382        !*             0   0    0      0, 0.0     0, 0.0     0, 0.0     0, 0.0   0.000 360.0 360.0 360.0 360.0    0.0    0.0    0.0
     """
 
-    if not os.path.isfile(filename):
-        raise IOError("{} not available or could not be read...".format(filename))
+    InputFileHandler(filename)
 
     lines = []
     parse = False
@@ -260,8 +261,7 @@ def _parse_sifts_dbs_from_file(filename, excluded_cols=()):
 
     log.info("Parsing SIFTS dbs from lines...")
 
-    if not os.path.isfile(filename):
-        raise IOError("{} not available or could not be read...".format(filename))
+    InputFileHandler(filename)
 
     # parsing sifts segments
     try:
@@ -299,8 +299,7 @@ def _parse_sifts_regions_from_file(filename, excluded_cols=()):
 
     log.info("Parsing SIFTS regions from lines...")
 
-    if not os.path.isfile(filename):
-        raise IOError("{} not available or could not be read...".format(filename))
+    InputFileHandler(filename)
 
     # parsing sifts segments
     try:
@@ -419,8 +418,7 @@ def parse_sifts_residues_from_file(filename, add_regions=True, add_dbs=False,
             (...)
     """
 
-    if not os.path.isfile(filename):
-        raise IOError("{} not available or could not be read...".format(filename))
+    InputFileHandler(filename)
 
     # parse regions first
     if add_regions:
