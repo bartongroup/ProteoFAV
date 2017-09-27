@@ -244,32 +244,6 @@ def _import_dssp_chains_ids(pdb_id):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_sifts(pdb_id, chains=None):
-    """
-    Produce table ready from SIFTS XML file.
-
-    :param pdb_id: PDB identifier
-    :param chains: Protein structure chain
-    :return: table read to be merged
-    """
-    sifts_path = os.path.join(config.db_sifts, pdb_id + '.xml')
-
-    try:
-        sift_table = parse_sifts_residues_from_file(sifts_path)
-    except IOError:
-        sifts_path = fetch_files(pdb_id, sources='sifts',
-                                 directory=config.db_sifts)[0]
-        sift_table = parse_sifts_residues_from_file(sifts_path)
-        # standardise column types
-    for col in sift_table:
-        #  bool columns
-        if col.startswith('is'):
-            sift_table[col].fillna(False)
-    if chains is None:
-        return sift_table
-    else:
-        return row_selector(sift_table, 'PDB_dbChainId', chains)
-
 
 def select_validation(pdb_id, chains=None):
     """

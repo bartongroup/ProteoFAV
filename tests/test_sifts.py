@@ -67,6 +67,15 @@ class TestSIFTS(unittest.TestCase):
         self.assertIn("InterPro_dbAccessionId", keys)
         self.assertIn("NCBI_dbAccessionId", keys)
 
+    def test_filter_uniprot_id(self):
+        data = self.sifts().read(self.inputsifts, uniprot=('P00439',))
+        self.assertEqual("P00439", data.loc[0, 'UniProt_dbAccessionId'])
+
+    def test_filter_chain(self):
+        data = self.sifts().read(self.inputsifts, chains=('A',))
+        self.assertIn("A", data.PDB_entityId.unique())
+        self.assertNotIn("B", data.PDB_entityId.unique())
+
     def test_download_sifts(self):
         self.sifts().download(self.pdbid, filename=self.outputsifts,
                               overwrite=True, decompress=True)
