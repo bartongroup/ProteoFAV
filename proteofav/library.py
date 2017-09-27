@@ -384,6 +384,18 @@ valid_ensembl_species_variation = ['bos_taurus',
                                    'saccharomyces_cerevisiae',
                                    'tetraodon_nigroviridis']
 
+# updating terms in ensembl output so that they match
+# UniProt Proteins API counterparts
+update_ensembl_to_uniprot = {
+    'minor_allele_frequency': 'frequency',
+    'start': 'begin',
+    'end': 'end',
+    'sift': 'siftScore',
+    'polyphen': 'polyphenScore',
+    'type': 'consequenceType',
+    'id': 'xrefs_id'
+}
+
 _dtypes_convert = {
     int: 'int64',
     float: 'float64',
@@ -502,6 +514,14 @@ _sifts_types = {
     'Pfam_dbAccessionId': str
 }
 
+_uni_ens_var_types = {
+    'begin': int,
+    'end': int,
+    'polyphenScore': float,
+    'siftScore': float,
+}
+
 pdbx_types = {k: _dtypes_convert[v] for k, v in _pdbx_types.items()}
 dssp_types = {k: _dtypes_convert[v] for k, v in _dssp_types.items()}
 sifts_types = {k: _dtypes_convert[v] for k, v in _sifts_types.items()}
+uni_ens_var_types = {k: _dtypes_convert[v] for k, v in _uni_ens_var_types.items()}

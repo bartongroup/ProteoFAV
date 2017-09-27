@@ -1,52 +1,177 @@
-import json
-import unittest
-from os import path
+# -*- coding: utf-8 -*-
 
-try:
-    import mock
-except ImportError:
-    import unittest.mock as mock
+import os
+import sys
+import json
+import logging
+import unittest
+import numpy as np
+import unittest.mock as mock
 
 from proteofav.config import Defaults
+
+from proteofav.fetchers import (_fetch_sequence_from_ensembl_protein,
+                                fetch_uniprot_variants_ebi,
+                                fetch_ensembl_transcript_variants,
+                                fetch_uniprot_species_from_id,
+                                fetch_ensembl_ensembl_uniprot_mapping,
+                                fetch_ensembl_uniprot_ensembl_mapping)
+
 from proteofav.variants import (_match_uniprot_ensembl_seq,
-                                _compare_sequences, _count_mismatches, parse_uniprot_variants)
-from proteofav.fetchers import _fetch_icgc_variants, _fetch_ebi_variants, _fetch_ensembl_variants, \
-    _fetch_sequence_from_ensembl_protein
+                                _compare_sequences,
+                                _count_mismatches,
+                                parse_uniprot_variants,
+                                Variants,
+                                flatten_uniprot_variants_ebi,
+                                get_ensembl_species_from_uniprot,
+                                get_uniprot_id_from_mapping,
+                                get_ensembl_protein_id_from_mapping,
+                                get_preferred_uniprot_id_from_mapping,
+                                get_preferred_ensembl_id_from_mapping,
+                                flatten_ensembl_variants)
 
-defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
+from proteofav.utils import (flatten_nested_structure,
+                             refactor_key_val_singletons)
+
+defaults = Defaults(os.path.join(os.path.dirname(__file__), "config.txt"))
 
 
-@mock.patch("proteofav.structures.defaults", defaults)
-class VariantsTestCase(unittest.TestCase):
-    """Test for the variants.py"""
+example_uniprot_variants = {
+    'accession': 'P40227',
+    'entryName': 'TCPZ_HUMAN',
+    'sequence': 'MAAVKTLNPKAEVARAQAAMKATNILLVDEIMRAGMSSLKG',
+    'sequenceChecksum': '4876218983604824961',
+    'taxid': 9606,
+    'features': [
+        {'type': 'VARIANT',
+         'alternativeSequence': 'F',
+         'begin': '231',
+         'end': '231',
+         'xrefs': [{'name': '1000Genomes',
+                    'id': 'rs148616984',
+                    'url': 'http://www.ensembl.org/Homo_sapiens/Variation/Explore?v=rs148616984;vdb=variation'},
+                   {'name': 'ESP',
+                    'id': 'rs148616984',
+                    'url': 'http://evs.gs.washington.edu/EVS/PopStatsServlet?searchBy=rsID&target=rs148616984&x=0&y=0'},
+                   {'name': 'ExAC',
+                    'id': 'rs148616984',
+                    'url': 'http://exac.broadinstitute.org/awesome?query=rs148616984'}
+                   ],
+         'wildType': 'L',
+         'frequency': 0.000399361,
+         'polyphenPrediction': 'benign',
+         'polyphenScore': 0.41,
+         'siftPrediction': 'deleterious',
+         'siftScore': 0.01,
+         'somaticStatus': 0,
+         'cytogeneticBand': '7p11.2',
+         'consequenceType': 'missense',
+         'genomicLocation': 'NC_000007.14:g.56058069C>T',
+         'sourceType': 'large_scale_study'},
+        {'type': 'VARIANT',
+         'alternativeSequence': 'S',
+         'begin': '83',
+         'end': '83',
+         'xrefs': [{'name': 'ExAC',
+                    'id': 'rs779741978',
+                    'url': 'http://exac.broadinstitute.org/awesome?query=rs779741978'}
+                   ],
+         'wildType': 'A',
+         'frequency': 0.0,
+         'polyphenPrediction': 'benign',
+         'polyphenScore': 0.305,
+         'siftPrediction': 'tolerated',
+         'siftScore': 0.06,
+         'somaticStatus': 0,
+         'cytogeneticBand': '7p11.2',
+         'consequenceType': 'missense',
+         'genomicLocation': 'NC_000007.14:g.56054414G>T',
+         'sourceType': 'large_scale_study'},
+        {'type': 'VARIANT',
+         'description': '[LSS_COSMIC]: primary tissue(s): lung',
+         'alternativeSequence': 'V',
+         'begin': '292',
+         'end': '292',
+         'xrefs': [{'name': 'cosmic curated',
+                    'id': 'COSM1549991',
+                    'url': 'http://cancer.sanger.ac.uk/cosmic/mutation/overview?id=1549991'}
+                   ],
+         'evidences': [{'code': 'ECO:0000313',
+                        'source': {'name': 'cosmic_study',
+                                   'id': 'COSU:417',
+                                   'url': 'http://cancer.sanger.ac.uk/cosmic/study/overview?study_id=417'}
+                        }
+                       ],
+         'wildType': 'I',
+         'polyphenPrediction': 'benign',
+         'polyphenScore': 0.021,
+         'siftPrediction': 'tolerated',
+         'siftScore': 0.1, 'somaticStatus': 0,
+         'cytogeneticBand': '7p11.2',
+         'consequenceType': 'missense',
+         'genomicLocation': '7:g.56058510A>G',
+         'sourceType': 'large_scale_study'}
+    ]
+}
+
+
+@mock.patch("proteofav.config.defaults", defaults)
+class TestVariants(unittest.TestCase):
+    """Test the VAR parser methods."""
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.fetch_icgc_variants = _fetch_icgc_variants
-        self.fetch_ebi_variants = _fetch_ebi_variants
-        self.fetch_ensembl_variants = _fetch_ensembl_variants
+
+        self.uniprotid = "P40227"
+        self.uniprotid2 = "P00439"
+        self.ensemblid = "ENSP00000448059"
+        self.data = example_uniprot_variants
+        self.flatten_uniprot_variants_ebi = flatten_uniprot_variants_ebi
+        self.get_ensembl_species_from_uniprot = get_ensembl_species_from_uniprot
+        self.get_uniprot_id_from_mapping = get_uniprot_id_from_mapping
+        self.get_ensembl_protein_id_from_mapping = get_ensembl_protein_id_from_mapping
+        self.get_preferred_uniprot_id_from_mapping = get_preferred_uniprot_id_from_mapping
+        self.get_preferred_ensembl_id_from_mapping = get_preferred_ensembl_id_from_mapping
+        self.flatten_ensembl_variants = flatten_ensembl_variants
+        self.vagg = Variants
+
         self.sequence_from_ensembl_protein = _fetch_sequence_from_ensembl_protein
         self.match_uniprot_ensembl_seq = _match_uniprot_ensembl_seq
         self.compare_sequences = _compare_sequences
         self.count_mismatches = _count_mismatches
         self.parse_uniprot_variants = parse_uniprot_variants
 
+        logging.disable(logging.DEBUG)
+
     def tearDown(self):
-        """Remove testing framework by cleaning the namespace."""
-        self.fetch_icgc_variants = None
-        self.fetch_ebi_variants = None
-        self.fetch_ensembl_variants = None
+        """Remove testing framework."""
+
+        self.uniprotid = None
+        self.uniprotid2 = None
+        self.ensemblid = None
+        self.data = None
+        self.flatten_uniprot_variants_ebi = None
+        self.get_ensembl_species_from_uniprot = None
+        self.get_uniprot_id_from_mapping = None
+        self.get_ensembl_protein_id_from_mapping = None
+        self.get_preferred_uniprot_id_from_mapping = None
+        self.get_preferred_ensembl_id_from_mapping = None
+        self.flatten_ensembl_variants = None
+        self.vagg = None
+
         self.sequence_from_ensembl_protein = None
         self.match_uniprot_ensembl_seq = None
         self.compare_sequences = None
         self.parse_uniprot_variants = None
+
+        logging.disable(logging.NOTSET)
 
     def test_icgc_parsing(self):
         mock_response = mock.Mock()
         mock_response.return_value.ok = True
         mock_response.return_value.status = 200
 
-        with open('VARIATION/icgc_ENST00000308677.json') as open_f:
+        with open('testdata/VARIATION/icgc_ENST00000308677.json') as open_f:
             response = json.load(open_f)
 
         mock_response.json.return_value = response
@@ -61,90 +186,10 @@ class VariantsTestCase(unittest.TestCase):
         self.assertEqual(data.loc[84, 'new'], '*')
         self.assertEqual(data.loc[84, 'aaMutation'], 'R46*')
 
-    def test_ebi_variants_parsing(self):
-        raw_response = """{"accession":"P17612", "entryName":"KAPCA_HUMAN", "sequence":
-        "MGNAAAAKKGSEQESVKEFLAKAKEDFLKKWESPAQNTAHLDQFERIKTLGTGSFGRVMLVKHKETGNHYAMKILDKQKVVKLKQIEHTLNEKRILQAVNFPFLVKLEFSFKDNSNLYMVMEYVPGGEMFSHLRRIGRFSEPHARFYAAQIVLTFEYLHSLDLIYRDLKPENLLIDQQGYIQVTDFGFAKRVKGRTWTLCGTPEYLAPEIILSKGYNKAVDWWALGVLIYEMAAGYPPFFADQPIQIYEKIVSGKVRFPSHFSSDLKDLLRNLLQVDLTKRFGNLKNGVNDIKNHKWFATTDWIAIYQRKVEAPFIPKFKGPGDTSNFDDYEEEEIRVSINEKCGKEFSEF",                    "sequenceChecksum":"13793750284533818795", "taxid":9606,                   "features":[{"type":"VARIANT","ftId":"VAR_040591","alternativeSequence":"V","begin":"41","end":"41","xrefs":[{"name":"dbSNP","id":"rs56029020","url":"http://www.ncbi.nlm.nih.gov/SNP/snp_ref.cgi?type=rs&rs=rs56029020"},{"name":"Ensembl","id":"rs56029020","url":"http://www.ensembl.org/id/rs56029020"}],"wildType":"L","somaticStatus":0,"consequenceType":"missense","sourceType":"uniprot"},{"type":"VARIANT","alternativeSequence":"I","begin":"252","end":"252","xrefs":[{"name":"ExAC","id":"rs760535486","url":"http://exac.broadinstitute.org/awesome?query=rs760535486"}],"wildType":"V","polyphenPrediction":"benign","polyphenScore":0.025,"siftPrediction":"tolerated","siftScore":0.21,"somaticStatus":0,"cytogeneticBand":"19p13.12","consequenceType":"missense", "genomicLocation":"NC_000019.10:g.14097372C>T","sourceType":"large_scale_study"}]} """
-        mock_response = mock.Mock()
-        mock_response.return_value.ok = True
-        mock_response.return_value.status = 200
-        mock_response.json.return_value = json.loads(raw_response)
-
-        with mock.patch('proteofav.utils.requests.get') as mock_get:
-            mock_get.return_value = mock_response
-            data = self.fetch_ebi_variants('P17612')
-
-        self.assertEqual(data.shape, (3, 21))
-        # deal with duplicated index - two data sources for the first variant
-        data = data.reset_index().drop_duplicates(subset='index', keep='last').set_index(
-            'index')
-        self.assertEqual(data.shape, (2, 21))
-        self.assertEqual(data.loc[0, 'begin'], "41")
-        # TODO check why it not parsing thois one as float
-        self.assertEqual(data.loc[0, 'end'], "41")
-        self.assertEqual(data.loc[0, 'consequenceType'], 'missense')
-        self.assertEqual(data.loc[0, 'sourceType'], 'uniprot')
-        self.assertEqual(data.loc[1, 'sourceType'], 'large_scale_study')
-        self.assertEqual(data.loc[0, 'id'], 'rs56029020')
-        self.assertEqual(data.loc[1, 'id'], 'rs760535486')
-
-    def test_fetch_ensembl_variants_transcript_variation_parsing(self):
-        raw_response = """[{"polyphen":0.908,"sift":0.06,"feature_type":"transcript_variation","clinical_significance":[],"Parent":
-"ENST00000288602","codons":"Cca/Gca","end":622,"seq_region_name":"ENSP00000288602","residues":"P/A","minor_allele_frequency":
-null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"missense_variant","start":622}
-,{"polyphen":0.95,"sift":0,"feature_type":"transcript_variation","clinical_significance":["pathogenic"],"Parent"
-:"ENST00000288602","codons":"Gca/Cca","end":246,"seq_region_name":"ENSP00000288602","residues":"A/P",
-"minor_allele_frequency":null,"id":"rs180177034","translation":"ENSP00000288602","allele":"C/G","type":"missense_variant","start":246}]"""
-        mock_response = mock.Mock()
-        mock_response.return_value.ok = True
-        mock_response.return_value.status = 200
-        mock_response.json.return_value = json.loads(raw_response)
-
-        with mock.patch('proteofav.utils.requests.get') as mock_get:
-            mock_get.return_value = mock_response
-            data = self.fetch_ensembl_variants('XXXXX',  # ENSP00000309591
-                                               feature='transcript_variation')
-
-        self.assertEqual(data.shape, (2, 15))
-        self.assertEqual(data.loc[0, 'Parent'], 'ENST00000288602')
-        self.assertEqual(data.loc[0, 'end'], 622)
-        self.assertEqual(data.loc[1, 'sift'], 0)
-        self.assertEqual(data.loc[1, 'start'], 246)
-        self.assertEqual(data.loc[1, 'type'], 'missense_variant')
-
-    def test_fetch_ensembl_variants_somatic_transcript_variation_parsing(self):
-        raw_response = """[{"polyphen":null,"sift":null,
-        "feature_type":"somatic_transcript_variation","clinical_significance":[],
-        "Parent":"ENST00000288602","codons":"","end":433,
-        "seq_region_name":"ENSP00000288602","residues":"","minor_allele_frequency":null,
-        "id":"COSM3832072","translation":"ENSP00000288602","allele":"COSMIC_MUTATION",
-        "type":"coding_sequence_variant","start":433},{"polyphen":null,"sift":null,
-        "feature_type":"somatic_transcript_variation","clinical_significance":[],
-        "Parent":"ENST00000288602","codons":"","end":698,
-        "seq_region_name":"ENSP00000288602","residues":"","minor_allele_frequency":null,
-        "id":"COSM452456","translation":"ENSP00000288602","allele":"COSMIC_MUTATION",
-        "type":"coding_sequence_variant","start":698}] """
-        mock_response = mock.Mock()
-        mock_response.return_value.ok = True
-        mock_response.return_value.status = 200
-        mock_response.json.return_value = json.loads(raw_response)
-
-        with mock.patch('proteofav.utils.requests.get') as mock_get:
-            mock_get.return_value = mock_response
-            data = self.fetch_ensembl_variants('XXXXX',  # ENSP00000309591
-                                               feature='somatic_transcript_variation')
-
-        self.assertEqual(data.shape, (2, 15))
-        self.assertEqual(data.loc[0, 'Parent'], 'ENST00000288602')
-        self.assertEqual(data.loc[0, 'allele'], 'COSMIC_MUTATION')
-        self.assertEqual(data.loc[0, 'start'], 433)
-        self.assertEqual(data.loc[0, 'type'], 'coding_sequence_variant')
-        self.assertEqual(data.loc[1, 'clinical_significance'], [])
-        self.assertEqual(data.loc[1, 'type'], 'coding_sequence_variant')
-
     def test_sequence_from_ensembl_protein(self):
         response = 'MGNAAAAKKGSEQESVKEFLAKAKEDFLKKWESPAQNTAHLDQFER'
 
-        with mock.patch('proteofav.variants.get_url_or_retry') as mock_get:
+        with mock.patch('proteofav.utils.fetch_from_url_or_retry') as mock_get:
             mock_get.return_value = response
             sequence = self.sequence_from_ensembl_protein('XXXXXX')  # ENSP00000309591
         self.assertEqual(sequence, response)
@@ -196,12 +241,127 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
             mock_fun.return_value = pd.DataFrame(mock_data)
             data = self.parse_uniprot_variants('XXXX')
 
-        self.assertEqual(data.shape, (4,3))
+        self.assertEqual(data.shape, (4, 3))
         self.assertFalse('annotation' in data)
         self.assertIn('PPNAD4', data.loc[206, 'disease'])
 
+    def test_flatten_uniprot_variants_ebi(self):
+        r = fetch_uniprot_variants_ebi(self.uniprotid2)
+        if r.ok:
+            table = self.flatten_uniprot_variants_ebi(r)
+            self.assertIn('accession', list(table))
+            self.assertIn('sequence', list(table))
+            self.assertIn('polyphenScore', list(table))
+            self.assertIn('siftScore', list(table))
+            self.assertIn('begin', list(table))
+            self.assertIn('end', list(table))
 
+    def test_flatten_uniprot_variants_ebi_mock(self):
+        r = self.flatten_uniprot_variants_ebi(self.data)
+
+        # flattening the accession
+        self.assertEqual('P40227', self.data['accession'])
+        self.assertEqual('P40227', r.loc[0, 'accession'])
+
+        # flattening the 'xrefs'
+        self.assertEqual('1000Genomes', self.data['features'][0]['xrefs'][0]['name'])
+        self.assertEqual('1000Genomes', r.loc[0, 'xrefs_name'][0])
+        self.assertEqual(['1000Genomes', 'ESP', 'ExAC'], r.loc[0, 'xrefs_name'])
+        self.assertTrue(np.isnan(r.loc[1, 'evidences_source_name']))
+
+        # flattening the 'evidences'
+        self.assertEqual('cosmic_study', self.data['features'][2]['evidences'][0]['source']['name'])
+        self.assertEqual('cosmic_study', r.loc[2, 'evidences_source_name'])
+
+    def test_flatten_json(self):
+        modified = {}
+        flatten_nested_structure(self.data['features'][0], modified)
+        r = refactor_key_val_singletons(modified)
+        self.assertIn('type', r)
+        self.assertIn('xrefs_name', r)
+        self.assertIn('xrefs_id', r)
+        self.assertIn('xrefs_url', r)
+        self.assertIn('1000Genomes', r['xrefs_name'])
+        self.assertIn('rs148616984', r['xrefs_id'])
+        self.assertEqual('VARIANT', r['type'])
+
+    def test_get_ensembl_species_from_uniprot(self):
+        data = fetch_uniprot_species_from_id(self.uniprotid)
+        species = self.get_ensembl_species_from_uniprot(data)
+        self.assertEqual(species, 'homo_sapiens')
+
+    def test_get_uniprot_id_from_mapping(self):
+        data = fetch_ensembl_ensembl_uniprot_mapping(self.ensemblid)
+
+        r = self.get_uniprot_id_from_mapping(data.json(), full_entry=False,
+                                             uniprot_id=None)
+        self.assertEqual(r, ['A0A024RBG4', self.uniprotid2])
+
+        r = self.get_uniprot_id_from_mapping(data.json(), full_entry=True,
+                                             uniprot_id=None)
+        self.assertIn('dbname', r[0])
+        self.assertIn('xref_start', r[0])
+        self.assertIn('ensembl_start', r[0])
+
+        r = self.get_uniprot_id_from_mapping(data.json(), full_entry=False,
+                                             uniprot_id=self.uniprotid2)
+        self.assertEqual(r, [self.uniprotid2])
+
+    def test_get_ensembl_protein_id_from_mapping(self):
+        data = fetch_ensembl_uniprot_ensembl_mapping(self.uniprotid2)
+
+        r = self.get_ensembl_protein_id_from_mapping(data.json())
+        self.assertEqual(r, [self.ensemblid])
+
+    def test_preferred_uniprot_id_from_mapping(self):
+        info = fetch_ensembl_ensembl_uniprot_mapping(self.ensemblid)
+        data = get_uniprot_id_from_mapping(info.json(), full_entry=True)
+        best_match = get_preferred_uniprot_id_from_mapping(data)
+        self.assertEqual(best_match, 'P00439')
+
+    def test_preferred_ensembl_id_from_mapping(self):
+        data = fetch_uniprot_species_from_id(self.uniprotid)
+        species = self.get_ensembl_species_from_uniprot(data)
+        info = fetch_ensembl_uniprot_ensembl_mapping(self.uniprotid2,
+                                                     species=species)
+        r = self.get_ensembl_protein_id_from_mapping(info.json())
+        best_match = self.get_preferred_ensembl_id_from_mapping(r)
+        self.assertEqual(best_match, 'ENSP00000448059')
+
+    def test_flatten_ensembl_variants(self):
+        r = fetch_ensembl_transcript_variants(self.ensemblid)
+        if r.ok:
+            table = self.flatten_ensembl_variants(r, synonymous=True)
+            self.assertIn('polyphenScore', list(table))
+            self.assertIn('siftScore', list(table))
+            self.assertIn('begin', list(table))
+            self.assertIn('end', list(table))
+
+    def test_variants_agreggator_uniprot(self):
+        v = self.vagg(self.uniprotid2)
+        table = v.run(uniprot_vars=True, synonymous=True,
+                      ensembl_transcript_vars=True,
+                      ensembl_somatic_vars=True)
+
+        self.assertIn('polyphenScore', list(table))
+        self.assertIn('siftScore', list(table))
+        self.assertIn('begin', list(table))
+        self.assertIn('end', list(table))
+
+    def test_variants_agreggator_ensembl(self):
+        v = self.vagg(self.ensemblid, uniprot=False)
+        table = v.run(uniprot_vars=True, synonymous=True,
+                      ensembl_transcript_vars=False,
+                      ensembl_somatic_vars=False)
+
+        self.assertIn('polyphenScore', list(table))
+        self.assertIn('siftScore', list(table))
+        self.assertIn('begin', list(table))
+        self.assertIn('end', list(table))
 
 
 if __name__ == '__main__':
-    unittest.main()
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("proteofav").setLevel(logging.DEBUG)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestVariants)
+    unittest.TextTestRunner(verbosity=2).run(suite)

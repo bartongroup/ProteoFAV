@@ -1,9 +1,9 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
 
 import logging
 
+import numpy as np
 import pandas as pd
 
 from proteofav.fetchers import fetch_uniprot_sequence
@@ -14,7 +14,30 @@ from proteofav.fetchers import _uniprot_to_ensembl_xref
 from proteofav.fetchers import _fetch_ensembl_variants
 from proteofav.fetchers import _fetch_sequence_from_ensembl_protein
 from proteofav.fetchers import _fetch_uniprot_ensembl_mapping
+from proteofav.fetchers import InvalidEnsemblSpecies
+from proteofav.fetchers import fetch_uniprot_variants_ebi
+from proteofav.fetchers import fetch_ensembl_transcript_variants
+from proteofav.fetchers import fetch_ensembl_somatic_variants
+from proteofav.fetchers import fetch_ensembl_ensembl_uniprot_mapping
+from proteofav.fetchers import fetch_ensembl_uniprot_ensembl_mapping
+from proteofav.fetchers import fetch_uniprot_species_from_id
+from proteofav.fetchers import get_ensembl_protein_id_from_mapping
+from proteofav.fetchers import get_uniprot_id_from_mapping
+from proteofav.fetchers import get_preferred_uniprot_id_from_mapping
+from proteofav.fetchers import get_preferred_ensembl_id_from_mapping
+from proteofav.fetchers import get_ensembl_species_from_uniprot
+from proteofav.utils import TableMergerError
+from proteofav.utils import constrain_column_types
+from proteofav.utils import exclude_columns
+from proteofav.utils import row_selector
+from proteofav.utils import splitting_up_by_key
+from proteofav.utils import merging_down_by_key
+from proteofav.utils import flatten_nested_structure
+from proteofav.utils import refactor_key_val_singletons
 from proteofav.library import valid_ensembl_species
+from proteofav.library import uni_ens_var_types
+from proteofav.library import update_ensembl_to_uniprot
+
 
 __all__ = ["_match_uniprot_ensembl_seq",
            "_apply_sequence_index_map",
@@ -291,5 +314,200 @@ def select_uniprot_variants(identifier, align_transcripts=False):
     return table
 
 
-if __name__ == '__main__':
-    pass
+def flatten_uniprot_variants_ebi(data, excluded=()):
+    """
+    Flattens the json output obtained from the Proteins API variants
+     endpoint.
+
+    :param data: original response (json output)
+    :param excluded: option to exclude VAR columns
+    :return: returns a pandas DataFrame
+    """
+
+    try:
+        data = data.json()
+    except AttributeError:
+        assert type(data) is dict
+
+    var_rows = []
+    for entry in data["features"]:
+        entries = {key: val for key, val in data.items() if key != 'features'}
+
+        flatten_nested_structure(entry, entries)
+        var_rows.append(refactor_key_val_singletons(entries))
+
+    table = pd.DataFrame(var_rows)
+
+    # excluding columns
+    table = exclude_columns(table, excluded=excluded)
+
+    # enforce some specific column types
+    table = constrain_column_types(table, uni_ens_var_types)
+
+    # split multi id rows
+    table = splitting_up_by_key(table, key='xrefs_id')
+
+    # merge down multi rows with same id
+    table = merging_down_by_key(table, key='xrefs_id')
+
+    if table.empty:
+        raise ValueError('Variants collapsing resulted in an empty DataFrame...')
+
+    return table
+
+
+def flatten_ensembl_variants(data, excluded=(), synonymous=True):
+    """
+    Flattens the json output obtained from the Proteins API variants
+     endpoint.
+
+    :param data: original response (json output)
+    :param excluded: option to exclude VAR columns
+    :param synonymous: (boolean)
+    :return: returns a pandas DataFrame
+    """
+
+    try:
+        data = data.json()
+    except AttributeError:
+        assert type(data) is dict
+
+    table = pd.DataFrame(data)
+    # rename columns
+    table.rename(columns=update_ensembl_to_uniprot, inplace=True)
+
+    # excluding columns
+    table = exclude_columns(table, excluded=excluded)
+
+    # enforce some specific column types
+    table = constrain_column_types(table, uni_ens_var_types)
+
+    # split multi id rows
+    table = splitting_up_by_key(table, key='xrefs_id')
+
+    # merge down multi rows with same id
+    table = merging_down_by_key(table, key='xrefs_id')
+
+    # filter synonymous
+    if not synonymous:
+        table = row_selector(table, key='consequenceType',
+                             value='synonymous_variant', reverse=True)
+    return table
+
+
+def uniprot_vars_ensembl_vars_merger(uniprot_vars_table, ensembl_vars_table):
+    """
+    Merges the tables provided using appropriate columns.
+
+    :param uniprot_vars_table: UniProt Variants pandas DataFrame
+    :param ensembl_vars_table: Ensembl Variants pandas DataFrame
+    :return: merged pandas DataFrame
+    """
+
+    # bare minimal columns needed
+    merge_on = ['begin', 'end', 'xrefs_id', 'frequency',
+                'consequenceType', 'siftScore', 'polyphenScore']
+
+    if (set(merge_on).issubset(uniprot_vars_table.columns) and
+            set(merge_on).issubset(ensembl_vars_table.columns)):
+
+        table = uniprot_vars_table.merge(ensembl_vars_table, how='outer',
+                                         on=merge_on).reset_index(drop=True)
+
+        table = merging_down_by_key(table, key='xrefs_id')
+        table.fillna(np.nan, inplace=True)
+    else:
+        raise TableMergerError('Not possible to merge UniProt and Ensembl Vars table! '
+                               'Some of the necessary columns are missing...')
+
+    log.info("Merged UniProt and Ensembl Vars tables...")
+    return table
+
+
+class Variants(object):
+    def __init__(self, identifier, uniprot=True):
+        """
+        Aggregates Variants from UniProt Proteins API and Ensembl REST API.
+
+        :param identifier: UniProt or Ensembl Protein ID
+        :param uniprot: (boolean) if True assumes the inputted ID is from UniProt
+        """
+
+        self.data = None
+        if uniprot:
+            self.id_source = 'UniProt'
+            self.uniprot_id = identifier
+            self.ensembl_id = self._ensembl_id_from_uniprot()
+        else:
+            self.id_source = 'Ensembl'
+            self.ensembl_id = identifier
+            self.uniprot_id = self._uniprot_id_from_ensembl()
+
+    def _get_uniprot_species(self):
+        info = fetch_uniprot_species_from_id(self.uniprot_id)
+        self.species = get_ensembl_species_from_uniprot(info)
+
+    def _ensembl_id_from_uniprot(self):
+
+        self._get_uniprot_species()
+        try:
+            info = fetch_ensembl_uniprot_ensembl_mapping(self.uniprot_id,
+                                                         species=self.species).json()
+        except InvalidEnsemblSpecies:
+            log.info('Provided species {} is not valid'.format(self.species))
+            return None
+        ensps = get_ensembl_protein_id_from_mapping(info)
+        best_match = get_preferred_ensembl_id_from_mapping(ensps, uniprot_id=self.uniprot_id)
+        return best_match
+
+    def _uniprot_id_from_ensembl(self):
+
+        info = fetch_ensembl_ensembl_uniprot_mapping(self.ensembl_id).json()
+        data = get_uniprot_id_from_mapping(info, full_entry=True)
+        best_match = get_preferred_uniprot_id_from_mapping(data)
+        return best_match
+
+    def fetch(self, synonymous=True, uniprot_vars=True,
+              ensembl_transcript_vars=True, ensembl_somatic_vars=True):
+
+        uni_vars = None
+        trans_vars = None
+        som_vars = None
+        ens_vars = None
+
+        if self.uniprot_id is not None and uniprot_vars:
+            r = fetch_uniprot_variants_ebi(self.uniprot_id)
+            if r is not None:
+                uni_vars = flatten_uniprot_variants_ebi(r)
+
+        if (self.ensembl_id is not None and
+                (ensembl_transcript_vars or ensembl_somatic_vars)):
+
+            if ensembl_transcript_vars:
+                r = fetch_ensembl_transcript_variants(self.ensembl_id)
+                if r is not None:
+                    trans_vars = flatten_ensembl_variants(r, synonymous=synonymous)
+
+            if ensembl_somatic_vars:
+                r = fetch_ensembl_somatic_variants(self.ensembl_id)
+                if r is not None:
+                    som_vars = flatten_ensembl_variants(r, synonymous=synonymous)
+
+            if isinstance(trans_vars, pd.DataFrame) and isinstance(som_vars, pd.DataFrame):
+                ens_vars = pd.concat([trans_vars, som_vars]).reset_index(drop=True)
+            elif isinstance(trans_vars, pd.DataFrame):
+                ens_vars = trans_vars
+            elif isinstance(som_vars, pd.DataFrame):
+                ens_vars = som_vars
+
+        if isinstance(uni_vars, pd.DataFrame) and isinstance(ens_vars, pd.DataFrame):
+            self.data = uniprot_vars_ensembl_vars_merger(uni_vars, ens_vars)
+        elif isinstance(uni_vars, pd.DataFrame):
+            self.data = uni_vars
+        elif isinstance(ens_vars, pd.DataFrame):
+            self.data = ens_vars
+        else:
+            log.info('No variants found...')
+            self.data = pd.DataFrame()
+
+        return self.data
