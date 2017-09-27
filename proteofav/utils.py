@@ -1,13 +1,14 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
+import os
 import gzip
 import json
-import logging
-import os
+import copy
+import time
 import shutil
 import socket
-import time
+import logging
+
 try:
     from urllib import quote as urllib_quote
     from urllib import urlretrieve
@@ -26,7 +27,8 @@ __all__ = ["get_url_or_retry", "check_local_or_fetch", "fetch_files", "get_prefe
            "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
            "_uniprot_pdb_sifts_mapping", "icgc_missense_variant", "is_valid",
            "is_valid_ensembl_id", "confirm_column_types"]
-log = logging.getLogger('proteofav.config')
+
+log = logging.getLogger('proteofav')
 socket.setdefaulttimeout(15)  # avoid infinite hanging
 
 
@@ -547,7 +549,7 @@ def row_selector(data, key=None, value=None, reverse=False):
                 value = table[key].iloc[0]
                 table = table.loc[table[key] == value]
             elif (hasattr(value, '__iter__') and
-                    (type(value) is tuple or type(value) is list)):
+                      (type(value) is tuple or type(value) is list)):
                 if not reverse:
                     table = table.loc[table[key].isin(value)]
                 else:
@@ -621,8 +623,142 @@ def exclude_columns(data, excluded=()):
     return table
 
 
+def merging_down_by_key(table, key="xrefs_id"):
+    """
+    Helper method that mergers the rows  containing data
+    that have the same value (e.g. ID), according
+    to the 'key' passed to function.
+    This works as a collapse down (from many-to-one rows).
+    Aggregation is possible since multi-value cells are stored as
+    tuples which are hashable.
+
+    :param table: pandas DataFrame
+    :param key: key to base the 'merge down' upon
+    :return: modified pandas DataFrame
+    """
+
+    new_table = table.copy()
+    duplicated = {}
+    drop_indexes = []
+    for ix in table.index:
+        pid = table.loc[ix, key]
+        dup = table[table[key] == pid].index.tolist()
+        duplicated[pid] = dup
+        if len(dup) > 1:
+            drop_indexes.append(ix)
+
+    new_table = new_table.drop(new_table.index[drop_indexes])
+    for key, val in duplicated.items():
+        if type(val) is list and len(val) > 1:
+            rows = []
+            d = {}
+            for i in range(len(list(table))):
+                values = []
+                for j in range(len(val)):
+                    v = table.loc[val[j], list(table)[i]]
+                    if v not in values:
+                        if type(v) is tuple or type(v) is list:
+                            for g in v:
+                                values.append(g)
+                        else:
+                            values.append(v)
+                if not values:
+                    values = np.nan
+                elif len(values) == 1:
+                    values = values[0]
+                else:
+                    values = [v for v in values if not pd.isnull(v)]
+                    if not values:
+                        values = np.nan
+                    elif len(values) == 1:
+                        values = values[0]
+                    else:
+                        values = tuple(set(values))
+
+                d[list(table)[i]] = values
+            rows.append(d)
+            combined = pd.DataFrame(rows)
+            new_table = new_table.append(combined)
+
+    return new_table.reset_index(drop=True)
+
+
+def splitting_up_by_key(table, key="xrefs_id"):
+    """
+    Helper method that splits the rows containing
+    multi-value entries (e.g. [ID_1, ID_2]), according
+    to the 'key' passed to the function.
+
+    :param table: pandas DataFrame
+    :param key: key to base the 'split up' upon
+    :return: modified pandas DataFrame
+    """
+    rows = []
+    for ix in table.index:
+        entries = {k: table.loc[ix, k] for k in list(table)}
+        val = table.loc[ix, key]
+        if type(val) is tuple or type(val) is list:
+            for v in val:
+                nentries = copy.deepcopy(entries)
+                nentries[key] = v
+                rows.append(nentries)
+        else:
+            rows.append(entries)
+
+    new_table = pd.DataFrame(rows)
+
+    return new_table.reset_index(drop=True)
+
+
+def flatten_nested_structure(data, dictionary, keys=None, values=None):
+    """
+    Flattens a deeply nested json structure to unique columns (keys),
+    where columns with multiple values are aggregated to the same column,
+    and the items grouped by order in a list. Also copes with
+
+    :param data: json.load() content
+    :param dictionary: mutable dictionary
+    :param keys: dict keys (used during recursion)
+    :param values: dict values (used during recursion)
+    :return: (side-effects) updates an input dictionary
+    """
+    if type(data) is tuple or type(data) is list:
+        for e in data:
+            flatten_nested_structure(e, dictionary, keys, values)
+    elif type(data) is dict:
+        for k, v in data.items():
+            if keys is not None:
+                k = '_'.join([keys, k])
+            flatten_nested_structure(v, dictionary, k, v)
+    else:
+        if keys is not None and values is not None:
+            if keys not in dictionary:
+                dictionary[keys] = [values]
+            else:
+                if values not in dictionary[keys]:
+                    dictionary[keys].append(values)
+
+
+def refactor_key_val_singletons(dictionary):
+    """
+    Simply updates a dictionary values that are singletons
+    i.e. len(val) == 1:
+
+    :param dictionary: mutable dictionary
+    :return: updated dictionary
+    """
+    new_dictionary = {}
+    for k, v in dictionary.items():
+        if (type(v) is list or type(v) is tuple) and len(v) == 1:
+            new_dictionary[k] = v[0]
+        else:
+            new_dictionary[k] = v
+    return new_dictionary
+
+
 class InputFileHandler(object):
     """Validates input file paths."""
+
     def __init__(self, filename):
         self.__filename = filename
         self.__validate()
@@ -634,6 +770,7 @@ class InputFileHandler(object):
 
 class OutputFileHandler(object):
     """Validates output file paths."""
+
     def __init__(self, filename, overwrite=False):
         self.__filename = filename
         self.__overwrite = overwrite
