@@ -646,6 +646,34 @@ class OutputFileHandler(object):
             raise OSError("File '%s' cannot be written..." % self.__filename)
 
 
+class GenericInput(object):
+    def __init__(self, identifier=None, filename=None, table=None):
+        self.identifier = identifier
+        self.filename = filename
+        self.table = table
+
+    def _get_identifier(self, identifier):
+        if identifier is None and self.identifier is None:
+            raise ValueError("Input identifier needed!")
+        elif identifier is None:
+            identifier = self.identifier
+        return identifier
+
+    def _get_filename(self, filename):
+        if filename is None and self.filename is None:
+            raise ValueError("Input/Output filename needed!")
+        elif filename is None:
+            filename = self.filename
+        return filename
+
+    def _get_table(self, table):
+        if table is None and self.table is None:
+            raise ValueError("Pandas DataFrame needed!")
+        elif table is None:
+            table = self.table
+        return table
+
+
 def fetch_from_url_or_retry(url, json=True, headers=None, post=False, data=None,
                             retry_in=None, wait=1, n_retries=10, stream=False, **params):
     """
