@@ -117,6 +117,19 @@ class TestDSSP(unittest.TestCase):
         data = self.dssp().read(self.inputbiodssp, add_rsa=True, add_rsa_class=True)
         self.assertEqual('Surface', data.loc[2, 'RSA_CLASS'])
 
+    def test_filter_chain(self):
+        data = self.dssp().read(self.inputdssp, chains=('A',))
+        self.assertNotIn("B", data.CHAIN.unique())
+
+    def test_filter_chain_full(self):
+        data = self.dssp().read(self.inputbiodssp, chains_full=('BA',))
+        self.assertIn("B", data.CHAIN.unique())
+        self.assertNotIn("B", data.CHAIN_FULL.unique())
+
+    def test_filter_res(self):
+        data = self.dssp().read(self.inputdssp, res=('118',))
+        self.assertNotIn('119', data.RES.unique())
+
     def test_download_dssp(self):
         self.dssp().download(self.pdbid, filename=self.outputdssp,
                              overwrite=True, decompress=False)

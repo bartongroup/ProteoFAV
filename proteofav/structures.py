@@ -244,49 +244,6 @@ def _import_dssp_chains_ids(pdb_id):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_dssp(pdb_id, chains=None):
-    """
-    Produce table from DSSP file output.
-
-    :param pdb_id: PDB identifier
-    :param chains: PDB protein chain
-    :return: pandas dataframe
-    """
-    dssp_path = os.path.join(config.db_dssp, pdb_id + '.dssp')
-    try:
-        dssp_table = parse_dssp_from_file(dssp_path)
-    except IOError:
-        dssp_path = fetch_files(pdb_id, sources='dssp', directory=config.db_dssp)[0]
-        dssp_table = parse_dssp_from_file(dssp_path)
-    except StopIteration:
-        raise IOError('{} is unreadable.'.format(dssp_path))
-
-    if chains:
-        try:
-            dssp_table = row_selector(dssp_table, 'chain_id', chains)
-        except ValueError:
-            # TODO:
-            # Could not find the correct PDB chain. It happens for protein structures with complex
-            # chain identifier, as 4v9d.
-            # dssp_table = _import_dssp_chains_ids(pdb_id)
-            # dssp_table = row_selector(dssp_table, 'chain_id', chains)
-            log.error('Error loading DSSP file: Chain {} not in {}'.format(chains, pdb_id))
-            return None
-    # remove dssp line of transition between chains
-    dssp_table = dssp_table[dssp_table.aa != '!']
-
-    dssp_table.reset_index(inplace=True)
-    if dssp_table.duplicated(['icode', 'chain_id']).any():
-        log.info('DSSP file for {} has not unique index'.format(pdb_id))
-    try:
-        dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(int)
-    except ValueError:
-        log.warning("{} insertion code detected in the DSSP file.".format(pdb_id))
-        dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(str)
-
-    return dssp_table
-
-
 def select_sifts(pdb_id, chains=None):
     """
     Produce table ready from SIFTS XML file.

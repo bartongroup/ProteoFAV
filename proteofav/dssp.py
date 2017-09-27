@@ -9,8 +9,10 @@ from proteofav.downloaders import Downloader
 
 from proteofav.utils import InputFileHandler
 from proteofav.utils import OutputFileHandler
+from proteofav.utils import GenericInput
 from proteofav.utils import exclude_columns
 from proteofav.utils import constrain_column_types
+from proteofav.utils import row_selector
 from proteofav.library import dssp_types
 from proteofav.library import aa_codes_1to3_extended
 from proteofav.library import (ASA_Miller, ASA_Wilke, ASA_Sander)
@@ -20,8 +22,10 @@ from proteofav.config import defaults as config
 log = logging.getLogger('proteofav')
 
 
-class DSSP(object):
-    def read(self, filename, excluded_cols=None, add_full_chain=True, add_ss_reduced=False,
+class DSSP(GenericInput):
+    def read(self, filename=None, excluded_cols=None,
+             chains=None, chains_full=None, res=None,
+             add_full_chain=True, add_ss_reduced=False,
              add_rsa=True, rsa_method="Sander", add_rsa_class=False,
              reset_res_id=False):
         """
@@ -30,6 +34,9 @@ class DSSP(object):
 
         :param filename: path to the DSSP file
         :param excluded_cols: option to exclude DSSP columns
+        :param chains: (tuple) chain IDs or None
+        :param chains_full: (tuple) alternative chain IDs or None
+        :param res: (tuple) res IDs or None
         :param add_full_chain: boolean
         :param add_ss_reduced: boolean
         :param add_rsa: boolean
@@ -39,6 +46,7 @@ class DSSP(object):
         :return: returns a pandas DataFrame
         """
 
+        filename = self._get_filename(filename)
         InputFileHandler(filename)
 
         if excluded_cols is None:
@@ -80,15 +88,30 @@ class DSSP(object):
             table['LINE'] = table.index + 1
             log.info("DSSP reset residue number...")
 
+        # excluding rows
+        if chains is not None:
+            table = row_selector(table, 'CHAIN', chains)
+            log.info("DSSP table filtered by CHAIN...")
+
+        if chains_full is not None:
+            table = row_selector(table, 'CHAIN_FULL', chains_full)
+            log.info("DSSP table filtered by CHAIN_FULL...")
+
+        if res is not None:
+            table = row_selector(table, 'RES', res)
+            log.info("DSSP table filtered by RES...")
+
         # enforce some specific column types
         table = constrain_column_types(table, dssp_types)
 
         if table.empty:
             raise ValueError('{} resulted in an empty DataFrame...'.format(filename))
 
-        return table
+        self.table = table
+        return self.table
 
-    def download(self, identifier, filename, overwrite=False, decompress=True):
+    def download(self, identifier=None, filename=None,
+                 overwrite=False, decompress=True):
         """
         Downloads a pre-computed DSSP from the CMBI Netherlands FTP
         to the filesystem.
@@ -100,6 +123,8 @@ class DSSP(object):
         :return: (side effects) output file path
         """
 
+        identifier = self._get_identifier(identifier)
+        filename = self._get_filename(filename)
         OutputFileHandler(filename, overwrite=overwrite)
 
         url_root = config.ftp_dssp
