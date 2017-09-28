@@ -811,6 +811,10 @@ class GenericInput(object):
         return table
 
 
+class TableMergerError(Exception):
+    pass
+
+
 def fetch_from_url_or_retry(url, json=True, headers=None, post=False, data=None,
                             retry_in=None, wait=1, n_retries=10, stream=False, **params):
     """
