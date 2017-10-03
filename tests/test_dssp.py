@@ -9,7 +9,7 @@ import logging
 import numpy
 
 from proteofav.library import scop_3to1
-from proteofav.structures import _dssp, _import_dssp_chains_ids
+from proteofav.dssp import _dssp, _import_dssp_chains_ids
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 

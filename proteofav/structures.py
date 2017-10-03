@@ -18,19 +18,17 @@ from os import path
 
 import pandas as pd
 from lxml import etree
-from requests import HTTPError
 from scipy.spatial import cKDTree
 
 from proteofav.config import defaults
-from proteofav.library import scop_3to1
 from proteofav.utils import (fetch_files, fetch_from_url_or_retry,
                              get_preferred_assembly_id, row_selector)
 
 log = logging.getLogger('proteofav.config')
-__all__ = ['_dssp', '_mmcif_atom', '_sifts_residues_regions', '_pdb_validation_to_table',
+__all__ = ['_mmcif_atom', '_pdb_validation_to_table',
            '_rcsb_description', '_get_contacts_from_table',
            # '_residues_as_centroid', '_import_dssp_chains_ids',
-           'select_cif', 'select_dssp', 'select_sifts',  'select_validation', 'sifts_best']
+           'select_cif', 'select_validation']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 
@@ -38,31 +36,6 @@ UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 ##############################################################################
 # Private methods
 ##############################################################################
-def _dssp(filename):
-    """
-    Parses DSSP file output to a pandas DataFrame.
-
-    :param filename: input SIFTS xml file
-    :return: pandas table dataframe
-    """
-    # column width descriptors
-    cols_widths = ((0, 5), (6, 11), (11, 12), (13, 14), (16, 17), (35, 38),
-                   (103, 109), (109, 115))
-    # simplified headers for the table
-    dssp_header = ("dssp_index", "icode", "chain_id", "aa", "ss", "acc", "phi", "psi")
-    dssp_table = pd.read_fwf(filename,
-                             skiprows=28,
-                             names=dssp_header,
-                             colspecs=cols_widths,
-                             index_col=0,
-                             compression=None)
-    if dssp_table.empty:
-        log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
-        raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
-            filename))
-    return dssp_table
-
-
 def yield_lines(filename):
     """
     Custom function for iterating over line from filename.
@@ -177,141 +150,6 @@ def _mmcif_fields(filename, field_name='exptl.',
     return table
 
 
-def _sifts_residues_regions(filename, cols=None,
-                            sources=('CATH', 'SCOP', 'Pfam', 'InterPro')):
-    """
-    Parses the residue fields of a SIFTS XML file to a pandas DataFrame.
-
-    :param filename: input SIFTS xml file
-    :param cols: option to select a columns (post-parsing)
-    :param sources: option to select SIFTS dbSources
-    :return: pandas table dataframe
-    """
-
-    # parsing sifts segments
-    tree = etree.parse(filename)
-    root = tree.getroot()
-    namespace = root.nsmap[None]
-    namespace_map = {'ns': namespace}
-    cross_reference = "{{{}}}crossRefDb".format(namespace)
-    residue_detail = "{{{}}}residueDetail".format(namespace)
-    db_reference = "{{{}}}db".format(namespace)
-    # db_detail = "{{{}}}dbDetail".format(namespace)
-    rows = []
-
-    sources += ('PDB', 'UniProt')
-
-    for segment_list in root.iterfind('.//ns:entity[@type="protein"]',
-                                      namespaces=namespace_map):
-
-        entity_id = segment_list.attrib['entityId']
-        for segment in segment_list:
-            # 1st parse the regions found for this segment
-            regions_full = {}
-            for region_list in segment.iterfind('.//ns:listMapRegion',
-                                                namespaces=namespace_map):
-                region_source = {}
-                for region in region_list:
-                    # get region annotations
-                    # parse extra annotations for each region
-                    for annotation in region:
-                        for k, v in annotation.attrib.items():
-                            # db entries
-                            if annotation.tag == db_reference:
-                                if k == 'dbSource' and v in sources:
-                                    source = v
-                                else:
-                                    continue
-
-                                if source not in region_source:
-                                    region_source[source] = []
-                                try:
-                                    coord = annotation.attrib['dbCoordSys']
-                                except KeyError:
-                                    coord = '-'
-                                region_source[source].append([annotation.attrib['dbAccessionId'],
-                                                              region.attrib['start'],
-                                                              region.attrib['end'],
-                                                              coord])
-                regions_full[entity_id] = region_source
-
-            # 2nd parse each residue and
-            for list_residue in segment.iterfind('.//ns:listResidue',
-                                                 namespaces=namespace_map):
-                for residue in list_residue:
-                    # get residue annotations
-                    residue_annotation = {}
-                    # key, value pairs
-                    for k, v in residue.attrib.items():
-                        # skipping dbSource
-                        if k == 'dbSource' or k == 'dbCoordSys' or k == 'dbResName':
-                            continue
-
-                        k = "PDB_index"
-                        # adding to the dictionary
-                        residue_annotation[k] = v
-                        resnum = int(v)
-
-                    # parse extra annotations for each residue
-                    for annotation in residue:
-                        for k, v in annotation.attrib.items():
-                            # crossRefDb entries
-                            if annotation.tag == cross_reference:
-                                if annotation.attrib["dbSource"] in sources:
-                                    # skipping dbSource
-                                    if k == 'dbSource' or k == 'dbCoordSys':
-                                        continue
-                                    if (annotation.attrib["dbSource"] != "PDB" and
-                                            annotation.attrib["dbSource"] != "UniProt"):
-                                        if k == 'dbResName' or k == 'dbResNum' or k == 'dbChainId':
-                                            continue
-                                    if annotation.attrib["dbSource"] == "PDB" and k == "dbAccessionId":
-                                        continue
-
-                                    # adding a new column with the regionId from the 'regions'
-                                    if k == "dbAccessionId":
-                                        if annotation.attrib["dbSource"] in regions_full[entity_id]:
-                                            for c, entry in enumerate(regions_full[entity_id][annotation.attrib["dbSource"]]):
-                                                if v == entry[0]:
-                                                    start = int(entry[1])
-                                                    end = int(entry[2])
-                                                    if resnum in range(start, end + 1, 1):
-                                                        nk = "{}_regionId".format(annotation.attrib["dbSource"])
-                                                        nv = str(c + 1)
-                                                        residue_annotation[nk] = nv
-
-                                    # renaming all keys with dbSource prefix
-                                    k = "{}_{}".format(
-                                            annotation.attrib["dbSource"], k)
-
-                            if annotation.tag == residue_detail:
-                                k = "PDB_{}".format(annotation.attrib["property"])
-                                # value is the text field in the XML
-                                v = annotation.text
-
-                            # adding to the dictionary
-                            if "_" in k:
-                                try:
-                                    if v in residue_annotation[k]:
-                                        continue
-                                    residue_annotation[k].append(v)
-                                except KeyError:
-                                    residue_annotation[k] = v
-                                except AttributeError:
-                                    residue_annotation[k] = [residue_annotation[k]]
-                                    residue_annotation[k].append(v)
-                                except TypeError:
-                                    # bool column for annotation
-                                    residue_annotation[k] = v
-
-                    rows.append(residue_annotation)
-    if cols:
-        data = pd.DataFrame(rows, columns=cols)
-    else:
-        data = pd.DataFrame(rows)
-    return data
-
-
 def _pdb_validation_to_table(filename, global_parameters=False):
     """
     Parse the PDB's validation validation file to a pandas DataFrame.
@@ -412,25 +250,6 @@ def _residues_as_centroid(table):
     columns_to_agg['auth_atom_id'] = 'unique'
     return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
 
-def _import_dssp_chains_ids(pdb_id):
-    """Imports mmCIF chain identifier to DSSP.
-
-    :param pdb_id:
-    :return: DSSP table with corrected chain ids.
-    """
-    dssp_table = select_dssp(pdb_id)
-    cif_table = select_cif(pdb_id)
-    cif_seq = cif_table.auth_comp_id.apply(scop_3to1.get)
-    dssp_has_seq = dssp_table.aa.isin(scop_3to1.values())
-    dssp_seq = dssp_table.aa[dssp_has_seq]
-    # Import only if the sequences are identical
-    if not (cif_seq == dssp_seq).all():
-        err = ('Inconsitent DSSP / mmCIF sequence for {} protein structure cannot be fixed'
-               'by import_dssp_chains_ids')
-        raise ValueError(err.format(pdb_id))
-    dssp_table.loc[dssp_has_seq, 'chain_id'] = cif_table.auth_asym_id
-    return dssp_table
-
 
 ##############################################################################
 # Public methods
@@ -508,77 +327,6 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA',
     return cif_table
 
 
-def select_dssp(pdb_id, chains=None):
-    """
-    Produce table from DSSP file output.
-
-    :param pdb_id: PDB identifier
-    :param chains: PDB protein chain
-    :return: pandas dataframe
-    """
-    dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
-    try:
-        dssp_table = _dssp(dssp_path)
-    except IOError:
-        dssp_path = fetch_files(pdb_id, sources='dssp', directory=defaults.db_dssp)[0]
-        dssp_table = _dssp(dssp_path)
-    except StopIteration:
-        raise IOError('{} is unreadable.'.format(dssp_path))
-
-    if chains:
-        try:
-            dssp_table = row_selector(dssp_table, 'chain_id', chains)
-        except ValueError:
-            # TODO:
-            # Could not find the correct PDB chain. It happens for protein structures with complex
-            # chain identifier, as 4v9d.
-            # dssp_table = _import_dssp_chains_ids(pdb_id)
-            # dssp_table = row_selector(dssp_table, 'chain_id', chains)
-            log.error('Error loading DSSP file: Chain {} not in {}'.format(chains, pdb_id))
-            return None
-    # remove dssp line of transition between chains
-    dssp_table = dssp_table[dssp_table.aa != '!']
-
-    dssp_table.reset_index(inplace=True)
-    if dssp_table.duplicated(['icode', 'chain_id']).any():
-        log.info('DSSP file for {} has not unique index'.format(pdb_id))
-    try:
-        dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(int)
-    except ValueError:
-        log.warning("{} insertion code detected in the DSSP file.".format(pdb_id))
-        dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(str)
-
-    return dssp_table
-
-
-def select_sifts(pdb_id, chains=None):
-    """
-    Produce table ready from SIFTS XML file.
-
-    :param pdb_id: PDB identifier
-    :param chains: Protein structure chain
-    :return: table read to be merged
-    """
-    sifts_path = path.join(defaults.db_sifts, pdb_id + '.xml')
-
-    try:
-        sift_table = _sifts_residues_regions(sifts_path,
-                                             sources=('CATH', 'SCOP', 'Pfam'))
-    except IOError:
-        sifts_path = fetch_files(pdb_id, sources='sifts',
-                                 directory=defaults.db_sifts)[0]
-        sift_table = _sifts_residues_regions(sifts_path)
-        # standardise column types
-    for col in sift_table:
-        #  bool columns
-        if col.startswith('is'):
-            sift_table[col].fillna(False)
-    if chains is None:
-        return sift_table
-    else:
-        return row_selector(sift_table, 'PDB_dbChainId', chains)
-
-
 def select_validation(pdb_id, chains=None):
     """
     Produces table from PDB validation XML file.
@@ -600,27 +348,6 @@ def select_validation(pdb_id, chains=None):
         val_table.columns = ["validation_" + name for name in val_table.columns]
         return val_table
     raise ValueError('Parsing {} resulted in a empty table'.format(val_path))
-
-
-def sifts_best(uniprot_id, first=False):
-    """
-    Retrieves the best structures from the SIFTS endpoint in the PDBe api.
-
-    :param uniprot_id: Uniprot ID
-    :param first: gets the first entry
-    :return: url content or url content in json data structure.
-    """
-    sifts_endpoint = "mappings/best_structures/"
-    url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
-    try:
-        response = fetch_from_url_or_retry(url, json=True).json()
-    except HTTPError as e:
-        if e.response.status_code == 404:
-            logging.error('No SIFTS mapping found for {}'.format(uniprot_id))
-            return None
-        else:
-            raise
-    return response if not first else response[uniprot_id][0]
 
 
 if __name__ == '__main__':

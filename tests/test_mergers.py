@@ -12,7 +12,9 @@ except ImportError:
 
 from proteofav.config import Defaults
 from proteofav.main import merge_tables
-from proteofav.structures import _dssp, _sifts_residues_regions, _mmcif_atom
+from proteofav.structures import _mmcif_atom
+from proteofav.sifts import _sifts_residues_regions
+from proteofav.dssp import _dssp
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
@@ -22,6 +24,8 @@ defaults.db_dssp = path.join(path.dirname(__file__), "testdata", "dssp/")
 
 
 @patch("proteofav.structures.defaults", defaults)
+@patch("proteofav.dssp.defaults", defaults)
+@patch("proteofav.sifts.defaults", defaults)
 class TestTableMerger(unittest.TestCase):
     """Test table merging methods."""
 

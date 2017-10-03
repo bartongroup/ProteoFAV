@@ -5,7 +5,7 @@
 import unittest
 from os import path
 
-from proteofav.structures import _sifts_residues_regions, sifts_best
+from proteofav.sifts import _sifts_residues_regions, sifts_best
 from proteofav.utils import (_pdb_uniprot_sifts_mapping,
                              _uniprot_pdb_sifts_mapping)
 

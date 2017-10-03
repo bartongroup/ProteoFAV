@@ -7,11 +7,9 @@ import sys
 import click
 
 from proteofav.library import to_single_aa
-from proteofav.structures import (select_cif,
-                                  select_dssp,
-                                  select_sifts,
-                                  select_validation,
-                                  sifts_best)
+from proteofav.structures import select_cif, select_validation
+from proteofav.sifts import select_sifts, sifts_best
+from proteofav.dssp import select_dssp
 
 from proteofav.variants import (map_gff_features_to_sequence,
                                 select_variants)
