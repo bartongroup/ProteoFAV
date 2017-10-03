@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
+import os
 import re
 import sys
 import json
@@ -17,8 +18,8 @@ try:
 except ImportError:
     from unittest.mock import patch, MagicMock
 
-
-from proteofav.utils import fetch_from_url_or_retry, row_selector
+from proteofav.utils import (fetch_from_url_or_retry, row_selector,
+                             InputFileHandler, OutputFileHandler)
 
 from proteofav.config import defaults as config
 
@@ -74,6 +75,9 @@ class TestUTILS(unittest.TestCase):
              {'label': '4', 'value': 3, 'type': 123.1},
              {'label': '5', 'value': 5, 'type': 0.32}])
 
+        self.InputFileHandler = InputFileHandler
+        self.OutputFileHandler = OutputFileHandler
+
         logging.disable(logging.DEBUG)
 
     def tearDown(self):
@@ -82,6 +86,9 @@ class TestUTILS(unittest.TestCase):
         self.fetch_from_url_or_retry = None
         self.row_selector = None
         self.mock_df = None
+
+        self.InputFileHandler = None
+        self.OutputFileHandler = None
 
         logging.disable(logging.NOTSET)
 
@@ -173,6 +180,31 @@ class TestUTILS(unittest.TestCase):
         self.assertEqual(len(d.index), 2)
         d = self.row_selector(self.mock_df, key='value', value=(2, 3))
         self.assertEqual(len(d.index), 2)
+
+    def test_inputfilehandler(self):
+        config.db_mmcif = "mmcif"
+        valid = os.path.join(os.path.dirname(__file__), "testdata",
+                             config.db_mmcif, "2pah.cif")
+        self.InputFileHandler(valid)
+
+        invalid = os.path.join(os.path.dirname(__file__), "testdata",
+                               config.db_mmcif, "null.cif")
+        with self.assertRaises(IOError) or self.assertRaises(OSError):
+            self.InputFileHandler(invalid)
+
+    def test_outputfilehandler(self):
+        config.db_mmcif = "mmcif"
+        valid = os.path.join(os.path.dirname(__file__), "testdata",
+                             config.db_mmcif, "2pah.cif")
+        self.OutputFileHandler(valid, overwrite=True)
+
+        with self.assertRaises(OSError):
+            self.OutputFileHandler(valid, overwrite=False)
+
+        invalid = os.path.join(os.path.dirname(__file__), "testdata",
+                               "NEW_DIR", "null.cif")
+        with self.assertRaises(OSError):
+            self.InputFileHandler(invalid)
 
 
 if __name__ == '__main__':

@@ -597,5 +597,32 @@ def row_selector(data, key=None, value=None, reverse=False):
     return table
 
 
+class InputFileHandler(object):
+    """Validates input file paths."""
+
+    def __init__(self, filename):
+        self.__filename = filename
+        self.__validate()
+
+    def __validate(self):
+        if not os.path.isfile(self.__filename):
+            raise IOError("File '%s' not available..." % self.__filename)
+
+
+class OutputFileHandler(object):
+    """Validates output file paths."""
+
+    def __init__(self, filename, overwrite=False):
+        self.__filename = filename
+        self.__overwrite = overwrite
+        self.__validate()
+
+    def __validate(self):
+        if os.path.exists(self.__filename) and not self.__overwrite:
+            raise OSError("File '%s' already exists..." % self.__filename)
+        elif not os.access(os.path.dirname(self.__filename), os.W_OK):
+            raise OSError("File '%s' cannot be written..." % self.__filename)
+
+
 if __name__ == '__main__':
     pass
