@@ -13,7 +13,7 @@ except ImportError:
 from os import path
 
 from proteofav.config import Defaults
-from proteofav.structures import _mmcif_atom, _mmcif_fields, select_cif
+from proteofav.structures import parse_mmcif_atoms, _mmcif_fields, select_cif
 from proteofav.utils import get_preferred_assembly_id
 
 log = logging.getLogger(__name__)
@@ -27,10 +27,14 @@ class TestMMCIFParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_mmcif = path.join(path.dirname(__file__), "testdata", "mmcif/2pah.cif")
-        self.mmcif_atom_parser = _mmcif_atom
+        self.example_mmcif = path.join(path.dirname(__file__), "testdata",
+                                       "mmcif/2pah.cif")
+        self.example_mmcif_bio = path.join(path.dirname(__file__), "testdata",
+                                           "mmcif/2pah_bio.cif")
+        self.mmcif_atom_parser = parse_mmcif_atoms
         self.mmcif_info_parser = _mmcif_fields
-        self.example_tsv_out = path.join(path.dirname(__file__), "testdata", "mmcif/2pah-bio.tsv")
+        self.example_tsv_out = path.join(path.dirname(__file__), "testdata",
+                                         "mmcif/2pah-bio.tsv")
         self.select_cif = select_cif
         self.best_assembly = get_preferred_assembly_id
         self.pdbid = '2pah'
@@ -39,6 +43,7 @@ class TestMMCIFParser(unittest.TestCase):
         """Remove testing framework."""
 
         self.example_mmcif = None
+        self.example_mmcif_bio = None
         self.mmcif_atom_parser = None
         self.mmcif_info_parser = None
         self.example_tsv_out = None
@@ -62,14 +67,14 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(len(data), 5317)
 
         # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 21)
+        self.assertEqual(len(data.columns.values), 20)
 
         # check whether there are particular keys
         self.assertIn('label_asym_id', data.columns.values)
 
         # check the values for particular entries
         self.assertTrue(data.loc[1, 'label_asym_id'] == 'A')
-        self.assertEqual(data.loc[1, 'pdbx_PDB_model_num'], 1)
+        self.assertEqual(data.loc[1, 'pdbx_PDB_model_num'], '1')
         self.assertEqual(data['group_PDB'][0], 'ATOM')
 
     def test_info_to_table_mmcif(self):
@@ -131,6 +136,28 @@ class TestMMCIFParser(unittest.TestCase):
         # original chain identifiers
         self.assertIn('orig_label_asym_id', data)
         self.assertIn('orig_auth_asym_id', data)
+
+    def test_parser_cif(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        self.assertEqual(data.loc[0, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[2686, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[5315, 'label_asym_id'], 'C')
+        self.assertEqual(data.loc[5316, 'label_asym_id'], 'D')
+        self.assertEqual(data.loc[1, 'label_atom_id'], 'CA')
+        self.assertEqual(data.loc[2687, 'label_atom_id'], 'CA')
+        self.assertEqual(data.loc[5315, 'label_atom_id'], 'FE')
+        self.assertEqual(data.loc[5316, 'label_atom_id'], 'FE')
+
+    def test_parser_mmcif_bio(self):
+        data = self.mmcif_atom_parser(self.example_mmcif_bio)
+        self.assertEqual(data.loc[0, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[5372, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[10630, 'label_asym_id'], 'C')
+        self.assertEqual(data.loc[10632, 'label_asym_id'], 'D')
+        self.assertEqual(data.loc[2686, 'label_asym_id'], 'AA')
+        self.assertEqual(data.loc[8001, 'label_asym_id'], 'BA')
+        self.assertEqual(data.loc[10631, 'label_asym_id'], 'CA')
+        self.assertEqual(data.loc[10633, 'label_asym_id'], 'DA')
 
 
 if __name__ == '__main__':

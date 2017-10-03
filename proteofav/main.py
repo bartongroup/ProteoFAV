@@ -61,7 +61,7 @@ def merge_tables(uniprot_id=None,
     if model != 'first':
         raise NotImplementedError('Proteofav current implementation ignore alternative models.')
 
-    if sequence_check not in ['raise', 'warn ' or 'ignore']:
+    if sequence_check not in ['raise', 'warn', 'ignore']:
         sequence_check = 'raise'
 
     if not pdb_id:
@@ -77,7 +77,8 @@ def merge_tables(uniprot_id=None,
 
     dssp_table = select_dssp(pdb_id, chains=chain)
 
-    cif_table.loc[:, 'label_seq_id'] = cif_table.loc[:, 'label_seq_id'].astype(int)
+    cif_table.loc[:, 'auth_seq_id'] = cif_table.loc[:, 'auth_seq_id'].astype(str)
+    dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(str)
     table = cif_table.merge(dssp_table, how='left',
                             left_on=['auth_seq_id', 'auth_asym_id'],
                             right_on=['icode', 'chain_id'])
@@ -106,7 +107,7 @@ def merge_tables(uniprot_id=None,
 
     sifts_table = select_sifts(pdb_id, chains=chain)
     try:
-        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(int)
+        sifts_table.loc[:, 'PDB_dbResNum'] = sifts_table.loc[:, 'PDB_dbResNum'].astype(str)
         table = sifts_table.merge(table, how='left',
                                   left_on=['PDB_dbResNum', 'PDB_dbChainId'],
                                   right_on=['auth_seq_id', 'auth_asym_id'])

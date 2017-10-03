@@ -12,7 +12,7 @@ except ImportError:
 
 from proteofav.config import Defaults
 from proteofav.main import merge_tables
-from proteofav.structures import _mmcif_atom
+from proteofav.structures import parse_mmcif_atoms
 from proteofav.sifts import _sifts_residues_regions
 from proteofav.dssp import _dssp
 
@@ -32,7 +32,7 @@ class TestTableMerger(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
 
-        self.cif_to_table = _mmcif_atom
+        self.cif_to_table = parse_mmcif_atoms
         self.sifts_to_table = _sifts_residues_regions
         self.dssp_to_table = _dssp
 
@@ -100,7 +100,8 @@ class TestTableMerger(unittest.TestCase):
         self.assertFalse(data.empty)
 
     def test_merge_3fqd_A_no_pdbe_label_seq_id(self):
-        self.data = self.merge_table(pdb_id='3fqd', chain='A')
+        self.data = self.merge_table(pdb_id='3fqd', chain='A',
+                                     sequence_check='ignore')
         self.assertFalse(self.data.empty)
 
     def test_merge_3ehk_D_lowercased_dssp(self):
@@ -167,7 +168,7 @@ class TestTableMerger(unittest.TestCase):
         badcif_path = path.join(path.dirname(__file__), "testdata", "mmcif/2w4o_with_error.cif")
         baddata = self.cif_to_table(badcif_path)
 
-        with patch("proteofav.structures._mmcif_atom", return_value=baddata):
+        with patch("proteofav.structures.parse_mmcif_atoms", return_value=baddata):
             with self.assertRaises(ValueError):
                 self.merge_table(pdb_id='2w4o')
                 # data = self.merge_table(pdb_id='2w4o', sequence_check='warn') # todo try capture warn

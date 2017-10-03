@@ -314,3 +314,48 @@ valid_ensembl_species_variation = ['bos_taurus',
                                    'rattus_norvegicus',
                                    'saccharomyces_cerevisiae',
                                    'tetraodon_nigroviridis']
+
+_convert_dtypes = {
+    int: 'int64',
+    float: 'float64',
+    str: 'object'
+}
+
+_pdbx_types = {
+    'group_PDB': str,
+    'id': int,
+    'type_symbol': str,
+    'label_atom_id': str,
+    'label_alt_id': str,
+    'label_comp_id': str,
+    'label_asym_id': str,
+    'label_entity_id': str,
+    'label_seq_id': str,
+    'new_asym_id': str,
+    'new_seq_id': str,
+    'pdbx_PDB_ins_code': str,
+    'Cartn_x': float,
+    'Cartn_y': float,
+    'Cartn_z': float,
+    'occupancy': float,
+    'B_iso_or_equiv': float,
+    'Cartn_x_esd': float,
+    'Cartn_y_esd': float,
+    'Cartn_z_esd': float,
+    'occupancy_esd': float,
+    'B_iso_or_equiv_esd': float,
+    'pdbx_formal_charge': int,
+    'auth_seq_id': str,
+    'auth_comp_id': str,
+    'auth_asym_id': str,
+    'auth_atom_id': str,
+    'pdbx_PDB_model_num': str,
+    'pdbe_label_seq_id': str,
+    'orig_label_asym_id': str,
+    'orig_auth_asym_id': str,
+    'auth_seq_id_full': str,
+    'label_seq_id_full': str,
+    'contact_indexes': str,
+}
+
+pdbx_types = {k: _convert_dtypes[v] for k, v in _pdbx_types.items()}
