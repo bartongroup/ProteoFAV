@@ -12,7 +12,7 @@ from proteofav.uniprot import (map_gff_features_to_sequence,
                                fetch_uniprot_formal_specie,
                                fetch_uniprot_sequence,
                                _uniprot_info)
-from proteofav.utils import get_url_or_retry
+from proteofav.utils import fetch_from_url_or_retry
 from proteofav.library import valid_ensembl_species
 
 __all__ = ["_fetch_icgc_variants",
@@ -46,7 +46,7 @@ def _fetch_icgc_variants(identifier):
     url = defaults.api_icgc + variation_endpoint + identifier
     # fetches a nested json
     # normalise the data, making it flat
-    data = get_url_or_retry(url, json=True)
+    data = fetch_from_url_or_retry(url, json=True).json()
     data = pd.io.json.json_normalize(
         data['hits'],
         ['transcripts'],
@@ -80,7 +80,7 @@ def _fetch_ebi_variants(uniprot_idd, flat_xrefs=True):
     endpoint = "variation/"
     url = defaults.api_ebi_uniprot + endpoint + uniprot_idd
 
-    data = get_url_or_retry(url, json=True)
+    data = fetch_from_url_or_retry(url, json=True).json()
     data = json_normalize(data, ['features'], meta=['accession', 'entryName'])
 
     # flatten the xref field, which has the id column.
@@ -130,7 +130,7 @@ def _fetch_ensembl_variants(ensembl_ptn_id, feature=None):
         params = {'feature': feature}
     url = defaults.api_ensembl + ensembl_endpoint + ensembl_ptn_id
 
-    rows = get_url_or_retry(url, json=True, **params)
+    rows = fetch_from_url_or_retry(url, json=True, **params).json()
     return pd.DataFrame(rows)
 
 
@@ -149,7 +149,7 @@ def _sequence_from_ensembl_protein(identifier, protein=True):
     else:
         params = {}
 
-    return get_url_or_retry(url, header=header, **params)
+    return fetch_from_url_or_retry(url, header=header, **params)
 
 
 def _uniprot_ensembl_mapping(identifier, species=None):
@@ -170,7 +170,7 @@ def _uniprot_ensembl_mapping(identifier, species=None):
 
     ensembl_endpoint = "xrefs/symbol/{}/".format(species)
     url = defaults.api_ensembl + ensembl_endpoint + str(identifier)
-    data = get_url_or_retry(url, json=True)
+    data = fetch_from_url_or_retry(url, json=True).json()
     for entry in data:
         typ = entry['type'].upper()
         eid = entry['id']

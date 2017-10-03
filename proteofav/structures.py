@@ -23,7 +23,7 @@ from scipy.spatial import cKDTree
 
 from proteofav.config import defaults
 from proteofav.library import scop_3to1
-from proteofav.utils import fetch_files, get_url_or_retry, get_preferred_assembly_id
+from proteofav.utils import fetch_files, fetch_from_url_or_retry, get_preferred_assembly_id
 
 log = logging.getLogger('proteofav.config')
 __all__ = ['_dssp', '_mmcif_atom', '_sifts_residues_regions', '_pdb_validation_to_table',
@@ -353,7 +353,7 @@ def _rcsb_description(pdb_id, tag, key):
 
     url = api + endpoint + query
 
-    tree = etree.fromstring(get_url_or_retry(url))
+    tree = etree.fromstring(fetch_from_url_or_retry(url).content)
     values = []
     for i in tree.iter(tag):
         values.append(i.attrib[key])
@@ -637,7 +637,7 @@ def sifts_best(uniprot_id, first=False):
     sifts_endpoint = "mappings/best_structures/"
     url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
     try:
-        response = get_url_or_retry(url, json=True)
+        response = fetch_from_url_or_retry(url, json=True).json()
     except HTTPError as e:
         if e.response.status_code == 404:
             logging.error('No SIFTS mapping found for {}'.format(uniprot_id))

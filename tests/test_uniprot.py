@@ -16,7 +16,7 @@ from proteofav.variants import _uniprot_ensembl_mapping
 from proteofav.uniprot import (fetch_uniprot_sequence, fetch_uniprot_formal_specie, _uniprot_info,
                                _fetch_uniprot_gff, map_gff_features_to_sequence,
                                _uniprot_to_ensembl_xref)
-from proteofav.utils import get_url_or_retry
+from proteofav.utils import fetch_from_url_or_retry
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
@@ -35,7 +35,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_info = _uniprot_info
         self.uniprot_ensembl = _uniprot_ensembl_mapping
 
-        self.get_url_or_retry = get_url_or_retry
+        self.fetch_from_url_or_retry = fetch_from_url_or_retry
         self.get_uniprot_sequence = fetch_uniprot_sequence
         self.get_uniprot_organism = fetch_uniprot_formal_specie
         self.fetch_uniprot_gff = _fetch_uniprot_gff
@@ -73,7 +73,7 @@ class TestUNIPROTParser(unittest.TestCase):
         self.uniprot_info = None
         self.uniprot_ensembl = None
 
-        self.get_url_or_retry = None
+        self.fetch_from_url_or_retry = None
         self.get_uniprot_sequence = None
         self.get_uniprot_organism = None
         self.fetch_uniprot_gff = None
@@ -146,8 +146,9 @@ class TestUNIPROTParser(unittest.TestCase):
         with mock.patch('proteofav.utils.requests') as mock_get:
             mock_get.get.return_value.ok = True
             mock_get.get.return_value.status = 200
-            self.get_url_or_retry(self.mock_url)
-            mock_get.get.assert_called_once_with(mock.ANY, headers=mock.ANY, params=mock.ANY)
+            self.fetch_from_url_or_retry(self.mock_url)
+            mock_get.get.assert_called_once_with(mock.ANY, headers=mock.ANY,
+                                                 params=mock.ANY, stream=mock.ANY)
 
     @unittest.expectedFailure
     def test_raise_for_not_found(self):
@@ -155,7 +156,7 @@ class TestUNIPROTParser(unittest.TestCase):
             with self.assertRaises(HTTPError) as context:
                 mock_get.get.return_value.ok = False
                 mock_get.get.return_value.status = 404
-                response = self.get_url_or_retry(self.mock_url)
+                response = self.fetch_from_url_or_retry(self.mock_url)
                 mock_get.side_effect = HTTPError(mock.Mock(status=404), 'not found')
 
         # self.assertTrue('not found' in context.exception)
@@ -180,7 +181,9 @@ class TestUNIPROTParser(unittest.TestCase):
             self.assertEqual(self.get_uniprot_sequence('P38995'), self.ccc2_sequence)
 
             mock_get.get.assert_called_once_with('http://www.uniprot.org/uniprot/',
-                                                 headers=mock.ANY, params=mock.ANY)
+                                                 headers=mock.ANY,
+                                                 params=mock.ANY,
+                                                 stream=mock.ANY)
 
     def test_mock_a_ptn_organism_name(self):
         """
@@ -199,7 +202,8 @@ class TestUNIPROTParser(unittest.TestCase):
 
             mock_get.get.assert_called_once_with('http://www.uniprot.org/uniprot/',
                                                  headers=mock.ANY,
-                                                 params=mock.ANY)
+                                                 params=mock.ANY,
+                                                 stream=mock.ANY)
 
     def test_uniprot_info_with_defaults(self):
         """

@@ -143,7 +143,7 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
     def test_sequence_from_ensembl_protein(self):
         response = 'MGNAAAAKKGSEQESVKEFLAKAKEDFLKKWESPAQNTAHLDQFER'
 
-        with mock.patch('proteofav.variants.get_url_or_retry') as mock_get:
+        with mock.patch('proteofav.variants.fetch_from_url_or_retry') as mock_get:
             mock_get.return_value = response
             sequence = self.sequence_from_ensembl_protein('XXXXXX')  # ENSP00000309591
         self.assertEqual(sequence, response)

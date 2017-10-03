@@ -21,7 +21,7 @@ except ImportError:
 import pandas as pd
 
 from proteofav.config import defaults
-from proteofav.utils import get_url_or_retry
+from proteofav.utils import fetch_from_url_or_retry
 from proteofav.structures import _table_selector
 
 __all__ = ["fetch_uniprot_sequence",
@@ -97,7 +97,7 @@ def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
               'format': 'tab',
               'contact': ""}
     url = defaults.api_uniprot
-    response = get_url_or_retry(url=url, retry_in=retry_in, **params)
+    response = fetch_from_url_or_retry(url=url, retry_in=retry_in, **params).content
     try:
         data = pd.read_table(StringIO(response))
     except TypeError:

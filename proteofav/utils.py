@@ -18,50 +18,79 @@ except ImportError:  # python 3.5
 import numpy as np
 import pandas as pd
 import requests
+import requests_cache
 
 from proteofav.config import defaults
 from proteofav.library import valid_ensembl_species_variation
 
-__all__ = ["get_url_or_retry", "check_local_or_fetch", "fetch_files", "get_preferred_assembly_id",
+__all__ = ["fetch_from_url_or_retry", "check_local_or_fetch", "fetch_files", "get_preferred_assembly_id",
            "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
            "_uniprot_pdb_sifts_mapping", "icgc_missense_variant", "is_valid",
            "is_valid_ensembl_id", "confirm_column_types"]
 log = logging.getLogger('proteofav.config')
 socket.setdefaulttimeout(15)  # avoid infinite hanging
 
+requests_cache.install_cache('proteofav')
 
-def get_url_or_retry(url, retry_in=None, wait=1, n_retries=10, json=False, header=None, **params):
+
+def fetch_from_url_or_retry(url, json=True, header=None, post=False, data=None,
+                            retry_in=None, wait=1, n_retries=10, stream=False, **params):
     """
     Fetch an url using Requests or retry fetching it if the server is
-        complaining with retry_in error.
+    complaining with retry_in error. There is a limit to the number of retries.
 
-    :param retry_in: list or array of http status codes
-    :param json: boolean
-    :param header: dictionary with head params
+    Retry code examples: 429, 500 and 503
+
     :param url: url to be fetched as a string
+    :param json: json output
+    :param header: dictionary
+    :param post: boolean
+    :param data: dictionary: only if post is True
+    :param retry_in: http codes for retrying
     :param wait: sleeping between tries in seconds
     :param n_retries: number of retry attempts
+    :param stream: boolean
     :param params: request.get kwargs.
-    :return: url content or url content in json data structure.
+    :return: url content
     """
-    if not header:
+
+    if retry_in is None:
+        retry_in = ()
+    else:
+        assert type(retry_in) is tuple or type(retry_in) is list
+
+    if header is None:
         header = {}
-    if not retry_in:
-        retry_in = []
+    else:
+        assert type(header) is dict
+
     if json:
         header.update({"Content-Type": "application/json"})
-    response = requests.get(url, headers=header, params=params)
+    else:
+        if "Content-Type" not in header:
+            header.update({"Content-Type": "text/plain"})
 
-    if response.ok and json:
-        return response.json()
-    elif response.ok:
-        return response.content
+    if post:
+        if data is not None:
+            assert type(data) is dict or type(data) is str
+            response = requests.post(url, headers=header, data=data)
+        else:
+            return None
+    else:
+        response = requests.get(url, headers=header, params=params, stream=stream)
+
+    if response.ok:
+        return response
     elif response.status_code in retry_in and n_retries >= 0:
         time.sleep(wait)
-        return get_url_or_retry(url, retry_in, (n_retries - 1), wait, json, header, **params)
+        return fetch_from_url_or_retry(url, json, header, post, data, retry_in, wait,
+                                       (n_retries - 1), stream, **params)
     else:
-        log.error(response.status_code)
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            log.debug("%s: Unable to retrieve %s for %s",
+                      response.status_code, url, e)
 
 
 def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
@@ -127,7 +156,7 @@ def _fetch_summary_properties_pdbe(pdbid, retry_in=(429,)):
     """
     pdbe_endpoint = "pdb/entry/summary/"
     url = defaults.api_pdbe + pdbe_endpoint + pdbid
-    rows = get_url_or_retry(url, retry_in=retry_in, json=True)
+    rows = fetch_from_url_or_retry(url, retry_in=retry_in, json=True).json()
     return rows
 
 
@@ -194,7 +223,7 @@ def _pdb_uniprot_sifts_mapping(identifier):
 
     sifts_endpoint = 'mappings/uniprot/'
     url = defaults.api_pdbe + sifts_endpoint + identifier
-    information = get_url_or_retry(url, json=True)
+    information = fetch_from_url_or_retry(url, json=True).json()
 
     rows = []
     for uniprot in information[identifier]['UniProt']:
@@ -213,7 +242,7 @@ def _uniprot_pdb_sifts_mapping(identifier):
     """
     sifts_endpoint = 'mappings/best_structures/'
     url = defaults.api_pdbe + sifts_endpoint + str(identifier)
-    information = get_url_or_retry(url, json=True)
+    information = fetch_from_url_or_retry(url, json=True).json()
 
     rows = []
     for entry in information[identifier]:
@@ -324,7 +353,7 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
     try:
         if identifier != '':
             url = defaults.api_ensembl + ensembl_endpoint + urllib_quote(identifier, safe='')
-            data = get_url_or_retry(url, json=True)
+            data = fetch_from_url_or_retry(url, json=True).json()
             if 'error' in data:
                 return False
             return True
