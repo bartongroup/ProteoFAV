@@ -16,9 +16,9 @@ from proteofav.structures import _dssp, _sifts_residues_regions, _mmcif_atom
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
-defaults.db_cif = path.join(path.dirname(__file__), "CIF/")
-defaults.db_sifts = path.join(path.dirname(__file__), "SIFTS/")
-defaults.db_dssp = path.join(path.dirname(__file__), "DSSP/")
+defaults.db_cif = path.join(path.dirname(__file__), "testdata", "mmcif/")
+defaults.db_sifts = path.join(path.dirname(__file__), "testdata", "sifts/")
+defaults.db_dssp = path.join(path.dirname(__file__), "testdata", "dssp/")
 
 
 @patch("proteofav.structures.defaults", defaults)
@@ -80,9 +80,9 @@ class TestTableMerger(unittest.TestCase):
         """
         Test case with insertion code
         """
-        self.cif_path = path.join(path.dirname(__file__), "CIF/3mn5.cif")
-        self.sifts_path = path.join(path.dirname(__file__), "SIFTS/3mn5.xml")
-        self.dssp_path = path.join(path.dirname(__file__), "DSSP/3mn5.dssp")
+        self.cif_path = path.join(path.dirname(__file__), "testdata", "mmcif/3mn5.cif")
+        self.sifts_path = path.join(path.dirname(__file__), "testdata", "sifts/3mn5.xml")
+        self.dssp_path = path.join(path.dirname(__file__), "testdata", "dssp/3mn5.dssp")
 
         self.cif = self.cif_to_table(self.cif_path)
         self.sifts = self.sifts_to_table(self.sifts_path)
@@ -160,7 +160,7 @@ class TestTableMerger(unittest.TestCase):
     def test_sequence_check_raise(self):
         # The first and the second residues in the cif file were swaped to GLY
         # so they can't be checked with dssp and sift sequences
-        badcif_path = path.join(path.dirname(__file__), "CIF/2w4o_with_error.cif")
+        badcif_path = path.join(path.dirname(__file__), "testdata", "mmcif/2w4o_with_error.cif")
         baddata = self.cif_to_table(badcif_path)
 
         with patch("proteofav.structures._mmcif_atom", return_value=baddata):

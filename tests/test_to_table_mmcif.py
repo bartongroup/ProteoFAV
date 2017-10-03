@@ -27,10 +27,10 @@ class TestMMCIFParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_mmcif = path.join(path.dirname(__file__), "CIF/2pah.cif")
+        self.example_mmcif = path.join(path.dirname(__file__), "testdata", "mmcif/2pah.cif")
         self.mmcif_atom_parser = _mmcif_atom
         self.mmcif_info_parser = _mmcif_fields
-        self.example_tsv_out = path.join(path.dirname(__file__), "CIF/2pah-bio.tsv")
+        self.example_tsv_out = path.join(path.dirname(__file__), "testdata", "mmcif/2pah-bio.tsv")
         self.select_cif = select_cif
         self.best_assembly = get_preferred_assembly_id
         self.pdbid = '2pah'
