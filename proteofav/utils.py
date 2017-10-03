@@ -556,5 +556,46 @@ def confirm_column_types(table):
     return table
 
 
+def row_selector(data, key=None, value=None, reverse=False):
+    """
+    Generic method to filter columns
+    :param data: pandas DataFrame
+    :param key: pandas DataFrame column name
+    :param value: value(s) to be looked for
+    :param reverse: opposite behavior (e.g. 'isin' becomes 'isnotin'
+        and 'equals' becomes 'differs')
+    :return: returns a modified pandas DataFrame
+    """
+
+    table = data
+    assert type(table) is pd.core.frame.DataFrame
+    if key is not None and value is not None:
+        assert type(key) is str
+        if key in table:
+            if value == 'first':
+                value = table[key].iloc[0]
+                table = table.loc[table[key] == value]
+            elif (hasattr(value, '__iter__') and
+                      (type(value) is tuple or type(value) is list)):
+                if not reverse:
+                    table = table.loc[table[key].isin(value)]
+                else:
+                    table = table.loc[~table[key].isin(value)]
+            else:
+                if not reverse:
+                    table = table.loc[table[key] == value]
+                else:
+                    table = table.loc[table[key] != value]
+        else:
+            log.debug("%s not in the DataFrame...", key)
+
+    if table.empty:
+        message = 'Column {} does not contain {} value(s)...'.format(key, value)
+        log.debug(message)
+        raise ValueError(message)
+
+    return table
+
+
 if __name__ == '__main__':
     pass

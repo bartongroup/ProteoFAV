@@ -8,6 +8,8 @@ import logging
 import requests
 import responses
 import unittest
+import numpy as np
+import pandas as pd
 import requests_cache
 
 try:
@@ -16,7 +18,7 @@ except ImportError:
     from unittest.mock import patch, MagicMock
 
 
-from proteofav.utils import fetch_from_url_or_retry
+from proteofav.utils import fetch_from_url_or_retry, row_selector
 
 from proteofav.config import defaults as config
 
@@ -64,6 +66,13 @@ class TestUTILS(unittest.TestCase):
         requests_cache.uninstall_cache()
 
         self.fetch_from_url_or_retry = fetch_from_url_or_retry
+        self.row_selector = row_selector
+        self.mock_df = pd.DataFrame(
+            [{'label': '1', 'value': 1, 'type': 23.4},
+             {'label': '2', 'value': 1, 'type': 1},
+             {'label': '3', 'value': 2, 'type': np.nan},
+             {'label': '4', 'value': 3, 'type': 123.1},
+             {'label': '5', 'value': 5, 'type': 0.32}])
 
         logging.disable(logging.DEBUG)
 
@@ -71,6 +80,8 @@ class TestUTILS(unittest.TestCase):
         """Remove testing framework."""
 
         self.fetch_from_url_or_retry = None
+        self.row_selector = None
+        self.mock_df = None
 
         logging.disable(logging.NOTSET)
 
@@ -152,6 +163,16 @@ class TestUTILS(unittest.TestCase):
                                          n_retries=10, stream=False)
         self.assertEqual(r.status_code, 500)
         self.assertFalse(r.ok)
+
+    def test_row_selector(self):
+        d = self.row_selector(self.mock_df, key='value', value=3)
+        self.assertEqual(len(d.index), 1)
+        d = self.row_selector(self.mock_df, key='value', value=3, reverse=True)
+        self.assertEqual(len(d.index), 4)
+        d = self.row_selector(self.mock_df, key='value', value='first')
+        self.assertEqual(len(d.index), 2)
+        d = self.row_selector(self.mock_df, key='value', value=(2, 3))
+        self.assertEqual(len(d.index), 2)
 
 
 if __name__ == '__main__':

@@ -21,8 +21,7 @@ except ImportError:
 import pandas as pd
 
 from proteofav.config import defaults
-from proteofav.utils import fetch_from_url_or_retry
-from proteofav.structures import _table_selector
+from proteofav.utils import fetch_from_url_or_retry, row_selector
 
 __all__ = ["fetch_uniprot_sequence",
            "fetch_uniprot_formal_specie",
@@ -107,7 +106,7 @@ def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
         log.error(e)
         return None
     # id column is called Entry in the table
-    return _table_selector(data, 'Entry', uniprot_id)
+    return row_selector(data, 'Entry', uniprot_id)
 
 
 def _fetch_uniprot_gff(uniprot_id):

@@ -23,11 +23,12 @@ from scipy.spatial import cKDTree
 
 from proteofav.config import defaults
 from proteofav.library import scop_3to1
-from proteofav.utils import fetch_files, fetch_from_url_or_retry, get_preferred_assembly_id
+from proteofav.utils import (fetch_files, fetch_from_url_or_retry,
+                             get_preferred_assembly_id, row_selector)
 
 log = logging.getLogger('proteofav.config')
 __all__ = ['_dssp', '_mmcif_atom', '_sifts_residues_regions', '_pdb_validation_to_table',
-           '_rcsb_description', '_get_contacts_from_table', '_table_selector',
+           '_rcsb_description', '_get_contacts_from_table',
            # '_residues_as_centroid', '_import_dssp_chains_ids',
            'select_cif', 'select_dssp', 'select_sifts',  'select_validation', 'sifts_best']
 
@@ -398,31 +399,6 @@ def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
     return df
 
 
-def _table_selector(table, column, value):
-    """
-    Generic table selector.
-
-    :param table: a pandas DataFrame
-    :param column: a column in the DataFrame
-    :param value: the query
-    :return: the DataFrame filtered for
-    """
-    if value == 'first':
-        value = table[column].iloc[0]
-        table = table[table[column] == value]
-
-    elif not hasattr(value, '__iter__') or isinstance(value, str):
-        table = table[table[column] == value]
-
-    else:
-        table = table[table[column].isin(value)]
-
-    if table.empty:
-        raise ValueError('Column {} does not contain {} value(s)'.format(
-            column, value))
-    return table
-
-
 def _residues_as_centroid(table):
     """
     Gets the residues' atoms and their centroids (mean).
@@ -502,28 +478,28 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA',
     # select the models
     if models:
         try:
-            cif_table = _table_selector(cif_table, 'pdbx_PDB_model_num', models)
+            cif_table = row_selector(cif_table, 'pdbx_PDB_model_num', models)
         except AttributeError:
             err = 'Structure {} has only one model, which was kept'.format
             log.info(err(pdb_id))
 
     # select chains
     if chains:
-        cif_table = _table_selector(cif_table, 'auth_asym_id', chains)
+        cif_table = row_selector(cif_table, 'auth_asym_id', chains)
 
     # select lines
     if lines:
-        cif_table = _table_selector(cif_table, 'group_PDB', lines)
+        cif_table = row_selector(cif_table, 'group_PDB', lines)
 
     # select which atom line will represent
     if atoms == 'centroid':
         cif_table = _residues_as_centroid(cif_table)
     elif atoms == 'backbone_centroid':
-        cif_table = _table_selector(
+        cif_table = row_selector(
             cif_table, 'label_atom_id', ('CA', 'N', 'C', 'O'))
         cif_table = _residues_as_centroid(cif_table)
     elif atoms:
-        cif_table = _table_selector(cif_table, 'label_atom_id', atoms)
+        cif_table = row_selector(cif_table, 'label_atom_id', atoms)
 
     # id is the atom identifier and it is need for all atoms tables.
     if cif_table[UNIFIED_COL + ['id']].duplicated().any():
@@ -551,13 +527,13 @@ def select_dssp(pdb_id, chains=None):
 
     if chains:
         try:
-            dssp_table = _table_selector(dssp_table, 'chain_id', chains)
+            dssp_table = row_selector(dssp_table, 'chain_id', chains)
         except ValueError:
             # TODO:
             # Could not find the correct PDB chain. It happens for protein structures with complex
             # chain identifier, as 4v9d.
             # dssp_table = _import_dssp_chains_ids(pdb_id)
-            # dssp_table = _table_selector(dssp_table, 'chain_id', chains)
+            # dssp_table = row_selector(dssp_table, 'chain_id', chains)
             log.error('Error loading DSSP file: Chain {} not in {}'.format(chains, pdb_id))
             return None
     # remove dssp line of transition between chains
@@ -600,7 +576,7 @@ def select_sifts(pdb_id, chains=None):
     if chains is None:
         return sift_table
     else:
-        return _table_selector(sift_table, 'PDB_dbChainId', chains)
+        return row_selector(sift_table, 'PDB_dbChainId', chains)
 
 
 def select_validation(pdb_id, chains=None):
@@ -619,7 +595,7 @@ def select_validation(pdb_id, chains=None):
         val_table = _pdb_validation_to_table(val_path)
 
     if chains:
-        val_table = _table_selector(val_table, 'chain', chains)
+        val_table = row_selector(val_table, 'chain', chains)
     if not val_table.empty:
         val_table.columns = ["validation_" + name for name in val_table.columns]
         return val_table
