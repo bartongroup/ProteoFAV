@@ -1,5 +1,9 @@
-# coding=utf-8
+#!/local/bin/python
+# -*- coding: utf-8 -*-
+
+import numpy as np
 import unittest
+import logging
 
 try:
     import mock
@@ -7,17 +11,30 @@ except ImportError:
     import unittest.mock as mock
 from requests.exceptions import HTTPError
 
+from proteofav.variants import _uniprot_ensembl_mapping
+
 from proteofav.uniprot import (fetch_uniprot_sequence, fetch_uniprot_formal_specie, _uniprot_info,
                                _fetch_uniprot_gff, map_gff_features_to_sequence,
                                _uniprot_to_ensembl_xref)
 from proteofav.utils import get_url_or_retry
 
+logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
-class UniprotTestCase(unittest.TestCase):
-    """Test for the Uniprot.py"""
+
+class TestUNIPROTParser(unittest.TestCase):
+    """Test UniProt fetcher/parser methods."""
 
     def setUp(self):
         """Initialize the framework for testing."""
+        self.uniprot_id = 'O96013'
+        self.uniprot_id_error1 = ''
+        self.uniprot_id_error2 = '1234 ads'
+        self.uniprot_id_error3 = 1234
+        self.uniprot_id_error4 = ()
+        self.uniprot_id_error5 = []
+        self.uniprot_info = _uniprot_info
+        self.uniprot_ensembl = _uniprot_ensembl_mapping
+
         self.get_url_or_retry = get_url_or_retry
         self.get_uniprot_sequence = fetch_uniprot_sequence
         self.get_uniprot_organism = fetch_uniprot_formal_specie
@@ -45,10 +62,85 @@ class UniprotTestCase(unittest.TestCase):
                               "HGISDFKSKFSIGNFWSRLFSTRAIAGEQDIESQAGLMSNEEVL")
 
     def tearDown(self):
-        """Remove testing framework by cleaning the namespace."""
-        self.get_uniprot_sequence = None
+        """Remove testing framework."""
+
+        self.uniprot_id = None
+        self.uniprot_id_error1 = None
+        self.uniprot_id_error2 = None
+        self.uniprot_id_error3 = None
+        self.uniprot_id_error4 = None
+        self.uniprot_id_error5 = None
+        self.uniprot_info = None
+        self.uniprot_ensembl = None
+
         self.get_url_or_retry = None
-        self.silly_url = None
+        self.get_uniprot_sequence = None
+        self.get_uniprot_organism = None
+        self.fetch_uniprot_gff = None
+        self.uniprot_info = None
+        self.map_gff_features_to_sequence = None
+        self.uniprot_to_ensembl_xref = None
+        self.mock_url = None
+        self.ccc2_sequence = None
+
+    def test_to_table_uniprot_info(self):
+        """
+        Tests the fetching and parsing real UniProt ids.
+        This test focuses on the method that parses the residue entries.
+
+        Some checks are made to whether the parsed keys and values
+        are the ones we are expecting.
+        """
+
+        data = self.uniprot_info(self.uniprot_id)
+
+        # number of values per column (or rows)
+        self.assertEqual(len(data), 1)
+
+        # number of keys (or columns)
+        self.assertEqual(len(data.columns.values), 8)
+
+        # check whether there are particular keys
+        self.assertIn('Sequence', data.columns.values)
+
+        # check the values for particular entries
+        self.assertTrue(data['Length'][0] == 591)
+        self.assertTrue(data['Status'][0] == "reviewed")
+        self.assertEqual(data['Entry name'][0], 'PAK4_HUMAN')
+
+    def test_to_table_uniprot_ensembl_mapping(self):
+        """
+        Tests the fetching and parsing real UniProt ids.
+        This test focuses on the method that parses the residue entries.
+
+        Some checks are made to whether the parsed keys and values
+        are the ones we are expecting.
+        """
+
+        data = self.uniprot_ensembl(self.uniprot_id, 'homo_sapiens')
+
+        # number of values per column (or rows)
+        self.assertEqual(len(data), 1)
+
+        # number of keys (or columns)
+        self.assertEqual(len(data.columns.values), 3)
+
+        # check whether there are particular keys
+        self.assertIn('TRANSCRIPT', data.columns.values)
+
+        # check the values for particular entries
+        self.assertEqual(data['GENE'][0], 'ENSG00000130669')
+
+    def test_obsolete_uniprot_accession(self):
+        data = self.uniprot_info('Q91887')
+        self.assertEqual(len(data), 1)
+
+        # number of keys (or columns)
+        self.assertEqual(len(data.columns.values), 8)
+
+        # check the values for particular entries
+        self.assertTrue(np.isnan(data.iloc[0, -1]))   # 'Length'
+        self.assertTrue(np.isnan(data.iloc[0, -1]))    # 'Status'
 
     def test_get(self):
         with mock.patch('proteofav.utils.requests') as mock_get:
@@ -158,4 +250,5 @@ class UniprotTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestUNIPROTParser)
+    unittest.TextTestRunner(verbosity=2).run(suite)
