@@ -19,7 +19,9 @@ except ImportError:
     from unittest.mock import patch, MagicMock
 
 from proteofav.utils import (fetch_from_url_or_retry, row_selector,
-                             InputFileHandler, OutputFileHandler)
+                             InputFileHandler, OutputFileHandler,
+                             constrain_column_types,
+                             exclude_columns,)
 
 from proteofav.config import defaults as config
 
@@ -77,6 +79,8 @@ class TestUTILS(unittest.TestCase):
 
         self.InputFileHandler = InputFileHandler
         self.OutputFileHandler = OutputFileHandler
+        self.constrain_column_types = constrain_column_types
+        self.exclude_columns = exclude_columns
 
         logging.disable(logging.DEBUG)
 
@@ -89,6 +93,8 @@ class TestUTILS(unittest.TestCase):
 
         self.InputFileHandler = None
         self.OutputFileHandler = None
+        self.constrain_column_types = None
+        self.exclude_columns = None
 
         logging.disable(logging.NOTSET)
 
@@ -205,6 +211,34 @@ class TestUTILS(unittest.TestCase):
                                "NEW_DIR", "null.cif")
         with self.assertRaises(OSError):
             self.InputFileHandler(invalid)
+
+    def test_constrain_column_types(self):
+        dtypes = {'type': 'float64',
+                  'value': 'int64',
+                  'label': 'object'}
+        dnans = {'type': 0.0}
+        dreplaces = {'label': ['1', 'i']}
+
+        self.mock_df = self.constrain_column_types(self.mock_df, dtypes)
+        self.assertEqual(self.mock_df["type"].dtype, np.float64)
+        self.assertEqual(self.mock_df["value"].dtype, np.int64)
+        self.assertEqual(self.mock_df["label"].dtype, np.object)
+
+        self.mock_df = self.constrain_column_types(self.mock_df, dtypes,
+                                                   nan_value_dict=dnans)
+        self.assertEqual(self.mock_df["type"].dtype, np.float64)
+        self.assertEqual(self.mock_df.loc[2, "type"], 0.0)
+
+        self.mock_df = self.constrain_column_types(self.mock_df, dtypes, dnans,
+                                                   replace_value_dict=dreplaces)
+        self.assertEqual(self.mock_df["label"].dtype, np.object)
+        self.assertEqual(self.mock_df.loc[0, "label"], "i")
+
+    def test_exclude_columns(self):
+        self.assertEqual(len(self.mock_df.columns), 3)
+        self.mock_df = self.exclude_columns(self.mock_df, excluded=("type",))
+        self.assertEqual(len(self.mock_df.columns), 2)
+        self.assertNotIn("type", self.mock_df)
 
 
 if __name__ == '__main__':

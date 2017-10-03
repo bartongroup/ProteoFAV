@@ -365,15 +365,58 @@ def is_valid_ensembl_id(identifier, species='human', variant=False):
         return False
 
 
-def confirm_column_types(table):
+def row_selector(table, key=None, value=None, reverse=False):
     """
-    Check a table's column types against a defined column name/type dictionary
-        and correct them if necessary.
+    Generic method to filter columns
+    :param table: pandas DataFrame
+    :param key: pandas DataFrame column name
+    :param value: value(s) to be looked for
+    :param reverse: opposite behavior (e.g. 'isin' becomes 'isnotin'
+        and 'equals' becomes 'differs')
+    :return: returns a modified pandas DataFrame
+    """
 
-    :param pd.DataFrame table: A table produced by ProteoFAV
-    :return pd.DataFrame: the table with the same data, but normalised column types
+    assert type(table) is pd.core.frame.DataFrame
+    if key is not None and value is not None:
+        assert type(key) is str
+        if key in table:
+            if value == 'first':
+                value = table[key].iloc[0]
+                table = table.loc[table[key] == value]
+            elif (hasattr(value, '__iter__') and
+                      (type(value) is tuple or type(value) is list)):
+                if not reverse:
+                    table = table.loc[table[key].isin(value)]
+                else:
+                    table = table.loc[~table[key].isin(value)]
+            else:
+                if not reverse:
+                    table = table.loc[table[key] == value]
+                else:
+                    table = table.loc[table[key] != value]
+        else:
+            log.debug("%s not in the DataFrame...", key)
 
-    .. note:: There are fewer pandas `dtypes` than the corresponding numpy
+    if table.empty:
+        message = 'Column {} does not contain {} value(s)...'.format(key, value)
+        log.debug(message)
+        raise ValueError(message)
+
+    return table
+
+
+def constrain_column_types(table, col_type_dict=None, nan_value_dict=None,
+                           replace_value_dict=None):
+    """
+    Helper method that helps in constraining data types for the
+    various DataFrame columns.
+
+    This function checks a table's column types against a defined
+    column name/type dictionary and correct them if necessary.
+
+    .. notes::
+
+    There are fewer pandas `dtypes` than the corresponding numpy
         type, but all numpy types can be accommodated.
 
     NaNs and Upcasting:
@@ -401,199 +444,51 @@ def confirm_column_types(table):
         preserved with the generic `object` dtype, so this will be used in
         preference for integer columns that can contain NaNs.
 
+    :param table: pandas DataFrame
+    :param col_type_dict: (dict) optional defines common types
+    :param nan_value_dict: (dict) optional new value passed to replace NaNs
+    :param replace_value_dict: (dict) optional new value passed to replace
+        specific values
+    :return: modified pandas DataFrame
+        (the table with the same data, but normalised column types)
     """
 
-    # TODO: update this to accomodate the new sifts table headers
-    column_types_long = {
-        # SIFTs mappings
-        'CATH_dbAccessionId': 'string',
-        'CATH_dbChainId': 'string',
-        'CATH_dbCoordSys': 'string',
-        'CATH_dbResName': 'string',
-        'CATH_dbResNum': 'string',
-        'InterPro_dbAccessionId': 'string',
-        'InterPro_dbCoordSys': 'string',
-        'InterPro_dbEvidence': 'string',
-        'InterPro_dbResName': 'string',
-        'InterPro_dbResNum': 'string',
-        'NCBI_dbAccessionId': 'string',
-        'NCBI_dbCoordSys': 'string',
-        'NCBI_dbResName': 'string',
-        'NCBI_dbResNum': 'string',
-        'PDB_dbAccessionId': 'string',
-        'PDB_dbChainId': 'string',
-        'PDB_dbCoordSys': 'string',
-        'PDB_dbResName': 'string',
-        'PDB_dbResNum': 'string',
-        'Pfam_dbAccessionId': 'string',
-        'Pfam_dbCoordSys': 'string',
-        'Pfam_dbResName': 'string',
-        'Pfam_dbResNum': 'string',
-        'REF_codeSecondaryStructure': 'string',
-        'REF_dbCoordSys': 'string',
-        'REF_dbResName': 'string',
-        'REF_dbResNum': 'string',
-        'REF_nameSecondaryStructure': 'string',
-        'UniProt_dbAccessionId': 'string',
-        'UniProt_dbCoordSys': 'string',
-        'UniProt_dbResName': 'string',
-        'UniProt_dbResNum': 'string',
-        # mmCIF fields
-        'auth_asym_id': 'string',
-        'auth_atom_id': 'string',
-        'auth_comp_id': 'string',
-        'auth_seq_id': 'string',
-        'B_iso_or_equiv': 'float',
-        'B_iso_or_equiv_esd': 'float',
-        'Cartn_x': 'float',
-        'Cartn_x_esd': 'float',
-        'Cartn_y': 'float',
-        'Cartn_y_esd': 'float',
-        'Cartn_z': 'float',
-        'Cartn_z_esd': 'float',
-        'label_alt_id': 'string',
-        'label_asym_id': 'string',
-        'label_atom_id': 'string',
-        'label_comp_id': 'string',
-        'label_entity_id': 'string',
-        'label_seq_id': 'integer',
-        'occupancy': 'float',
-        'occupancy_esd': 'float',
-        'pdbe_label_seq_id': 'integer',
-        'pdbx_formal_charge': 'integer',
-        'pdbx_PDB_ins_code': 'string',
-        'pdbx_PDB_model_num': 'integer',
-        'type_symbol': 'string',
-        'group_PDB': 'string',
-        'id': 'string',
-        # DSSP
-        'chain_id': 'string',
-        'aa': 'string',
-        'ss': 'string',
-        'acc': 'float',
-        'phi': 'float',
-        'psi': 'float',
-        # Merged table
-        'dssp_aa': 'string',
-        'cif_aa': 'string',
-        'sifts_aa': 'string',
-        # UniProt variant table
-        'resn': 'string',
-        'mut': 'string',
-        'disease': 'string',
-        # UniProt variants table 2
-        'translation': 'string',
-        'id': 'string',
-        'start': 'string',
-        'residues': 'string',
-        # Derived boolean columns
-        'is_expression_tag': 'bool',
-        'is_not_observed': 'bool'
-    }
+    for col in table:
+        if col_type_dict is not None and col in col_type_dict:
+            try:
+                table[col] = table[col].astype(col_type_dict[col])
+            except (ValueError, KeyError, TypeError):
+                # probably there are some NaNs in there
+                # and it is impossible to coerce the column to the
+                # pre-defined dtype
+                pass
+        if nan_value_dict is not None and col in nan_value_dict:
+            if table[col].isnull().any().any():
+                table[col] = table[col].fillna(nan_value_dict[col])
+        if replace_value_dict is not None and col in replace_value_dict:
+            table[col] = table[col].replace(replace_value_dict[col][0],
+                                            replace_value_dict[col][1])
 
-    type_to_dtype = {
-        'string': 'object',
-        'float': 'float64',
-        'integer': 'int64',
-        'bool': 'bool',
-        'O': 'object'
-    }
-
-    type_to_dtype_if_contains_nan = {
-        'string': 'object',
-        'float': 'float64',
-        'integer': 'object',
-        'bool': 'object',
-        'O': 'object'
-    }
-
-    # Columns in this dictionary will undergo `.replace(value[0], value[1])`
-    column_replacements = {
-        'Cartn_x_esd': ['?', np.nan],
-        'Cartn_y_esd': ['?', np.nan],
-        'Cartn_z_esd': ['?', np.nan],
-        'occupancy_esd': ['?', np.nan],
-        'B_iso_or_equiv_esd': ['?', np.nan]
-    }
-
-    for column in table:
-        type_should_be = column_types_long.get(column)
-
-        # Get dtype from column type depending on whether can contain NaN
-        can_be_nan = True  # TODO: Either this should be a test or just get rid of the if block
-        if can_be_nan:
-            dtype_should_be = type_to_dtype_if_contains_nan.get(type_should_be)
-        else:
-            dtype_should_be = type_to_dtype.get(type_should_be)
-
-        if dtype_should_be is None:
-            logging.warning('Column `{}` not recognised'.format(column))
-            continue
-
-        # Element replacements as required
-        if column in column_replacements:
-            to_replace, replacement = column_replacements.get(column)
-            logging.debug(
-                'Replacing {} with {} in column {}'.format(to_replace, replacement, column))
-            table[column] = table[column].replace(to_replace, replacement)
-
-        # Coerce column if neccessary
-        current_dtype = table[column].dtype
-        if current_dtype != dtype_should_be:
-            logging.debug('Coercing `{}` to `{}`'.format(column, dtype_should_be))
-            table[column] = table[column].astype(dtype_should_be)
-
-    # Now check that the index is the correct type
-    column = table.index.name
-    type_should_be = column_types_long.get(column)
-    dtype_should_be = type_to_dtype_if_contains_nan.get(type_should_be)
-    if dtype_should_be is None:
-        logging.warning('Index column `{}` not recognised'.format(column))
-    current_dtype = table.index.dtype
-    if current_dtype != dtype_should_be:
-        logging.debug('Coercing index `{}` to `{}`'.format(column, dtype_should_be))
-        table.index = table.index.astype(dtype_should_be)
     return table
 
 
-def row_selector(data, key=None, value=None, reverse=False):
+def exclude_columns(table, excluded=()):
     """
-    Generic method to filter columns
-    :param data: pandas DataFrame
-    :param key: pandas DataFrame column name
-    :param value: value(s) to be looked for
-    :param reverse: opposite behavior (e.g. 'isin' becomes 'isnotin'
-        and 'equals' becomes 'differs')
-    :return: returns a modified pandas DataFrame
+    Helper method that helps in filtering out columns based
+    on the column name.
+
+    :param table: pandas DataFrame
+    :param excluded: (tuple) optional columns to be excluded
+    :return: modified pandas DataFrame
     """
 
-    table = data
-    assert type(table) is pd.core.frame.DataFrame
-    if key is not None and value is not None:
-        assert type(key) is str
-        if key in table:
-            if value == 'first':
-                value = table[key].iloc[0]
-                table = table.loc[table[key] == value]
-            elif (hasattr(value, '__iter__') and
-                      (type(value) is tuple or type(value) is list)):
-                if not reverse:
-                    table = table.loc[table[key].isin(value)]
-                else:
-                    table = table.loc[~table[key].isin(value)]
-            else:
-                if not reverse:
-                    table = table.loc[table[key] == value]
-                else:
-                    table = table.loc[table[key] != value]
-        else:
-            log.debug("%s not in the DataFrame...", key)
-
-    if table.empty:
-        message = 'Column {} does not contain {} value(s)...'.format(key, value)
-        log.debug(message)
-        raise ValueError(message)
-
+    if excluded is not None:
+        assert hasattr(excluded, '__iter__')
+        try:
+            table = table.drop(list(excluded), axis=1)
+        except ValueError:
+            # most likely theses are not in there
+            pass
     return table
 
 
