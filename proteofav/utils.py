@@ -573,5 +573,33 @@ class Downloader(object):
             log.info("Decompressed %s", self._filename)
 
 
+class GenericInputs(object):
+    def __init__(self, identifier=None, filename=None, table=None):
+        self._identifier = identifier
+        self._filename = filename
+        self._table = table
+
+    def _get_identifier(self, identifier=None):
+        if identifier is None and self._identifier is None:
+            raise ValueError("An Identifier is needed!")
+        elif identifier is not None:
+            self._identifier = identifier
+        return self._identifier
+
+    def _get_filename(self, filename=None):
+        if filename is None and self._filename is None:
+            raise ValueError("A filename is needed!")
+        elif filename is not None:
+            self._filename = filename
+        return self._filename
+
+    def _get_table(self, table=None):
+        if table is None and self._table is None:
+            raise ValueError("A Pandas DataFrame is needed!")
+        elif table is not None:
+            self._table = table
+        return self._table
+
+
 if __name__ == '__main__':
     pass

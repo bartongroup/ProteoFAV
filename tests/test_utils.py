@@ -21,7 +21,7 @@ except ImportError:
 from proteofav.utils import (fetch_from_url_or_retry, row_selector,
                              InputFileHandler, OutputFileHandler,
                              constrain_column_types,
-                             exclude_columns, Downloader)
+                             exclude_columns, Downloader, GenericInputs)
 
 from proteofav.config import defaults as config
 
@@ -89,6 +89,7 @@ class TestUTILS(unittest.TestCase):
         self.outputsifts = os.path.join(os.path.join(root, "testdata",
                                                      "tmp/{}.xml".format(self.pdbid)))
         self.Downloader = Downloader
+        self.GenericInputs = GenericInputs
 
         logging.disable(logging.DEBUG)
 
@@ -107,6 +108,7 @@ class TestUTILS(unittest.TestCase):
         self.outputcif = None
         self.outputsifts = None
         self.Downloader = None
+        self.GenericInputs = None
 
         logging.disable(logging.NOTSET)
 
@@ -263,6 +265,36 @@ class TestUTILS(unittest.TestCase):
         self.mock_df = self.exclude_columns(self.mock_df, excluded=("type",))
         self.assertEqual(len(self.mock_df.columns), 2)
         self.assertNotIn("type", self.mock_df)
+
+    def test_generic_inputs(self):
+        # identifier
+        t = self.GenericInputs(identifier="test1")
+        v = t._get_identifier()
+        self.assertEqual(v, "test1")
+        v = t._get_identifier(identifier="test2")
+        self.assertEqual(v, "test2")
+        t = self.GenericInputs()
+        v = t._get_identifier(identifier="test2")
+        self.assertEqual(v, "test2")
+        v = self.GenericInputs(identifier="test1")._get_identifier()
+        self.assertEqual(v, "test1")
+        v = self.GenericInputs()._get_identifier(identifier="test2")
+        self.assertEqual(v, "test2")
+        v = self.GenericInputs(identifier="test1")._get_identifier(identifier="test2")
+        self.assertEqual(v, "test2")
+
+        # filename
+        v = self.GenericInputs(filename="test1")._get_filename()
+        self.assertEqual(v, "test1")
+        v = self.GenericInputs()._get_filename(filename="test2")
+        self.assertEqual(v, "test2")
+
+        # table
+        t = self.GenericInputs(table="test1")
+        v = t._get_table(table=None)
+        self.assertEqual(v, "test1")
+        v = t._get_table(table="test2")
+        self.assertEqual(v, "test2")
 
 
 if __name__ == '__main__':
