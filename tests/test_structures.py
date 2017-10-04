@@ -5,6 +5,7 @@
 import logging
 import sys
 import unittest
+
 try:
     from mock import patch
 except ImportError:
@@ -13,7 +14,9 @@ except ImportError:
 from os import path
 
 from proteofav.config import Defaults
-from proteofav.structures import parse_mmcif_atoms, _mmcif_fields, select_cif
+from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_cif,
+                                  parse_pdb_atoms, _fix_type_symbol,
+                                  _fix_pdb_ins_code, _fix_label_alt_id)
 from proteofav.utils import get_preferred_assembly_id
 
 log = logging.getLogger(__name__)
@@ -31,6 +34,10 @@ class TestMMCIFParser(unittest.TestCase):
                                        "mmcif/2pah.cif")
         self.example_mmcif_bio = path.join(path.dirname(__file__), "testdata",
                                            "mmcif/2pah_bio.cif")
+        self.example_pdb = path.join(path.dirname(__file__), "testdata",
+                                     "pdb/2pah.pdb")
+        self.example_pdb2 = path.join(path.dirname(__file__), "testdata",
+                                      "pdb/1ejg.pdb")
         self.mmcif_atom_parser = parse_mmcif_atoms
         self.mmcif_info_parser = _mmcif_fields
         self.example_tsv_out = path.join(path.dirname(__file__), "testdata",
@@ -38,18 +45,28 @@ class TestMMCIFParser(unittest.TestCase):
         self.select_cif = select_cif
         self.best_assembly = get_preferred_assembly_id
         self.pdbid = '2pah'
+        self.pdb_atom_parser = parse_pdb_atoms
+        self.fix_label_alt_id = _fix_label_alt_id
+        self.fix_pdb_ins_code = _fix_pdb_ins_code
+        self.fix_type_symbol = _fix_type_symbol
 
     def tearDown(self):
         """Remove testing framework."""
 
         self.example_mmcif = None
         self.example_mmcif_bio = None
+        self.example_pdb = None
+        self.example_pdb2 = None
         self.mmcif_atom_parser = None
         self.mmcif_info_parser = None
         self.example_tsv_out = None
         self.select_cif = None
         self.best_assembly = None
         self.pdbid = None
+        self.pdb_atom_parser = None
+        self.fix_label_alt_id = None
+        self.fix_pdb_ins_code = None
+        self.fix_type_symbol = None
 
     def test_atom_to_table_mmcif(self):
         """
@@ -158,6 +175,40 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(data.loc[8001, 'label_asym_id'], 'BA')
         self.assertEqual(data.loc[10631, 'label_asym_id'], 'CA')
         self.assertEqual(data.loc[10633, 'label_asym_id'], 'DA')
+
+    def test_parser_pdb(self):
+        data = self.pdb_atom_parser(self.example_pdb)
+        self.assertEqual(data.loc[0, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[2686, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[5315, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[5316, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[1, 'label_atom_id'], 'CA')
+
+    def test_fix_pdb_ins_code(self):
+        data = self.pdb_atom_parser(self.example_pdb2, fix_ins_code=False)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('', data.loc[0, 'pdbx_PDB_ins_code'])
+        data = self.fix_pdb_ins_code(data)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('?', data.loc[0, 'pdbx_PDB_ins_code'])
+
+    def test_fix_label_alt_id(self):
+        data = self.pdb_atom_parser(self.example_pdb2, fix_label_alt_id=False)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('A', data.loc[0, 'label_alt_id'])
+        data = self.fix_label_alt_id(data)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('A', data.loc[0, 'label_alt_id'])
+
+    def test_fix_type_symbol(self):
+        data = self.pdb_atom_parser(self.example_pdb2, fix_type_symbol=False)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('', data.loc[0, 'type_symbol'])
+        data = self.fix_type_symbol(data)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
 
 
 if __name__ == '__main__':
