@@ -5,7 +5,9 @@
 import unittest
 from os import path
 
-from proteofav.sifts import _sifts_residues_regions, sifts_best
+from proteofav.sifts import (parse_sifts_residues, sifts_best,
+                             _parse_sifts_regions_from_file,
+                             _parse_sifts_dbs_from_file)
 from proteofav.utils import (_pdb_uniprot_sifts_mapping,
                              _uniprot_pdb_sifts_mapping)
 
@@ -16,13 +18,15 @@ class TestSIFTSParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_xml = path.join(path.dirname(__file__), "testdata", "sifts/2pah.xml")
-        self.residues_parser = _sifts_residues_regions
+        self.residues_parser = parse_sifts_residues
 
         self.pdb_id = '2pah'
         self.uniprot_id = 'P00439'
         self.pdb_uniprot = _pdb_uniprot_sifts_mapping
         self.uniprot_pdb = _uniprot_pdb_sifts_mapping
         self.pdb_best = sifts_best
+        self.parser_sifts_regions = _parse_sifts_regions_from_file
+        self.parser_sifts_dbs = _parse_sifts_dbs_from_file
 
     def tearDown(self):
         """Remove testing framework."""
@@ -35,6 +39,8 @@ class TestSIFTSParser(unittest.TestCase):
         self.pdb_uniprot = None
         self.uniprot_uniprot = None
         self.pdb_best = None
+        self.parser_sifts_regions = None
+        self.parser_sifts_dbs = None
 
     def test_to_table_sifts_residues_and_regions(self):
         """
@@ -46,14 +52,16 @@ class TestSIFTSParser(unittest.TestCase):
         are the ones we are expecting.
         """
 
-        data = self.residues_parser(self.example_xml,
-                                    sources=('CATH', 'SCOP', 'Pfam'))
+        data = self.residues_parser(self.example_xml)
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 670)
 
         # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 17)
+        self.assertEqual(len(data.columns.values), 34)
+
+        # state of the residue
+        self.assertEqual(data.loc[0, 'PDB_Annotation'], 'Observed')
 
         # check whether there are particular keys
         self.assertIn('CATH_dbAccessionId', data.columns.values)
@@ -68,7 +76,7 @@ class TestSIFTSParser(unittest.TestCase):
         self.assertIn('CATH_regionId', data.columns.values)
 
         # check the values of particular entries
-        self.assertTrue(data['CATH_regionId'][0] == '1')
+        self.assertTrue(data['CATH_regionId'][0] == 1)
 
     def test_to_table_pdb_uniprot_sifts_mapping(self):
         """
@@ -124,6 +132,19 @@ class TestSIFTSParser(unittest.TestCase):
         self.assertIn('coverage', data)
         self.assertIn('pdb_id', data)
         self.assertIn('chain_id', data)
+
+    def test_parser_sifts_regions(self):
+        data = self.parser_sifts_regions(self.example_xml)
+        self.assertEqual(data['B']['PDB']['1']['dbAccessionId'], self.pdb_id)
+        self.assertEqual(data['B']['PDB']['1']['start'], 1)
+        self.assertEqual(data['B']['PDB']['1']['end'], 335)
+        self.assertEqual(data['B']['PDB']['1']['dbCoordSys'], 'PDBresnum')
+
+    def test_parser_sifts_dbs(self):
+        data = self.parser_sifts_dbs(self.example_xml)
+        self.assertEqual(data['UniProt']['dbSource'], 'UniProt')
+        self.assertEqual(data['UniProt']['dbCoordSys'], 'UniProt')
+        self.assertEqual(data['UniProt']['dbVersion'], '2017.03')
 
 
 if __name__ == '__main__':

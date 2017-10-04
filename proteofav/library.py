@@ -393,5 +393,48 @@ _dssp_types = {
     'Z-CA': float
 }
 
+_sifts_types = {
+    'PDB_regionId': int,
+    'PDB_regionStart': int,
+    'PDB_regionEnd': int,
+    'PDB_regionResNum': str,
+    'PDB_dbVersion': str,
+    'PDB_dbAccessionId': str,
+    'PDB_dbResNum': str,
+    'PDB_dbResName': str,
+    'PDB_dbChainId': str,
+    'PDB_Annotation': str,
+    'PDB_entityId': str,
+    'PDB_codeSecondaryStructure': str,
+    'PDB_nameSecondaryStructure': str,
+    'UniProt_regionId': int,
+    'UniProt_regionStart': int,
+    'UniProt_regionEnd': int,
+    'UniProt_regionResNum': str,
+    'UniProt_dbVersion': str,
+    'UniProt_dbAccessionId': str,
+    'UniProt_dbResNum': str,
+    'UniProt_dbResName': str,
+    'CATH_regionId': int,
+    'CATH_regionStart': int,
+    'CATH_regionEnd': int,
+    'CATH_regionResNum': str,
+    'CATH_dbVersion': str,
+    'CATH_dbAccessionId': str,
+    'SCOP_regionId': int,
+    'SCOP_regionStart': int,
+    'SCOP_regionEnd': int,
+    'SCOP_regionResNum': str,
+    'SCOP_dbVersion': str,
+    'SCOP_dbAccessionId': str,
+    'Pfam_regionId': int,
+    'Pfam_regionStart': int,
+    'Pfam_regionEnd': int,
+    'Pfam_regionResNum': str,
+    'Pfam_dbVersion': str,
+    'Pfam_dbAccessionId': str
+}
+
 pdbx_types = {k: _convert_dtypes[v] for k, v in _pdbx_types.items()}
 dssp_types = {k: _convert_dtypes[v] for k, v in _dssp_types.items()}
+sifts_types = {k: _convert_dtypes[v] for k, v in _sifts_types.items()}
