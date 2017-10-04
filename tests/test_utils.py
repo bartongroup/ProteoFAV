@@ -21,7 +21,7 @@ except ImportError:
 from proteofav.utils import (fetch_from_url_or_retry, row_selector,
                              InputFileHandler, OutputFileHandler,
                              constrain_column_types,
-                             exclude_columns,)
+                             exclude_columns, Downloader)
 
 from proteofav.config import defaults as config
 
@@ -82,6 +82,14 @@ class TestUTILS(unittest.TestCase):
         self.constrain_column_types = constrain_column_types
         self.exclude_columns = exclude_columns
 
+        self.pdbid = "2pah"
+        root = os.path.abspath(os.path.dirname(__file__))
+        self.outputcif = os.path.join(os.path.join(root, "testdata",
+                                                   "tmp/{}.cif".format(self.pdbid)))
+        self.outputsifts = os.path.join(os.path.join(root, "testdata",
+                                                     "tmp/{}.xml".format(self.pdbid)))
+        self.Downloader = Downloader
+
         logging.disable(logging.DEBUG)
 
     def tearDown(self):
@@ -95,6 +103,10 @@ class TestUTILS(unittest.TestCase):
         self.OutputFileHandler = None
         self.constrain_column_types = None
         self.exclude_columns = None
+        self.pdbid = None
+        self.outputcif = None
+        self.outputsifts = None
+        self.Downloader = None
 
         logging.disable(logging.NOTSET)
 
@@ -211,6 +223,18 @@ class TestUTILS(unittest.TestCase):
                                "NEW_DIR", "null.cif")
         with self.assertRaises(OSError):
             self.InputFileHandler(invalid)
+
+    def test_download(self):
+        url = config.cif_fetch + "download/{}_updated.cif".format(self.pdbid)
+        self.Downloader(url=url, filename=self.outputcif,
+                        decompress=False, overwrite=True)
+        os.remove(self.outputcif)
+
+    def test_download_decompress(self):
+        url = config.sifts_fetch + "{}.xml.gz".format(self.pdbid)
+        self.Downloader(url=url, filename=self.outputsifts,
+                        decompress=True, overwrite=True)
+        os.remove(self.outputsifts)
 
     def test_constrain_column_types(self):
         dtypes = {'type': 'float64',

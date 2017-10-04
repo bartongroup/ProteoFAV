@@ -8,6 +8,7 @@ import os
 import shutil
 import socket
 import time
+import tempfile
 try:
     from urllib import quote as urllib_quote
     from urllib import urlretrieve
@@ -93,7 +94,8 @@ def fetch_from_url_or_retry(url, json=True, header=None, post=False, data=None,
                       response.status_code, url, e)
 
 
-def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
+def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts"),
+                overwrite=False):
     """
     Small routine to fetch data files from their respective repositories.
         Use defaults to fetch files from servers. Defaults server are defined
@@ -106,6 +108,7 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
         respective folders
 
     :param sources: where to fetch the data. Must be in the config file.
+    :param overwrite: (boolean) Overrides any existing file, if available
     :return list: list of paths
     :raise: TypeError
     """
@@ -131,18 +134,15 @@ def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts")):
     for source, destination in zip(sources, directory):
         filename = identifier + getattr(defaults, source + '_extension')
         url = getattr(defaults, source + '_fetch') + filename
-        try:
-            urlretrieve(url, destination + filename)
-        except IOError as e:
-            log.error('Unable to retrieve {} for {}'.format(url, str(e)))
-            raise
         if filename.endswith('.gz'):
-            with gzip.open(destination + filename, 'rb') as input_f, \
-                    open(destination + filename.replace('.gz', ''),
-                         'wb') as output_f:
-                shutil.copyfileobj(input_f, output_f)
-                filename = filename.replace('.gz', '')
-        result.append(destination + filename)
+            filename = destination + filename.replace('.gz', '')
+            Downloader(url=url, filename=filename, overwrite=overwrite,
+                       decompress=True)
+        else:
+            filename = destination + filename
+            Downloader(url=url, filename=filename, overwrite=overwrite,
+                       decompress=False)
+        result.append(filename)
     return result
 
 
@@ -517,6 +517,60 @@ class OutputFileHandler(object):
             raise OSError("File '%s' already exists..." % self.__filename)
         elif not os.access(os.path.dirname(self.__filename), os.W_OK):
             raise OSError("File '%s' cannot be written..." % self.__filename)
+
+
+class Downloader(object):
+    def __init__(self, url, filename, decompress=False, overwrite=False):
+        """
+        :param filename: (str) Output filename
+        :param decompress: (boolean) Decompresses the file
+        :param overwrite: (boolean) Overrides any existing file, if available
+        """
+
+        self._url = url
+        self._filename = filename
+        self._decompress = decompress
+        self._overwrite = overwrite
+
+        if not os.path.exists(self._filename) or self._overwrite:
+            OutputFileHandler(self._filename, overwrite=self._overwrite)
+            self._tempfile = tempfile.NamedTemporaryFile().name
+            OutputFileHandler(self._tempfile, overwrite=self._overwrite)
+
+            self._download()
+            if self._decompress:
+                self._uncompress()
+
+    def _download(self):
+        try:
+            try:
+                import urllib.request
+                from urllib.error import URLError, HTTPError
+                with urllib.request.urlopen(self._url) as response, \
+                        open(self._tempfile, 'wb') as outfile:
+                    shutil.copyfileobj(response, outfile)
+            except (AttributeError, ImportError):
+                import urllib
+                urllib.urlretrieve(self._url, self._tempfile)
+            InputFileHandler(self._tempfile)
+            with open(self._tempfile, 'rb') as infile, \
+                    open(self._filename, 'wb') as outfile:
+                shutil.copyfileobj(infile, outfile)
+                os.remove(self._tempfile)
+        except (URLError, HTTPError, IOError, Exception) as e:
+            log.debug("Unable to retrieve %s for %s", self._url, e)
+
+    def _uncompress(self):
+        InputFileHandler(self._filename)
+        with open(self._filename, 'rb') as infile, \
+                open(self._tempfile, 'wb') as outfile:
+            shutil.copyfileobj(infile, outfile)
+        InputFileHandler(self._tempfile)
+        with gzip.open(self._tempfile, 'rb') as infile, \
+                open(self._filename, 'wb') as outfile:
+            shutil.copyfileobj(infile, outfile)
+            os.remove(self._tempfile)
+            log.info("Decompressed %s", self._filename)
 
 
 if __name__ == '__main__':
