@@ -9,7 +9,7 @@ import logging
 import numpy
 
 from proteofav.library import scop_3to1
-from proteofav.dssp import _dssp, _import_dssp_chains_ids
+from proteofav.dssp import parse_dssp_residues, _import_dssp_chains_ids
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
@@ -19,15 +19,23 @@ class TestDSSPParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_dssp = path.join(path.dirname(__file__), "testdata", "dssp/1iej.dssp")
-        self.dssp_ins_code = path.join(path.dirname(__file__), "testdata", "dssp/3mg7.dssp")
-        self.residues_parser = _dssp
+        self.example_dssp = path.join(path.dirname(__file__), "testdata",
+                                      "dssp/1iej.dssp")
+        self.example_dssp2 = path.join(path.dirname(__file__), "testdata",
+                                       "dssp/2pah.dssp")
+        self.example_dssp_bio = path.join(path.dirname(__file__), "testdata",
+                                          "dssp/2pah_bio.dssp")
+        self.dssp_ins_code = path.join(path.dirname(__file__), "testdata",
+                                       "dssp/3mg7.dssp")
+        self.residues_parser = parse_dssp_residues
         self.fix_dssp_ignoring_chains_ids = _import_dssp_chains_ids
 
     def tearDown(self):
         """Remove testing framework."""
 
         self.example_dssp = None
+        self.example_dssp2 = None
+        self.example_dssp_bio = None
         self.dssp_ins_code = None
         self.residues_parser = None
         self.fix_dssp_ignoring_chains_ids = None
@@ -44,13 +52,13 @@ class TestDSSPParser(unittest.TestCase):
         # number of values per column (or rows)
         self.assertEqual(len(data), 329)
         # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 7)
+        self.assertEqual(len(data.columns.values), 12)
         # check whether there are particular keys
-        self.assertIn('chain_id', data.columns.values)
+        self.assertIn('CHAIN', data.columns.values)
         # check the values for particular entries
-        self.assertTrue(data.loc[1, 'chain_id'] == 'A')
-        self.assertEqual(data.loc[8, 'ss'], 'E')
-        self.assertEqual(data.loc[1, 'acc'], 179)
+        self.assertTrue(data.loc[0, 'CHAIN'] == 'A')
+        self.assertEqual(data.loc[7, 'SS'], 'E')
+        self.assertEqual(data.loc[0, 'ACC'], 179)
 
     @unittest.expectedFailure  # FIXME
     def test_fix_dssp_ignoring_chains_ids_has_as_many_chains(self):
@@ -67,10 +75,10 @@ class TestDSSPParser(unittest.TestCase):
         table = fix('4v9d')
         dssp_has_seq = table.aa.isin(scop_3to1.values())
         try:
-            self.assertItemsEqual(table.loc[dssp_has_seq, 'chain_id'].unique(), chains_4v9d)
+            self.assertItemsEqual(table.loc[dssp_has_seq, 'CHAIN'].unique(), chains_4v9d)
         except NameError:
             # python 3.5
-            self.assertCountEqual(table.loc[dssp_has_seq, 'chain_id'].unique(), chains_4v9d)
+            self.assertCountEqual(table.loc[dssp_has_seq, 'CHAIN'].unique(), chains_4v9d)
 
     def test_to_table_dssp_3mg7(self):
         """
@@ -80,25 +88,41 @@ class TestDSSPParser(unittest.TestCase):
         self.assertFalse(self.data.empty, 'Empty DataFrame for example with '
                                           'insertion code.')
 
-        self.assertEqual(self.data.loc[3303, 'icode'], '102A')
-        self.assertEqual(self.data.loc[3303, 'aa'], 'I')
-        self.assertEqual(self.data.loc[3303, 'ss'], 'H')
-        self.assertEqual(self.data.loc[3303, 'acc'], 55)
-        self.assertEqual(self.data.loc[3303, 'phi'], -92.9)
-        self.assertEqual(self.data.loc[3303, 'psi'], -50.1)
-        self.assertNotEqual(self.data.loc[3303, 'icode'], 102)
+        self.assertEqual(self.data.loc[3302, 'RES_FULL'], '102A')
+        self.assertEqual(self.data.loc[3302, 'AA'], 'I')
+        self.assertEqual(self.data.loc[3302, 'SS'], 'H')
+        self.assertEqual(self.data.loc[3302, 'ACC'], 55)
+        self.assertEqual(self.data.loc[3302, 'PHI'], -92.9)
+        self.assertEqual(self.data.loc[3302, 'PSI'], -50.1)
+        self.assertNotEqual(self.data.loc[3302, 'RES'], 102)
+        self.assertEqual(self.data.loc[3302, 'RES'], '102')
+        self.assertEqual(self.data.loc[3302, 'INSCODE'], 'A')
 
-        self.assertEqual(self.data.loc[6402, 'icode'], '187J')
-        self.assertEqual(self.data.loc[6402, 'aa'], 'L')
-        self.assertTrue(numpy.isnan(self.data.loc[6402, 'ss']))
-        self.assertEqual(self.data.loc[6402, 'acc'], 92)
-        self.assertEqual(self.data.loc[6402, 'phi'], -57.8)
-        self.assertEqual(self.data.loc[6402, 'psi'], 360)
-        self.assertNotEqual(self.data.loc[6402, 'psi'], 800)
+        self.assertEqual(self.data.loc[6401, 'RES_FULL'], '187J')
+        self.assertEqual(self.data.loc[6401, 'AA'], 'L')
+        self.assertEqual(self.data.loc[6401, 'SS'], '')
+        self.assertEqual(self.data.loc[6401, 'ACC'], 92)
+        self.assertEqual(self.data.loc[6401, 'PHI'], -57.8)
+        self.assertEqual(self.data.loc[6401, 'PSI'], 360)
+        self.assertNotEqual(self.data.loc[6401, 'PSI'], 800)
 
     def test_empty(self):
         with self.assertRaises(ValueError):
             self.residues_parser(path.join(path.dirname(__file__), "testdata", "dssp/empty.dssp"))
+
+    def test_parser_dssp(self):
+        data = self.residues_parser(self.example_dssp2)
+        self.assertEqual(data.loc[0, 'CHAIN'], 'A')
+        self.assertEqual(data.loc[0, 'RES'], '118')
+        self.assertEqual(data.loc[331, 'CHAIN'], 'B')
+        self.assertEqual(data.loc[331, 'RES'], '118')
+
+    def test_parser_dssp_bio(self):
+        data = self.residues_parser(self.example_dssp_bio)
+        self.assertEqual(data.loc[0, 'CHAIN'], 'A')
+        self.assertEqual(data.loc[0, 'RES'], '118')
+        self.assertEqual(data.loc[662, 'CHAIN'], 'B')
+        self.assertEqual(data.loc[662, 'RES'], '118')
 
 
 if __name__ == '__main__':

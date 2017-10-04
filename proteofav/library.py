@@ -358,4 +358,40 @@ _pdbx_types = {
     'contact_indexes': str,
 }
 
+_dssp_types = {
+    'LINE': int,
+    'RES': str,
+    'RES_FULL': str,
+    'CHAIN': str,
+    'CHAIN_FULL': str,
+    'INSCODE': str,
+    'AA': str,
+    'SS': str,
+    'SS_CLASS': str,
+    'STRUCTURE': str,
+    'BP1': str,
+    'BP2': str,
+    'BP2_CHAIN': str,
+    'ACC': int,
+    'RSA': float,
+    'RSA_CLASS': str,
+    'NH_O_1': int,
+    'NH_O_1_nrg': float,
+    'O_HN_1': int,
+    'O_HN_1_nrg': float,
+    'NH_O_2': int,
+    'NH_O_2_nrg': float,
+    'O_HN_2': int,
+    'O_HN_2_nrg': float,
+    'TCO': float,
+    'KAPPA': float,
+    'ALPHA': float,
+    'PHI': float,
+    'PSI': float,
+    'X-CA': float,
+    'Y-CA': float,
+    'Z-CA': float
+}
+
 pdbx_types = {k: _convert_dtypes[v] for k, v in _pdbx_types.items()}
+dssp_types = {k: _convert_dtypes[v] for k, v in _dssp_types.items()}

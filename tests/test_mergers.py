@@ -14,7 +14,7 @@ from proteofav.config import Defaults
 from proteofav.main import merge_tables
 from proteofav.structures import parse_mmcif_atoms
 from proteofav.sifts import _sifts_residues_regions
-from proteofav.dssp import _dssp
+from proteofav.dssp import parse_dssp_residues
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
@@ -34,7 +34,7 @@ class TestTableMerger(unittest.TestCase):
 
         self.cif_to_table = parse_mmcif_atoms
         self.sifts_to_table = _sifts_residues_regions
-        self.dssp_to_table = _dssp
+        self.dssp_to_table = parse_dssp_residues
 
         self.merge_table = merge_tables
 
@@ -64,11 +64,11 @@ class TestTableMerger(unittest.TestCase):
         self.assertEqual(data.label_atom_id.dropna().unique()[0], 'CA', 'Other atoms than CA')
 
         self.assertEqual(data.PDB_dbChainId.unique()[0], 'A', 'Other chain')
-        self.assertEqual(data.chain_id.dropna().unique()[0], 'A', 'Other chain')
+        self.assertEqual(data.CHAIN.dropna().unique()[0], 'A', 'Other chain')
         self.assertEqual(data.label_asym_id.dropna().unique()[0], 'A', 'Other chain')
 
         self.assertEqual(data.shape[0], 349, 'wrong number of rows')
-        self.assertEqual(data.aa[~data.aa.isnull()].shape[0], 278, 'wrong number of residues')
+        self.assertEqual(data.AA[~data.AA.isnull()].shape[0], 278, 'wrong number of residues')
         self.assertEqual(
             data.UniProt_dbResName[~data.UniProt_dbResName.isnull()].shape[0],
             326,

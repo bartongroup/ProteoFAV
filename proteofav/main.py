@@ -78,24 +78,24 @@ def merge_tables(uniprot_id=None,
     dssp_table = select_dssp(pdb_id, chains=chain)
 
     cif_table.loc[:, 'auth_seq_id'] = cif_table.loc[:, 'auth_seq_id'].astype(str)
-    dssp_table.loc[:, 'icode'] = dssp_table.loc[:, 'icode'].astype(str)
+    dssp_table.loc[:, 'RES_FULL'] = dssp_table.loc[:, 'RES_FULL'].astype(str)
     table = cif_table.merge(dssp_table, how='left',
                             left_on=['auth_seq_id', 'auth_asym_id'],
-                            right_on=['icode', 'chain_id'])
+                            right_on=['RES_FULL', 'CHAIN'])
 
     if sequence_check == 'ignore' or atoms is None:
         # sequence check not support for multiple atoms
         pass
     else:
         # exchange lower cased aa's for  for cysteines
-        lower_cased_aa = table['aa'].str.islower()
+        lower_cased_aa = table['AA'].str.islower()
         if lower_cased_aa.any():
-            table.loc[lower_cased_aa, 'aa'] = 'C'
+            table.loc[lower_cased_aa, 'AA'] = 'C'
 
-        mask = table['label_comp_id'].isnull() | table['aa'].isnull()
-        mask |= table['aa'] == 'X'
+        mask = table['label_comp_id'].isnull() | table['AA'].isnull()
+        mask |= table['AA'] == 'X'
         cif_seq = table['label_comp_id'].apply(to_single_aa.get, args='X')
-        dssp_seq = table['aa']
+        dssp_seq = table['AA']
 
         # Check if the sequences are the same
         if not (dssp_seq[~mask] == cif_seq[~mask]).all():
