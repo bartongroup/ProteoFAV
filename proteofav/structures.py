@@ -31,7 +31,7 @@ from proteofav.library import pdbx_types
 log = logging.getLogger('proteofav.config')
 __all__ = ['parse_mmcif_atoms', '_pdb_validation_to_table',
            '_rcsb_description', '_get_contacts_from_table',
-           # '_residues_as_centroid', '_import_dssp_chains_ids',
+           # 'residues_aggregation', '_import_dssp_chains_ids',
            'select_cif', 'select_validation',
            'write_mmcif_from_table', 'write_pdb_from_table']
 
@@ -401,18 +401,36 @@ def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
     return df
 
 
-def _residues_as_centroid(table):
+def residues_aggregation(table, agg_method='centroid', category='label'):
     """
     Gets the residues' atoms and their centroids (mean).
 
-    :param table: main dataframe
-    :return: compressed dataframe
+    :param table: pandas DataFrame object
+    :param agg_method: current values: 'centroid', 'backbone_centroid'',
+        first', 'mean' and 'unique'
+    :param category: data category to be used as precedence in _atom_site.*_*
+        asym_id, seq_id and atom_id
+    :return: returns a modified pandas DataFrame
     """
-    columns_to_agg = {col: "first" if table[col].dtype == 'object' else 'mean'
-                      for col in table.columns
-                      if col not in UNIFIED_COL}
-    columns_to_agg['auth_atom_id'] = 'unique'
-    return table.groupby(by=UNIFIED_COL, as_index=False).agg(columns_to_agg)
+
+    agg_generic = agg_method
+    agg_cols = ['pdbx_PDB_model_num', '{}_asym_id'.format(category),
+                '{}_seq_id'.format(category)]
+    if agg_method not in ['centroid', 'first', 'unique', 'mean', 'backbone_centroid']:
+        raise ValueError('Method {} is not currently implemented...'
+                         ''.format(agg_method))
+    if agg_method == 'backbone_centroid':
+        table = row_selector(table, '{}_atom_id'.format(category), ('CA', 'N', 'C', 'O'))
+        agg_method = 'centroid'
+    if agg_method == 'centroid' or agg_method == 'mean':
+        agg_generic = 'first'
+        agg_method = 'mean'
+    columns_to_agg = {col: agg_generic if table[col].dtype == 'object' else agg_method
+                      for col in table.columns if col not in agg_cols}
+    columns_to_agg['id'] = 'first'
+    table = table.groupby(by=agg_cols, as_index=False).agg(columns_to_agg)
+    table = table.sort_values(by='id').reset_index()
+    return table
 
 
 def write_mmcif_from_table(table, filename, overwrite=False):
@@ -604,12 +622,8 @@ def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA',
         cif_table = row_selector(cif_table, 'group_PDB', lines)
 
     # select which atom line will represent
-    if atoms == 'centroid':
-        cif_table = _residues_as_centroid(cif_table)
-    elif atoms == 'backbone_centroid':
-        cif_table = row_selector(
-            cif_table, 'label_atom_id', ('CA', 'N', 'C', 'O'))
-        cif_table = _residues_as_centroid(cif_table)
+    if atoms == 'centroid' or atoms == 'backbone_centroid':
+        cif_table = residues_aggregation(cif_table, agg_method=atoms)
     elif atoms:
         cif_table = row_selector(cif_table, 'label_atom_id', atoms)
 

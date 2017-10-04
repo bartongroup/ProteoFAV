@@ -18,7 +18,7 @@ from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_cif,
                                   parse_pdb_atoms, _fix_type_symbol,
                                   _fix_pdb_ins_code, _fix_label_alt_id,
                                   write_mmcif_from_table, write_pdb_from_table,
-                                  _get_atom_line)
+                                  _get_atom_line, residues_aggregation)
 from proteofav.utils import get_preferred_assembly_id
 
 log = logging.getLogger(__name__)
@@ -58,6 +58,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.write_mmcif_from_table = write_mmcif_from_table
         self.write_pdb_from_table = write_pdb_from_table
         self.get_atom_line = _get_atom_line
+        self.residues_aggregation = residues_aggregation
 
     def tearDown(self):
         """Remove testing framework."""
@@ -81,6 +82,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.write_mmcif_from_table = None
         self.write_pdb_from_table = None
         self.get_atom_line = None
+        self.residues_aggregation = None
 
     def test_atom_to_table_mmcif(self):
         """
@@ -268,6 +270,70 @@ class TestMMCIFParser(unittest.TestCase):
         line = self.get_atom_line(data, index=1000, atom_number=1000)
         r = 'ATOM   1000  CD  ARG A 241       1.614   7.798  40.365  1.00 23.29           C  \n'
         self.assertEqual(str(line), r)
+
+    def test_residues_aggregation_first(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('VAL', data.loc[0, 'label_comp_id'])
+        self.assertEqual('118', data.loc[0, 'auth_seq_id'])
+        self.assertEqual(-7.069, data.loc[0, 'Cartn_x'])
+        data = self.residues_aggregation(data, agg_method='first', category='label')
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('VAL', data.loc[0, 'label_comp_id'])
+        self.assertEqual('118', data.loc[0, 'auth_seq_id'])
+        self.assertEqual(-7.069, data.loc[0, 'Cartn_x'])
+
+    def test_residues_aggregation_centroid(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('VAL', data.loc[0, 'label_comp_id'])
+        self.assertEqual('118', data.loc[0, 'auth_seq_id'])
+        self.assertEqual(-7.069, data.loc[0, 'Cartn_x'])
+        data = self.residues_aggregation(data, agg_method='centroid', category='label')
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('VAL', data.loc[0, 'label_comp_id'])
+        self.assertEqual('118', data.loc[0, 'auth_seq_id'])
+        self.assertAlmostEqual(-7.310, data.loc[0, 'Cartn_x'], places=2)
+
+    def test_residues_aggregation_backbone_centroid(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('VAL', data.loc[0, 'label_comp_id'])
+        self.assertEqual('118', data.loc[0, 'auth_seq_id'])
+        self.assertEqual(-7.069, data.loc[0, 'Cartn_x'])
+        data = self.residues_aggregation(data, agg_method='backbone_centroid', category='label')
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('VAL', data.loc[0, 'label_comp_id'])
+        self.assertEqual('118', data.loc[0, 'auth_seq_id'])
+        self.assertAlmostEqual(-6.312, data.loc[0, 'Cartn_x'], places=2)
+
+    def test_residues_aggregation_mean(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('VAL', data.loc[0, 'label_comp_id'])
+        self.assertEqual('118', data.loc[0, 'auth_seq_id'])
+        self.assertEqual(-7.069, data.loc[0, 'Cartn_x'])
+        data = self.residues_aggregation(data, agg_method='backbone_centroid', category='label')
+        self.assertEqual(1, data.loc[0, 'id'])
+        self.assertEqual('N', data.loc[0, 'type_symbol'])
+        self.assertEqual('N', data.loc[0, 'label_atom_id'])
+        self.assertEqual('VAL', data.loc[0, 'label_comp_id'])
+        self.assertEqual('118', data.loc[0, 'auth_seq_id'])
+        self.assertAlmostEqual(-6.312, data.loc[0, 'Cartn_x'], places=2)
 
 
 if __name__ == '__main__':
