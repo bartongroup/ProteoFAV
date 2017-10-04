@@ -1,9 +1,9 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-
-import logging
+import os
 import sys
+import logging
 import unittest
 
 try:
@@ -16,7 +16,9 @@ from os import path
 from proteofav.config import Defaults
 from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_cif,
                                   parse_pdb_atoms, _fix_type_symbol,
-                                  _fix_pdb_ins_code, _fix_label_alt_id)
+                                  _fix_pdb_ins_code, _fix_label_alt_id,
+                                  write_mmcif_from_table, write_pdb_from_table,
+                                  _get_atom_line)
 from proteofav.utils import get_preferred_assembly_id
 
 log = logging.getLogger(__name__)
@@ -38,6 +40,10 @@ class TestMMCIFParser(unittest.TestCase):
                                      "pdb/2pah.pdb")
         self.example_pdb2 = path.join(path.dirname(__file__), "testdata",
                                       "pdb/1ejg.pdb")
+        self.output_mmcif = path.join(path.dirname(__file__), "testdata",
+                                      "tmp/2pah.cif")
+        self.output_pdb = path.join(path.dirname(__file__), "testdata",
+                                    "tmp/2pah.pdb")
         self.mmcif_atom_parser = parse_mmcif_atoms
         self.mmcif_info_parser = _mmcif_fields
         self.example_tsv_out = path.join(path.dirname(__file__), "testdata",
@@ -49,6 +55,9 @@ class TestMMCIFParser(unittest.TestCase):
         self.fix_label_alt_id = _fix_label_alt_id
         self.fix_pdb_ins_code = _fix_pdb_ins_code
         self.fix_type_symbol = _fix_type_symbol
+        self.write_mmcif_from_table = write_mmcif_from_table
+        self.write_pdb_from_table = write_pdb_from_table
+        self.get_atom_line = _get_atom_line
 
     def tearDown(self):
         """Remove testing framework."""
@@ -57,6 +66,8 @@ class TestMMCIFParser(unittest.TestCase):
         self.example_mmcif_bio = None
         self.example_pdb = None
         self.example_pdb2 = None
+        self.output_mmcif = None
+        self.output_pdb = None
         self.mmcif_atom_parser = None
         self.mmcif_info_parser = None
         self.example_tsv_out = None
@@ -67,6 +78,9 @@ class TestMMCIFParser(unittest.TestCase):
         self.fix_label_alt_id = None
         self.fix_pdb_ins_code = None
         self.fix_type_symbol = None
+        self.write_mmcif_from_table = None
+        self.write_pdb_from_table = None
+        self.get_atom_line = None
 
     def test_atom_to_table_mmcif(self):
         """
@@ -209,6 +223,51 @@ class TestMMCIFParser(unittest.TestCase):
         data = self.fix_type_symbol(data)
         self.assertEqual(1, data.loc[0, 'id'])
         self.assertEqual('N', data.loc[0, 'type_symbol'])
+
+    def test_writer_cif(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        self.write_mmcif_from_table(table=data, filename=self.output_mmcif,
+                                    overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_mmcif))
+        data = self.mmcif_atom_parser(self.output_mmcif)
+        self.assertIn('label_asym_id', list(data))
+        os.remove(self.output_mmcif)
+
+    def test_writer_biocif(self):
+        data = self.mmcif_atom_parser(self.example_mmcif_bio)
+        self.write_mmcif_from_table(table=data, filename=self.output_mmcif,
+                                    overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_mmcif))
+        data = self.mmcif_atom_parser(self.output_mmcif)
+        self.assertIn('label_asym_id', list(data))
+        os.remove(self.output_mmcif)
+
+    def test_writer_mmcif2pdb(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        self.write_pdb_from_table(table=data, filename=self.output_pdb,
+                                  overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_pdb))
+        data = self.pdb_atom_parser(self.output_pdb)
+        self.assertIn('label_asym_id', list(data))
+        os.remove(self.output_pdb)
+
+    def test_writer_pdb2mmcif(self):
+        data = self.pdb_atom_parser(self.example_pdb)
+        self.write_mmcif_from_table(table=data, filename=self.output_mmcif,
+                                    overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_mmcif))
+        data = self.mmcif_atom_parser(self.output_mmcif)
+        self.assertIn('label_asym_id', list(data))
+        os.remove(self.output_mmcif)
+
+    def test_get_atom_line(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        line = self.get_atom_line(data, index=0, atom_number=1)
+        r = 'ATOM      1  N   VAL A 118      -7.069  21.943  18.770  1.00 56.51           N  \n'
+        self.assertEqual(str(line), r)
+        line = self.get_atom_line(data, index=1000, atom_number=1000)
+        r = 'ATOM   1000  CD  ARG A 241       1.614   7.798  40.365  1.00 23.29           C  \n'
+        self.assertEqual(str(line), r)
 
 
 if __name__ == '__main__':
