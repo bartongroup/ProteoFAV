@@ -11,9 +11,8 @@ try:
 except ImportError:
     # python 3.5
     from unittest.mock import patch
-from os import path
 
-from proteofav.config import Defaults
+from proteofav.config import defaults
 from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_structures,
                                   parse_pdb_atoms, _fix_type_symbol,
                                   _fix_pdb_ins_code, _fix_label_alt_id,
@@ -21,12 +20,12 @@ from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_struc
                                   _get_atom_line, residues_aggregation,
                                   filter_structures,
                                   _add_mmcif_res_full, _add_mmcif_atom_altloc,
-                                  _remove_multiple_altlocs, _remove_partial_residues)
+                                  _remove_multiple_altlocs, _remove_partial_residues,
+                                  read_structures, write_structures, download_structures,
+                                  PDB, mmCIF)
 from proteofav.utils import get_preferred_assembly_id
 
 log = logging.getLogger(__name__)
-
-defaults = Defaults("config.txt")
 
 
 @patch("proteofav.structures.defaults", defaults)
@@ -35,22 +34,22 @@ class TestMMCIFParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_mmcif = path.join(path.dirname(__file__), "testdata",
-                                       "mmcif/2pah.cif")
-        self.example_mmcif_bio = path.join(path.dirname(__file__), "testdata",
-                                           "mmcif/2pah_bio.cif")
-        self.example_pdb = path.join(path.dirname(__file__), "testdata",
-                                     "pdb/2pah.pdb")
-        self.example_pdb2 = path.join(path.dirname(__file__), "testdata",
-                                      "pdb/1ejg.pdb")
-        self.output_mmcif = path.join(path.dirname(__file__), "testdata",
-                                      "tmp/2pah.cif")
-        self.output_pdb = path.join(path.dirname(__file__), "testdata",
-                                    "tmp/2pah.pdb")
+        self.example_mmcif = os.path.join(os.path.dirname(__file__), "testdata",
+                                          "mmcif/2pah.cif")
+        self.example_mmcif_bio = os.path.join(os.path.dirname(__file__), "testdata",
+                                              "mmcif/2pah_bio.cif")
+        self.example_pdb = os.path.join(os.path.dirname(__file__), "testdata",
+                                        "pdb/2pah.pdb")
+        self.example_pdb2 = os.path.join(os.path.dirname(__file__), "testdata",
+                                         "pdb/1ejg.pdb")
+        self.output_mmcif = os.path.join(os.path.dirname(__file__), "testdata",
+                                         "tmp/2pah.cif")
+        self.output_pdb = os.path.join(os.path.dirname(__file__), "testdata",
+                                       "tmp/2pah.pdb")
         self.mmcif_atom_parser = parse_mmcif_atoms
         self.mmcif_info_parser = _mmcif_fields
-        self.example_tsv_out = path.join(path.dirname(__file__), "testdata",
-                                         "mmcif/2pah-bio.tsv")
+        self.example_tsv_out = os.path.join(os.path.dirname(__file__), "testdata",
+                                            "mmcif/2pah-bio.tsv")
         self.select_structures = select_structures
         self.best_assembly = get_preferred_assembly_id
         self.pdbid = '2pah'
@@ -67,6 +66,11 @@ class TestMMCIFParser(unittest.TestCase):
         self.add_mmcif_atom_altloc = _add_mmcif_atom_altloc
         self.remove_multiple_altlocs = _remove_multiple_altlocs
         self.remove_partial_residues = _remove_partial_residues
+        self.read_structures = read_structures
+        self.write_structures = write_structures
+        self.download_structures = download_structures
+        self.PDB = PDB
+        self.mmCIF = mmCIF
 
     def tearDown(self):
         """Remove testing framework."""
@@ -96,6 +100,11 @@ class TestMMCIFParser(unittest.TestCase):
         self.add_mmcif_atom_altloc = None
         self.remove_multiple_altlocs = None
         self.remove_partial_residues = None
+        self.read_structures = None
+        self.write_structures = None
+        self.download_structures = None
+        self.PDB = None
+        self.mmCIF = None
 
     def test_atom_to_table_mmcif(self):
         """
@@ -476,6 +485,111 @@ class TestMMCIFParser(unittest.TestCase):
                                  remove_altloc=False, remove_hydrogens=False,
                                  reset_atom_id=False, add_res_full=False)
         self.assertEqual(19, list(data.label_seq_id.tolist()).count('25'))
+
+    def test_read_structures(self):
+        data = self.read_structures(self.example_mmcif)
+        self.assertEqual(data.loc[0, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[2686, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[5315, 'label_asym_id'], 'C')
+        self.assertEqual(data.loc[5316, 'label_asym_id'], 'D')
+        self.assertEqual(data.loc[1, 'label_atom_id'], 'CA')
+        self.assertEqual(data.loc[2687, 'label_atom_id'], 'CA')
+        self.assertEqual(data.loc[5315, 'label_atom_id'], 'FE')
+        self.assertEqual(data.loc[5316, 'label_atom_id'], 'FE')
+
+        data = self.read_structures(self.example_pdb)
+        self.assertEqual(data.loc[0, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[2686, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[5315, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[5316, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[1, 'label_atom_id'], 'CA')
+
+        example_dssp = os.path.join(os.path.dirname(__file__), "testdata",
+                                    "dssp/2pah.dssp")
+        with self.assertRaises(ValueError, msg='DSSP format is not recognised'):
+            self.read_structures(example_dssp)
+
+    def test_write_structures(self):
+        # read mmcif and write pdb
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        self.write_structures(data, filename=self.output_pdb, overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_pdb))
+        data = self.pdb_atom_parser(self.output_pdb)
+        self.assertIn('label_asym_id', list(data))
+        os.remove(self.output_pdb)
+
+        # read pdb and write mmcif
+        data = self.pdb_atom_parser(self.example_pdb)
+        self.write_structures(data, filename=self.output_mmcif, overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_mmcif))
+        data = self.mmcif_atom_parser(self.output_mmcif)
+        self.assertIn('label_asym_id', list(data))
+        os.remove(self.output_mmcif)
+
+    def test_download_structures(self):
+        self.download_structures(self.pdbid, self.output_mmcif,
+                                 overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_mmcif))
+        os.remove(self.output_mmcif)
+
+        self.download_structures(self.pdbid, self.output_mmcif, bio_unit=True,
+                                 overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_mmcif))
+        os.remove(self.output_mmcif)
+
+        self.download_structures(self.pdbid, self.output_pdb,
+                                 overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_pdb))
+        os.remove(self.output_pdb)
+
+    def test_main_mmCIF(self):
+        # read
+        data = self.mmCIF.read(self.example_mmcif)
+        self.assertEqual(data.loc[0, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[2686, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[5315, 'label_asym_id'], 'C')
+        self.assertEqual(data.loc[5316, 'label_asym_id'], 'D')
+        self.assertEqual(data.loc[1, 'label_atom_id'], 'CA')
+        self.assertEqual(data.loc[2687, 'label_atom_id'], 'CA')
+        self.assertEqual(data.loc[5315, 'label_atom_id'], 'FE')
+        self.assertEqual(data.loc[5316, 'label_atom_id'], 'FE')
+        # read mmcif and write pdb
+        data = self.mmCIF.read(self.example_mmcif)
+        self.mmCIF.write(data, filename=self.output_pdb, overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_pdb))
+        data = self.pdb_atom_parser(self.output_pdb)
+        self.assertIn('label_asym_id', list(data))
+        os.remove(self.output_pdb)
+        # download
+        self.mmCIF.download(self.pdbid, self.output_mmcif,
+                            overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_mmcif))
+        os.remove(self.output_mmcif)
+        # select
+        self.mmCIF.select(self.pdbid)
+
+    def test_main_PDB(self):
+        # read
+        data = self.PDB.read(self.example_pdb)
+        self.assertEqual(data.loc[0, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[2686, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[5315, 'label_asym_id'], 'A')
+        self.assertEqual(data.loc[5316, 'label_asym_id'], 'B')
+        self.assertEqual(data.loc[1, 'label_atom_id'], 'CA')
+        # read pdb and write mmcif
+        data = self.PDB.read(self.example_pdb)
+        self.PDB.write(data, filename=self.output_mmcif, overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_mmcif))
+        data = self.mmcif_atom_parser(self.output_mmcif)
+        self.assertIn('label_asym_id', list(data))
+        os.remove(self.output_mmcif)
+        # download
+        self.PDB.download(self.pdbid, self.output_pdb,
+                          overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_pdb))
+        os.remove(self.output_pdb)
+        # select
+        self.PDB.select(self.pdbid)
 
 
 if __name__ == '__main__':

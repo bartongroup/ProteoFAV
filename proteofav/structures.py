@@ -24,8 +24,8 @@ from string import ascii_uppercase
 from proteofav.config import defaults
 from proteofav.utils import (fetch_files, fetch_from_url_or_retry,
                              get_preferred_assembly_id, row_selector,
-                             InputFileHandler,
-                             constrain_column_types, exclude_columns)
+                             InputFileHandler, OutputFileHandler, GenericInputs,
+                             constrain_column_types, exclude_columns, Downloader)
 from proteofav.library import pdbx_types, aa_default_atoms
 
 log = logging.getLogger('proteofav.config')
@@ -33,7 +33,8 @@ __all__ = ['parse_mmcif_atoms', '_pdb_validation_to_table',
            '_rcsb_description', '_get_contacts_from_table',
            # 'residues_aggregation', '_import_dssp_chains_ids',
            'filter_structures', 'select_structures', 'select_validation',
-           'write_mmcif_from_table', 'write_pdb_from_table']
+           'write_mmcif_from_table', 'write_pdb_from_table',
+           'read_structures', 'download_structures', 'write_structures', 'PDB', 'mmCIF']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 
@@ -696,7 +697,7 @@ def _get_atom_line(table, index, atom_number, category='auth'):
 ##############################################################################
 def select_structures(identifier=None, excluded_cols=None,
                       bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
-                      **kwargs):
+                      overwrite=False, **kwargs):
     """
     Produce table read from mmCIF file.
 
@@ -706,39 +707,26 @@ def select_structures(identifier=None, excluded_cols=None,
     :param bio_unit_preferred: (boolean) if True fetches the 'preferred'
         biological assembly instead
     :param bio_unit_id: biological unit identifier
+    :param overwrite: boolean
     :return: returns a pandas DataFrame
     """
 
-    # asymmetric unit or biological unit?
     if bio_unit:
-        if bio_unit_preferred:
-            # get the preferred bio assembly id from the PDBe API
-            bio_unit_id = get_preferred_assembly_id(identifier)
-
-        # load the table
-        cif_path = path.join(defaults.db_mmcif,
-                             identifier + '-assembly-' + bio_unit_id + '.cif')
-
-        try:
-            table = parse_mmcif_atoms(cif_path, excluded_cols=excluded_cols)
-        except IOError:
-            cif_path = fetch_files(identifier + '-assembly-' + bio_unit_id,
-                                   sources='bio', directory=defaults.db_mmcif)[0]
-            table = parse_mmcif_atoms(cif_path, excluded_cols=excluded_cols)
+        filename = path.join(defaults.db_mmcif, "{}_bio.cif".format(identifier))
     else:
-        # load the table
-        cif_path = path.join(defaults.db_mmcif, identifier + '.cif')
-        try:
-            table = parse_mmcif_atoms(cif_path, excluded_cols=excluded_cols)
-        except IOError:
-            cif_path = fetch_files(identifier, sources='cif', directory=defaults.db_mmcif)[0]
-            table = parse_mmcif_atoms(cif_path, excluded_cols=excluded_cols)
+        filename = path.join(defaults.db_mmcif, "{}.cif".format(identifier))
 
-    table = filter_structures(table=table, **kwargs)
+    download_structures(identifier=identifier, filename=filename,
+                        bio_unit=bio_unit, bio_unit_preferred=bio_unit_preferred,
+                        bio_unit_id=bio_unit_id, overwrite=overwrite)
+
+    table = read_structures(filename=filename, excluded_cols=excluded_cols)
+
+    table = filter_structures(table=table, excluded_cols=excluded_cols, **kwargs)
 
     # id is the atom identifier and it is need for all atoms tables.
     if table[UNIFIED_COL + ['id']].duplicated().any():
-        log.error('Failed to find unique index for {}'.format(cif_path))
+        log.error('Failed to find unique index for {}'.format(filename))
 
     return table
 
@@ -854,6 +842,168 @@ def filter_structures(table, excluded_cols=None,
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")
     return table
+
+
+def read_structures(filename=None, input_format=None, excluded_cols=None,
+                    pdb_fix_ins_code=True, pdb_fix_label_alt_id=True, pdb_fix_type_symbol=True):
+    """
+    Parse ATOM and HETATM lines from mmCIF or PDB files.
+
+    :param filename: path to the mmCIF/PDB file
+    :param input_format: either 'mmcif', 'cif', 'pdb' or 'ent'
+    :param excluded_cols: option to exclude mmCIF columns
+    :param pdb_fix_ins_code: boolean
+    :param pdb_fix_label_alt_id: boolean
+    :param pdb_fix_type_symbol: boolean
+    :return: returns a pandas DataFrame
+    """
+
+    InputFileHandler(filename)
+
+    # try to guess the correct format
+    if input_format is None:
+        if filename.endswith('.pdb') or filename.endswith('.ent'):
+            input_format = "pdb"
+        elif filename.endswith('.cif') or filename.endswith('.mmcif'):
+            input_format = "mmcif"
+        else:
+            message = ("Could not guess the format of the input file... "
+                       "Please define it by passing 'input_format'='<name>'")
+            raise ValueError(message)
+
+    if input_format == 'mmcif':
+        table = parse_mmcif_atoms(filename, excluded_cols=excluded_cols)
+    elif input_format == 'pdb':
+        table = parse_pdb_atoms(filename, excluded_cols=excluded_cols,
+                                fix_ins_code=pdb_fix_ins_code,
+                                fix_label_alt_id=pdb_fix_label_alt_id,
+                                fix_type_symbol=pdb_fix_type_symbol)
+    if table.empty:
+        raise ValueError('{} resulted in an empty DataFrame...'.format(filename))
+    return table
+
+
+def write_structures(table=None, filename=None, overwrite=False,
+                     output_format=None, category='label'):
+    """
+    Writes 'ATOM' lines in PDB or mmCIF format.
+
+    :param table: pandas DataFrame object
+    :param filename: path to the mmCIF/PDB file
+    :param overwrite: boolean
+    :param category: data category to be used as precedence in _atom_site.*_*
+        asym_id, seq_id and atom_id (generally either 'label' or 'auth')
+    :param output_format: either 'mmcif', 'cif', 'pdb' or 'ent'
+    :return: (side effects) writes to a file
+    """
+
+    OutputFileHandler(filename, overwrite=overwrite)
+
+    if output_format is None:
+        if filename.endswith('.pdb') or filename.endswith('.ent'):
+            output_format = "pdb"
+        elif filename.endswith('.cif') or filename.endswith('.mmcif'):
+            output_format = "mmcif"
+        else:
+            message = ("Could not guess the format of the input file... "
+                       "Please define it by passing 'input_format'='<name>'")
+            raise ValueError(message)
+
+    if output_format == 'mmcif' or output_format == 'cif':
+        write_mmcif_from_table(filename=filename, table=table,
+                               overwrite=overwrite)
+    elif output_format == 'pdb' or output_format == 'ent':
+        write_pdb_from_table(filename=filename, table=table,
+                             overwrite=overwrite, category=category)
+
+
+def download_structures(identifier=None, filename=None, output_format='mmcif',
+                        bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
+                        overwrite=False):
+    """
+    Downloads a structure from the PDBe to the filesystem.
+    BioUnits only work for mmCIF. If `pdb=True` the bio_unit arguments
+    are ignored.
+
+    :param identifier: (str) PDB accession ID
+    :param filename: path to the mmCIF/PDB file
+    :param output_format: either 'mmcif', 'cif', 'pdb' or 'ent'
+    :param bio_unit: (boolean) whether to get BioUnit instead of AsymUnit
+    :param bio_unit_preferred: (boolean) if True fetches the 'preferred'
+        biological assembly instead
+    :param bio_unit_id: biological unit identifier
+    :param overwrite: boolean
+    :return: (side effects) writes to a file
+    """
+
+    if output_format is None:
+        if filename.endswith('.pdb') or filename.endswith('.ent'):
+            output_format = "pdb"
+        elif filename.endswith('.cif') or filename.endswith('.mmcif'):
+            output_format = "mmcif"
+        else:
+            message = ("Could not guess the format of the input file... "
+                       "Please define it by passing 'input_format'='<name>'")
+            raise ValueError(message)
+
+    decompress = False
+    if output_format == 'mmcif' or output_format == 'cif':
+        if bio_unit:
+            # atom lines only?
+            # url_endpoint = ("{}-assembly-{}_atom_site.cif.gz".format(identifier, pref))
+            if bio_unit_preferred:
+                pref = get_preferred_assembly_id(identifier=identifier)
+            else:
+                pref = bio_unit_id
+            url_endpoint = ("{}-assembly-{}.cif.gz".format(identifier, pref))
+            decompress = True
+            url_root = defaults.bio_fetch
+            url = url_root + url_endpoint
+        else:
+            # original mmCIF?
+            # url_endpoint = "download/{}.cif".format(pdbid)
+            url_endpoint = "download/{}_updated.cif".format(identifier)
+            url_root = defaults.cif_fetch
+            url = url_root + url_endpoint
+
+    elif output_format == 'pdb' or output_format == 'ent':
+        url_endpoint = "download/pdb{}.ent".format(identifier)
+        url_root = defaults.cif_fetch
+        url = url_root + url_endpoint
+
+    else:
+        message = ("Could not guess the format of the output file... "
+                   "Please define it by passing 'output_format'='<name>'")
+        raise ValueError(message)
+
+    Downloader(url=url, filename=filename,
+               decompress=decompress, overwrite=overwrite)
+
+
+class Structure(GenericInputs):
+    def read(self, filename=None, **kwargs):
+        filename = self._get_filename(filename)
+        self.table = read_structures(filename=filename, **kwargs)
+        return self.table
+
+    def write(self, table=None, filename=None, **kwargs):
+        table = self._get_table(table)
+        filename = self._get_filename(filename)
+        return write_structures(table=table, filename=filename, **kwargs)
+
+    def download(self, identifier=None, filename=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        filename = self._get_filename(filename)
+        return download_structures(identifier=identifier, filename=filename, **kwargs)
+
+    def select(self, identifier=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        self.table = select_structures(identifier=identifier, **kwargs)
+        return self.table
+
+
+PDB = Structure()
+mmCIF = Structure()
 
 
 def select_validation(pdb_id, chains=None):
