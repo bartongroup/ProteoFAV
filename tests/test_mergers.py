@@ -10,14 +10,13 @@ except ImportError:
     # python 3.5
     from unittest.mock import patch
 
-from proteofav.config import Defaults
+from proteofav.config import defaults
 from proteofav.main import merge_tables
 from proteofav.structures import parse_mmcif_atoms
 from proteofav.sifts import parse_sifts_residues
 from proteofav.dssp import parse_dssp_residues
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
-defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 defaults.db_cif = path.join(path.dirname(__file__), "testdata", "mmcif/")
 defaults.db_sifts = path.join(path.dirname(__file__), "testdata", "sifts/")
 defaults.db_dssp = path.join(path.dirname(__file__), "testdata", "dssp/")

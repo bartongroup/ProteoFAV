@@ -7,12 +7,10 @@ try:
 except ImportError:
     import unittest.mock as mock
 
-from proteofav.config import Defaults
+from proteofav.config import defaults
 from proteofav.variants import (_fetch_icgc_variants, _fetch_ebi_variants, _fetch_ensembl_variants,
                                 _sequence_from_ensembl_protein, _match_uniprot_ensembl_seq,
                                 _compare_sequences, _count_mismatches, parse_uniprot_variants)
-
-defaults = Defaults(path.join(path.dirname(__file__), "config.txt"))
 
 
 @mock.patch("proteofav.structures.defaults", defaults)
