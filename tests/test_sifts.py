@@ -3,15 +3,26 @@
 
 import os
 import unittest
+try:
+    from mock import patch
+except ImportError:
+    # python 3.5
+    from unittest.mock import patch
 
 from proteofav.sifts import (parse_sifts_residues, sifts_best,
                              _parse_sifts_regions_from_file,
                              _parse_sifts_dbs_from_file, select_sifts,
-                             filter_sifts)
+                             filter_sifts, download_sifts, SIFTS)
 from proteofav.utils import (_pdb_uniprot_sifts_mapping,
                              _uniprot_pdb_sifts_mapping)
 
+from proteofav.config import defaults
 
+root = os.path.abspath(os.path.dirname(__file__))
+defaults.db_sifts = os.path.join(root, "testdata", "sifts")
+
+
+@patch("proteofav.sifts.defaults", defaults)
 class TestSIFTSParser(unittest.TestCase):
     """Test the SIFTS parser methods."""
 
@@ -20,8 +31,9 @@ class TestSIFTSParser(unittest.TestCase):
         self.example_xml = os.path.join(os.path.dirname(__file__),
                                         "testdata", "sifts/2pah.xml")
         self.residues_parser = parse_sifts_residues
-
-        self.pdb_id = '2pah'
+        self.output_sifts = os.path.join(os.path.dirname(__file__),
+                                         "testdata", "tmp/2pah.xml")
+        self.pdbid = '2pah'
         self.uniprot_id = 'P00439'
         self.pdb_uniprot = _pdb_uniprot_sifts_mapping
         self.uniprot_pdb = _uniprot_pdb_sifts_mapping
@@ -29,14 +41,16 @@ class TestSIFTSParser(unittest.TestCase):
         self.parser_sifts_regions = _parse_sifts_regions_from_file
         self.parser_sifts_dbs = _parse_sifts_dbs_from_file
         self.filter_sifts = filter_sifts
+        self.download_sifts = download_sifts
+        self.SIFTS = SIFTS
 
     def tearDown(self):
         """Remove testing framework."""
 
         self.example_xml = None
         self.residue_parser = None
-
-        self.pdb_id = None
+        self.output_sifts = None
+        self.pdbid = None
         self.uniprot_id = None
         self.pdb_uniprot = None
         self.uniprot_uniprot = None
@@ -44,6 +58,8 @@ class TestSIFTSParser(unittest.TestCase):
         self.parser_sifts_regions = None
         self.parser_sifts_dbs = None
         self.filter_sifts = None
+        self.download_sifts = None
+        self.SIFTS = None
 
     def test_to_table_sifts_residues_and_regions(self):
         """
@@ -87,7 +103,7 @@ class TestSIFTSParser(unittest.TestCase):
         accession identifiers.
         """
 
-        data = self.pdb_uniprot(self.pdb_id)
+        data = self.pdb_uniprot(self.pdbid)
 
         # number of values per column (or rows)
         self.assertEqual(len(data), 1)
@@ -138,7 +154,7 @@ class TestSIFTSParser(unittest.TestCase):
 
     def test_parser_sifts_regions(self):
         data = self.parser_sifts_regions(self.example_xml)
-        self.assertEqual(data['B']['PDB']['1']['dbAccessionId'], self.pdb_id)
+        self.assertEqual(data['B']['PDB']['1']['dbAccessionId'], self.pdbid)
         self.assertEqual(data['B']['PDB']['1']['start'], 1)
         self.assertEqual(data['B']['PDB']['1']['end'], 335)
         self.assertEqual(data['B']['PDB']['1']['dbCoordSys'], 'PDBresnum')
@@ -189,6 +205,28 @@ class TestSIFTSParser(unittest.TestCase):
         data = self.filter_sifts(data, site=('118',))
         self.assertIn("118", data.UniProt_dbResNum.unique())
         self.assertNotIn("119", data.UniProt_dbResNum.unique())
+
+    def test_download_sifts(self):
+        self.download_sifts(self.pdbid, filename=self.output_sifts,
+                            overwrite=True)
+        if os.path.exists(self.output_sifts):
+            os.remove(self.output_sifts)
+
+    def test_main_SIFTS(self):
+        # read
+        data = self.SIFTS.read(self.example_xml)
+        self.assertTrue(data['CATH_dbAccessionId'][0] == '1.10.800.10')
+        self.assertEqual(data['PDB_dbChainId'][0], 'A')
+        self.assertEqual(data['PDB_dbResName'][0], 'VAL')
+        self.assertIn('UniProt_regionId', data.columns.values)
+        self.assertIn('CATH_regionId', data.columns.values)
+        # download
+        self.SIFTS.download(self.pdbid, filename=self.output_sifts,
+                            overwrite=True)
+        if os.path.exists(self.output_sifts):
+            os.remove(self.output_sifts)
+        # select
+        self.SIFTS.select(self.pdbid)
 
 
 if __name__ == '__main__':

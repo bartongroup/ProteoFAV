@@ -7,8 +7,8 @@ from lxml import etree
 from requests import HTTPError
 from collections import OrderedDict
 
-from proteofav.utils import (fetch_files, row_selector, fetch_from_url_or_retry,
-                             InputFileHandler,
+from proteofav.utils import (row_selector, fetch_from_url_or_retry,
+                             InputFileHandler, Downloader, GenericInputs,
                              constrain_column_types, exclude_columns)
 from proteofav.library import sifts_types
 
@@ -16,7 +16,8 @@ from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_sifts_residues', 'select_sifts', 'sifts_best']
+__all__ = ['parse_sifts_residues', 'select_sifts', 'sifts_best',
+           'download_sifts', 'SIFTS']
 
 
 def _parse_sifts_dbs_from_file(filename, excluded_cols=None):
@@ -351,22 +352,21 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     return table
 
 
-def select_sifts(identifier, **kwargs):
+def select_sifts(identifier, excluded_cols=None, overwrite=False, **kwargs):
     """
     Produce table ready from SIFTS XML file.
 
-    :param identifier: PDB identifier
-    :return: table read to be merged
+    :param identifier: PDB/mmCIF accession ID
+    :param excluded_cols: option to exclude mmCIF columns
+    :param overwrite: boolean
+    :return: returns a pandas DataFrame
     """
 
-    sifts_path = path.join(defaults.db_sifts, identifier + '.xml')
+    filename = path.join(defaults.db_sifts, "{}.xml".format(identifier))
 
-    try:
-        table = parse_sifts_residues(sifts_path)
-    except IOError:
-        sifts_path = fetch_files(identifier, sources='sifts',
-                                 directory=defaults.db_sifts)[0]
-        table = parse_sifts_residues(sifts_path)
+    download_sifts(identifier=identifier, filename=filename, overwrite=overwrite)
+
+    table = parse_sifts_residues(filename=filename, excluded_cols=excluded_cols)
 
     table = filter_sifts(table, **kwargs)
     return table
@@ -416,6 +416,43 @@ def filter_sifts(table, excluded_cols=None, chains=None,
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")
     return table
+
+
+def download_sifts(identifier=None, filename=None, overwrite=False):
+    """
+     Downloads a SIFTS xml from the EBI FTP to the filesystem.
+
+    :param identifier: (str) PDB accession ID
+    :param filename: path to the SIFTS file
+    :param overwrite: (boolean)
+    :return: (side effects) output file path
+    """
+
+    url_root = defaults.sifts_fetch
+    url_endpoint = "{}.xml.gz".format(identifier)
+    url = url_root + url_endpoint
+    Downloader(url=url, filename=filename,
+               decompress=True, overwrite=overwrite)
+
+
+class SIFTS(GenericInputs):
+    def read(self, filename=None, **kwargs):
+        filename = self._get_filename(filename)
+        self.table = parse_sifts_residues(filename=filename, **kwargs)
+        return self.table
+
+    def download(self, identifier=None, filename=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        filename = self._get_filename(filename)
+        return download_sifts(identifier=identifier, filename=filename, **kwargs)
+
+    def select(self, identifier=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        self.table = select_sifts(identifier=identifier, **kwargs)
+        return self.table
+
+
+SIFTS = SIFTS()
 
 
 def sifts_best(uniprot_id, first=False):
