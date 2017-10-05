@@ -202,6 +202,29 @@ scop_3to1 = {'CPI': 'X', 'AGM': 'R', 'G25': 'G', 'MA7': 'A', 'MA6': 'A', 'B2V': 
 
 to_single_aa = dict(zip(three_letter_aa, single_letter_aa))
 
+aa_default_atoms = {
+    'ALA': ['N', 'O', 'CA', 'C', 'CB'],
+    'CYS': ['N', 'O', 'CA', 'C', 'SG', 'CB'],
+    'ASP': ['N', 'O', 'CA', 'C', 'CG', 'OD2', 'OD1', 'CB'],
+    'GLU': ['N', 'O', 'CA', 'C', 'CD', 'CG', 'OE1', 'CB', 'OE2'],
+    'PHE': ['N', 'O', 'CA', 'C', 'CE1', 'CD1', 'CZ', 'CG', 'CB', 'CE2', 'CD2'],
+    'GLY': ['N', 'O', 'CA', 'C'],
+    'HIS': ['N', 'O', 'CA', 'C', 'CB', 'CG', 'ND1', 'CD2', 'CE1', 'NE2'],
+    'LYS': ['N', 'O', 'CA', 'C', 'NZ', 'CD', 'CE', 'CG', 'CB'],
+    'ILE': ['N', 'O', 'CA', 'C', 'CG2', 'CD1', 'CB', 'CG1'],
+    'LEU': ['N', 'O', 'CA', 'C', 'CD2', 'CD1', 'CG', 'CB'],
+    'MET': ['N', 'O', 'CA', 'C', 'SD', 'CG', 'CB', 'CE'],
+    'ASN': ['N', 'O', 'CA', 'C', 'ND2', 'OD1', 'CB', 'CG'],
+    'PRO': ['N', 'O', 'CA', 'C', 'CD', 'CG', 'CB'],
+    'GLN': ['N', 'O', 'CA', 'C', 'CD', 'NE2', 'OE1', 'CB', 'CG'],
+    'ARG': ['N', 'O', 'CA', 'C', 'CZ', 'CD', 'NE', 'CG', 'CB'],
+    'SER': ['N', 'O', 'CA', 'C', 'CB', 'OG'],
+    'THR': ['N', 'O', 'CA', 'C', 'OG1', 'CG2', 'CB'],
+    'VAL': ['N', 'O', 'CA', 'C', 'CB', 'CG2', 'CG1'],
+    'TYR': ['N', 'O', 'CA', 'C', 'CE1', 'CD1', 'CZ', 'CG', 'CB', 'CE2', 'CD2'],
+    'TRP': ['N', 'O', 'CA', 'C', 'NE1', 'CZ3', 'CD1', 'CE3', 'CG', 'CB', 'CZ2', 'CE2', 'CD2'],
+}
+
 # taken from http://www.ensembl.org/info/about/species.html
 # on 10.08.2015
 valid_ensembl_species = ['orycteropus_afer_afer',

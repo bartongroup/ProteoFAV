@@ -26,13 +26,13 @@ from proteofav.utils import (fetch_files, fetch_from_url_or_retry,
                              get_preferred_assembly_id, row_selector,
                              InputFileHandler,
                              constrain_column_types, exclude_columns)
-from proteofav.library import pdbx_types
+from proteofav.library import pdbx_types, aa_default_atoms
 
 log = logging.getLogger('proteofav.config')
 __all__ = ['parse_mmcif_atoms', '_pdb_validation_to_table',
            '_rcsb_description', '_get_contacts_from_table',
            # 'residues_aggregation', '_import_dssp_chains_ids',
-           'select_cif', 'select_validation',
+           'filter_structures', 'select_structures', 'select_validation',
            'write_mmcif_from_table', 'write_pdb_from_table']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
@@ -401,6 +401,135 @@ def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
     return df
 
 
+def _add_mmcif_res_full(table):
+    """
+    Utility that adds a new column to the table.
+    Adds a new column with the 'full res' (i.e. seq_id + ins_code).
+
+    :param table: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    # adds both 'label' and 'auth' entries
+    if 'label_seq_id' in table:
+        table['label_seq_id_full'] = (table['label_seq_id'] +
+                                      table['pdbx_PDB_ins_code'].str.replace('?', ''))
+    if 'auth_seq_id' in table:
+        table['auth_seq_id_full'] = (table['auth_seq_id'] +
+                                     table['pdbx_PDB_ins_code'].str.replace('?', ''))
+    return table
+
+
+def _add_mmcif_atom_altloc(table):
+    """
+    Utility that adds new columns to the table.
+    adds: 'label_atom_altloc_id', and 'auth_atom_altloc_id' which is a
+        string join between '*_atom_id' + 'label_alt_id'
+
+    :param table: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    def join_atom_altloc(table, category='label'):
+        atom = table['{}_atom_id'.format(category)]
+        altloc = table['label_alt_id']
+
+        new_column = (atom + '.' + altloc)
+        has_no_alt = altloc.isin(['.', '', ' '])
+        new_column[has_no_alt] = atom.loc[has_no_alt]
+
+        return new_column
+
+    # NB. Use of assign prevents inplace modification
+    table = table.assign(label_atom_altloc_id=join_atom_altloc(table, 'label'))
+    table = table.assign(auth_atom_altloc_id=join_atom_altloc(table, 'auth'))
+    return table
+
+
+def _remove_multiple_altlocs(table):
+    """
+    Removes alternative locations (i.e. 'rows') leaving only the first.
+    Needs to find rows with alt_id != '.' and then find following rows until
+    '.' appears again (expects atoms to be consequent).
+
+    :param table: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    drop_ixs = []
+    for ix in table.index:
+        altloc = table.loc[ix, 'label_alt_id']
+        if altloc != '.':
+            # table.loc[ix, 'label_alt_id'] = '.'
+            table.set_value(ix, 'label_alt_id', '.')
+            atomid = table.loc[ix, 'label_atom_id']
+            try:
+                for nx in range(1, 100, 1):
+                    altnx = table.loc[ix + nx, 'label_alt_id']
+                    atomnx = table.loc[ix + nx, 'label_atom_id']
+                    if altnx != '.' and atomnx == atomid:
+                        # store indexes of the rows to be dropped
+                        drop_ixs.append(ix + nx)
+                    else:
+                        break
+            except KeyError:
+                break
+    return table.drop(table.index[drop_ixs])
+
+
+def _remove_partial_residues(table, category='label'):
+    """
+    Removes residues that contain missing atoms. Needs to check
+    which atoms are available for each residue. Also removes residues with
+    same '*_seq_id' as the previous residue.
+
+    :param table: pandas DataFrame object
+    :param category: data category to be used as precedence in _atom_site.*_*
+        asym_id, seq_id and atom_id
+    :return: returns a modified pandas DataFrame
+    """
+
+    drop_ixs = []
+    curr_ixs = []
+    curr_atoms = []
+    prev_res = ''
+    prev_seq = ''
+    next_res_for_rm = False
+    table.reset_index(inplace=True)
+    table = table.drop(['index'], axis=1)
+    for ix in table.index:
+        group = table.loc[ix, 'group_PDB']
+        if group == 'ATOM':
+            curr_res = table.loc[ix, '{}_comp_id'.format(category)]
+            curr_seq = table.loc[ix, '{}_seq_id'.format(category)]
+            if curr_res in aa_default_atoms:
+                curr_atom = table.loc[ix, '{}_atom_id'.format(category)]
+                if prev_res == curr_res and prev_seq == curr_seq:
+                    curr_ixs.append(ix)
+                    curr_atoms.append(curr_atom)
+                else:
+                    if curr_ixs:
+                        # check available atoms
+                        default_atoms = aa_default_atoms[prev_res]
+                        intersection = list(set(default_atoms) - set(curr_atoms))
+                        if intersection != [] or next_res_for_rm:
+                            # missing atoms: means that there are atoms in the 'default' list
+                            # that are not observed in the structure
+                            drop_ixs += curr_ixs
+                            next_res_for_rm = False
+                        elif prev_seq == curr_seq:
+                            # duplicated *_seq_id: means that the next residue has got the same
+                            # *_seq_id as the previous res (could come from removing altlocs)
+                            next_res_for_rm = True
+                    # resetting variables
+                    prev_res = curr_res
+                    prev_seq = curr_seq
+                    curr_ixs = [ix]
+                    curr_atoms = [curr_atom]
+
+    return table.drop(table.index[drop_ixs])
+
+
 def residues_aggregation(table, agg_method='centroid', category='label'):
     """
     Gets the residues' atoms and their centroids (mean).
@@ -565,73 +694,166 @@ def _get_atom_line(table, index, atom_number, category='auth'):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_cif(pdb_id, models='first', chains=None, lines='ATOM', atoms='CA',
-               biounit=False, assembly_id=None):
+def select_structures(identifier=None, excluded_cols=None,
+                      bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
+                      **kwargs):
     """
     Produce table read from mmCIF file.
 
-    :param atoms: Which atom should represent the structure
-    :param pdb_id: PDB identifier
-    :param models: protein structure entity
-    :param chains: protein structure chain
-    :param lines: choice of ATOM, HETATMS or both (list).
-    :param biounit: boolean to use the preferred biounit available
-    :param assembly_id: only applies when biounit is True
-    :return: Table read to be joined
+    :param identifier: PDB/mmCIF accession ID
+    :param excluded_cols: option to exclude mmCIF columns
+    :param bio_unit: (boolean) whether to get BioUnit instead of AsymUnit
+    :param bio_unit_preferred: (boolean) if True fetches the 'preferred'
+        biological assembly instead
+    :param bio_unit_id: biological unit identifier
+    :return: returns a pandas DataFrame
     """
 
     # asymmetric unit or biological unit?
-    if biounit:
-        if assembly_id is None:
+    if bio_unit:
+        if bio_unit_preferred:
             # get the preferred bio assembly id from the PDBe API
-            assembly_id = get_preferred_assembly_id(pdb_id)
+            bio_unit_id = get_preferred_assembly_id(identifier)
 
         # load the table
         cif_path = path.join(defaults.db_mmcif,
-                             pdb_id + '-assembly-' + assembly_id + '.cif')
+                             identifier + '-assembly-' + bio_unit_id + '.cif')
 
         try:
-            cif_table = parse_mmcif_atoms(cif_path)
+            table = parse_mmcif_atoms(cif_path, excluded_cols=excluded_cols)
         except IOError:
-            cif_path = fetch_files(pdb_id + '-assembly-' + assembly_id,
+            cif_path = fetch_files(identifier + '-assembly-' + bio_unit_id,
                                    sources='bio', directory=defaults.db_mmcif)[0]
-            cif_table = parse_mmcif_atoms(cif_path)
+            table = parse_mmcif_atoms(cif_path, excluded_cols=excluded_cols)
     else:
         # load the table
-        cif_path = path.join(defaults.db_mmcif, pdb_id + '.cif')
+        cif_path = path.join(defaults.db_mmcif, identifier + '.cif')
         try:
-            cif_table = parse_mmcif_atoms(cif_path)
+            table = parse_mmcif_atoms(cif_path, excluded_cols=excluded_cols)
         except IOError:
-            cif_path = fetch_files(pdb_id, sources='cif', directory=defaults.db_mmcif)[0]
-            cif_table = parse_mmcif_atoms(cif_path)
+            cif_path = fetch_files(identifier, sources='cif', directory=defaults.db_mmcif)[0]
+            table = parse_mmcif_atoms(cif_path, excluded_cols=excluded_cols)
 
+    table = filter_structures(table=table, **kwargs)
+
+    # id is the atom identifier and it is need for all atoms tables.
+    if table[UNIFIED_COL + ['id']].duplicated().any():
+        log.error('Failed to find unique index for {}'.format(cif_path))
+
+    return table
+
+
+def filter_structures(table, excluded_cols=None,
+                      models='first', chains=None, res=None, res_full=None,
+                      comps=None, atoms=None, lines=None, category='label',
+                      residue_agg=False, agg_method='centroid',
+                      add_res_full=True, add_atom_altloc=False, reset_atom_id=True,
+                      remove_altloc=False, remove_hydrogens=True, remove_partial_res=False):
+    """
+    Filter and residue aggregation for mmCIF and PDB Pandas Dataframes.
+    Improves consistency  ATOM and HETATM lines from mmCIF or PDB files.
+
+    :param table: pandas DataFrame object
+    :param excluded_cols: option to exclude mmCIF columns
+    :param models: (tuple) model IDs or 'first' or None
+    :param chains: (tuple) chain IDs or None
+    :param res: (tuple) res IDs or None
+    :param res_full: (tuple) full res IDs ('*_seq_id' + 'pdbx_PDB_ins_code') or None
+    :param comps: (tuple) comp IDs or None
+    :param atoms: (tuple) atom IDs or None
+    :param lines: (tuple) 'ATOM' or 'HETATM' or None (both)
+    :param category: data category to be used as precedence in _atom_site.*_*
+        asym_id, seq_id and atom_id
+    :param residue_agg: (boolean) whether to do residue aggregation
+    :param agg_method: current values: 'centroid', 'first', 'mean' and 'unique'
+    :param add_res_full: option to extend the table with 'res_full'
+        i.e. res_number + insertion_code (e.g. '12A')
+    :param add_atom_altloc: boolean (new string join)
+    :param reset_atom_id: boolean
+    :param remove_altloc: boolean
+    :param remove_hydrogens: boolean
+    :param remove_partial_res: (boolean) removes amino acids with missing atoms
+    :return: returns a pandas DataFrame
+    """
+
+    # selections / filtering
+    # excluding columns
+    table = exclude_columns(table, excluded=excluded_cols)
+
+    # excluding rows
     # select the models
+    # if only first model (>1 in NMR structures)
     if models:
-        try:
-            cif_table = row_selector(cif_table, 'pdbx_PDB_model_num', models)
-        except AttributeError:
-            err = 'Structure {} has only one model, which was kept'.format
-            log.info(err(pdb_id))
+        table = row_selector(table, 'pdbx_PDB_model_num', models)
+        log.info("mmCIF/PDB table filtered by pdbx_PDB_model_num...")
 
     # select chains
     if chains:
-        cif_table = row_selector(cif_table, 'auth_asym_id', chains)
+        table = row_selector(table, '{}_asym_id'.format(category), chains)
+        log.info("mmCIF/PDB table filtered by %s_asym_id...", category)
 
     # select lines
     if lines:
-        cif_table = row_selector(cif_table, 'group_PDB', lines)
+        table = row_selector(table, 'group_PDB', lines)
+        log.info("mmCIF/PDB table filtered by group_PDB...")
 
-    # select which atom line will represent
+    # table modular extensions or selections
+    if add_res_full:
+        table = _add_mmcif_res_full(table)
+        log.info("mmCIF/PDB added full res (res + ins_code)...")
+
+    if add_atom_altloc:
+        table = _add_mmcif_atom_altloc(table)
+        log.info("mmCIF/PDB added full atom (atom + altloc)...")
+
+    if remove_hydrogens:
+        table = row_selector(table, key='type_symbol', value='H', reverse=True)
+        log.info("mmCIF/PDB removed existing hydrogens...")
+
+    if remove_altloc:
+        table = _remove_multiple_altlocs(table)
+        reset_atom_id = True
+        log.info("mmCIF/PDB removed altlocs...")
+
+    if remove_partial_res:
+        table = _remove_partial_residues(table)
+        log.info("mmCIF/PDB removed incomplete residues...")
+
+    if reset_atom_id:
+        table.reset_index(inplace=True)
+        table = table.drop(['index'], axis=1)
+        table['id'] = table.index + 1
+        log.info("mmCIF/PDB reset atom numbers...")
+
+    # excluding rows
+    # select residues
+    if res:
+        table = row_selector(table, '{}_seq_id'.format(category), res)
+        log.info("mmCIF/PDB table filtered by %s_seq_id...", category)
+
+    if res_full:
+        table = row_selector(table, '{}_seq_id_full'.format(category), res_full)
+        log.info("mmCIF/PDB table filtered by %s_seq_id_full...", category)
+
+    # select amino acids/molecules
+    if comps:
+        table = row_selector(table, '{}_comp_id'.format(category), comps)
+        log.info("mmCIF/PDB table filtered by %s_comp_id...", category)
+
+    # select atoms
     if atoms == 'centroid' or atoms == 'backbone_centroid':
-        cif_table = residues_aggregation(cif_table, agg_method=atoms)
+        table = residues_aggregation(table, agg_method=atoms)
     elif atoms:
-        cif_table = row_selector(cif_table, 'label_atom_id', atoms)
+        table = row_selector(table, '{}_atom_id'.format(category), atoms)
+        log.info("mmCIF/PDB table filtered by %s_atom_id...", category)
 
-    # id is the atom identifier and it is need for all atoms tables.
-    if cif_table[UNIFIED_COL + ['id']].duplicated().any():
-        log.error('Failed to find unique index for {}'.format(cif_path))
+    if residue_agg:
+        table = residues_aggregation(table, agg_method=agg_method,
+                                     category=category)
 
-    return cif_table
+    if table.empty:
+        raise ValueError("The filters resulted in an empty DataFrame...")
+    return table
 
 
 def select_validation(pdb_id, chains=None):

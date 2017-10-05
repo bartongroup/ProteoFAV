@@ -9,7 +9,7 @@ try:
 except ImportError:
     from io import StringIO
 
-from proteofav.structures import select_cif
+from proteofav.structures import select_structures
 from proteofav.utils import (fetch_files, row_selector, InputFileHandler,
                              constrain_column_types, exclude_columns)
 from proteofav.library import scop_3to1, dssp_types
@@ -113,7 +113,7 @@ def _import_dssp_chains_ids(pdb_id):
     :return: DSSP table with corrected chain ids.
     """
     dssp_table = select_dssp(pdb_id)
-    cif_table = select_cif(pdb_id)
+    cif_table = select_structures(pdb_id)
     cif_seq = cif_table.auth_comp_id.apply(scop_3to1.get)
     dssp_has_seq = dssp_table.aa.isin(scop_3to1.values())
     dssp_seq = dssp_table.aa[dssp_has_seq]

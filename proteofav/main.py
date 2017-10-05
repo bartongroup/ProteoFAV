@@ -7,7 +7,7 @@ import sys
 import click
 
 from proteofav.library import to_single_aa
-from proteofav.structures import select_cif, select_validation
+from proteofav.structures import select_structures, select_validation
 from proteofav.sifts import select_sifts, sifts_best
 from proteofav.dssp import select_dssp
 
@@ -73,7 +73,7 @@ def merge_tables(uniprot_id=None,
         chain = best_pdb['chain_id']
         log.info('Best structure, chain: {}|{} for {} '.format(pdb_id, chain, uniprot_id))
 
-    cif_table = select_cif(pdb_id, chains=chain, models=model, atoms=atoms)
+    cif_table = select_structures(pdb_id, chains=chain, models=model, atoms=atoms)
 
     dssp_table = select_dssp(pdb_id, chains=chain)
 
