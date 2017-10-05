@@ -3,6 +3,9 @@
 from os import path
 import logging
 import pandas as pd
+from string import digits
+from string import ascii_uppercase
+
 try:
     # python 2.7
     from StringIO import StringIO
@@ -12,14 +15,15 @@ except ImportError:
 from proteofav.structures import select_structures
 from proteofav.utils import (fetch_files, row_selector, InputFileHandler,
                              constrain_column_types, exclude_columns)
-from proteofav.library import scop_3to1, dssp_types
-
+from proteofav.library import (scop_3to1, dssp_types, aa_codes_1to3_extended)
+from proteofav.library import (ASA_Miller, ASA_Wilke, ASA_Sander)
 
 from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'select_dssp']
+__all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'select_dssp',
+           'filter_dssp', 'get_rsa', 'get_rsa_class']
 
 
 def parse_dssp_residues(filename, excluded_cols=None):
@@ -126,44 +130,286 @@ def _import_dssp_chains_ids(pdb_id):
     return dssp_table
 
 
-def select_dssp(pdb_id, chains=None):
+def _add_dssp_rsa(data, method="Sander"):
+    """
+    Utility that adds a new column to the table.
+    Adds a new column with Relative Solvent Accessibility (RSA).
+
+    :param data: pandas DataFrame object
+    :param method: name of the method
+    :return: returns a modified pandas DataFrame
+    """
+
+    table = data
+    rsas = []
+    for i in table.index:
+        rsas.append(get_rsa(table.loc[i, "ACC"], table.loc[i, "AA"],
+                            method=method))
+    table["RSA"] = rsas
+    return table
+
+
+def _add_dssp_full_chain(data):
+    """
+    Utility that adds a new column to the table.
+    Specific to DSSP outputs that are generated from mmCIF files containing
+    multiple char chain IDs (e.g. 'AA' and 'BA'). These are found in the
+    Biological Unit mmCIF structures.
+
+    :param data: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    # BioUnits chain naming seems to follow the pattern:
+    # chain A becomes AA then
+    # AA->AZ then A0->A9 [A-Z then 0-9] and then AAA->AAZ and AA0->AA9
+    # then ABA->ABZ and AB0->AB9
+    alpha1 = [k for k in ascii_uppercase + digits]
+    alpha2 = ['A' + k for k in alpha1]
+    alpha3 = ['B' + k for k in alpha1]
+    new_alphabet = alpha1 + alpha2 + alpha3
+
+    table = data
+    chains_full = []
+    c = -1
+    for ix in table.index:
+        chain_id = table.loc[ix, "CHAIN"]
+        aa_id = table.loc[ix, "AA"]
+        if aa_id == "!*":
+            if table.loc[ix - 1, "CHAIN"] == table.loc[ix + 1, "CHAIN"]:
+                c += 1
+            else:
+                c = -1
+        if c != -1 and aa_id != "!*" and aa_id != "!":
+            if c >= len(new_alphabet):
+                raise IndexError('Alphabet needs update to accommodate '
+                                 'such high number of chains...')
+            chain_id += new_alphabet[c]
+        chains_full.append(chain_id)
+    if not chains_full:
+        table["CHAIN_FULL"] = table["CHAIN"]
+    else:
+        table["CHAIN_FULL"] = chains_full
+    return table
+
+
+def _add_dssp_rsa_class(data, rsa_col='RSA'):
+    """
+    Utility that adds a new column to the table.
+    Adds a new column with Relative Solvent Accessibility (RSA) classes.
+
+    :param data: pandas DataFrame object
+    :param rsa_col: column name
+    :return: returns a modified pandas DataFrame
+    """
+
+    table = data
+    rsas_class = []
+    for i in table.index:
+        rsas_class.append(get_rsa_class(table.loc[i, "{}".format(rsa_col)]))
+    table["{}_CLASS".format(rsa_col)] = rsas_class
+    return table
+
+
+def _add_dssp_ss_reduced(data):
+    """
+    Utility that adds a new column to the table.
+    Adds a reduced-stated Secondary Structure (SS).
+
+    :param data: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    table = data
+    alphas = ['H']
+    betas = ['E']
+    coils = ['G', 'I', 'B', 'C', 'T', 'S', '', ' ']
+
+    # replace some NaN with custom strings
+    # table['SS'] = table.SS.fillnan('-')
+    sss = []
+    for ix in table.index:
+        ss = table.loc[ix, "SS"]
+        if ss in alphas:
+            ss = 'H'
+        elif ss in betas:
+            ss = 'E'
+        elif ss in coils:
+            ss = 'C'
+        else:
+            ss = '-'
+        sss.append(ss)
+
+    table["SS_CLASS"] = sss
+
+    return table
+
+
+def get_rsa(acc, resname, method="Sander"):
+    """
+    Computes Relative Solvent Accessibility (RSA) from an input
+    DSSP ACC value, and according to ASA standard values.
+
+    :param acc: (int) DSSP ACC
+    :param resname: single letter residue name
+    :param method: name of the method
+    :return: (float) RSA value
+    """
+
+    rsa = ""
+    try:
+        acc = float(acc)
+    except ValueError:
+        return rsa
+
+    try:
+        assert len(resname) == 1
+    except AssertionError:
+        return rsa
+
+    if method == "Miller":
+        sasa = ASA_Miller
+    elif method == "Wilke":
+        sasa = ASA_Wilke
+    elif method == "Sander":
+        sasa = ASA_Sander
+    else:
+        raise ValueError("Method {} is not implemented...".format(method))
+
+    try:
+        rsa = round((acc / sasa[aa_codes_1to3_extended[resname]] * 100), 3)
+    except KeyError:
+        return rsa
+
+    return rsa
+
+
+def get_rsa_class(rsa):
+    """
+    Gets a class based on the RSA value
+
+    :param rsa: (float) RSA score or string
+    :return: RSA class
+    """
+    rsa_class = '-'
+    try:
+        rsa = float(rsa)
+        # surface is rsa >= 25% (value = 2)
+        # exposed is rsa >= 5% and rsa < 25% (value = 1)
+        # core is rsa < 5% (value = 0)
+        if rsa >= 25.0:
+            rsa_class = 'Surface'
+        elif 5.0 <= rsa < 25.0:
+            rsa_class = 'Part. Exposed'
+        else:
+            rsa_class = 'Core'
+    except ValueError:
+        # returns a string
+        pass
+    return rsa_class
+
+
+def select_dssp(identifier, excluded_cols=None, **kwargs):
     """
     Produce table from DSSP file output.
 
-    :param pdb_id: PDB identifier
-    :param chains: PDB protein chain
-    :return: pandas dataframe
+    :param identifier: PDB/mmCIF accession ID
+    :param excluded_cols: option to exclude mmCIF columns
+    :return: returns a pandas DataFrame
     """
-    dssp_path = path.join(defaults.db_dssp, pdb_id + '.dssp')
+
+    dssp_path = path.join(defaults.db_dssp, identifier + '.dssp')
     try:
-        dssp_table = parse_dssp_residues(dssp_path)
+        table = parse_dssp_residues(dssp_path)
     except IOError:
-        dssp_path = fetch_files(pdb_id, sources='dssp', directory=defaults.db_dssp)[0]
-        dssp_table = parse_dssp_residues(dssp_path)
+        dssp_path = fetch_files(identifier, sources='dssp', directory=defaults.db_dssp)[0]
+        table = parse_dssp_residues(dssp_path)
     except StopIteration:
         raise IOError('{} is unreadable.'.format(dssp_path))
 
-    if chains:
-        try:
-            dssp_table = row_selector(dssp_table, 'CHAIN', chains)
-        except ValueError:
-            # TODO:
-            # Could not find the correct PDB chain. It happens for protein structures with complex
-            # chain identifier, as 4v9d.
-            # dssp_table = _import_dssp_chains_ids(pdb_id)
-            # dssp_table = row_selector(dssp_table, 'CHAIN', chains)
-            log.error('Error loading DSSP file: Chain {} not in {}'.format(chains, pdb_id))
-            return None
-    # remove dssp line of transition between chains
-    dssp_table = dssp_table[dssp_table.AA != '!']
+    table = filter_dssp(table=table, excluded_cols=excluded_cols, **kwargs)
 
-    dssp_table.reset_index(inplace=True)
-    if dssp_table.duplicated(['RES_FULL', 'CHAIN']).any():
-        log.info('DSSP file for {} has not unique index'.format(pdb_id))
+    table.reset_index(inplace=True)
+    if table.duplicated(['RES_FULL', 'CHAIN']).any():
+        log.info('DSSP file for {} has not unique index'.format(identifier))
     try:
-        dssp_table.loc[:, 'RES_FULL'] = dssp_table.loc[:, 'RES_FULL'].astype(int)
+        table.loc[:, 'RES_FULL'] = table.loc[:, 'RES_FULL'].astype(int)
     except ValueError:
-        log.warning("{} insertion code detected in the DSSP file.".format(pdb_id))
-        dssp_table.loc[:, 'RES_FULL'] = dssp_table.loc[:, 'RES_FULL'].astype(str)
+        log.warning("{} insertion code detected in the DSSP file.".format(identifier))
+        table.loc[:, 'RES_FULL'] = table.loc[:, 'RES_FULL'].astype(str)
 
-    return dssp_table
+    return table
+
+
+def filter_dssp(table, excluded_cols=None,
+                chains=None, chains_full=None, res=None,
+                add_full_chain=True, add_ss_reduced=False,
+                add_rsa=True, rsa_method="Sander", add_rsa_class=False,
+                reset_res_id=False):
+    """
+    Filter for DSSP Pandas Dataframes.
+
+    :param table: pandas DataFrame object
+    :param excluded_cols: option to exclude DSSP columns
+    :param chains: (tuple) chain IDs or None
+    :param chains_full: (tuple) alternative chain IDs or None
+    :param res: (tuple) res IDs or None
+    :param add_full_chain: boolean
+    :param add_ss_reduced: boolean
+    :param add_rsa: boolean
+    :param rsa_method: "Sander",  "Miller" or "Wilke"
+    :param add_rsa_class: boolean
+    :param reset_res_id: boolean
+    :return: returns a pandas DataFrame
+    """
+
+    # selections / filtering
+    # excluding columns
+    table = exclude_columns(table, excluded=excluded_cols)
+
+    # table modular extensions
+    if add_full_chain:
+        table = _add_dssp_full_chain(table)
+        log.info("DSSP added full chain...")
+
+    table['SS'] = table.SS.fillna('-')
+    if add_ss_reduced:
+        table = _add_dssp_ss_reduced(table)
+        log.info("DSSP added reduced SS...")
+
+    if add_rsa:
+        table = _add_dssp_rsa(table, method=rsa_method)
+        log.info("DSSP added RSA...")
+
+    if add_rsa_class:
+        table = _add_dssp_rsa_class(table)
+        log.info("DSSP added RSA class...")
+
+    # drop missing residues ("!")  and chain breaks ("!*")
+    table = table[table['AA'] != '!']
+    table = table[table['AA'] != '!*']
+
+    # excluding rows
+    if chains is not None:
+        table = row_selector(table, 'CHAIN', chains)
+        log.info("DSSP table filtered by CHAIN...")
+
+    if chains_full is not None:
+        table = row_selector(table, 'CHAIN_FULL', chains_full)
+        log.info("DSSP table filtered by CHAIN_FULL...")
+
+    if res is not None:
+        table = row_selector(table, 'RES', res)
+        log.info("DSSP table filtered by RES...")
+
+    if reset_res_id:
+        table.reset_index(inplace=True)
+        table = table.drop(['index'], axis=1)
+        table['LINE'] = table.index + 1
+        log.info("DSSP reset residue number...")
+
+    if table.empty:
+        raise ValueError("The filters resulted in an empty DataFrame...")
+    return table
+
+

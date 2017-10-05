@@ -202,6 +202,23 @@ scop_3to1 = {'CPI': 'X', 'AGM': 'R', 'G25': 'G', 'MA7': 'A', 'MA6': 'A', 'B2V': 
 
 to_single_aa = dict(zip(three_letter_aa, single_letter_aa))
 
+# Asx	B	Aspartic acid or Asparagine
+# Glx	Z	Glutamic acid or Glutamine
+# Xaa	X	Any amino acid
+# Xle	J	Leucine or Isoleucine
+aa_codes_1to3_extended = {
+    'A': 'ALA', 'C': 'CYS', 'D': 'ASP',
+    'E': 'GLU', 'F': 'PHE', 'G': 'GLY',
+    'H': 'HIS', 'K': 'LYS', 'I': 'ILE',
+    'L': 'LEU', 'M': 'MET', 'N': 'ASN',
+    'P': 'PRO', 'Q': 'GLN', 'R': 'ARG',
+    'S': 'SER', 'T': 'THR', 'V': 'VAL',
+    'Y': 'TYR', 'W': 'TRP',
+    'X': 'LNT', 'B': 'ASX', 'Z': 'GLX',
+    'J': 'XLE', 'U': 'SEC', 'O': 'PYL',
+    '-': '---',
+}
+
 aa_default_atoms = {
     'ALA': ['N', 'O', 'CA', 'C', 'CB'],
     'CYS': ['N', 'O', 'CA', 'C', 'SG', 'CB'],
@@ -223,6 +240,35 @@ aa_default_atoms = {
     'VAL': ['N', 'O', 'CA', 'C', 'CB', 'CG2', 'CG1'],
     'TYR': ['N', 'O', 'CA', 'C', 'CE1', 'CD1', 'CZ', 'CG', 'CB', 'CE2', 'CD2'],
     'TRP': ['N', 'O', 'CA', 'C', 'NE1', 'CZ3', 'CD1', 'CE3', 'CG', 'CB', 'CZ2', 'CE2', 'CD2'],
+}
+
+# obtained from biopython at
+# https://github.com/biopython/biopython/blob/master/Bio/PDB/DSSP.py
+# Miller max acc: Miller et al. 1987 http://dx.doi.org/10.1016/0022-2836(87)90038-6
+# Wilke: Tien et al. 2013 http://dx.doi.org/10.1371/journal.pone.0080635
+# Sander: Sander & Rost 1994 http://dx.doi.org/10.1002/prot.340200303
+ASA_Miller = {
+    'ALA': 113.0, 'ARG': 241.0, 'ASN': 158.0, 'ASP': 151.0,
+    'CYS': 140.0, 'GLN': 189.0, 'GLU': 183.0, 'GLY': 85.0,
+    'HIS': 194.0, 'ILE': 182.0, 'LEU': 180.0, 'LYS': 211.0,
+    'MET': 204.0, 'PHE': 218.0, 'PRO': 143.0, 'SER': 122.0,
+    'THR': 146.0, 'TRP': 259.0, 'TYR': 229.0, 'VAL': 160.0
+}
+
+ASA_Wilke = {
+    'ALA': 129.0, 'ARG': 274.0, 'ASN': 195.0, 'ASP': 193.0,
+    'CYS': 167.0, 'GLN': 225.0, 'GLU': 223.0, 'GLY': 104.0,
+    'HIS': 224.0, 'ILE': 197.0, 'LEU': 201.0, 'LYS': 236.0,
+    'MET': 224.0, 'PHE': 240.0, 'PRO': 159.0, 'SER': 155.0,
+    'THR': 172.0, 'TRP': 285.0, 'TYR': 263.0, 'VAL': 174.0
+}
+
+ASA_Sander = {
+    'ALA': 106.0, 'ARG': 248.0, 'ASN': 157.0, 'ASP': 163.0,
+    'CYS': 135.0, 'GLN': 198.0, 'GLU': 194.0, 'GLY': 84.0,
+    'HIS': 184.0, 'ILE': 169.0, 'LEU': 164.0, 'LYS': 205.0,
+    'MET': 188.0, 'PHE': 197.0, 'PRO': 136.0, 'SER': 130.0,
+    'THR': 142.0, 'TRP': 227.0, 'TYR': 222.0, 'VAL': 142.0
 }
 
 # taken from http://www.ensembl.org/info/about/species.html
