@@ -351,31 +351,71 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     return table
 
 
-def select_sifts(pdb_id, chains=None):
+def select_sifts(identifier, **kwargs):
     """
     Produce table ready from SIFTS XML file.
 
-    :param pdb_id: PDB identifier
-    :param chains: Protein structure chain
+    :param identifier: PDB identifier
     :return: table read to be merged
     """
-    sifts_path = path.join(defaults.db_sifts, pdb_id + '.xml')
+
+    sifts_path = path.join(defaults.db_sifts, identifier + '.xml')
 
     try:
-        sift_table = parse_sifts_residues(sifts_path)
+        table = parse_sifts_residues(sifts_path)
     except IOError:
-        sifts_path = fetch_files(pdb_id, sources='sifts',
+        sifts_path = fetch_files(identifier, sources='sifts',
                                  directory=defaults.db_sifts)[0]
-        sift_table = parse_sifts_residues(sifts_path)
-        # standardise column types
-    for col in sift_table:
-        #  bool columns
-        if col.startswith('is'):
-            sift_table[col].fillna(False)
-    if chains is None:
-        return sift_table
-    else:
-        return row_selector(sift_table, 'PDB_dbChainId', chains)
+        table = parse_sifts_residues(sifts_path)
+
+    table = filter_sifts(table, **kwargs)
+    return table
+
+
+def filter_sifts(table, excluded_cols=None, chains=None,
+                 chain_auth=None, res=None, uniprot=None, site=None):
+    """
+    Parses the residue fields of a SIFTS XML file.
+
+    :param table: pandas DataFrame object
+    :param excluded_cols: option to exclude SIFTS dbSources
+    :param chains: (tuple) chain IDs or None
+    :param chain_auth: (tuple) chain IDs or None
+    :param res: (tuple) res IDs or None
+    :param uniprot: (tuple) UniProt IDs or None
+    :param site: (tuple) UniProt (positional) sites or None
+    :return: returns a pandas DataFrame
+    """
+
+    # selections / filtering
+    # excluding columns
+    table = exclude_columns(table, excluded=excluded_cols)
+
+    # excluding rows
+    if chains is not None:
+        table = row_selector(table, 'PDB_entityId', chains)
+        log.info("SIFTS table filtered by PDB_entityId...")
+
+    if chain_auth is not None:
+        table = row_selector(table, 'PDB_dbChainId', chain_auth)
+        log.info("SIFTS table filtered by PDB_dbChainId...")
+
+    if res is not None:
+        table = row_selector(table, 'PDB_dbResNum', res)
+        log.info("SIFTS table filtered by PDB_dbResNum...")
+
+    if uniprot is not None:
+        table = row_selector(table, 'UniProt_dbAccessionId', uniprot)
+        log.info("SIFTS table filtered by UniProt_dbAccessionId...")
+
+    if site is not None:
+        table = row_selector(table, 'UniProt_dbResNum', site)
+        log.info("SIFTS table filtered by UniProt_dbResNum...")
+        log.info("DSSP reset residue number...")
+
+    if table.empty:
+        raise ValueError("The filters resulted in an empty DataFrame...")
+    return table
 
 
 def sifts_best(uniprot_id, first=False):

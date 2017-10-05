@@ -1,13 +1,13 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-
+import os
 import unittest
-from os import path
 
 from proteofav.sifts import (parse_sifts_residues, sifts_best,
                              _parse_sifts_regions_from_file,
-                             _parse_sifts_dbs_from_file)
+                             _parse_sifts_dbs_from_file, select_sifts,
+                             filter_sifts)
 from proteofav.utils import (_pdb_uniprot_sifts_mapping,
                              _uniprot_pdb_sifts_mapping)
 
@@ -17,7 +17,8 @@ class TestSIFTSParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_xml = path.join(path.dirname(__file__), "testdata", "sifts/2pah.xml")
+        self.example_xml = os.path.join(os.path.dirname(__file__),
+                                        "testdata", "sifts/2pah.xml")
         self.residues_parser = parse_sifts_residues
 
         self.pdb_id = '2pah'
@@ -27,6 +28,7 @@ class TestSIFTSParser(unittest.TestCase):
         self.pdb_best = sifts_best
         self.parser_sifts_regions = _parse_sifts_regions_from_file
         self.parser_sifts_dbs = _parse_sifts_dbs_from_file
+        self.filter_sifts = filter_sifts
 
     def tearDown(self):
         """Remove testing framework."""
@@ -41,6 +43,7 @@ class TestSIFTSParser(unittest.TestCase):
         self.pdb_best = None
         self.parser_sifts_regions = None
         self.parser_sifts_dbs = None
+        self.filter_sifts = None
 
     def test_to_table_sifts_residues_and_regions(self):
         """
@@ -145,6 +148,47 @@ class TestSIFTSParser(unittest.TestCase):
         self.assertEqual(data['UniProt']['dbSource'], 'UniProt')
         self.assertEqual(data['UniProt']['dbCoordSys'], 'UniProt')
         self.assertEqual(data['UniProt']['dbVersion'], '2017.03')
+
+    def test_sifts_filter_default_excluded(self):
+        data = self.residues_parser(self.example_xml, excluded_cols=())
+        keys = [k for k in data]
+        self.assertIn("InterPro_dbAccessionId", keys)
+        self.assertIn("NCBI_dbAccessionId", keys)
+
+        exc_cols = ("InterPro", "GO", "EC", "NCBI")
+        data = self.residues_parser(self.example_xml, excluded_cols=exc_cols)
+        keys = [k for k in data]
+        self.assertNotIn("InterPro_dbAccessionId", keys)
+        self.assertNotIn("NCBI_dbAccessionId", keys)
+
+    def test_sifts_filter_uniprot_id(self):
+        data = self.residues_parser(self.example_xml)
+        data = self.filter_sifts(data, uniprot=('P00439',))
+        self.assertEqual("P00439", data.loc[0, 'UniProt_dbAccessionId'])
+
+    def test_sifts_filter_chain(self):
+        data = self.residues_parser(self.example_xml)
+        data = self.filter_sifts(data, chains=('A',))
+        self.assertIn("A", data.PDB_entityId.unique())
+        self.assertNotIn("B", data.PDB_entityId.unique())
+
+    def test_sifts_filter_chain_auth(self):
+        data = self.residues_parser(self.example_xml)
+        data = self.filter_sifts(data, chain_auth=('A',))
+        self.assertIn("A", data.PDB_dbChainId.unique())
+        self.assertNotIn("B", data.PDB_dbChainId.unique())
+
+    def test_sifts_filter_res(self):
+        data = self.residues_parser(self.example_xml)
+        data = self.filter_sifts(data, res=('285',))
+        self.assertIn("285", data.PDB_dbResNum.unique())
+        self.assertNotIn("286", data.PDB_dbResNum.unique())
+
+    def test_sifts_filter_site(self):
+        data = self.residues_parser(self.example_xml)
+        data = self.filter_sifts(data, site=('118',))
+        self.assertIn("118", data.UniProt_dbResNum.unique())
+        self.assertNotIn("119", data.UniProt_dbResNum.unique())
 
 
 if __name__ == '__main__':
