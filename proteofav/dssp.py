@@ -13,8 +13,9 @@ except ImportError:
     from io import StringIO
 
 from proteofav.structures import select_structures
-from proteofav.utils import (fetch_files, row_selector, InputFileHandler,
-                             constrain_column_types, exclude_columns)
+from proteofav.utils import (row_selector, InputFileHandler,
+                             constrain_column_types, exclude_columns,
+                             GenericInputs, Downloader)
 from proteofav.library import (scop_3to1, dssp_types, aa_codes_1to3_extended)
 from proteofav.library import (ASA_Miller, ASA_Wilke, ASA_Sander)
 
@@ -23,7 +24,7 @@ from proteofav.config import defaults
 log = logging.getLogger('proteofav.config')
 
 __all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'select_dssp',
-           'filter_dssp', 'get_rsa', 'get_rsa_class']
+           'filter_dssp', 'get_rsa', 'get_rsa_class', 'download_dssp', 'DSSP']
 
 
 def parse_dssp_residues(filename, excluded_cols=None):
@@ -309,27 +310,24 @@ def get_rsa_class(rsa):
     return rsa_class
 
 
-def select_dssp(identifier, excluded_cols=None, **kwargs):
+def select_dssp(identifier, excluded_cols=None, overwrite=False, **kwargs):
     """
     Produce table from DSSP file output.
 
     :param identifier: PDB/mmCIF accession ID
-    :param excluded_cols: option to exclude mmCIF columns
+    :param excluded_cols: option to exclude DSSP columns
+    :param overwrite: boolean
     :return: returns a pandas DataFrame
     """
 
-    dssp_path = path.join(defaults.db_dssp, identifier + '.dssp')
-    try:
-        table = parse_dssp_residues(dssp_path)
-    except IOError:
-        dssp_path = fetch_files(identifier, sources='dssp', directory=defaults.db_dssp)[0]
-        table = parse_dssp_residues(dssp_path)
-    except StopIteration:
-        raise IOError('{} is unreadable.'.format(dssp_path))
+    filename = path.join(defaults.db_dssp, "{}.dssp".format(identifier))
+
+    download_dssp(identifier=identifier, filename=filename, overwrite=overwrite)
+
+    table = parse_dssp_residues(filename=filename, excluded_cols=excluded_cols)
 
     table = filter_dssp(table=table, excluded_cols=excluded_cols, **kwargs)
 
-    table.reset_index(inplace=True)
     if table.duplicated(['RES_FULL', 'CHAIN']).any():
         log.info('DSSP file for {} has not unique index'.format(identifier))
     try:
@@ -337,7 +335,6 @@ def select_dssp(identifier, excluded_cols=None, **kwargs):
     except ValueError:
         log.warning("{} insertion code detected in the DSSP file.".format(identifier))
         table.loc[:, 'RES_FULL'] = table.loc[:, 'RES_FULL'].astype(str)
-
     return table
 
 
@@ -413,3 +410,39 @@ def filter_dssp(table, excluded_cols=None,
     return table
 
 
+def download_dssp(identifier=None, filename=None, overwrite=False):
+    """
+    Downloads a pre-computed DSSP from the CMBI Netherlands FTP
+    to the filesystem.
+
+    :param identifier: (str) PDB accession ID
+    :param filename: path to the DSSP file
+    :param overwrite: (boolean)
+    :return: (side effects) output file path
+    """
+
+    url_root = defaults.dssp_fetch
+    url_endpoint = "{}.dssp".format(identifier)
+    url = url_root + url_endpoint
+    Downloader(url=url, filename=filename,
+               decompress=False, overwrite=overwrite)
+
+
+class DSSP(GenericInputs):
+    def read(self, filename=None, **kwargs):
+        filename = self._get_filename(filename)
+        self.table = parse_dssp_residues(filename=filename, **kwargs)
+        return self.table
+
+    def download(self, identifier=None, filename=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        filename = self._get_filename(filename)
+        return download_dssp(identifier=identifier, filename=filename, **kwargs)
+
+    def select(self, identifier=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        self.table = select_dssp(identifier=identifier, **kwargs)
+        return self.table
+
+
+DSSP = DSSP()

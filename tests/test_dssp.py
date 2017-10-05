@@ -1,36 +1,48 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
 
-
+import os
 import logging
 import unittest
-from os import path
+try:
+    from mock import patch
+except ImportError:
+    # python 3.5
+    from unittest.mock import patch
 
 from proteofav.library import scop_3to1
+from proteofav.config import defaults
 from proteofav.dssp import (parse_dssp_residues, _import_dssp_chains_ids,
                             select_dssp, filter_dssp, get_rsa, get_rsa_class,
                             _add_dssp_rsa, _add_dssp_rsa_class,
-                            _add_dssp_ss_reduced, _add_dssp_full_chain)
+                            _add_dssp_ss_reduced, _add_dssp_full_chain,
+                            download_dssp, DSSP)
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
+root = os.path.abspath(os.path.dirname(__file__))
+defaults.db_dssp = os.path.join(root, "testdata", "dssp")
 
+
+@patch("proteofav.dssp.defaults", defaults)
 class TestDSSPParser(unittest.TestCase):
     """Test the DSSP parser methods."""
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_dssp = path.join(path.dirname(__file__), "testdata",
-                                      "dssp/1iej.dssp")
-        self.example_dssp2 = path.join(path.dirname(__file__), "testdata",
-                                       "dssp/2pah.dssp")
-        self.example_dssp_bio = path.join(path.dirname(__file__), "testdata",
-                                          "dssp/2pah_bio.dssp")
-        self.dssp_ins_code = path.join(path.dirname(__file__), "testdata",
-                                       "dssp/3mg7.dssp")
+        self.example_dssp = os.path.join(os.path.dirname(__file__), "testdata",
+                                         "dssp/1iej.dssp")
+        self.example_dssp2 = os.path.join(os.path.dirname(__file__), "testdata",
+                                          "dssp/2pah.dssp")
+        self.example_dssp_bio = os.path.join(os.path.dirname(__file__), "testdata",
+                                             "dssp/2pah_bio.dssp")
+        self.dssp_ins_code = os.path.join(os.path.dirname(__file__), "testdata",
+                                          "dssp/3mg7.dssp")
+        self.output_dssp = os.path.join(os.path.dirname(__file__), "testdata",
+                                        "tmp/2pah.dssp")
         self.residues_parser = parse_dssp_residues
         self.fix_dssp_ignoring_chains_ids = _import_dssp_chains_ids
-
+        self.pdbid = '2pah'
         self.filter_dssp = filter_dssp
         self.add_full_chain = _add_dssp_full_chain
         self.add_rsa = _add_dssp_rsa
@@ -38,6 +50,8 @@ class TestDSSPParser(unittest.TestCase):
         self.add_ss_reduced = _add_dssp_ss_reduced
         self.get_rsa = get_rsa
         self.get_rsa_class = get_rsa_class
+        self.download_dssp = download_dssp
+        self.DSSP = DSSP
 
     def tearDown(self):
         """Remove testing framework."""
@@ -46,6 +60,7 @@ class TestDSSPParser(unittest.TestCase):
         self.example_dssp2 = None
         self.example_dssp_bio = None
         self.dssp_ins_code = None
+        self.output_dssp = None
         self.residues_parser = None
         self.fix_dssp_ignoring_chains_ids = None
         self.filter_dssp = None
@@ -55,6 +70,8 @@ class TestDSSPParser(unittest.TestCase):
         self.add_ss_reduced = None
         self.get_rsa = None
         self.get_rsa_class = None
+        self.download_dssp = None
+        self.DSSP = None
 
     def test_to_table_dssp_residues(self):
         """
@@ -124,7 +141,8 @@ class TestDSSPParser(unittest.TestCase):
 
     def test_empty(self):
         with self.assertRaises(ValueError):
-            self.residues_parser(path.join(path.dirname(__file__), "testdata", "dssp/empty.dssp"))
+            self.residues_parser(os.path.join(os.path.dirname(__file__),
+                                              "testdata", "dssp/empty.dssp"))
 
     def test_parser_dssp(self):
         data = self.residues_parser(self.example_dssp2)
@@ -195,7 +213,7 @@ class TestDSSPParser(unittest.TestCase):
         data = self.add_rsa_class(data)
         self.assertEqual('Surface', data.loc[2, 'RSA_CLASS'])
         data = self.residues_parser(self.example_dssp_bio)
-        data = self.filter_dssp(data,  add_rsa=True, add_rsa_class=True)
+        data = self.filter_dssp(data, add_rsa=True, add_rsa_class=True)
         self.assertEqual('Surface', data.loc[2, 'RSA_CLASS'])
 
     def test_filter_dssp_chain(self):
@@ -229,6 +247,27 @@ class TestDSSPParser(unittest.TestCase):
         self.assertEqual('Part. Exposed', rsa_class)
         rsa_class = self.get_rsa_class(1.5)
         self.assertEqual('Core', rsa_class)
+
+    def test_download_dssp(self):
+        self.download_dssp(self.pdbid, filename=self.output_dssp,
+                           overwrite=True)
+        if os.path.exists(self.output_dssp):
+            os.remove(self.output_dssp)
+
+    def test_main_DSSP(self):
+        # read
+        data = self.DSSP.read(self.example_dssp2)
+        self.assertEqual(data.loc[0, 'CHAIN'], 'A')
+        self.assertEqual(data.loc[0, 'RES'], '118')
+        self.assertEqual(data.loc[331, 'CHAIN'], 'B')
+        self.assertEqual(data.loc[331, 'RES'], '118')
+        # download
+        self.DSSP.download(self.pdbid, filename=self.output_dssp,
+                           overwrite=True)
+        if os.path.exists(self.output_dssp):
+            os.remove(self.output_dssp)
+        # select
+        self.DSSP.select(self.pdbid)
 
 
 if __name__ == '__main__':
