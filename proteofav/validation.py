@@ -7,19 +7,18 @@ import pandas as pd
 from lxml import etree
 
 from proteofav.config import defaults
-from proteofav.utils import (row_selector, fetch_files,
-                             constrain_column_types, exclude_columns)
+from proteofav.utils import (row_selector, constrain_column_types,
+                             exclude_columns, Downloader, GenericInputs)
 from proteofav.library import validation_types
-
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_validation_residues', 'select_validation']
+__all__ = ['parse_validation_residues', 'select_validation',
+           'filter_validation', 'download_validation', 'Validation']
 
 
-def parse_validation_residues(filename, excluded_cols=None,
-                              global_parameters=False,
-                              fix_label_alt_id=True, fix_ins_code=True,):
+def parse_validation_residues(filename, excluded_cols=None, global_parameters=False,
+                              fix_label_alt_id=True, fix_ins_code=True):
     """
     Parse the PDB's validation file to a pandas DataFrame.
 
@@ -46,6 +45,9 @@ def parse_validation_residues(filename, excluded_cols=None,
         row.update(not_in)
 
     table = pd.DataFrame(rows, columns=header)
+
+    # column renaming
+    table.columns = ["validation_" + name for name in table.columns]
 
     # fixes the 'icode'
     if fix_ins_code:
@@ -78,8 +80,8 @@ def _fix_pdb_ins_code(table):
     :return: returns a modified pandas DataFrame
     """
 
-    table['icode'] = table['icode'].str.replace('\ |', '?')
-    table['icode'] = table['icode'].fillna('?').astype(str)
+    table['validation_icode'] = table['validation_icode'].str.replace('\ |', '?')
+    table['validation_icode'] = table['validation_icode'].fillna('?').astype(str)
     return table
 
 
@@ -92,29 +94,94 @@ def _fix_label_alt_id(table):
     :return: returns a modified pandas DataFrame
     """
 
-    table['altcode'] = table['altcode'].str.replace('\ |\?', '.')
-    table['altcode'] = table['altcode'].fillna('.').astype(str)
+    table['validation_altcode'] = table['validation_altcode'].str.replace('\ |\?', '.')
+    table['validation_altcode'] = table['validation_altcode'].fillna('.').astype(str)
     return table
 
 
-def select_validation(pdb_id, chains=None):
+def select_validation(identifier, excluded_cols=None, overwrite=False, **kwargs):
     """
     Produces table from PDB validation XML file.
 
-    :param pdb_id: PDB identifier
-    :param chains: PDB protein chain
-    :return: pandas dataframe
+    :param identifier: PDB/mmCIF accession ID
+    :param excluded_cols: option to exclude mmCIF columns
+    :param overwrite: boolean
+    :return: returns a pandas DataFrame
     """
-    val_path = os.path.join(defaults.db_validation, pdb_id + defaults.validation_extension)
-    try:
-        val_table = parse_validation_residues(val_path)
-    except IOError:
-        val_path = fetch_files(pdb_id, sources='validation', directory=defaults.db_pdb)[0]
-        val_table = parse_validation_residues(val_path)
+    filename = os.path.join(defaults.db_validation,
+                            "{}_validation.xml".format(identifier))
 
-    if chains:
-        val_table = row_selector(val_table, 'chain', chains)
-    if not val_table.empty:
-        val_table.columns = ["validation_" + name for name in val_table.columns]
-        return val_table
-    raise ValueError('Parsing {} resulted in a empty table'.format(val_path))
+    download_validation(identifier=identifier, filename=filename,
+                        overwrite=overwrite)
+
+    table = parse_validation_residues(filename=filename, excluded_cols=excluded_cols)
+
+    table = filter_validation(table, excluded_cols=excluded_cols, **kwargs)
+
+    return table
+
+
+def filter_validation(table, excluded_cols=None, chains=None, res=None):
+    """
+    Filter for Validation Pandas Dataframes.
+
+    :param table: pandas DataFrame object
+    :param excluded_cols: option to exclude Validation columns
+    :param chains: (tuple) chain IDs or None
+    :param res: (tuple) res IDs or None
+    :return: returns a pandas DataFrame
+    """
+
+    # selections / filtering
+    # excluding columns
+    table = exclude_columns(table, excluded=excluded_cols)
+
+    # excluding rows
+    if chains is not None:
+        table = row_selector(table, 'validation_chain', chains)
+        log.info("Validation table filtered by CHAIN...")
+
+    if res is not None:
+        table = row_selector(table, 'validation_resnum', res)
+        log.info("Validation table filtered by RES...")
+
+    if table.empty:
+        raise ValueError("The filters resulted in an empty DataFrame...")
+    return table
+
+
+def download_validation(identifier=None, filename=None, overwrite=False):
+    """
+    Downloads a Validation Data XML from the PDBe.
+
+    :param identifier: (str) PDB accession ID
+    :param filename: path to the Validation file
+    :param overwrite: (boolean)
+    :return: (side effects) output file path
+    """
+
+    url_root = defaults.validation_fetch
+    url_endpoint = "{}_validation.xml".format(identifier)
+    url = url_root + url_endpoint
+    Downloader(url=url, filename=filename,
+               decompress=False, overwrite=overwrite)
+
+
+class Validation(GenericInputs):
+    def read(self, filename=None, **kwargs):
+        filename = self._get_filename(filename)
+        self.table = parse_validation_residues(filename=filename, **kwargs)
+        return self.table
+
+    def download(self, identifier=None, filename=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        filename = self._get_filename(filename)
+        return download_validation(identifier=identifier, filename=filename, **kwargs)
+
+    def select(self, identifier=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        self.table = select_validation(identifier=identifier, **kwargs)
+        return self.table
+
+
+Validation = Validation()
