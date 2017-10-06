@@ -31,15 +31,15 @@ class TestDSSPParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_dssp = os.path.join(os.path.dirname(__file__), "testdata",
-                                         "dssp/1iej.dssp")
+                                         "dssp", "1iej.dssp")
         self.example_dssp2 = os.path.join(os.path.dirname(__file__), "testdata",
-                                          "dssp/2pah.dssp")
+                                          "dssp", "2pah.dssp")
         self.example_dssp_bio = os.path.join(os.path.dirname(__file__), "testdata",
-                                             "dssp/2pah_bio.dssp")
+                                             "dssp", "2pah_bio.dssp")
         self.dssp_ins_code = os.path.join(os.path.dirname(__file__), "testdata",
-                                          "dssp/3mg7.dssp")
+                                          "dssp", "3mg7.dssp")
         self.output_dssp = os.path.join(os.path.dirname(__file__), "testdata",
-                                        "tmp/2pah.dssp")
+                                        "2pah.dssp")
         self.residues_parser = parse_dssp_residues
         self.fix_dssp_ignoring_chains_ids = _import_dssp_chains_ids
         self.pdbid = '2pah'
@@ -142,7 +142,7 @@ class TestDSSPParser(unittest.TestCase):
     def test_empty(self):
         with self.assertRaises(ValueError):
             self.residues_parser(os.path.join(os.path.dirname(__file__),
-                                              "testdata", "dssp/empty.dssp"))
+                                              "testdata", "dssp", "empty.dssp"))
 
     def test_parser_dssp(self):
         data = self.residues_parser(self.example_dssp2)

@@ -85,9 +85,9 @@ class TestUTILS(unittest.TestCase):
         self.pdbid = "2pah"
         root = os.path.abspath(os.path.dirname(__file__))
         self.outputcif = os.path.join(os.path.join(root, "testdata",
-                                                   "tmp/{}.cif".format(self.pdbid)))
+                                                   "{}.cif".format(self.pdbid)))
         self.outputsifts = os.path.join(os.path.join(root, "testdata",
-                                                     "tmp/{}.xml".format(self.pdbid)))
+                                                     "{}.xml".format(self.pdbid)))
         self.Downloader = Downloader
         self.GenericInputs = GenericInputs
 

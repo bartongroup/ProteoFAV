@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 
+import os
 import unittest
-from os import path
 
 import pandas as pd
 
@@ -74,8 +74,8 @@ class TestENSEMBLParser(unittest.TestCase):
 
         # data = self.ensembl_trascript(self.ensembl_id, species='human')
         # mocking the resulting pandas dataframe
-        variants = path.join(path.dirname(__file__), "testdata",
-                             "variation/transcript_variation_{}.csv".format(self.ensembl_id))
+        variants = os.path.join(os.path.dirname(__file__), "testdata",
+                                "variation", "transcript_variation_{}.csv".format(self.ensembl_id))
         data = pd.read_csv(variants)
 
         # number of values per column (or rows)
@@ -107,8 +107,8 @@ class TestENSEMBLParser(unittest.TestCase):
 
         # data = self.ensembl_somatic(self.ensembl_id, species='human')
         # mocking the resulting pandas dataframe
-        variants = path.join(path.dirname(__file__), "testdata",
-                             "variation/somatic_variation_{}.csv".format(self.ensembl_id))
+        variants = os.path.join(os.path.dirname(__file__), "testdata", "variation",
+                                "somatic_variation_{}.csv".format(self.ensembl_id))
         data = pd.read_csv(variants)
 
         # number of values per column (or rows)
@@ -140,8 +140,8 @@ class TestENSEMBLParser(unittest.TestCase):
 
         # data = self.ensembl_variant(self.variant_id, species='human')
         # mocking the resulting pandas dataframe
-        variants = path.join(path.dirname(__file__), "testdata",
-                             "variation/ensembl_variation_{}.csv".format(self.variant_id))
+        variants = os.path.join(os.path.dirname(__file__), "testdata", "variation",
+                                "ensembl_variation_{}.csv".format(self.variant_id))
         data = pd.read_csv(variants)
 
         # number of values per column (or rows)
@@ -172,8 +172,8 @@ class TestENSEMBLParser(unittest.TestCase):
         # querying the various ensembl endpoints
         # data = self.uniprot_variants(self.uniprot_id)
         # mocking the resulting pandas dataframe
-        variants = path.join(path.dirname(__file__), "testdata",
-                             "variation/uniprot_variants_{}.csv".format(self.uniprot_id))
+        variants = os.path.join(os.path.dirname(__file__), "testdata", "variation",
+                                "uniprot_variants_{}.csv".format(self.uniprot_id))
         data = pd.read_csv(variants)
 
         # number of values per column (or rows)

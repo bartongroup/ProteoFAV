@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from os import path
+import os
 import logging
 import pandas as pd
 from string import digits
@@ -320,7 +320,7 @@ def select_dssp(identifier, excluded_cols=None, overwrite=False, **kwargs):
     :return: returns a pandas DataFrame
     """
 
-    filename = path.join(defaults.db_dssp, "{}.dssp".format(identifier))
+    filename = os.path.join(defaults.db_dssp, "{}.dssp".format(identifier))
 
     download_dssp(identifier=identifier, filename=filename, overwrite=overwrite)
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from os import path
+import os
 import logging
 import pandas as pd
 from lxml import etree
@@ -362,7 +362,7 @@ def select_sifts(identifier, excluded_cols=None, overwrite=False, **kwargs):
     :return: returns a pandas DataFrame
     """
 
-    filename = path.join(defaults.db_sifts, "{}.xml".format(identifier))
+    filename = os.path.join(defaults.db_sifts, "{}.xml".format(identifier))
 
     download_sifts(identifier=identifier, filename=filename, overwrite=overwrite)
 

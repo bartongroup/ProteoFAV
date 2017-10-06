@@ -9,6 +9,7 @@ for better error handling. Both levels are covered by test cases.
 """
 from __future__ import absolute_import
 
+import os
 import logging
 
 try:
@@ -16,7 +17,6 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-from os import path
 
 import pandas as pd
 from lxml import etree
@@ -553,7 +553,7 @@ def write_mmcif_from_table(table, filename, overwrite=False):
         atom_lines.append(line)
 
     # write the final output
-    if not path.exists(filename) or overwrite:
+    if not os.path.exists(filename) or overwrite:
         with open(filename, 'w') as outlines:
             outlines.write("\n".join(atom_lines))
     else:
@@ -582,7 +582,7 @@ def write_pdb_from_table(table, filename, overwrite=False, category='auth'):
                                          category=category))
 
     # write the final output
-    if not path.exists(filename) or overwrite:
+    if not os.path.exists(filename) or overwrite:
         with open(filename, 'w') as outlines:
             outlines.write("".join(atom_lines))
     else:
@@ -685,9 +685,9 @@ def select_structures(identifier=None, excluded_cols=None,
     """
 
     if bio_unit:
-        filename = path.join(defaults.db_mmcif, "{}_bio.cif".format(identifier))
+        filename = os.path.join(defaults.db_mmcif, "{}_bio.cif".format(identifier))
     else:
-        filename = path.join(defaults.db_mmcif, "{}.cif".format(identifier))
+        filename = os.path.join(defaults.db_mmcif, "{}.cif".format(identifier))
 
     download_structures(identifier=identifier, filename=filename,
                         bio_unit=bio_unit, bio_unit_preferred=bio_unit_preferred,

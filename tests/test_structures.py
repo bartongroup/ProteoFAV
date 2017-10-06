@@ -35,21 +35,21 @@ class TestMMCIFParser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.example_mmcif = os.path.join(os.path.dirname(__file__), "testdata",
-                                          "mmcif/2pah.cif")
+                                          "mmcif", "2pah.cif")
         self.example_mmcif_bio = os.path.join(os.path.dirname(__file__), "testdata",
-                                              "mmcif/2pah_bio.cif")
+                                              "mmcif", "2pah_bio.cif")
         self.example_pdb = os.path.join(os.path.dirname(__file__), "testdata",
-                                        "pdb/2pah.pdb")
+                                        "pdb", "2pah.pdb")
         self.example_pdb2 = os.path.join(os.path.dirname(__file__), "testdata",
-                                         "pdb/1ejg.pdb")
+                                         "pdb", "1ejg.pdb")
         self.output_mmcif = os.path.join(os.path.dirname(__file__), "testdata",
-                                         "tmp/2pah.cif")
+                                         "2pah.cif")
         self.output_pdb = os.path.join(os.path.dirname(__file__), "testdata",
-                                       "tmp/2pah.pdb")
+                                       "2pah.pdb")
         self.mmcif_atom_parser = parse_mmcif_atoms
         self.mmcif_info_parser = _mmcif_fields
         self.example_tsv_out = os.path.join(os.path.dirname(__file__), "testdata",
-                                            "mmcif/2pah-bio.tsv")
+                                            "mmcif", "2pah-bio.tsv")
         self.select_structures = select_structures
         self.best_assembly = get_preferred_assembly_id
         self.pdbid = '2pah'
@@ -505,7 +505,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(data.loc[1, 'label_atom_id'], 'CA')
 
         example_dssp = os.path.join(os.path.dirname(__file__), "testdata",
-                                    "dssp/2pah.dssp")
+                                    "dssp", "2pah.dssp")
         with self.assertRaises(ValueError, msg='DSSP format is not recognised'):
             self.read_structures(example_dssp)
 

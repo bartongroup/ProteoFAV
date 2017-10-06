@@ -25,7 +25,6 @@ from __future__ import absolute_import
 import tempfile
 import logging
 import os
-from os import path
 import sys
 try:
     # python 2.7
@@ -59,14 +58,14 @@ class Defaults(object):
         if config_file:
             # user provided config
             pass
-        elif path.isfile(path.join(click.get_app_dir('proteofav'), 'config.txt')):
+        elif os.path.isfile(os.path.join(click.get_app_dir('proteofav'), 'config.txt')):
             # os config
-            config_file = path.join(click.get_app_dir('proteofav'), 'config.txt')
+            config_file = os.path.join(click.get_app_dir('proteofav'), 'config.txt')
         else:
             # proteofav default config
-            config_file = path.join(path.dirname(__file__), 'config.txt')
+            config_file = os.path.join(os.path.dirname(__file__), 'config.txt')
         config = ConfigParser()
-        if path.isfile(config_file):
+        if os.path.isfile(config_file):
             config.read(config_file)
             self.__config = config
             self.populate_attributes()
@@ -93,10 +92,10 @@ class Defaults(object):
 
 
     def write(self, file_path=None):
-        file_path = file_path or path.join(click.get_app_dir('proteofav'), 'config.txt')
+        file_path = file_path or os.path.join(click.get_app_dir('proteofav'), 'config.txt')
 
-        if not path.exists(path.dirname(file_path)):
-            os.makedirs(path.dirname(file_path))
+        if not os.path.exists(os.path.dirname(file_path)):
+            os.makedirs(os.path.dirname(file_path))
         # self.reverse_attributes() # TODO reverse populate from __dict__ to self.config
         with open(file_path, 'w') as f:
             self.__config.write(f)

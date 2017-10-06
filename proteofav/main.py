@@ -243,10 +243,10 @@ def main(pdb, chain, uniprot, output_type, verbose, log, add_annotation, add_val
 @click.confirmation_option()
 def setup():
     from proteofav.config import Defaults
-    from os import path
+    import os
 
-    defaults = Defaults(path.join(path.dirname(__file__), 'config.txt'))
-    default_db = path.expanduser("~/Downloads/")
+    defaults = Defaults(os.path.join(os.path.dirname(__file__), 'config.txt'))
+    default_db = os.path.expanduser("~/Downloads/")
 
     items = {k: v for k, v in defaults.__dict__.items() if k.startswith('db')}
     for attr, value in items.items():

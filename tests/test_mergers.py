@@ -1,8 +1,8 @@
 #!/local/bin/python
 # -*- coding: utf-8 -*-
+import os
 import logging
 import unittest
-from os import path
 
 try:
     from mock import patch
@@ -17,9 +17,9 @@ from proteofav.sifts import parse_sifts_residues
 from proteofav.dssp import parse_dssp_residues
 
 logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
-defaults.db_cif = path.join(path.dirname(__file__), "testdata", "mmcif/")
-defaults.db_sifts = path.join(path.dirname(__file__), "testdata", "sifts/")
-defaults.db_dssp = path.join(path.dirname(__file__), "testdata", "dssp/")
+defaults.db_cif = os.path.join(os.path.dirname(__file__), "testdata", "mmcif")
+defaults.db_sifts = os.path.join(os.path.dirname(__file__), "testdata", "sifts")
+defaults.db_dssp = os.path.join(os.path.dirname(__file__), "testdata", "dssp")
 
 
 @patch("proteofav.structures.defaults", defaults)
@@ -83,9 +83,12 @@ class TestTableMerger(unittest.TestCase):
         """
         Test case with insertion code
         """
-        self.cif_path = path.join(path.dirname(__file__), "testdata", "mmcif/3mn5.cif")
-        self.sifts_path = path.join(path.dirname(__file__), "testdata", "sifts/3mn5.xml")
-        self.dssp_path = path.join(path.dirname(__file__), "testdata", "dssp/3mn5.dssp")
+        self.cif_path = os.path.join(os.path.dirname(__file__), "testdata",
+                                     "mmcif", "3mn5.cif")
+        self.sifts_path = os.path.join(os.path.dirname(__file__), "testdata",
+                                       "sifts", "3mn5.xml")
+        self.dssp_path = os.path.join(os.path.dirname(__file__), "testdata",
+                                      "dssp", "3mn5.dssp")
 
         self.cif = self.cif_to_table(self.cif_path)
         self.sifts = self.sifts_to_table(self.sifts_path)
@@ -164,7 +167,8 @@ class TestTableMerger(unittest.TestCase):
     def test_sequence_check_raise(self):
         # The first and the second residues in the cif file were swaped to GLY
         # so they can't be checked with dssp and sift sequences
-        badcif_path = path.join(path.dirname(__file__), "testdata", "mmcif/2w4o_with_error.cif")
+        badcif_path = os.path.join(os.path.dirname(__file__), "testdata",
+                                   "mmcif", "2w4o_with_error.cif")
         baddata = self.cif_to_table(badcif_path)
 
         with patch("proteofav.structures.parse_mmcif_atoms", return_value=baddata):

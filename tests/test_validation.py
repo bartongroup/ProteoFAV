@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 
+import os
 import unittest
-from os import path
 
 from proteofav.validation import (parse_validation_residues, select_validation,
                                   _fix_label_alt_id, _fix_pdb_ins_code)
@@ -14,8 +14,8 @@ class TestValidationParser(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
-        self.example_validation = path.join(path.dirname(__file__), "testdata",
-                                            "validation/2pah_validation.xml")
+        self.example_validation = os.path.join(os.path.dirname(__file__), "testdata",
+                                               "validation", "2pah_validation.xml")
         self.parser = parse_validation_residues
         self.fix_label_alt_id = _fix_label_alt_id
         self.fix_pdb_ins_code = _fix_pdb_ins_code

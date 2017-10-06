@@ -1,6 +1,6 @@
+import os
 import json
 import unittest
-from os import path
 
 try:
     import mock
@@ -43,7 +43,8 @@ class VariantsTestCase(unittest.TestCase):
         mock_response.return_value.ok = True
         mock_response.return_value.status = 200
 
-        with open('testdata/variation/icgc_ENST00000308677.json') as open_f:
+        with open(os.path.join(os.path.dirname(__file__), "testdata",
+                               "variation", "icgc_ENST00000308677.json")) as open_f:
             response = json.load(open_f)
 
         mock_response.json.return_value = response
