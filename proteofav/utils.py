@@ -2,7 +2,6 @@
 
 import os
 import gzip
-import json
 import time
 import shutil
 import socket
@@ -19,8 +18,6 @@ except ImportError:  # python 3.5
     from urllib.parse import quote as urllib_quote
     from urllib.request import urlretrieve
 
-from proteofav.library import valid_ensembl_species_variation
-
 from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
@@ -28,10 +25,10 @@ socket.setdefaulttimeout(15)  # avoid infinite hanging
 
 requests_cache.install_cache('proteofav')
 
-__all__ = ["fetch_from_url_or_retry", "check_local_or_fetch", "fetch_files", "get_preferred_assembly_id",
-           "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
-           "_uniprot_pdb_sifts_mapping", "icgc_missense_variant", "is_valid",
-           "is_valid_ensembl_id", "confirm_column_types"]
+
+__all__ = ["fetch_from_url_or_retry", "get_preferred_assembly_id",
+           "row_selector", "exclude_columns", "constrain_column_types",
+           "InputFileHandler", "OutputFileHandler", "Downloader", "GenericInputs"]
 
 
 def fetch_from_url_or_retry(url, json=True, header=None, post=False, data=None,
@@ -94,58 +91,6 @@ def fetch_from_url_or_retry(url, json=True, header=None, post=False, data=None,
                       response.status_code, url, e)
 
 
-def fetch_files(identifier, directory=None, sources=("cif", "dssp", "sifts"),
-                overwrite=False):
-    """
-    Small routine to fetch data files from their respective repositories.
-        Use defaults to fetch files from servers. Defaults server are defined
-        in the default config.txt. Returns None since it has side effects.
-
-    :param identifier: protein identifier as PDB identifier
-    :param directory: path to download. The default downloads all files to
-        default.temp folder. If is a string and valid path downloads all files
-        to that folder. If its a iterable and all valid path downloads to the
-        respective folders
-
-    :param sources: where to fetch the data. Must be in the config file.
-    :param overwrite: (boolean) Overrides any existing file, if available
-    :return list: list of paths
-    :raise: TypeError
-    """
-    if isinstance(sources, str):
-        sources = [sources]
-    if not directory:
-        directory = defaults.tmp
-    elif isinstance(directory, str):
-        if not os.path.isdir(directory):
-            raise IOError(directory + " is not a valid path.")
-        directory = [directory] * len(sources)
-    elif hasattr(directory, "__iter__"):
-        if len(directory) != len(sources):
-            raise IOError(directory + " you need one directory for each source,"
-                                      "or a path for all.")
-        for d in directory:
-            if not os.path.isdir(d):
-                raise IOError(d + " is not a valid path.")
-    else:
-        raise TypeError('Unidentified source|directory combination.')
-
-    result = []
-    for source, destination in zip(sources, directory):
-        filename = identifier + getattr(defaults, source + '_extension')
-        url = getattr(defaults, source + '_fetch') + filename
-        if filename.endswith('.gz'):
-            filename = destination + filename.replace('.gz', '')
-            Downloader(url=url, filename=filename, overwrite=overwrite,
-                       decompress=True)
-        else:
-            filename = destination + filename
-            Downloader(url=url, filename=filename, overwrite=overwrite,
-                       decompress=False)
-        result.append(filename)
-    return result
-
-
 def _fetch_summary_properties_pdbe(pdbid, retry_in=(429,)):
     """
     Queries the PDBe api to get summary validation report.
@@ -190,93 +135,6 @@ def get_preferred_assembly_id(identifier, verbose=False):
 
     bio_best = str(pref_assembly)
     return bio_best
-
-
-##############################################################################
-# Some other utils not currently in use
-##############################################################################
-class IDNotValidError(Exception):
-    """
-    Base class for database related exceptions.
-    Databases: UniProt, PDB, Ensembl, etc.
-    """
-    pass
-
-
-def is_valid(identifier, database=None, url=None):
-    """
-    Generic method to check if a given id is valid.
-
-    :param url: if given use this instead
-    :param identifier: accession id
-    :param database: database to test against
-    :return: simply a true or false
-    :rtype: boolean
-    """
-
-    try:
-        identifier = str(identifier)
-    except ValueError:
-        # raise IDNotValidError
-        return False
-
-    if len(str(identifier)) < 1:
-        # raise IDNotValidError
-        return False
-    if not url:
-        url = getattr(defaults, 'api_' + database) + identifier
-    r = requests.get(url)
-    if not r.ok:
-        # not the best approach
-        try:
-            raise IDNotValidError('{} not found at {}: (url check:{}'.format(
-                identifier, database, r.url))
-        except IDNotValidError:
-            return False
-    else:
-        return True
-
-
-def is_valid_ensembl_id(identifier, species='human', variant=False):
-    """
-    Checks if an Ensembl id is valid.
-
-    :param identifier: testing ID
-    :param species: Ensembl species
-    :param variant: boolean if True uses the variant endpoint
-    :return: simply a true or false
-    :rtype: boolean
-    """
-
-    try:
-        identifier = str(identifier)
-    except ValueError:
-        # raise IDNotValidError
-        return False
-
-    if len(str(identifier)) < 1:
-        # raise IDNotValidError
-        return False
-
-    if variant:
-        if species not in valid_ensembl_species_variation:
-            raise ValueError('Provided species {} is not valid'.format(species))
-        ensembl_endpoint = "variation/{}/".format(species)
-    else:
-        ensembl_endpoint = "lookup/id/"
-    try:
-        if identifier != '':
-            url = defaults.api_ensembl + ensembl_endpoint + urllib_quote(identifier, safe='')
-            data = fetch_from_url_or_retry(url, json=True).json()
-            if 'error' in data:
-                return False
-            return True
-        else:
-            raise IDNotValidError
-    except IDNotValidError:
-        return False
-    except requests.HTTPError:
-        return False
 
 
 def row_selector(table, key=None, value=None, reverse=False):
