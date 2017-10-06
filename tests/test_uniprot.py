@@ -1,9 +1,8 @@
-#!/local/bin/python
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import unittest
 import logging
+import unittest
+import numpy as np
 
 try:
     import mock
@@ -139,8 +138,8 @@ class TestUNIPROTParser(unittest.TestCase):
         self.assertEqual(len(data.columns.values), 8)
 
         # check the values for particular entries
-        self.assertTrue(np.isnan(data.iloc[0, -1]))   # 'Length'
-        self.assertTrue(np.isnan(data.iloc[0, -1]))    # 'Status'
+        self.assertTrue(np.isnan(data.iloc[0, -1]))  # 'Length'
+        self.assertTrue(np.isnan(data.iloc[0, -1]))  # 'Status'
 
     def test_get(self):
         with mock.patch('proteofav.utils.requests') as mock_get:
@@ -172,7 +171,6 @@ class TestUNIPROTParser(unittest.TestCase):
         """
 
         table = """Entry	Sequence\nP38995	""" + self.ccc2_sequence
-
 
         with mock.patch('proteofav.utils.requests') as mock_get:
             mock_get.get.return_value.ok = True

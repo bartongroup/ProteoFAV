@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 __all__ = ["single_letter_aa", "three_letter_aa", "scop_3to1", "to_single_aa",

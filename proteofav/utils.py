@@ -1,14 +1,17 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
+import os
 import gzip
 import json
-import logging
-import os
+import time
 import shutil
 import socket
-import time
+import logging
 import tempfile
+import requests
+import pandas as pd
+import requests_cache
+
 try:
     from urllib import quote as urllib_quote
     from urllib import urlretrieve
@@ -16,22 +19,19 @@ except ImportError:  # python 3.5
     from urllib.parse import quote as urllib_quote
     from urllib.request import urlretrieve
 
-import numpy as np
-import pandas as pd
-import requests
-import requests_cache
+from proteofav.library import valid_ensembl_species_variation
 
 from proteofav.config import defaults
-from proteofav.library import valid_ensembl_species_variation
+
+log = logging.getLogger('proteofav.config')
+socket.setdefaulttimeout(15)  # avoid infinite hanging
+
+requests_cache.install_cache('proteofav')
 
 __all__ = ["fetch_from_url_or_retry", "check_local_or_fetch", "fetch_files", "get_preferred_assembly_id",
            "IDNotValidError", "raise_if_not_ok", "_pdb_uniprot_sifts_mapping",
            "_uniprot_pdb_sifts_mapping", "icgc_missense_variant", "is_valid",
            "is_valid_ensembl_id", "confirm_column_types"]
-log = logging.getLogger('proteofav.config')
-socket.setdefaulttimeout(15)  # avoid infinite hanging
-
-requests_cache.install_cache('proteofav')
 
 
 def fetch_from_url_or_retry(url, json=True, header=None, post=False, data=None,
@@ -160,31 +160,31 @@ def _fetch_summary_properties_pdbe(pdbid, retry_in=(429,)):
     return rows
 
 
-def get_preferred_assembly_id(pdbid, verbose=False):
+def get_preferred_assembly_id(identifier, verbose=False):
     """
     Gets the preferred assembly id for the given PDB ID, from the PDBe API.
 
-    :param pdbid: PDB ID
+    :param identifier: PDB ID
     :param verbose: boolean
     :return: str
     """
 
     # getting the preferred biological assembly from the PDBe API
     try:
-        data = _fetch_summary_properties_pdbe(pdbid)
+        data = _fetch_summary_properties_pdbe(identifier)
     except Exception as e:
-        message = "Something went wrong for {}... {}".format(pdbid, e)
+        message = "Something went wrong for {}... {}".format(identifier, e)
         if verbose:
             log.error(message)
     try:
-        nassemblies = data[pdbid][0]["assemblies"]
+        nassemblies = data[identifier][0]["assemblies"]
         if len(nassemblies) > 1:
             for entry in nassemblies:
                 if entry["preferred"]:
                     pref_assembly = entry["assembly_id"]
                     break
         else:
-            pref_assembly = data[pdbid][0]["assemblies"][0]["assembly_id"]
+            pref_assembly = data[identifier][0]["assemblies"][0]["assembly_id"]
     except Exception as e:
         pref_assembly = "1"
 

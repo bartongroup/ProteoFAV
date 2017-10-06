@@ -1,11 +1,12 @@
-#!/usr/bin/env python
 # -*- coding: utf-8
+
 """
 Created on 17:26 19/02/2016 2016 
 Define auxiliary functions for interacting with Uniprot.
 """
-from __future__ import absolute_import
+
 import logging
+import pandas as pd
 
 try:
     # python 2.7
@@ -18,10 +19,11 @@ try:
 except ImportError:
     from urllib.parse import parse_qs
 
-import pandas as pd
+from proteofav.utils import fetch_from_url_or_retry, row_selector
 
 from proteofav.config import defaults
-from proteofav.utils import fetch_from_url_or_retry, row_selector
+
+log = logging.getLogger('proteofav.config')
 
 __all__ = ["fetch_uniprot_sequence",
            "fetch_uniprot_formal_specie",
@@ -29,7 +31,6 @@ __all__ = ["fetch_uniprot_sequence",
            "_fetch_uniprot_gff",
            "map_gff_features_to_sequence",
            "_uniprot_to_ensembl_xref"]
-log = logging.getLogger('proteofav.config')
 
 
 def fetch_uniprot_sequence(uniprot_id):

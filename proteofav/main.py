@@ -1,23 +1,20 @@
-#!/usr/bin/env python
 # -*- coding: utf-8
-from __future__ import absolute_import
-import logging
+
 import sys
-
 import click
+import logging
 
-from proteofav.library import to_single_aa
 from proteofav.structures import select_structures
 from proteofav.validation import select_validation
 from proteofav.sifts import select_sifts, sifts_best
 from proteofav.dssp import select_dssp
-
-from proteofav.variants import (map_gff_features_to_sequence,
-                                select_variants)
+from proteofav.variants import (map_gff_features_to_sequence, select_variants)
+from proteofav.library import to_single_aa
 
 __all__ = ['merge_tables',
            'parse_args',
            'main']
+
 log = logging.getLogger('proteofav.config')
 
 

@@ -1,20 +1,18 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
-ProteFAV: protein feature aggregation and variants
---------------------------------------------------
+ProteoFAV: Protein Feature Aggregation and Variants
+---------------------------------------------------
 
-Exploring the power of Pandas to work with protein structures,
-sequences and genetic variants.
+Open-source framework for simple and fast integration
+of protein structure data with sequence annotations
+and genetic variation
 
 :copyright: (c) 2015-2017.
 :license: TBD, see LICENSE for more details.
 """
 
-
-from setuptools import setup
-from setuptools import find_packages
+from setuptools import setup, find_packages
 
 from proteofav import __version__, __authors__
 

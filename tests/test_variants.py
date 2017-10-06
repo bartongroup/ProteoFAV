@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import json
 import unittest
@@ -194,11 +196,9 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
             mock_fun.return_value = pd.DataFrame(mock_data)
             data = self.parse_uniprot_variants('XXXX')
 
-        self.assertEqual(data.shape, (4,3))
+        self.assertEqual(data.shape, (4, 3))
         self.assertFalse('annotation' in data)
         self.assertIn('PPNAD4', data.loc[206, 'disease'])
-
-
 
 
 if __name__ == '__main__':

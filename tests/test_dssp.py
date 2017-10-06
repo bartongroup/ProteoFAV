@@ -1,9 +1,9 @@
-#!/local/bin/python
 # -*- coding: utf-8 -*-
 
 import os
 import logging
 import unittest
+
 try:
     from mock import patch
 except ImportError:

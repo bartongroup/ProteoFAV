@@ -1,10 +1,7 @@
-#!/local/bin/python
 # -*- coding: utf-8 -*-
-
 
 import os
 import unittest
-
 import pandas as pd
 
 from proteofav.variants import _fetch_ensembl_variants
@@ -55,7 +52,7 @@ class TestENSEMBLParser(unittest.TestCase):
 
     def test_querying_ensembl_somatic_variants(self):
         data = self.fetch_variant(
-                self.ensembl_id, feature='somatic_transcript_variation')
+            self.ensembl_id, feature='somatic_transcript_variation')
 
         # doesn't check anything about the output
         self.assertIsInstance(data, pd.DataFrame)

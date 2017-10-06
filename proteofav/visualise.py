@@ -1,14 +1,12 @@
-#!/usr/bin/env python
 # -*- coding: utf-8
+
 """
 Created on 18:07 28/02/2017 2017 
 Methods aiming to integrate ProteoFAV table to viewers such as UFSC Chimera and Jalview.
 """
-from __future__ import absolute_import
-import logging
-import os
 
-from proteofav.config import defaults
+import os
+import logging
 
 log = logging.getLogger('proteofav.config')
 

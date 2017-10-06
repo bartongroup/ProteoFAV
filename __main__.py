@@ -1,10 +1,16 @@
-#!/usr/bin/env python
 # -*- coding: utf-8
-"""
-Created on 14:18 17/02/2017 2017 
 
 """
-from __future__ import absolute_import
+ProteoFAV: Protein Feature Aggregation and Variants
+---------------------------------------------------
+
+Open-source framework for simple and fast integration
+of protein structure data with sequence annotations
+and genetic variation
+
+:copyright: (c) 2015-2017.
+:license: TBD, see LICENSE for more details.
+"""
 
 from proteofav.main import main
 

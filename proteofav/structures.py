@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -7,21 +6,19 @@ as a pandas.DataFrame. Also include wrapper functions that select and index
 the information. Prefers the use o the wrapper instead the private functions
 for better error handling. Both levels are covered by test cases.
 """
-from __future__ import absolute_import
 
 import os
 import logging
+import pandas as pd
+from lxml import etree
+from scipy.spatial import cKDTree
+from string import ascii_uppercase
 
 try:
     # python 2.7
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-
-import pandas as pd
-from lxml import etree
-from scipy.spatial import cKDTree
-from string import ascii_uppercase
 
 from proteofav.config import defaults
 from proteofav.utils import (fetch_from_url_or_retry,
@@ -31,6 +28,7 @@ from proteofav.utils import (fetch_from_url_or_retry,
 from proteofav.library import pdbx_types, aa_default_atoms
 
 log = logging.getLogger('proteofav.config')
+
 __all__ = ['parse_mmcif_atoms', '_rcsb_description', '_get_contacts_from_table',
            # 'residues_aggregation', '_import_dssp_chains_ids',
            'filter_structures', 'select_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
@@ -39,6 +37,7 @@ __all__ = ['parse_mmcif_atoms', '_rcsb_description', '_get_contacts_from_table',
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 
 PDB_FORMAT = "%s%5i %-4s%c%3s %c%4s%c   %8.3f%8.3f%8.3f%s%6.2f      %4s%2s%2s\n"
+
 
 ##############################################################################
 # Private methods

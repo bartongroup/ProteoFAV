@@ -1,12 +1,9 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-import logging
 
+import logging
 import pandas as pd
 from pandas.io.json import json_normalize
 
-from proteofav.config import defaults
 from proteofav.uniprot import (map_gff_features_to_sequence,
                                _uniprot_to_ensembl_xref,
                                fetch_uniprot_formal_specie,
@@ -14,6 +11,10 @@ from proteofav.uniprot import (map_gff_features_to_sequence,
                                _uniprot_info)
 from proteofav.utils import fetch_from_url_or_retry
 from proteofav.library import valid_ensembl_species
+
+from proteofav.config import defaults
+
+log = logging.getLogger('proteofav.config')
 
 __all__ = ["_fetch_icgc_variants",
            "_fetch_ebi_variants",
@@ -27,7 +28,6 @@ __all__ = ["_fetch_icgc_variants",
            "select_variants",
            "parse_uniprot_variants",
            "select_uniprot_variants"]
-log = logging.getLogger('proteofav.config')
 
 
 ##############################################################################

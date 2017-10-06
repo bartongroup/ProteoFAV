@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 """
 Defines the methods that load and validate user configuration parameters, such
     as data resources web address or local and remote file paths.
@@ -20,25 +20,24 @@ AttributeError: 'Defaults' object has no attribute 'email'
 
 """
 
-from __future__ import absolute_import
-
-import tempfile
-import logging
 import os
 import sys
+import click
+import logging
+import tempfile
+
 try:
     # python 2.7
     from ConfigParser import ConfigParser
 except ImportError:
     from configparser import ConfigParser
 
-import click
-
-__all__ = ["defaults", "Defaults"]
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
 logging.basicConfig(stream=sys.stderr, level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
+
+__all__ = ["defaults", "Defaults"]
 
 
 class Defaults(object):
@@ -52,8 +51,8 @@ class Defaults(object):
     >>> defaults.api_pdbe = 'test'
     >>> print(defaults.api_pdbe)
     test
-
     """
+
     def __init__(self, config_file=None):
         if config_file:
             # user provided config
@@ -70,7 +69,7 @@ class Defaults(object):
             self.__config = config
             self.populate_attributes()
             self.config_file = config_file
-        else:     # pragma: no cover
+        else:  # pragma: no cover
             raise IOError('Config file {} not available.'.format(config_file))
 
     def populate_attributes(self):
@@ -90,7 +89,6 @@ class Defaults(object):
     def commit_configuration(self):
         pass
 
-
     def write(self, file_path=None):
         file_path = file_path or os.path.join(click.get_app_dir('proteofav'), 'config.txt')
 
@@ -99,5 +97,6 @@ class Defaults(object):
         # self.reverse_attributes() # TODO reverse populate from __dict__ to self.config
         with open(file_path, 'w') as f:
             self.__config.write(f)
+
 
 defaults = Defaults()
