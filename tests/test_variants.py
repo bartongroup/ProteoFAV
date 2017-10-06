@@ -5,6 +5,7 @@ import sys
 import json
 import logging
 import unittest
+import numpy as np
 
 try:
     import mock
@@ -14,7 +15,9 @@ except ImportError:
 from proteofav.config import defaults
 from proteofav.variants import (_fetch_icgc_variants, _fetch_ebi_variants, _fetch_ensembl_variants,
                                 _sequence_from_ensembl_protein, _match_uniprot_ensembl_seq,
-                                _compare_sequences, _count_mismatches, parse_uniprot_variants)
+                                _compare_sequences, _count_mismatches, parse_uniprot_variants,
+                                _uniprot_ensembl_mapping, fetch_uniprot_sequence,
+                                fetch_uniprot_formal_specie, _uniprot_info, _uniprot_to_ensembl_xref)
 
 
 @mock.patch("proteofav.structures.defaults", defaults)
@@ -23,6 +26,7 @@ class VariantsTestCase(unittest.TestCase):
 
     def setUp(self):
         """Initialize the framework for testing."""
+        self.uniprot_id = 'O96013'
         self.fetch_icgc_variants = _fetch_icgc_variants
         self.fetch_ebi_variants = _fetch_ebi_variants
         self.fetch_ensembl_variants = _fetch_ensembl_variants
@@ -31,9 +35,34 @@ class VariantsTestCase(unittest.TestCase):
         self.compare_sequences = _compare_sequences
         self.count_mismatches = _count_mismatches
         self.parse_uniprot_variants = parse_uniprot_variants
+        self.uniprot_info = _uniprot_info
+        self.uniprot_ensembl = _uniprot_ensembl_mapping
+        self.get_uniprot_sequence = fetch_uniprot_sequence
+        self.get_uniprot_organism = fetch_uniprot_formal_specie
+        self.uniprot_info = _uniprot_info
+        self.uniprot_to_ensembl_xref = _uniprot_to_ensembl_xref
+        self.ccc2_sequence = ("MREVILAVHGMTCSACTNTINTQLRALKGVTKCDISLVTNECQVTYDNEVTADSIKEIIE"
+                              "DCGFDCEILRDSEITAISTKEGLLSVQGMTCGSCVSTVTKQVEGIEGVESVVVSLVTEEC"
+                              "HVIYEPSKTTLETAREMIEDCGFDSNIIMDGNGNADMTEKTVILKVTKAFEDESPLILSS"
+                              "VSERFQFLLDLGVKSIEISDDMHTLTIKYCCNELGIRDLLRHLERTGYKFTVFSNLDNTT"
+                              "QLRLLSKEDEIRFWKKNSIKSTLLAIICMLLYMIVPMMWPTIVQDRIFPYKETSFVRGLF"
+                              "YRDILGVILASYIQFSVGFYFYKAAWASLKHGSGTMDTLVCVSTTCAYTFSVFSLVHNMF"
+                              "HPSSTGKLPRIVFDTSIMIISYISIGKYLETLAKSQTSTALSKLIQLTPSVCSIISDVER"
+                              "NETKEIPIELLQVNDIVEIKPGMKIPADGIITRGESEIDESLMTGESILVPKKTGFPVIA"
+                              "GSVNGPGHFYFRTTTVGEETKLANIIKVMKEAQLSKAPIQGYADYLASIFVPGILILAVL"
+                              "TFFIWCFILNISANPPVAFTANTKADNFFICLQTATSVVIVACPCALGLATPTAIMVGTG"
+                              "VGAQNGVLIKGGEVLEKFNSITTFVFDKTGTLTTGFMVVKKFLKDSNWVGNVDEDEVLAC"
+                              "IKATESISDHPVSKAIIRYCDGLNCNKALNAVVLESEYVLGKGIVSKCQVNGNTYDICIG"
+                              "NEALILEDALKKSGFINSNVDQGNTVSYVSVNGHVFGLFEINDEVKHDSYATVQYLQRNG"
+                              "YETYMITGDNNSAAKRVAREVGISFENVYSDVSPTGKCDLVKKIQDKEGNNKVAVVGDGI"
+                              "NDAPALALSDLGIAISTGTEIAIEAADIVILCGNDLNTNSLRGLANAIDISLKTFKRIKL"
+                              "NLFWALCYNIFMIPIAMGVLIPWGITLPPMLAGLAMAFSSVSVVLSSLMLKKWTPPDIES"
+                              "HGISDFKSKFSIGNFWSRLFSTRAIAGEQDIESQAGLMSNEEVL")
 
     def tearDown(self):
         """Remove testing framework by cleaning the namespace."""
+
+        self.uniprot_id = None
         self.fetch_icgc_variants = None
         self.fetch_ebi_variants = None
         self.fetch_ensembl_variants = None
@@ -41,6 +70,13 @@ class VariantsTestCase(unittest.TestCase):
         self.match_uniprot_ensembl_seq = None
         self.compare_sequences = None
         self.parse_uniprot_variants = None
+        self.uniprot_info = None
+        self.uniprot_ensembl = None
+        self.get_uniprot_sequence = None
+        self.get_uniprot_organism = None
+        self.uniprot_info = None
+        self.uniprot_to_ensembl_xref = None
+        self.ccc2_sequence = None
 
     def test_icgc_parsing(self):
         mock_response = mock.Mock()
@@ -201,6 +237,130 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertEqual(data.shape, (4, 3))
         self.assertFalse('annotation' in data)
         self.assertIn('PPNAD4', data.loc[206, 'disease'])
+
+    def test_mock_a_ptn_sequence(self):
+        """
+        Test _uniprot_info table parsing with a Mock request.
+
+         ..note:
+        query=accession%3AP38995&contact=%20"&columns=id%2Csequence%2C&format=tab
+        """
+
+        table = """Entry	Sequence\nP38995	""" + self.ccc2_sequence
+
+        with mock.patch('proteofav.utils.requests') as mock_get:
+            mock_get.get.return_value.ok = True
+            mock_get.get.return_value.status = 200
+            mock_get.get.return_value.content = table
+            self.assertEqual(self.get_uniprot_sequence('P38995'), self.ccc2_sequence)
+
+            mock_get.get.assert_called_once_with('http://www.uniprot.org/uniprot/',
+                                                 headers=mock.ANY,
+                                                 params=mock.ANY,
+                                                 stream=mock.ANY)
+
+    def test_mock_a_ptn_organism_name(self):
+        """
+        Test whether the UniProt info table is parsed correctly by mocking the request.
+
+        ..note:: query=accession%3AP38995&contact=%20"&columns=id%2Corganism%2C&format=tab
+        """
+        ccc2_organism = 'Saccharomyces cerevisiae'
+        table = """Entry	Organism\nP38995	Saccharomyces cerevisiae (strain ATCC 204508 / S288c) (Baker's yeast)"""
+
+        with mock.patch('proteofav.utils.requests') as mock_get:
+            mock_get.get.return_value.ok = True
+            mock_get.get.return_value.status = 200
+            mock_get.get.return_value.content = table
+            self.assertEqual(self.get_uniprot_organism('P38995'), ccc2_organism)
+
+            mock_get.get.assert_called_once_with('http://www.uniprot.org/uniprot/',
+                                                 headers=mock.ANY,
+                                                 params=mock.ANY,
+                                                 stream=mock.ANY)
+
+    def test_obsolete_uniprot_accession(self):
+        data = self.uniprot_info('Q91887')
+        self.assertEqual(len(data), 1)
+
+        # number of keys (or columns)
+        self.assertEqual(len(data.columns.values), 8)
+
+        # check the values for particular entries
+        self.assertTrue(np.isnan(data.iloc[0, -1]))  # 'Length'
+        self.assertTrue(np.isnan(data.iloc[0, -1]))  # 'Status'
+
+    def test_to_table_uniprot_ensembl_mapping(self):
+        """
+        Tests the fetching and parsing real UniProt ids.
+        This test focuses on the method that parses the residue entries.
+
+        Some checks are made to whether the parsed keys and values
+        are the ones we are expecting.
+        """
+
+        data = self.uniprot_ensembl(self.uniprot_id, 'homo_sapiens')
+
+        # number of values per column (or rows)
+        self.assertEqual(len(data), 1)
+
+        # number of keys (or columns)
+        self.assertEqual(len(data.columns.values), 3)
+
+        # check whether there are particular keys
+        self.assertIn('TRANSCRIPT', data.columns.values)
+
+        # check the values for particular entries
+        self.assertEqual(data['GENE'][0], 'ENSG00000130669')
+
+    def test_to_table_uniprot_info(self):
+        """
+        Tests the fetching and parsing real UniProt ids.
+        This test focuses on the method that parses the residue entries.
+
+        Some checks are made to whether the parsed keys and values
+        are the ones we are expecting.
+        """
+
+        data = self.uniprot_info(self.uniprot_id)
+
+        # number of values per column (or rows)
+        self.assertEqual(len(data), 1)
+
+        # number of keys (or columns)
+        self.assertEqual(len(data.columns.values), 8)
+
+        # check whether there are particular keys
+        self.assertIn('Sequence', data.columns.values)
+
+        # check the values for particular entries
+        self.assertTrue(data['Length'][0] == 591)
+        self.assertTrue(data['Status'][0] == "reviewed")
+        self.assertEqual(data['Entry name'][0], 'PAK4_HUMAN')
+
+    def test_uniprot_info_with_defaults(self):
+        """
+        Test whether Uniprot query logic still valid.
+
+        ..note:
+         Intentionally get info from Uniprot. An Uniprot update may break this.
+        """
+
+        cols = ("Entry", "Entry name", "Status", "Protein names", "Gene names", "Organism",
+                "Sequence", "Length")
+
+        first_field = "P38995"
+        last_field = 1004
+
+        table = self.uniprot_info('P38995')
+        self.assertEqual(set(table.columns), set(cols))
+        self.assertEqual(table.iloc[0, 0], first_field)
+        self.assertEqual(table.iloc[0, -1], last_field)
+
+    def test_uniprot_to_ensembl_xref(self):
+        self.assertTrue(self.uniprot_to_ensembl_xref('P38995').empty)
+        table = self.uniprot_to_ensembl_xref('P38995', 'saccharomyces_cerevisiae')
+        self.assertEqual(set(table.columns), {'id', 'type'})
 
 
 if __name__ == '__main__':

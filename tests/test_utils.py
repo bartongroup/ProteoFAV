@@ -13,9 +13,9 @@ import pandas as pd
 import requests_cache
 
 try:
-    from mock import patch, MagicMock
+    import mock
 except ImportError:
-    from unittest.mock import patch, MagicMock
+    import unittest.mock as mock
 
 from proteofav.utils import (fetch_from_url_or_retry, row_selector,
                              InputFileHandler, OutputFileHandler,
@@ -89,6 +89,7 @@ class TestUTILS(unittest.TestCase):
                                                      "{}.xml".format(self.pdbid)))
         self.Downloader = Downloader
         self.GenericInputs = GenericInputs
+        self.mock_url = 'www.mockurl.com'
 
     def tearDown(self):
         """Remove testing framework."""
@@ -106,6 +107,7 @@ class TestUTILS(unittest.TestCase):
         self.outputsifts = None
         self.Downloader = None
         self.GenericInputs = None
+        self.mock_url = None
 
     def test_fetch_from_url_or_retry_get_json(self):
         # mocked requests
@@ -115,7 +117,7 @@ class TestUTILS(unittest.TestCase):
         response = response_mocker(kwargs={identifier}, base_url=base_url,
                                    endpoint_url=endpoint_url,
                                    content_type='application/json')
-        self.fetch_from_url_or_retry = MagicMock(return_value=response)
+        self.fetch_from_url_or_retry = mock.MagicMock(return_value=response)
         url = base_url + endpoint_url + identifier
         r = self.fetch_from_url_or_retry(url, json=True,
                                          header={'application/json'}).json()
@@ -129,7 +131,7 @@ class TestUTILS(unittest.TestCase):
         response = response_mocker(kwargs={"P00439.fasta"}, base_url=base_url,
                                    endpoint_url="",
                                    content_type='application/octet-stream')
-        self.fetch_from_url_or_retry = MagicMock(return_value=response)
+        self.fetch_from_url_or_retry = mock.MagicMock(return_value=response)
         url = base_url + endpoint_url
         r = self.fetch_from_url_or_retry(url, json=True,
                                          header={'application/octet-stream'},
@@ -146,7 +148,7 @@ class TestUTILS(unittest.TestCase):
                                    endpoint_url=endpoint_url,
                                    content_type='application/octet-stream',
                                    post=True, data=identifier)
-        self.fetch_from_url_or_retry = MagicMock(return_value=response)
+        self.fetch_from_url_or_retry = mock.MagicMock(return_value=response)
         url = base_url + endpoint_url + identifier
         r = self.fetch_from_url_or_retry(url, json=True, post=True, data=identifier,
                                          header={'application/octet-stream'},
@@ -162,7 +164,7 @@ class TestUTILS(unittest.TestCase):
         response = response_mocker(kwargs={"P00439.fasta"}, base_url=base_url,
                                    endpoint_url="",
                                    content_type='text/plain', status=404)
-        self.fetch_from_url_or_retry = MagicMock(return_value=response)
+        self.fetch_from_url_or_retry = mock.MagicMock(return_value=response)
         url = base_url + endpoint_url
         r = self.fetch_from_url_or_retry(url, json=True, header={'text/plain'},
                                          retry_in=None, wait=0,
@@ -178,13 +180,34 @@ class TestUTILS(unittest.TestCase):
         response = response_mocker(kwargs={"P00439.fasta"}, base_url=base_url,
                                    endpoint_url="",
                                    content_type='text/plain', status=500)
-        self.fetch_from_url_or_retry = MagicMock(return_value=response)
+        self.fetch_from_url_or_retry = mock.MagicMock(return_value=response)
         url = base_url + endpoint_url
         r = self.fetch_from_url_or_retry(url, json=True, header={'text/plain'},
                                          retry_in=(500,), wait=1,
                                          n_retries=10, stream=False)
         self.assertEqual(r.status_code, 500)
         self.assertFalse(r.ok)
+
+    def test_get(self):
+        with mock.patch('proteofav.utils.requests') as mock_get:
+            mock_get.get.return_value.ok = True
+            mock_get.get.return_value.status = 200
+            self.fetch_from_url_or_retry(self.mock_url)
+            mock_get.get.assert_called_once_with(mock.ANY, headers=mock.ANY,
+                                                 params=mock.ANY, stream=mock.ANY)
+
+    @unittest.expectedFailure
+    def test_raise_for_not_found(self):
+        with mock.patch('proteofav.utils.requests.get') as mock_get:
+            with self.assertRaises(mock.HTTPError) as context:
+                mock_get.get.return_value.ok = False
+                mock_get.get.return_value.status = 404
+                response = self.fetch_from_url_or_retry(self.mock_url)
+                mock_get.side_effect = mock.HTTPError(mock.Mock(status=404), 'not found')
+
+        # self.assertTrue('not found' in context.exception)
+        self.assertIsNone(response)
+        mock_get.get.assert_called_once_with(mock.ANY, headers=mock.ANY, params=mock.ANY)
 
     def test_row_selector(self):
         d = self.row_selector(self.mock_df, key='value', value=3)

@@ -2,14 +2,12 @@
 
 import logging
 import pandas as pd
+from io import BytesIO
+from io import StringIO
 from pandas.io.json import json_normalize
 
-from proteofav.uniprot import (map_gff_features_to_sequence,
-                               _uniprot_to_ensembl_xref,
-                               fetch_uniprot_formal_specie,
-                               fetch_uniprot_sequence,
-                               _uniprot_info)
-from proteofav.utils import fetch_from_url_or_retry
+from proteofav.annotation import map_gff_features_to_sequence
+from proteofav.utils import fetch_from_url_or_retry, row_selector
 from proteofav.library import valid_ensembl_species
 
 from proteofav.config import defaults
@@ -25,6 +23,8 @@ __all__ = ["_fetch_icgc_variants",
            "_apply_sequence_index_map",
            "_compare_sequences",
            "_count_mismatches",
+           "fetch_uniprot_sequence",
+           "fetch_uniprot_formal_specie",
            "select_variants",
            "parse_uniprot_variants",
            "select_uniprot_variants"]
@@ -270,6 +270,100 @@ def _count_mismatches(sequence1, sequence2):
     :return: The number of mismatches between sequences 1 and 2.
     """
     return sum(i != j for i, j in zip(sequence1, sequence2))
+
+
+def fetch_uniprot_sequence(uniprot_id):
+    """
+    Gets current sequence of a Uniprot entry.
+
+    :param str uniprot_id: Uniprot accession
+    :return str: the sequence
+
+    >>> print(fetch_uniprot_formal_specie('P17612'))
+    Homo sapiens
+
+    """
+
+    return _uniprot_info(uniprot_id, cols='sequence').iloc[0, 1]
+
+
+def fetch_uniprot_formal_specie(uniprot_id, remove_isoform=True):
+    """
+    Gets the species name of an organism expressing a protein.
+
+    :param Bool remove_isoform: whether to remove the isoform identifier.
+    :param str uniprot_id: Uniprot accession
+    :return: the species name (two words)
+    :rtype: str or None
+
+    >>> print(fetch_uniprot_sequence('P17612'))[:20]
+    MGNAAAAKKGSEQESVKEFL
+
+    """
+    if remove_isoform:
+        uniprot_id = uniprot_id.split('-')[0]
+
+    full_specie = _uniprot_info(uniprot_id, cols='organism').iloc[0, 1]
+
+    try:
+        return " ".join(full_specie.split()[0:2])
+    except AttributeError:
+        log.error('Could not retrieve {} information. Maybe obsolete UniProt accession?'.format(
+            uniprot_id))
+        return None
+
+
+def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
+    """
+    Retrieve Uniprot information from the database.
+
+    :param str uniprot_id: Uniprot accession identifier
+    :param retry_in: iterable of status_code to be retried upon error.
+    :type retry_in: list of [int]
+    :return pandas.DataFrame: table from Uniprot.
+    Default table columns:
+    :raises requests.HTTPError: when hits a bad status_code
+    """
+
+    if not cols:
+        cols = ('id', 'entry name', 'reviewed', 'protein names', 'genes', 'organism',
+                'sequence', 'length')
+    elif isinstance(cols, str):
+        cols = ('id', cols)
+
+    params = {'query': 'accession:' + str(uniprot_id),
+              'columns': ",".join(cols),
+              'format': 'tab',
+              'contact': ""}
+    url = defaults.api_uniprot
+    response = fetch_from_url_or_retry(url=url, retry_in=retry_in, **params).content
+    try:
+        data = pd.read_table(StringIO(response))
+    except TypeError:
+        # python 3.5
+        data = pd.read_table(BytesIO(response))
+    except ValueError as e:
+        log.error(e)
+        return None
+    # id column is called Entry in the table
+    return row_selector(data, 'Entry', uniprot_id)
+
+
+def _uniprot_to_ensembl_xref(uniprot_id, species='homo_sapiens'):
+    """
+    Return Gene, transcripts and translational ids from Ensembl to Uniprot.
+    Ensembl -> Uniprot reference is ideal because Ensembl database change more
+    often the Uniprot'smove quicker than Uniprot.
+
+    :param str uniprot_id: Uniprot accession
+    :param str species: species name
+    :return pandas.DataFrame: table with columns
+    """
+
+    url = "{}xrefs/symbol/{}/{}?content-type=application/json".format(
+        defaults.api_ensembl, species, uniprot_id)
+
+    return pd.read_json(url)
 
 
 ##############################################################################
