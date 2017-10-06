@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import json
+import logging
 import unittest
 
 try:
@@ -202,4 +204,7 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
 
 
 if __name__ == '__main__':
-    unittest.main()
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
+    suite = unittest.TestLoader().loadTestsFromTestCase(VariantsTestCase)
+    unittest.TextTestRunner(verbosity=2).run(suite)

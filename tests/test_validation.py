@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
+import logging
 import unittest
 
 from proteofav.validation import (parse_validation_residues, select_validation,
@@ -51,5 +53,7 @@ class TestValidationParser(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestValidationParser)
     unittest.TextTestRunner(verbosity=2).run(suite)

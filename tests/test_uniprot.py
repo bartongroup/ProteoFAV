@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import logging
 import unittest
 import numpy as np
@@ -16,8 +17,6 @@ from proteofav.uniprot import (fetch_uniprot_sequence, fetch_uniprot_formal_spec
                                _fetch_uniprot_gff, map_gff_features_to_sequence,
                                _uniprot_to_ensembl_xref)
 from proteofav.utils import fetch_from_url_or_retry
-
-logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
 
 class TestUNIPROTParser(unittest.TestCase):
@@ -252,5 +251,7 @@ class TestUNIPROTParser(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUNIPROTParser)
     unittest.TextTestRunner(verbosity=2).run(suite)

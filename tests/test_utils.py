@@ -90,8 +90,6 @@ class TestUTILS(unittest.TestCase):
         self.Downloader = Downloader
         self.GenericInputs = GenericInputs
 
-        logging.disable(logging.DEBUG)
-
     def tearDown(self):
         """Remove testing framework."""
 
@@ -108,8 +106,6 @@ class TestUTILS(unittest.TestCase):
         self.outputsifts = None
         self.Downloader = None
         self.GenericInputs = None
-
-        logging.disable(logging.NOTSET)
 
     def test_fetch_from_url_or_retry_get_json(self):
         # mocked requests
@@ -298,6 +294,6 @@ class TestUTILS(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stderr)
-    logging.getLogger("proteofav").setLevel(logging.DEBUG)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUTILS)
     unittest.TextTestRunner(verbosity=2).run(suite)

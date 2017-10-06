@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import logging
 import unittest
 
@@ -17,8 +18,6 @@ from proteofav.dssp import (parse_dssp_residues, _import_dssp_chains_ids,
                             _add_dssp_rsa, _add_dssp_rsa_class,
                             _add_dssp_ss_reduced, _add_dssp_full_chain,
                             download_dssp, DSSP)
-
-logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 
 root = os.path.abspath(os.path.dirname(__file__))
 defaults.db_dssp = os.path.join(root, "testdata", "dssp")
@@ -271,5 +270,7 @@ class TestDSSPParser(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDSSPParser)
     unittest.TextTestRunner(verbosity=2).run(suite)

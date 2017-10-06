@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import sys
+import logging
 import unittest
 import pandas as pd
 
@@ -54,4 +56,7 @@ class TestVisualiser(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestVisualiser)
+    unittest.TextTestRunner(verbosity=2).run(suite)

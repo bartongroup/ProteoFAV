@@ -24,8 +24,6 @@ from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_struc
                                   PDB, mmCIF)
 from proteofav.utils import get_preferred_assembly_id
 
-log = logging.getLogger(__name__)
-
 
 @patch("proteofav.structures.defaults", defaults)
 class TestMMCIFParser(unittest.TestCase):
@@ -593,6 +591,6 @@ class TestMMCIFParser(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stderr)
-    logging.getLogger("mmCIF related methods").setLevel(logging.DEBUG)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestMMCIFParser)
     unittest.TextTestRunner(verbosity=2).run(suite)

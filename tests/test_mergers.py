@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import logging
 import unittest
 
@@ -16,7 +17,6 @@ from proteofav.structures import parse_mmcif_atoms
 from proteofav.sifts import parse_sifts_residues
 from proteofav.dssp import parse_dssp_residues
 
-logging.getLogger('proteofav').setLevel(logging.CRITICAL)  # turn off logging
 defaults.db_cif = os.path.join(os.path.dirname(__file__), "testdata", "mmcif")
 defaults.db_sifts = os.path.join(os.path.dirname(__file__), "testdata", "sifts")
 defaults.db_dssp = os.path.join(os.path.dirname(__file__), "testdata", "dssp")
@@ -179,5 +179,7 @@ class TestTableMerger(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMerger)
-    unittest.TextTestRunner(verbosity=1).run(suite)
+    unittest.TextTestRunner(verbosity=2).run(suite)

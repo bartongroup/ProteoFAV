@@ -33,15 +33,11 @@ class TestConfig(unittest.TestCase):
         self.config = config
         self.defaults = Defaults
 
-        logging.disable(logging.DEBUG)
-
     def tearDown(self):
         """Remove testing framework."""
 
         self.config = None
         self.defaults = None
-
-        logging.disable(logging.NOTSET)
 
     def test_loading_config_defaults(self):
         config = self.config
@@ -112,6 +108,6 @@ class TestConfig(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stderr)
-    logging.getLogger("proteofav").setLevel(logging.DEBUG)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
     suite = unittest.TestLoader().loadTestsFromTestCase(TestConfig)
     unittest.TextTestRunner(verbosity=2).run(suite)
