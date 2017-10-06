@@ -230,7 +230,7 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
                                      206: "Natural variant: ['In PPNAD4; somatic mutation; the mutation results in cAMP-independent basal protein kinase activity and constitutive activation of protein kinase A. L->R'] (['VAR_071707'])",
                                      264: "Natural variant: ['S->C'] (['VAR_040593'])"})
 
-        with mock.patch('proteofav.variants.map_gff_features_to_sequence') as mock_fun:
+        with mock.patch('proteofav.variants.select_annotation') as mock_fun:
             mock_fun.return_value = pd.DataFrame(mock_data)
             data = self.parse_uniprot_variants('XXXX')
 

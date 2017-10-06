@@ -532,7 +532,23 @@ _validation_types = {
     'validation_mogul-ignore': str
 }
 
+_annotation_types = {
+    'empty': str,
+    'END': str,
+    'FRAME': str,
+    'GROUP': str,
+    'ID': str,
+    'NAME': str,
+    'NOTE': str,
+    'SCORE': str,
+    'SOURCE': str,
+    'START': str,
+    'STRAND': str,
+    'TYPE': str
+}
+
 pdbx_types = {k: _convert_dtypes[v] for k, v in _pdbx_types.items()}
 dssp_types = {k: _convert_dtypes[v] for k, v in _dssp_types.items()}
 sifts_types = {k: _convert_dtypes[v] for k, v in _sifts_types.items()}
 validation_types = {k: _convert_dtypes[v] for k, v in _validation_types.items()}
+annotation_types = {k: _convert_dtypes[v] for k, v in _annotation_types.items()}

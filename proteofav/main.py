@@ -8,7 +8,8 @@ from proteofav.structures import select_structures
 from proteofav.validation import select_validation
 from proteofav.sifts import select_sifts, sifts_best
 from proteofav.dssp import select_dssp
-from proteofav.variants import (map_gff_features_to_sequence, select_variants)
+from proteofav.variants import select_variants
+from proteofav.annotation import select_annotation
 from proteofav.library import to_single_aa
 
 __all__ = ['merge_tables',
@@ -159,7 +160,7 @@ def merge_tables(uniprot_id=None,
 
     if add_annotation:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
-            uniprot_annotation = map_gff_features_to_sequence(identifier)
+            uniprot_annotation = select_annotation(identifier, annotation_agg=True)
             uniprot_annotation.reset_index(inplace=True)
             uniprot_annotation['UniProt_dbAccessionId'] = identifier
             uniprot_annotation.rename(columns={'index': 'UniProt_dbResNum'}, inplace=True)

@@ -6,7 +6,7 @@ from io import BytesIO
 from io import StringIO
 from pandas.io.json import json_normalize
 
-from proteofav.annotation import map_gff_features_to_sequence
+from proteofav.annotation import select_annotation
 from proteofav.utils import fetch_from_url_or_retry, row_selector
 from proteofav.library import valid_ensembl_species
 
@@ -438,7 +438,8 @@ def parse_uniprot_variants(uniprot_id):
     res_transition_group = '(?P<ref>[A-Z]+)->(?P<new>[A-Z]+)'
     ids_group = "\(\[\'([a-zA-Z0-9_]+)\'\]\)"
 
-    table = map_gff_features_to_sequence(uniprot_id, query_type='Natural variant')
+    table = select_annotation(uniprot_id, annotation_agg=True,
+                              query_type='Natural variant')
 
     if table.empty:
         return table
