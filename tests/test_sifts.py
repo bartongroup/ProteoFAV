@@ -15,8 +15,6 @@ from proteofav.sifts import (parse_sifts_residues, sifts_best,
                              _parse_sifts_regions_from_file,
                              _parse_sifts_dbs_from_file, select_sifts,
                              filter_sifts, download_sifts, SIFTS)
-from proteofav.utils import (_pdb_uniprot_sifts_mapping,
-                             _uniprot_pdb_sifts_mapping)
 
 from proteofav.config import defaults
 
@@ -37,8 +35,6 @@ class TestSIFTSParser(unittest.TestCase):
                                          "testdata", "2pah.xml")
         self.pdbid = '2pah'
         self.uniprot_id = 'P00439'
-        self.pdb_uniprot = _pdb_uniprot_sifts_mapping
-        self.uniprot_pdb = _uniprot_pdb_sifts_mapping
         self.pdb_best = sifts_best
         self.parser_sifts_regions = _parse_sifts_regions_from_file
         self.parser_sifts_dbs = _parse_sifts_dbs_from_file
@@ -54,8 +50,6 @@ class TestSIFTSParser(unittest.TestCase):
         self.output_sifts = None
         self.pdbid = None
         self.uniprot_id = None
-        self.pdb_uniprot = None
-        self.uniprot_uniprot = None
         self.pdb_best = None
         self.parser_sifts_regions = None
         self.parser_sifts_dbs = None
@@ -98,45 +92,6 @@ class TestSIFTSParser(unittest.TestCase):
 
         # check the values of particular entries
         self.assertTrue(data['CATH_regionId'][0] == 1)
-
-    def test_to_table_pdb_uniprot_sifts_mapping(self):
-        """
-        Testing the PDBe API for mapping between PDB and UniProt
-        accession identifiers.
-        """
-
-        data = self.pdb_uniprot(self.pdbid)
-
-        # number of values per column (or rows)
-        self.assertEqual(len(data), 1)
-
-        # number of keys (or columns)
-        self.assertEqual(len(data.columns.values), 1)
-
-        # check whether there are particular keys
-        self.assertIn('uniprot_id', data.columns.values)
-
-        # check the values of particular entries
-        self.assertTrue(data['uniprot_id'][0] == 'P00439')
-
-    def test_to_table_uniprot_pdb_sifts_mapping(self):
-        """
-        Testing the PDBe API for mapping between UniProt and PDB
-        accession identifiers.
-        """
-
-        data = self.uniprot_pdb(self.uniprot_id)
-
-        # check whether there are particular keys
-        self.assertIn('pdb_id', data.columns.values)
-
-        # check the values of particular entries
-        self.assertEqual(data['pdb_id'].unique()[0], '2pah')
-        self.assertIn('A', data['chain_id'].unique())
-        self.assertIn('X-ray diffraction', data['experimental_method'].unique())
-        self.assertTrue(type(data['coverage'][0]), float)
-        self.assertTrue(type(data['resolution'][0]), float)
-        self.assertTrue(type(data['tax_id'][0]), int)
 
     def test_to_table_uniprot_pdb_sifts_best(self):
         """

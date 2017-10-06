@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import json
 import logging
+import requests
 import pandas as pd
 from io import BytesIO
 from io import StringIO
@@ -545,5 +547,87 @@ def select_uniprot_variants(identifier, align_transcripts=False):
     return table
 
 
-if __name__ == '__main__':
-    pass
+def _pdb_uniprot_sifts_mapping(identifier):
+    """
+    Queries the PDBe API for SIFTS mapping between PDB - UniProt.
+    One to many relationship expected.
+
+    :param identifier: PDB id
+    :return: pandas table dataframe
+    """
+
+    sifts_endpoint = 'mappings/uniprot/'
+    url = defaults.api_pdbe + sifts_endpoint + identifier
+    information = fetch_from_url_or_retry(url, json=True).json()
+
+    rows = []
+    for uniprot in information[identifier]['UniProt']:
+        uniprots = {'uniprot_id': uniprot}
+        rows.append(uniprots)
+    return pd.DataFrame(rows)
+
+
+def _uniprot_pdb_sifts_mapping(identifier):
+    """
+    Queries the PDBe API for SIFTS mapping between UniProt - PDB entries.
+    One to many relationship expected.
+
+    :param identifier: UniProt ID
+    :return: pandas table dataframe
+    """
+    sifts_endpoint = 'mappings/best_structures/'
+    url = defaults.api_pdbe + sifts_endpoint + str(identifier)
+    information = fetch_from_url_or_retry(url, json=True).json()
+
+    rows = []
+    for entry in information[identifier]:
+        rows.append(entry)
+    return pd.DataFrame(rows)
+
+
+def raise_if_not_ok(response):
+    """
+
+    :param response:
+    """
+    if not response.ok:
+        response.raise_for_status()
+
+
+def icgc_missense_variant(ensembl_gene_id):
+    """Fetch a gene missense variants from ICGC data portal.
+
+    :param str ensembl_gene_id: ensembl gene accession
+    :return pd.DataFrame: DataFrame with one mutation per row.
+    :example:
+
+        >>> table = icgc_missense_variant('ENSG00000012048')
+        >>> table.loc[0, ['id', 'mutation', 'type', 'start']]
+        id                          MU601299
+        mutation                         G>A
+        type        single base substitution
+        start                       41245683
+        Name: 0, dtype: object
+
+    .. note:: ICGC doc https://dcc.icgc.org/docs/#!/genes/findMutations_get_8
+    """
+    base_url = defaults.api_icgc + ensembl_gene_id + "/mutations/"
+    headers = {'content-type': 'application/json'}
+    filt = json.dumps({"mutation": {"consequenceType": {"is": ['missense_variant']}}})
+    params = {"filters": filt}
+
+    # First counts the number of mutation entries
+    counts_resp = requests.get(base_url + "counts/", headers=headers, params=params)
+    raise_if_not_ok(counts_resp)
+    total = counts_resp.json()['Total']
+
+    # then iterate the pages of entries, max 100 entries per page
+    hits = []
+    params['size'] = 100
+    for i in range(total // 100 + 1):
+        params['from'] = i * 100 + 1
+        mutation_resp = requests.get(base_url, headers=headers, params=params)
+        raise_if_not_ok(mutation_resp)
+        hits.extend(mutation_resp.json()['hits'])
+
+    return pd.DataFrame(hits)

@@ -17,7 +17,8 @@ from proteofav.variants import (_fetch_icgc_variants, _fetch_ebi_variants, _fetc
                                 _sequence_from_ensembl_protein, _match_uniprot_ensembl_seq,
                                 _compare_sequences, _count_mismatches, parse_uniprot_variants,
                                 _uniprot_ensembl_mapping, fetch_uniprot_sequence,
-                                fetch_uniprot_formal_specie, _uniprot_info, _uniprot_to_ensembl_xref)
+                                fetch_uniprot_formal_specie, _uniprot_info, _uniprot_to_ensembl_xref,
+                                _uniprot_pdb_sifts_mapping, _pdb_uniprot_sifts_mapping)
 
 
 @mock.patch("proteofav.structures.defaults", defaults)
@@ -27,6 +28,8 @@ class VariantsTestCase(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
         self.uniprot_id = 'O96013'
+        self.pdbid = '2pah'
+        self.uniprot_id2 = 'P00439'
         self.fetch_icgc_variants = _fetch_icgc_variants
         self.fetch_ebi_variants = _fetch_ebi_variants
         self.fetch_ensembl_variants = _fetch_ensembl_variants
@@ -58,11 +61,15 @@ class VariantsTestCase(unittest.TestCase):
                               "NDAPALALSDLGIAISTGTEIAIEAADIVILCGNDLNTNSLRGLANAIDISLKTFKRIKL"
                               "NLFWALCYNIFMIPIAMGVLIPWGITLPPMLAGLAMAFSSVSVVLSSLMLKKWTPPDIES"
                               "HGISDFKSKFSIGNFWSRLFSTRAIAGEQDIESQAGLMSNEEVL")
+        self.pdb_uniprot = _pdb_uniprot_sifts_mapping
+        self.uniprot_pdb = _uniprot_pdb_sifts_mapping
 
     def tearDown(self):
         """Remove testing framework by cleaning the namespace."""
 
         self.uniprot_id = None
+        self.pdbid = None
+        self.uniprot_id2 = None
         self.fetch_icgc_variants = None
         self.fetch_ebi_variants = None
         self.fetch_ensembl_variants = None
@@ -77,6 +84,8 @@ class VariantsTestCase(unittest.TestCase):
         self.uniprot_info = None
         self.uniprot_to_ensembl_xref = None
         self.ccc2_sequence = None
+        self.pdb_uniprot = None
+        self.uniprot_pdb = None
 
     def test_icgc_parsing(self):
         mock_response = mock.Mock()
@@ -361,6 +370,45 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertTrue(self.uniprot_to_ensembl_xref('P38995').empty)
         table = self.uniprot_to_ensembl_xref('P38995', 'saccharomyces_cerevisiae')
         self.assertEqual(set(table.columns), {'id', 'type'})
+
+    def test_to_table_pdb_uniprot_sifts_mapping(self):
+        """
+        Testing the PDBe API for mapping between PDB and UniProt
+        accession identifiers.
+        """
+
+        data = self.pdb_uniprot(self.pdbid)
+
+        # number of values per column (or rows)
+        self.assertEqual(len(data), 1)
+
+        # number of keys (or columns)
+        self.assertEqual(len(data.columns.values), 1)
+
+        # check whether there are particular keys
+        self.assertIn('uniprot_id', data.columns.values)
+
+        # check the values of particular entries
+        self.assertTrue(data['uniprot_id'][0] == 'P00439')
+
+    def test_to_table_uniprot_pdb_sifts_mapping(self):
+        """
+        Testing the PDBe API for mapping between UniProt and PDB
+        accession identifiers.
+        """
+
+        data = self.uniprot_pdb(self.uniprot_id2)
+
+        # check whether there are particular keys
+        self.assertIn('pdb_id', data.columns.values)
+
+        # check the values of particular entries
+        self.assertEqual(data['pdb_id'].unique()[0], '2pah')
+        self.assertIn('A', data['chain_id'].unique())
+        self.assertIn('X-ray diffraction', data['experimental_method'].unique())
+        self.assertTrue(type(data['coverage'][0]), float)
+        self.assertTrue(type(data['resolution'][0]), float)
+        self.assertTrue(type(data['tax_id'][0]), int)
 
 
 if __name__ == '__main__':
