@@ -935,12 +935,12 @@ def download_structures(identifier=None, filename=None, output_format='mmcif',
             # original mmCIF?
             # url_endpoint = "download/{}.cif".format(pdbid)
             url_endpoint = "download/{}_updated.cif".format(identifier)
-            url_root = defaults.cif_fetch
+            url_root = defaults.pdbe_fetch
             url = url_root + url_endpoint
 
     elif output_format == 'pdb' or output_format == 'ent':
         url_endpoint = "download/pdb{}.ent".format(identifier)
-        url_root = defaults.cif_fetch
+        url_root = defaults.pdbe_fetch
         url = url_root + url_endpoint
 
     else:

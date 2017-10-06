@@ -80,7 +80,7 @@ def _fetch_ebi_variants(uniprot_idd, flat_xrefs=True):
     if flat_xrefs is true multiple rows are produced with the same index to
     """
     endpoint = "variation/"
-    url = defaults.api_ebi_uniprot + endpoint + uniprot_idd
+    url = defaults.api_proteins + endpoint + uniprot_idd
 
     data = fetch_from_url_or_retry(url, json=True).json()
     data = json_normalize(data, ['features'], meta=['accession', 'entryName'])

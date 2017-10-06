@@ -8,11 +8,9 @@ Defines the methods that load and validate user configuration parameters, such
 >>> print(defaults.api_pdbe)
 http://www.ebi.ac.uk/pdbe/api/
 >>> from proteofav.config import Defaults
->>> local_defaults = Defaults("config.txt")
+>>> local_defaults = Defaults('config.ini')
 >>> print(local_defaults.api_uniprot)
 http://www.uniprot.org/uniprot/
->>> print(local_defaults.sifts_extension)
-.xml.gz
 >>> print(local_defaults.email)
 Traceback (most recent call last):
 ...
@@ -57,12 +55,12 @@ class Defaults(object):
         if config_file:
             # user provided config
             pass
-        elif os.path.isfile(os.path.join(click.get_app_dir('proteofav'), 'config.txt')):
+        elif os.path.isfile(os.path.join(click.get_app_dir('proteofav'), 'config.ini')):
             # os config
-            config_file = os.path.join(click.get_app_dir('proteofav'), 'config.txt')
+            config_file = os.path.join(click.get_app_dir('proteofav'), 'config.ini')
         else:
             # proteofav default config
-            config_file = os.path.join(os.path.dirname(__file__), 'config.txt')
+            config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
         config = ConfigParser()
         if os.path.isfile(config_file):
             config.read(config_file)
@@ -90,7 +88,7 @@ class Defaults(object):
         pass
 
     def write(self, file_path=None):
-        file_path = file_path or os.path.join(click.get_app_dir('proteofav'), 'config.txt')
+        file_path = file_path or os.path.join(click.get_app_dir('proteofav'), 'config.ini')
 
         if not os.path.exists(os.path.dirname(file_path)):
             os.makedirs(os.path.dirname(file_path))

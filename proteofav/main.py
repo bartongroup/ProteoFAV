@@ -243,7 +243,7 @@ def setup():
     from proteofav.config import Defaults
     import os
 
-    defaults = Defaults(os.path.join(os.path.dirname(__file__), 'config.txt'))
+    defaults = Defaults(os.path.join(os.path.dirname(__file__), 'config.ini'))
     default_db = os.path.expanduser("~/Downloads/")
 
     items = {k: v for k, v in defaults.__dict__.items() if k.startswith('db')}

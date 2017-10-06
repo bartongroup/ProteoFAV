@@ -245,7 +245,7 @@ class TestUTILS(unittest.TestCase):
             self.InputFileHandler(invalid)
 
     def test_download(self):
-        url = config.cif_fetch + "download/{}_updated.cif".format(self.pdbid)
+        url = config.pdbe_fetch + "download/{}_updated.cif".format(self.pdbid)
         self.Downloader(url=url, filename=self.outputcif,
                         decompress=False, overwrite=True)
         os.remove(self.outputcif)
