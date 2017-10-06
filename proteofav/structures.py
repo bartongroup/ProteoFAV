@@ -8,7 +8,9 @@ the information. Prefers the use o the wrapper instead the private functions
 for better error handling. Both levels are covered by test cases.
 """
 from __future__ import absolute_import
+
 import logging
+
 try:
     # python 2.7
     from StringIO import StringIO
@@ -22,18 +24,16 @@ from scipy.spatial import cKDTree
 from string import ascii_uppercase
 
 from proteofav.config import defaults
-from proteofav.utils import (fetch_files, fetch_from_url_or_retry,
+from proteofav.utils import (fetch_from_url_or_retry,
                              get_preferred_assembly_id, row_selector,
                              InputFileHandler, OutputFileHandler, GenericInputs,
                              constrain_column_types, exclude_columns, Downloader)
 from proteofav.library import pdbx_types, aa_default_atoms
 
 log = logging.getLogger('proteofav.config')
-__all__ = ['parse_mmcif_atoms', '_pdb_validation_to_table',
-           '_rcsb_description', '_get_contacts_from_table',
+__all__ = ['parse_mmcif_atoms', '_rcsb_description', '_get_contacts_from_table',
            # 'residues_aggregation', '_import_dssp_chains_ids',
-           'filter_structures', 'select_structures', 'select_validation',
-           'write_mmcif_from_table', 'write_pdb_from_table',
+           'filter_structures', 'select_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
            'read_structures', 'download_structures', 'write_structures', 'PDB', 'mmCIF']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
@@ -313,33 +313,6 @@ def _mmcif_fields(filename, field_name='exptl.',
                           quotechar="'",
                           index_col=False)
     return table
-
-
-def _pdb_validation_to_table(filename, global_parameters=False):
-    """
-    Parse the PDB's validation validation file to a pandas DataFrame.
-    Private method, prefer its higher level wrapper.
-
-    :type global_parameters: bool
-    :param filename: path to file
-    :return: table with validation information
-    :rtype: pandas.DataFrame
-    """
-    tree = etree.parse(filename)
-    root = tree.getroot()
-    if global_parameters:
-        global_parameters = root.find('Entry').attrib
-        log.info(global_parameters)
-    rows = []
-    header = set()
-    for i, elem in enumerate(root.iterfind('ModelledSubgroup')):
-        rows.append(dict(elem.attrib))
-        header.update(rows[-1].keys())
-    for row in rows:
-        not_in = {k: None for k in header.difference(row.keys())}
-        row.update(not_in)
-    df = pd.DataFrame(rows, columns=header)
-    return df
 
 
 def _rcsb_description(pdb_id, tag, key):
@@ -1004,30 +977,3 @@ class Structure(GenericInputs):
 
 PDB = Structure()
 mmCIF = Structure()
-
-
-def select_validation(pdb_id, chains=None):
-    """
-    Produces table from PDB validation XML file.
-
-    :param pdb_id: PDB identifier
-    :param chains: PDB protein chain
-    :return: pandas dataframe
-    """
-    val_path = path.join(defaults.db_validation, pdb_id + defaults.validation_extension)
-    try:
-        val_table = _pdb_validation_to_table(val_path)
-    except IOError:
-        val_path = fetch_files(pdb_id, sources='validation', directory=defaults.db_pdb)[0]
-        val_table = _pdb_validation_to_table(val_path)
-
-    if chains:
-        val_table = row_selector(val_table, 'chain', chains)
-    if not val_table.empty:
-        val_table.columns = ["validation_" + name for name in val_table.columns]
-        return val_table
-    raise ValueError('Parsing {} resulted in a empty table'.format(val_path))
-
-
-if __name__ == '__main__':
-    pass

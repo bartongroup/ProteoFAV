@@ -7,7 +7,8 @@ import sys
 import click
 
 from proteofav.library import to_single_aa
-from proteofav.structures import select_structures, select_validation
+from proteofav.structures import select_structures
+from proteofav.validation import select_validation
 from proteofav.sifts import select_sifts, sifts_best
 from proteofav.dssp import select_dssp
 

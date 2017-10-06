@@ -504,6 +504,36 @@ _sifts_types = {
     'Pfam_dbAccessionId': str
 }
 
+_validation_types = {
+    'model': int,
+    'ent': str,
+    'chain': str,
+    'resname': str,
+    'resnum': str,
+    'seq': str,
+    'altcode': str,
+    'icode': str,
+    'ligRSRZ': str,
+    'ligRSRnbrMean': str,
+    'ligRSRnbrStdev': str,
+    'ligRSRnumnbrs': str,
+    'avgoccu': float,
+    'rota': str,
+    'rsr': float,
+    'owab': float,
+    'rsrz': str,
+    'num-H-reduce': str,
+    'rama': str,
+    'said': str,
+    'NatomsEDS': int,
+    'flippable-sidechain': str,
+    'rscc': float,
+    'phi': float,
+    'psi': float,
+    'mogul-ignore': str
+}
+
 pdbx_types = {k: _convert_dtypes[v] for k, v in _pdbx_types.items()}
 dssp_types = {k: _convert_dtypes[v] for k, v in _dssp_types.items()}
 sifts_types = {k: _convert_dtypes[v] for k, v in _sifts_types.items()}
+validation_types = {k: _convert_dtypes[v] for k, v in _validation_types.items()}
