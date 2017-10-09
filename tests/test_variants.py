@@ -27,8 +27,6 @@ from proteofav.variants import (_fetch_icgc_variants, fetch_uniprot_variants, fe
                                 fetch_uniprot_formal_specie, _uniprot_info,
                                 flatten_uniprot_variants_ebi, flatten_ensembl_variants,
                                 select_variants, fetch_variants, Variants)
-                                # uniprot_vars_ensembl_vars_merger)
-
 
 example_uniprot_variants = {
     'accession': 'P40227',
@@ -884,46 +882,50 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertIn('end', list(somatic))
 
     def test_variants_select(self):
-        table = self.select_variants(self.uniprot_id2,
-                                     id_source='uniprot',
-                                     synonymous=True,
-                                     uniprot_vars=True,
-                                     ensembl_germline_vars=True,
-                                     ensembl_somatic_vars=True)
-        self.assertIn('polyphenScore', list(table))
-        self.assertIn('siftScore', list(table))
-        self.assertIn('begin', list(table))
-        self.assertIn('end', list(table))
-        self.assertIn('accession', list(table))
-        self.assertIn('translation', list(table))
+        uniprot, ensembl = self.select_variants(self.uniprot_id2,
+                                                id_source='uniprot',
+                                                synonymous=True,
+                                                uniprot_vars=True,
+                                                ensembl_germline_vars=True,
+                                                ensembl_somatic_vars=True)
+        self.assertIn('polyphenScore', list(uniprot))
+        self.assertIn('siftScore', list(uniprot))
+        self.assertIn('begin', list(uniprot))
+        self.assertIn('end', list(uniprot))
+        self.assertIn('accession', list(uniprot))
+        self.assertIn('translation', list(ensembl))
+        self.assertIn('begin', list(ensembl))
+        self.assertIn('end', list(ensembl))
 
     def test_variants_select_from_uniprot_id(self):
-        table = self.Variants.select(self.uniprot_id2,
-                                     id_source='uniprot',
-                                     synonymous=True,
-                                     uniprot_vars=False,
-                                     ensembl_germline_vars=True,
-                                     ensembl_somatic_vars=True)
-        self.assertIn('polyphenScore', list(table))
-        self.assertIn('siftScore', list(table))
-        self.assertIn('begin', list(table))
-        self.assertIn('end', list(table))
-        self.assertNotIn('accession', list(table))
-        self.assertIn('translation', list(table))
+        uniprot, ensembl = self.Variants.select(self.uniprot_id2,
+                                                id_source='uniprot',
+                                                synonymous=True,
+                                                uniprot_vars=False,
+                                                ensembl_germline_vars=True,
+                                                ensembl_somatic_vars=True)
+        self.assertIn('polyphenScore', list(ensembl))
+        self.assertIn('siftScore', list(ensembl))
+        self.assertIn('begin', list(ensembl))
+        self.assertIn('end', list(ensembl))
+        self.assertNotIn('accession', list(ensembl))
+        self.assertIn('translation', list(ensembl))
+        self.assertIsNone(uniprot)
 
     def test_variants_select_from_ensembl_id(self):
-        table = self.Variants.select(self.ensembl_id2,
-                                     id_source='ensembl',
-                                     synonymous=True,
-                                     uniprot_vars=True,
-                                     ensembl_germline_vars=False,
-                                     ensembl_somatic_vars=False)
-        self.assertIn('polyphenScore', list(table))
-        self.assertIn('siftScore', list(table))
-        self.assertIn('begin', list(table))
-        self.assertIn('end', list(table))
-        self.assertIn('accession', list(table))
-        self.assertNotIn('translation', list(table))
+        uniprot, ensembl = self.Variants.select(self.ensembl_id2,
+                                                id_source='ensembl',
+                                                synonymous=True,
+                                                uniprot_vars=True,
+                                                ensembl_germline_vars=False,
+                                                ensembl_somatic_vars=False)
+        self.assertIn('polyphenScore', list(uniprot))
+        self.assertIn('siftScore', list(uniprot))
+        self.assertIn('begin', list(uniprot))
+        self.assertIn('end', list(uniprot))
+        self.assertIn('accession', list(uniprot))
+        self.assertNotIn('translation', list(uniprot))
+        self.assertIsNone(ensembl)
 
 
 if __name__ == '__main__':

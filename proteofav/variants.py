@@ -3,7 +3,6 @@
 import json
 import logging
 import requests
-import numpy as np
 import pandas as pd
 from io import BytesIO
 from io import StringIO
@@ -43,7 +42,6 @@ __all__ = ["fetch_uniprot_variants",
            "select_variants",
            "flatten_uniprot_variants_ebi",
            "flatten_ensembl_variants",
-           "uniprot_vars_ensembl_vars_merger",
            "Variants",
            "parse_uniprot_variants",
            "select_uniprot_variants",
@@ -530,16 +528,7 @@ def select_variants(identifier, id_source=None, synonymous=True, uniprot_vars=Tr
     else:
         ens_vars = None
 
-    if isinstance(uni_vars, pd.DataFrame) and isinstance(ens_vars, pd.DataFrame):
-        data = uniprot_vars_ensembl_vars_merger(uni_vars, ens_vars)
-    elif isinstance(uni_vars, pd.DataFrame):
-        data = uni_vars
-    elif isinstance(ens_vars, pd.DataFrame):
-        data = ens_vars
-    else:
-        log.info('No variants found...')
-        data = pd.DataFrame()
-    return data
+    return uni_vars, ens_vars
 
 
 def fetch_variants(identifier, id_source=None, synonymous=True, uniprot_vars=True,
@@ -695,39 +684,6 @@ def flatten_ensembl_variants(data, excluded=(), synonymous=True):
     return table
 
 
-def uniprot_vars_ensembl_vars_merger(uniprot_vars_table, ensembl_vars_table):
-    """
-    Merges the tables provided using appropriate columns.
-
-    :param uniprot_vars_table: UniProt Variants pandas DataFrame
-    :param ensembl_vars_table: Ensembl Variants pandas DataFrame
-    :return: merged pandas DataFrame
-    """
-
-    # bare minimal columns needed
-    merge_on = ['begin', 'end', 'xrefs_id', 'frequency',
-                'consequenceType', 'siftScore', 'polyphenScore']
-
-    if (set(merge_on).issubset(uniprot_vars_table.columns) and
-            set(merge_on).issubset(ensembl_vars_table.columns)):
-
-        table = uniprot_vars_table.merge(ensembl_vars_table, how='outer',
-                                         on=merge_on).reset_index(drop=True)
-
-        table = merging_down_by_key(table, key='xrefs_id')
-        table.fillna(np.nan, inplace=True)
-    else:
-        raise TableMergerError('Not possible to merge UniProt and Ensembl Vars table! '
-                               'Some of the necessary columns are missing...')
-
-    log.info("Merged UniProt and Ensembl Vars tables...")
-    return table
-
-
-class TableMergerError(Exception):
-    pass
-
-
 class Variants(GenericInputs):
     def fetch(self, identifier=None, **kwargs):
         identifier = self._get_identifier(identifier)
@@ -736,8 +692,8 @@ class Variants(GenericInputs):
 
     def select(self, identifier=None, **kwargs):
         identifier = self._get_identifier(identifier)
-        self.table = select_variants(identifier=identifier, **kwargs)
-        return self.table
+        uni, ens = select_variants(identifier=identifier, **kwargs)
+        return uni, ens
 
 
 Variants = Variants()

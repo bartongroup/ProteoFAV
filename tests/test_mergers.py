@@ -12,7 +12,7 @@ except ImportError:
     from unittest.mock import patch
 
 from proteofav.config import defaults
-from proteofav.main import merge_tables
+from proteofav.mergers import merge_tables
 from proteofav.structures import parse_mmcif_atoms
 from proteofav.sifts import parse_sifts_residues
 from proteofav.dssp import parse_dssp_residues
