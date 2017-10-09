@@ -10,8 +10,6 @@ for better error handling. Both levels are covered by test cases.
 import os
 import logging
 import pandas as pd
-from lxml import etree
-from scipy.spatial import cKDTree
 from string import ascii_uppercase
 
 try:
@@ -21,16 +19,15 @@ except ImportError:
     from io import StringIO
 
 from proteofav.config import defaults
-from proteofav.utils import (fetch_from_url_or_retry,
-                             get_preferred_assembly_id, row_selector,
+from proteofav.utils import (fetch_from_url_or_retry, row_selector,
                              InputFileHandler, OutputFileHandler, GenericInputs,
                              constrain_column_types, exclude_columns, Downloader)
 from proteofav.library import pdbx_types, aa_default_atoms
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_mmcif_atoms', '_rcsb_description', '_get_contacts_from_table',
-           # 'residues_aggregation', '_import_dssp_chains_ids',
+__all__ = ['parse_mmcif_atoms', 'residues_aggregation',
+           'fetch_summary_properties_pdbe', 'get_preferred_assembly_id',
            'filter_structures', 'select_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
            'read_structures', 'download_structures', 'write_structures', 'PDB', 'mmCIF']
 
@@ -312,66 +309,6 @@ def _mmcif_fields(filename, field_name='exptl.',
                           quotechar="'",
                           index_col=False)
     return table
-
-
-def _rcsb_description(pdb_id, tag, key):
-    """
-    Gets description from RCSB PDB api.
-
-    :param pdb_id: PDB id
-    :param tag: name tag as defined in the api
-    :param key: key name as defined in the api
-    :return: list of values
-    """
-    api = defaults.api_rcsb
-    endpoint = 'describeMol'
-    query = '?structureId=' + pdb_id
-
-    url = api + endpoint + query
-
-    tree = etree.fromstring(fetch_from_url_or_retry(url).content)
-    values = []
-    for i in tree.iter(tag):
-        values.append(i.attrib[key])
-    return values
-
-
-def _get_contacts_from_table(df, distance=5, ignore_consecutive=3):
-    """
-    Just a simple testing distance measure.
-
-    :param df: pd.Dataframe
-    :param distance: distance threshold in Angstrom
-    :param ignore_consecutive: number of consecutive residues that will be ignored
-      (in both directions)
-    :return: new pd.Dataframe
-    """
-    ig = ignore_consecutive
-
-    # using KDTree
-    tree = cKDTree(df[['Cartn_y', 'Cartn_y', 'Cartn_z']])
-    nearby = []
-    for i in df.index:
-        query_point = df.loc[i, ['Cartn_y', 'Cartn_y', 'Cartn_z']]
-        idx = tree.query_ball_point(query_point, r=distance, p=2)
-        idx = df.index[idx]
-        # ignoring nearby residues (not likely to be true contacts)
-        # TODO: need to assess this
-        idx = [j for j in idx if (j <= i - ig or j >= i + ig)]
-        nearby.append(idx)
-        # for j in idx:
-        #     chain_i = str(df.loc[i, 'auth_asym_id'])
-        #     chain_j = str(df.loc[j, 'auth_asym_id'])
-        #     if chain_i != chain_j:
-        #
-        #         cont = [df.loc[i, ['auth_asym_id', 'auth_seq_id',
-        #                            'pdbx_PDB_ins_code', 'auth_comp_id' ]],
-        #                 df.loc[j, ['auth_asym_id', 'auth_seq_id',
-        #                            'pdbx_PDB_ins_code', 'auth_comp_id' ]]]
-        #         contacts.append(cont)
-
-    df['contacts'] = nearby
-    return df
 
 
 def _add_mmcif_res_full(table):
@@ -662,6 +599,52 @@ def _get_atom_line(table, index, atom_number, category='auth'):
               element, charge)
 
     return PDB_FORMAT % values
+
+
+def fetch_summary_properties_pdbe(identifier, retry_in=(429,)):
+    """
+    Queries the PDBe api to get summary validation report.
+
+    :param identifier: PDB ID
+    :param retry_in: http code for retrying connections
+    :return: Requests object
+    """
+    pdbe_endpoint = "pdb/entry/summary/{}".format(identifier)
+    url = defaults.api_pdbe + pdbe_endpoint
+    response = fetch_from_url_or_retry(url, json=True, retry_in=retry_in)
+    return response
+
+
+def get_preferred_assembly_id(identifier, verbose=False):
+    """
+    Gets the preferred assembly id for the given PDB ID, from the PDBe API.
+
+    :param identifier: PDB ID
+    :param verbose: boolean
+    :return: str
+    """
+
+    # getting the preferred biological assembly from the PDBe API
+    try:
+        data = fetch_summary_properties_pdbe(identifier).json()
+    except Exception as e:
+        message = "Something went wrong for {}... {}".format(identifier, e)
+        if verbose:
+            log.error(message)
+    try:
+        nassemblies = data[identifier][0]["assemblies"]
+        if len(nassemblies) > 1:
+            for entry in nassemblies:
+                if entry["preferred"]:
+                    pref_assembly = entry["assembly_id"]
+                    break
+        else:
+            pref_assembly = data[identifier][0]["assemblies"][0]["assembly_id"]
+    except Exception:
+        pref_assembly = "1"
+
+    bio_best = str(pref_assembly)
+    return bio_best
 
 
 ##############################################################################

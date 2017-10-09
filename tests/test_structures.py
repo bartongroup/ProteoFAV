@@ -21,8 +21,8 @@ from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_struc
                                   _add_mmcif_res_full, _add_mmcif_atom_altloc,
                                   _remove_multiple_altlocs, _remove_partial_residues,
                                   read_structures, write_structures, download_structures,
-                                  PDB, mmCIF)
-from proteofav.utils import get_preferred_assembly_id
+                                  PDB, mmCIF, get_preferred_assembly_id,
+                                  fetch_summary_properties_pdbe)
 
 
 @patch("proteofav.structures.defaults", defaults)
@@ -48,7 +48,8 @@ class TestMMCIFParser(unittest.TestCase):
         self.example_tsv_out = os.path.join(os.path.dirname(__file__), "testdata",
                                             "mmcif", "2pah-bio.tsv")
         self.select_structures = select_structures
-        self.best_assembly = get_preferred_assembly_id
+        self.fetch_summary_properties_pdbe = fetch_summary_properties_pdbe
+        self.get_preferred_assembly_id = get_preferred_assembly_id
         self.pdbid = '2pah'
         self.pdb_atom_parser = parse_pdb_atoms
         self.fix_label_alt_id = _fix_label_alt_id
@@ -82,7 +83,8 @@ class TestMMCIFParser(unittest.TestCase):
         self.mmcif_info_parser = None
         self.example_tsv_out = None
         self.select_structures = None
-        self.best_assembly = None
+        self.fetch_summary_properties_pdbe = None
+        self.get_preferred_assembly_id = None
         self.pdbid = None
         self.pdb_atom_parser = None
         self.fix_label_alt_id = None
@@ -178,7 +180,7 @@ class TestMMCIFParser(unittest.TestCase):
         # generating it locally
 
         # test loading the atom lines with biological assemblies
-        best_assembly = self.best_assembly(self.pdbid)
+        best_assembly = self.get_preferred_assembly_id(self.pdbid)
         data = self.select_structures(self.pdbid, bio_unit=True,
                                       bio_unit_id=best_assembly)
 
@@ -587,6 +589,14 @@ class TestMMCIFParser(unittest.TestCase):
         os.remove(self.output_pdb)
         # select
         self.PDB.select(self.pdbid)
+
+    def test_summary_properties_pdbe(self):
+        r = self.fetch_summary_properties_pdbe(self.pdbid)
+        self.assertTrue(r.ok)
+
+    def test_preferred_assembly_pdbe(self):
+        r = self.get_preferred_assembly_id(self.pdbid)
+        self.assertEqual("1", r)
 
 
 if __name__ == '__main__':
