@@ -6,7 +6,8 @@ import logging
 
 from proteofav.structures import select_structures
 from proteofav.validation import select_validation
-from proteofav.sifts import select_sifts, sifts_best
+from proteofav.sifts import select_sifts
+from proteofav.sifts import sifts_best
 from proteofav.dssp import select_dssp
 from proteofav.variants import select_variants
 from proteofav.annotation import select_annotation

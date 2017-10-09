@@ -4,12 +4,11 @@ import os
 import logging
 import pandas as pd
 from lxml import etree
-from requests import HTTPError
 from collections import OrderedDict
 
-from proteofav.utils import (row_selector, fetch_from_url_or_retry,
-                             InputFileHandler, Downloader, GenericInputs,
-                             constrain_column_types, exclude_columns)
+from proteofav.variants import fetch_uniprot_pdb_mapping
+from proteofav.utils import (row_selector, InputFileHandler, Downloader,
+                             GenericInputs, constrain_column_types, exclude_columns)
 from proteofav.library import sifts_types
 
 from proteofav.config import defaults
@@ -435,6 +434,21 @@ def download_sifts(identifier=None, filename=None, overwrite=False):
                decompress=True, overwrite=overwrite)
 
 
+def sifts_best(identifier, first=False):
+    """
+    Retrieves the best structures from the SIFTS endpoint in the PDBe API.
+
+    :param identifier: UniProt accession ID
+    :param first: gets the first entry
+    :return: url content or url content in JSON data structure.
+    """
+    response = fetch_uniprot_pdb_mapping(identifier=identifier)
+    if not response.ok or response is None:
+        log.error('No SIFTS mapping found for {}'.format(identifier))
+        return None
+    return response.json() if not first else response.json()[identifier][0]
+
+
 class SIFTS(GenericInputs):
     def read(self, filename=None, **kwargs):
         filename = self._get_filename(filename)
@@ -453,24 +467,3 @@ class SIFTS(GenericInputs):
 
 
 SIFTS = SIFTS()
-
-
-def sifts_best(uniprot_id, first=False):
-    """
-    Retrieves the best structures from the SIFTS endpoint in the PDBe api.
-
-    :param uniprot_id: Uniprot ID
-    :param first: gets the first entry
-    :return: url content or url content in json data structure.
-    """
-    sifts_endpoint = "mappings/best_structures/"
-    url = defaults.api_pdbe + sifts_endpoint + str(uniprot_id)
-    try:
-        response = fetch_from_url_or_retry(url, json=True).json()
-    except HTTPError as e:
-        if e.response.status_code == 404:
-            logging.error('No SIFTS mapping found for {}'.format(uniprot_id))
-            return None
-        else:
-            raise
-    return response if not first else response[uniprot_id][0]
