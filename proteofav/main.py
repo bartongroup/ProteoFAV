@@ -143,17 +143,14 @@ def merge_tables(uniprot_id=None,
                             left_on=['PDB_dbResNum', 'PDB_dbChainId'],
                             right_on=['validation_resnum', 'validation_chain'])
 
-    variant_features = []
-    if add_ensembl_variants:
-        variant_features.extend(['ensembl_somatic', 'ensembl_germline'])
-    if add_uniprot_variants:
-        variant_features.append(['uniprot'])
-    if variant_features:
+    if add_uniprot_variants or add_ensembl_variants:
         for identifier in table['UniProt_dbAccessionId'].dropna().unique():
-            variants_table = select_variants(identifier, features=variant_features)
+            variants_table = select_variants(identifier, uniprot_vars=add_uniprot_variants,
+                                             ensembl_germline_vars=add_ensembl_variants,
+                                             ensembl_somatic_vars=add_ensembl_variants)
             variants_table.reset_index(inplace=True)
             variants_table['UniProt_dbAccessionId'] = identifier
-            variants_table.rename(columns={'start': 'UniProt_dbResNum'}, inplace=True)
+            variants_table.rename(columns={'begin': 'UniProt_dbResNum'}, inplace=True)
             table = table.merge(variants_table,
                                 how='left',
                                 on=['UniProt_dbResNum', 'UniProt_dbAccessionId'])

@@ -24,7 +24,89 @@ from proteofav.variants import (_fetch_icgc_variants, fetch_uniprot_variants, fe
                                 get_preferred_uniprot_id_from_mapping,
                                 get_preferred_ensembl_id_from_mapping,
                                 fetch_uniprot_species_from_id, get_ensembl_species_from_uniprot,
-                                fetch_uniprot_formal_specie, _uniprot_info)
+                                fetch_uniprot_formal_specie, _uniprot_info,
+                                flatten_uniprot_variants_ebi, flatten_ensembl_variants,
+                                select_variants, fetch_variants, Variants)
+                                # uniprot_vars_ensembl_vars_merger)
+
+
+example_uniprot_variants = {
+    'accession': 'P40227',
+    'entryName': 'TCPZ_HUMAN',
+    'sequence': 'MAAVKTLNPKAEVARAQAAMKATNILLVDEIMRAGMSSLKG',
+    'sequenceChecksum': '4876218983604824961',
+    'taxid': 9606,
+    'features': [
+        {'type': 'VARIANT',
+         'alternativeSequence': 'F',
+         'begin': '231',
+         'end': '231',
+         'xrefs': [{'name': '1000Genomes',
+                    'id': 'rs148616984',
+                    'url': 'http://www.ensembl.org/Homo_sapiens/Variation/Explore?v=rs148616984;vdb=variation'},
+                   {'name': 'ESP',
+                    'id': 'rs148616984',
+                    'url': 'http://evs.gs.washington.edu/EVS/PopStatsServlet?searchBy=rsID&target=rs148616984&x=0&y=0'},
+                   {'name': 'ExAC',
+                    'id': 'rs148616984',
+                    'url': 'http://exac.broadinstitute.org/awesome?query=rs148616984'}
+                   ],
+         'wildType': 'L',
+         'frequency': 0.000399361,
+         'polyphenPrediction': 'benign',
+         'polyphenScore': 0.41,
+         'siftPrediction': 'deleterious',
+         'siftScore': 0.01,
+         'somaticStatus': 0,
+         'cytogeneticBand': '7p11.2',
+         'consequenceType': 'missense',
+         'genomicLocation': 'NC_000007.14:g.56058069C>T',
+         'sourceType': 'large_scale_study'},
+        {'type': 'VARIANT',
+         'alternativeSequence': 'S',
+         'begin': '83',
+         'end': '83',
+         'xrefs': [{'name': 'ExAC',
+                    'id': 'rs779741978',
+                    'url': 'http://exac.broadinstitute.org/awesome?query=rs779741978'}
+                   ],
+         'wildType': 'A',
+         'frequency': 0.0,
+         'polyphenPrediction': 'benign',
+         'polyphenScore': 0.305,
+         'siftPrediction': 'tolerated',
+         'siftScore': 0.06,
+         'somaticStatus': 0,
+         'cytogeneticBand': '7p11.2',
+         'consequenceType': 'missense',
+         'genomicLocation': 'NC_000007.14:g.56054414G>T',
+         'sourceType': 'large_scale_study'},
+        {'type': 'VARIANT',
+         'description': '[LSS_COSMIC]: primary tissue(s): lung',
+         'alternativeSequence': 'V',
+         'begin': '292',
+         'end': '292',
+         'xrefs': [{'name': 'cosmic curated',
+                    'id': 'COSM1549991',
+                    'url': 'http://cancer.sanger.ac.uk/cosmic/mutation/overview?id=1549991'}
+                   ],
+         'evidences': [{'code': 'ECO:0000313',
+                        'source': {'name': 'cosmic_study',
+                                   'id': 'COSU:417',
+                                   'url': 'http://cancer.sanger.ac.uk/cosmic/study/overview?study_id=417'}
+                        }
+                       ],
+         'wildType': 'I',
+         'polyphenPrediction': 'benign',
+         'polyphenScore': 0.021,
+         'siftPrediction': 'tolerated',
+         'siftScore': 0.1, 'somaticStatus': 0,
+         'cytogeneticBand': '7p11.2',
+         'consequenceType': 'missense',
+         'genomicLocation': '7:g.56058510A>G',
+         'sourceType': 'large_scale_study'}
+    ]
+}
 
 
 @mock.patch("proteofav.structures.defaults", defaults)
@@ -78,6 +160,11 @@ class VariantsTestCase(unittest.TestCase):
                               "HGISDFKSKFSIGNFWSRLFSTRAIAGEQDIESQAGLMSNEEVL")
         self.fetch_pdb_uniprot_mapping = fetch_pdb_uniprot_mapping
         self.fetch_uniprot_pdb_mapping = fetch_uniprot_pdb_mapping
+        self.flatten_uniprot_variants_ebi = flatten_uniprot_variants_ebi
+        self.flatten_ensembl_variants = flatten_ensembl_variants
+        self.fetch_variants = fetch_variants
+        self.select_variants = select_variants
+        self.Variants = Variants
 
     def tearDown(self):
         """Remove testing framework by cleaning the namespace."""
@@ -110,6 +197,11 @@ class VariantsTestCase(unittest.TestCase):
         self.ccc2_sequence = None
         self.fetch_pdb_uniprot_mapping = None
         self.fetch_uniprot_pdb_mapping = None
+        self.flatten_uniprot_variants_ebi = None
+        self.flatten_ensembl_variants = None
+        self.fetch_variants = None
+        self.select_variants = None
+        self.Variants = None
 
     def test_icgc_parsing(self):
         mock_response = mock.Mock()
@@ -700,6 +792,138 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertTrue(data['id'][0] == "rs769098772")
         self.assertTrue(data['start'][0] == 295)
         self.assertTrue(data['residues'][0] == "E/A")
+
+    def test_flatten_uniprot_variants_ebi(self):
+        r = self.fetch_uniprot_variants(self.uniprot_id2)
+        if r.ok:
+            table = self.flatten_uniprot_variants_ebi(r)
+            self.assertIn('accession', list(table))
+            self.assertIn('sequence', list(table))
+            self.assertIn('polyphenScore', list(table))
+            self.assertIn('siftScore', list(table))
+            self.assertIn('begin', list(table))
+            self.assertIn('end', list(table))
+
+    def test_flatten_uniprot_variants_ebi_mock(self):
+        data = example_uniprot_variants
+        r = self.flatten_uniprot_variants_ebi(data)
+
+        # flattening the accession
+        self.assertEqual('P40227', data['accession'])
+        self.assertEqual('P40227', r.loc[0, 'accession'])
+
+        # flattening the 'xrefs'
+        self.assertEqual('1000Genomes', data['features'][0]['xrefs'][0]['name'])
+        self.assertEqual('1000Genomes', r.loc[0, 'xrefs_name'][0])
+        self.assertEqual(['1000Genomes', 'ESP', 'ExAC'], r.loc[0, 'xrefs_name'])
+        self.assertTrue(np.isnan(r.loc[1, 'evidences_source_name']))
+
+        # flattening the 'evidences'
+        self.assertEqual('cosmic_study', data['features'][2]['evidences'][0]['source']['name'])
+        self.assertEqual('cosmic_study', r.loc[2, 'evidences_source_name'])
+
+    def test_flatten_ensembl_variants(self):
+        r = self.fetch_ensembl_variants(self.ensembl_id2, feature='transcript_variation')
+        if r.ok:
+            table = self.flatten_ensembl_variants(r, synonymous=True)
+            self.assertIn('polyphenScore', list(table))
+            self.assertIn('siftScore', list(table))
+            self.assertIn('begin', list(table))
+            self.assertIn('end', list(table))
+
+    def test_fetch_variants_all(self):
+        uniprot, germline, somatic = self.fetch_variants(self.uniprot_id2,
+                                                         id_source='uniprot',
+                                                         synonymous=True,
+                                                         uniprot_vars=True,
+                                                         ensembl_germline_vars=True,
+                                                         ensembl_somatic_vars=True)
+
+        self.assertEqual(uniprot.loc[0, 'accession'], self.uniprot_id2)
+        self.assertEqual(germline.loc[0, 'translation'], self.ensembl_id2)
+        self.assertEqual(somatic.loc[0, 'translation'], self.ensembl_id2)
+        self.assertIn('polyphenScore', list(uniprot))
+        self.assertIn('siftScore', list(uniprot))
+        self.assertIn('begin', list(germline))
+        self.assertIn('begin', list(somatic))
+        self.assertIn('end', list(germline))
+        self.assertIn('end', list(somatic))
+
+    def test_variants_fetch_from_uniprot_id(self):
+        uniprot, germline, somatic = self.Variants.fetch(self.uniprot_id2,
+                                                         id_source='uniprot',
+                                                         synonymous=True,
+                                                         uniprot_vars=True,
+                                                         ensembl_germline_vars=True,
+                                                         ensembl_somatic_vars=True)
+        self.assertEqual(uniprot.loc[0, 'accession'], self.uniprot_id2)
+        self.assertEqual(germline.loc[0, 'translation'], self.ensembl_id2)
+        self.assertEqual(somatic.loc[0, 'translation'], self.ensembl_id2)
+        self.assertIn('polyphenScore', list(uniprot))
+        self.assertIn('siftScore', list(uniprot))
+        self.assertIn('begin', list(germline))
+        self.assertIn('begin', list(somatic))
+        self.assertIn('end', list(germline))
+        self.assertIn('end', list(somatic))
+
+    def test_variants_fetch_from_ensembl_id(self):
+        uniprot, germline, somatic = self.Variants.fetch(self.ensembl_id2,
+                                                         id_source='ensembl',
+                                                         synonymous=True,
+                                                         uniprot_vars=True,
+                                                         ensembl_germline_vars=True,
+                                                         ensembl_somatic_vars=True)
+        self.assertEqual(uniprot.loc[0, 'accession'], self.uniprot_id2)
+        self.assertEqual(germline.loc[0, 'translation'], self.ensembl_id2)
+        self.assertEqual(somatic.loc[0, 'translation'], self.ensembl_id2)
+        self.assertIn('polyphenScore', list(uniprot))
+        self.assertIn('siftScore', list(uniprot))
+        self.assertIn('begin', list(germline))
+        self.assertIn('begin', list(somatic))
+        self.assertIn('end', list(germline))
+        self.assertIn('end', list(somatic))
+
+    def test_variants_select(self):
+        table = self.select_variants(self.uniprot_id2,
+                                     id_source='uniprot',
+                                     synonymous=True,
+                                     uniprot_vars=True,
+                                     ensembl_germline_vars=True,
+                                     ensembl_somatic_vars=True)
+        self.assertIn('polyphenScore', list(table))
+        self.assertIn('siftScore', list(table))
+        self.assertIn('begin', list(table))
+        self.assertIn('end', list(table))
+        self.assertIn('accession', list(table))
+        self.assertIn('translation', list(table))
+
+    def test_variants_select_from_uniprot_id(self):
+        table = self.Variants.select(self.uniprot_id2,
+                                     id_source='uniprot',
+                                     synonymous=True,
+                                     uniprot_vars=False,
+                                     ensembl_germline_vars=True,
+                                     ensembl_somatic_vars=True)
+        self.assertIn('polyphenScore', list(table))
+        self.assertIn('siftScore', list(table))
+        self.assertIn('begin', list(table))
+        self.assertIn('end', list(table))
+        self.assertNotIn('accession', list(table))
+        self.assertIn('translation', list(table))
+
+    def test_variants_select_from_ensembl_id(self):
+        table = self.Variants.select(self.ensembl_id2,
+                                     id_source='ensembl',
+                                     synonymous=True,
+                                     uniprot_vars=True,
+                                     ensembl_germline_vars=False,
+                                     ensembl_somatic_vars=False)
+        self.assertIn('polyphenScore', list(table))
+        self.assertIn('siftScore', list(table))
+        self.assertIn('begin', list(table))
+        self.assertIn('end', list(table))
+        self.assertIn('accession', list(table))
+        self.assertNotIn('translation', list(table))
 
 
 if __name__ == '__main__':
