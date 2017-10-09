@@ -12,20 +12,35 @@ except ImportError:
     from unittest.mock import patch
 
 from proteofav.config import defaults
-from proteofav.mergers import merge_tables
-from proteofav.structures import parse_mmcif_atoms
-from proteofav.sifts import parse_sifts_residues
-from proteofav.dssp import parse_dssp_residues
+from proteofav.structures import parse_mmcif_atoms, mmCIF
+from proteofav.dssp import parse_dssp_residues, DSSP, filter_dssp
+from proteofav.sifts import parse_sifts_residues, SIFTS
+from proteofav.variants import Variants
+from proteofav.validation import Validation
+from proteofav.annotation import Annotation
 
-defaults.db_cif = os.path.join(os.path.dirname(__file__), "testdata", "mmcif")
-defaults.db_sifts = os.path.join(os.path.dirname(__file__), "testdata", "sifts")
-defaults.db_dssp = os.path.join(os.path.dirname(__file__), "testdata", "dssp")
+from proteofav.mergers import (merge_tables,
+                               mmcif_dssp_table_merger,
+                               mmcif_sifts_table_merger,
+                               dssp_sifts_table_merger,
+                               uniprot_vars_ensembl_vars_merger,
+                               table_merger, table_generator,
+                               Tables)
+
+root = os.path.dirname(__file__)
+defaults.db_cif = os.path.join(root, "testdata", "mmcif")
+defaults.db_sifts = os.path.join(root, "testdata", "sifts")
+defaults.db_dssp = os.path.join(root, "testdata", "dssp")
+defaults.db_validation = os.path.join(root, "testdata", "validation")
+defaults.db_annotation = os.path.join(root, "testdata", "annotation")
 
 
 @patch("proteofav.structures.defaults", defaults)
 @patch("proteofav.dssp.defaults", defaults)
 @patch("proteofav.sifts.defaults", defaults)
-class TestTableMerger(unittest.TestCase):
+@patch("proteofav.validation.defaults", defaults)
+@patch("proteofav.annotation.defaults", defaults)
+class TestMerger(unittest.TestCase):
     """Test table merging methods."""
 
     def setUp(self):
@@ -34,29 +49,128 @@ class TestTableMerger(unittest.TestCase):
         self.cif_to_table = parse_mmcif_atoms
         self.sifts_to_table = parse_sifts_residues
         self.dssp_to_table = parse_dssp_residues
+        self.merge_tables = merge_tables
 
-        self.merge_table = merge_tables
+        self.pdbid = TestMerger.pdbid
+        self.uniprotid = TestMerger.uniprotid
+        self.inputbiodssp = TestMerger.inputbiodssp
+
+        self.mmcif = TestMerger.mmcif
+        self.mmcif_bio = TestMerger.mmcif_bio
+        self.dssp = TestMerger.dssp
+        self.dssp_bio = TestMerger.dssp_bio
+        self.sifts = TestMerger.sifts
+        self.validation = TestMerger.validation
+        self.annotation = TestMerger.annotation
+        self.uni_vars = TestMerger.uni_vars
+        self.ens_vars = TestMerger.ens_vars
+        self.variants = TestMerger.variants
+
+        self.mmcif_sifts = mmcif_sifts_table_merger
+        self.mmcif_dssp = mmcif_dssp_table_merger
+        self.dssp_sifts = dssp_sifts_table_merger
+        self.uni_ens_vars = uniprot_vars_ensembl_vars_merger
+
+        self.table_merger = table_merger
+        self.table_generator = table_generator
+        self.Tables = Tables
 
     def tearDown(self):
         """Remove testing framework by cleaning the namespace."""
-        self.defaults = None
-        self.merge_table = None
 
         self.cif_to_table = None
         self.sifts_to_table = None
         self.dssp_to_table = None
+        self.merge_tables = None
 
-        self.merge_table = None
+        self.pdbid = None
+        self.uniprotid = None
+        self.inputbiodssp = None
+
+        self.mmcif = None
+        self.mmcif_bio = None
+        self.dssp = None
+        self.dssp_bio = None
+        self.sifts = None
+        self.validation = None
+        self.annotation = None
+        self.uni_vars = None
+        self.ens_vars = None
+        self.variants = None
+
+        self.mmcif_sifts = None
+        self.mmcif_dssp = None
+        self.dssp_sifts = None
+        self.uni_ens_vars = None
+
+        self.table_merger = None
+        self.table_generator = None
+        self.Tables = None
+
+    @classmethod
+    def setUpClass(cls):
+        # to be run only once
+        super(TestMerger, cls).setUpClass()
+
+        cls.pdbid = '2pah'
+        cls.uniprotid = 'P00439'
+
+        cls.inputbiodssp = os.path.join(root, "testdata", defaults.db_dssp,
+                                        "{}_bio.dssp".format(cls.pdbid))
+
+        cls.mmcif = mmCIF.select(identifier=cls.pdbid,
+                                 add_res_full=True, atoms=('CA',))
+
+        cls.mmcif_bio = mmCIF.select(identifier=cls.pdbid, bio_unit=True,
+                                     bio_unit_preferred=True,
+                                     add_res_full=True, atoms=('CA',))
+
+        cls.dssp = DSSP.select(identifier=cls.pdbid,
+                               add_rsa_class=True, add_ss_reduced=True)
+
+        dssp_bio = DSSP.read(filename=cls.inputbiodssp)
+        cls.dssp_bio = filter_dssp(dssp_bio, add_rsa_class=True, add_ss_reduced=True)
+
+        cls.sifts = SIFTS.select(identifier=cls.pdbid, add_regions=True, add_dbs=False)
+
+        cls.validation = Validation.select(identifier=cls.pdbid)
+
+        cls.annotation = Annotation.select(identifier=cls.uniprotid)
+
+        cls.uni_vars, cls.ens_vars = Variants.select(cls.uniprotid,
+                                                     id_source='uniprot',
+                                                     synonymous=True,
+                                                     uniprot_vars=True,
+                                                     ensembl_germline_vars=True,
+                                                     ensembl_somatic_vars=True)
+        cls.variants = uniprot_vars_ensembl_vars_merger(cls.uni_vars, cls.ens_vars)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.pdbid = None
+        cls.uniprotid = None
+        cls.inputbiodssp = None
+
+        cls.mmcif = None
+        cls.mmcif_bio = None
+        cls.dssp = None
+        cls.dssp_bio = None
+        cls.sifts = None
+        cls.validation = None
+        cls.annotation = None
+        cls.uni_vars = None
+        cls.ens_vars = None
+        cls.variants = None
 
     def test_empty(self):
         """Test no argument cases."""
         with self.assertRaises(TypeError):
-            self.merge_table(pdb_id=None)
-            self.merge_table(uniprot_id=None)
+            self.merge_tables(pdb_id=None)
+            self.merge_tables(uniprot_id=None)
 
     def test_camKIV_ca_atom(self):
         """Test table merger for a simple protein example."""
-        data = self.merge_table(pdb_id="2w4o", chain="A")
+        data = self.merge_tables(pdb_id="2w4o", chain="A")
         self.assertIsNotNone(data)
         self.assertFalse(data.empty)
 
@@ -76,7 +190,7 @@ class TestTableMerger(unittest.TestCase):
     def test_merge_4ibw_A_with_alt_loc(self):
         """
         Test case in a structure with alt locations."""
-        data = self.merge_table(pdb_id="4ibw", chain="A")
+        data = self.merge_tables(pdb_id="4ibw", chain="A")
         self.assertFalse(data.empty)
 
     def test_merge_3mn5_with_insertion_code(self):
@@ -98,16 +212,16 @@ class TestTableMerger(unittest.TestCase):
         self.assertFalse(self.sifts.empty)
         self.assertFalse(self.dssp.empty)
 
-        data = self.merge_table(pdb_id="3mn5", chain="A")
+        data = self.merge_tables(pdb_id="3mn5", chain="A")
         self.assertFalse(data.empty)
 
     def test_merge_3fqd_A_no_pdbe_label_seq_id(self):
-        self.data = self.merge_table(pdb_id='3fqd', chain='A',
-                                     sequence_check='ignore')
+        self.data = self.merge_tables(pdb_id='3fqd', chain='A',
+                                      sequence_check='ignore')
         self.assertFalse(self.data.empty)
 
     def test_merge_3ehk_D_lowercased_dssp(self):
-        self.data = self.merge_table(pdb_id='3ehk', chain='D')
+        self.data = self.merge_tables(pdb_id='3ehk', chain='D')
         self.assertFalse(self.data.empty)
 
     @unittest.expectedFailure
@@ -117,41 +231,41 @@ class TestTableMerger(unittest.TestCase):
         Although its possible to map and reference the BD chain into the mmCIF table,
         it is currently unsupported by merge_tables.
         """
-        data = self.merge_table(pdb_id='4v9d', chain='BD')
+        data = self.merge_tables(pdb_id='4v9d', chain='BD')
         self.assertFalse(data.empty)
 
     def test_merge_4abo_A_DSSP_missing_first_residue(self):
-        data = self.merge_table(pdb_id='4abo', chain='A')
+        data = self.merge_tables(pdb_id='4abo', chain='A')
         self.assertFalse(data.empty)
 
     def test_merge_4why_K_DSSP_index_as_object(self):
-        data = self.merge_table(pdb_id='4why', chain='K')
+        data = self.merge_tables(pdb_id='4why', chain='K')
         self.assertFalse(data.empty)
 
     def test_merge_2pm7_D_missing_residue_DSSP(self):
-        data = self.merge_table(pdb_id='2pm7', chain='D')
+        data = self.merge_tables(pdb_id='2pm7', chain='D')
         self.assertFalse(data.empty)
 
     def test_merge_4myi_A_fail(self):
-        data = self.merge_table(pdb_id='2pm7', chain='D')
+        data = self.merge_tables(pdb_id='2pm7', chain='D')
         self.assertFalse(data.empty)
 
     def test_camKIV_wrong_chain(self):
         with self.assertRaises(ValueError):
-            self.merge_table(pdb_id='2w4o', chain='D')
+            self.merge_tables(pdb_id='2w4o', chain='D')
 
     def test_camKIV_wrong_atom(self):
         with self.assertRaises(ValueError):
-            self.merge_table(pdb_id='2w4o', chain='A', atoms=['CC'])
+            self.merge_tables(pdb_id='2w4o', chain='A', atoms=['CC'])
 
     def test_camKIV_atom_list(self):
         # TODO test_camIV_list_mode(self):
-        data = self.merge_table(pdb_id='2w4o', chain='A', atoms=['CA', 'CB'])
+        data = self.merge_tables(pdb_id='2w4o', chain='A', atoms=['CA', 'CB'])
         self.assertFalse(data.empty)
 
     def test_camKIV_atom_centroid(self):
         # TODO test_camIV_centroid_mode(self):
-        data = self.merge_table(pdb_id='2w4o', chain='A', atoms='centroid')
+        data = self.merge_tables(pdb_id='2w4o', chain='A', atoms='centroid')
         self.assertFalse(data.empty)
 
     def test_3edv_string_index(self):
@@ -161,7 +275,7 @@ class TestTableMerger(unittest.TestCase):
     def test_camKIV_from_uniprot_id(self):
         defaults.api_pdbe = 'http://www.ebi.ac.uk/pdbe/api/'
         with patch('proteofav.structures.defaults', defaults):
-            data = self.merge_table(uniprot_id='Q16566')
+            data = self.merge_tables(uniprot_id='Q16566')
             self.assertFalse(data.empty)
 
     def test_sequence_check_raise(self):
@@ -173,13 +287,247 @@ class TestTableMerger(unittest.TestCase):
 
         with patch("proteofav.structures.parse_mmcif_atoms", return_value=baddata):
             with self.assertRaises(ValueError):
-                self.merge_table(pdb_id='2w4o')
-                # data = self.merge_table(pdb_id='2w4o', sequence_check='warn') # todo try capture warn
+                self.merge_tables(pdb_id='2w4o')
+                # data = self.merge_tables(pdb_id='2w4o', sequence_check='warn') # todo try capture warn
                 # self.assertFalse(data.empty)
+
+    def test_mmcif_dssp_merger(self):
+        table = self.mmcif_dssp(self.mmcif, self.dssp)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertNotIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertNotIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[0, 'label_atom_id'])
+        self.assertEqual('A', table.loc[0, 'label_asym_id'])
+        self.assertEqual('118', table.loc[0, 'RES'])
+        self.assertEqual('V', table.loc[0, 'AA'])
+
+    def test_mmcif_dssp_bio_merger(self):
+        table = self.mmcif_dssp(self.mmcif_bio, self.dssp_bio)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertNotIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertNotIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[329, 'label_atom_id'])
+        self.assertEqual('AA', table.loc[329, 'label_asym_id'])
+        self.assertEqual('118', table.loc[329, 'RES'])
+        self.assertEqual('V', table.loc[329, 'AA'])
+
+    def test_mmcif_sifts_merger(self):
+        table = self.mmcif_sifts(self.mmcif, self.sifts)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertNotIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertNotIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[0, 'label_atom_id'])
+        self.assertEqual('A', table.loc[0, 'label_asym_id'])
+        self.assertEqual('118', table.loc[0, 'PDB_dbResNum'])
+        self.assertEqual('VAL', table.loc[0, 'PDB_dbResName'])
+
+    def test_mmcif_sifts_bio_merger(self):
+        table = self.mmcif_sifts(self.mmcif_bio, self.sifts)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertNotIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertNotIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[329, 'label_atom_id'])
+        self.assertEqual('AA', table.loc[329, 'label_asym_id'])
+        self.assertEqual('118', table.loc[329, 'PDB_dbResNum'])
+        self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
+
+    def test_dssp_sifts_merger(self):
+        table = self.dssp_sifts(self.dssp, self.sifts)
+        # Chain level
+        self.assertNotIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertNotIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('A', table.loc[0, 'PDB_entityId'])
+        self.assertEqual('118', table.loc[0, 'RES'])
+        self.assertEqual('VAL', table.loc[0, 'PDB_dbResName'])
+
+    def test_dssp_sifts_bio_merger(self):
+        table = self.dssp_sifts(self.dssp, self.sifts)
+        # Chain level
+        self.assertNotIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertNotIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('B', table.loc[329, 'PDB_entityId'])
+        self.assertEqual('118', table.loc[329, 'RES'])
+        self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
+
+    def test_uni_ens_vars_merger(self):
+        table = self.uni_ens_vars(self.uni_vars, self.ens_vars)
+        # UniProt
+        self.assertNotIn('translation', list(self.uni_vars))
+        self.assertNotIn('allele', list(self.uni_vars))
+        self.assertIn('taxid', list(self.uni_vars))
+        self.assertIn('description', list(self.uni_vars))
+        # Ensembl
+        self.assertIn('translation', list(self.ens_vars))
+        self.assertIn('allele', list(self.ens_vars))
+        self.assertNotIn('taxid', list(self.ens_vars))
+        self.assertNotIn('description', list(self.ens_vars))
+        # Merged Table
+        self.assertIn('translation', list(table))
+        self.assertIn('allele', list(table))
+        self.assertIn('taxid', list(table))
+        self.assertIn('description', list(table))
+        self.assertIn('begin', list(table))
+        self.assertIn('end', list(table))
+
+    def test_table_merger(self):
+        table = self.Tables.merge(self.mmcif, self.dssp, self.sifts,
+                                  self.validation, self.annotation, self.variants)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[0, 'label_atom_id'])
+        self.assertEqual('A', table.loc[0, 'label_asym_id'])
+        self.assertEqual('118', table.loc[0, 'RES'])
+        self.assertEqual('VAL', table.loc[0, 'PDB_dbResName'])
+
+    def test_table_merger_method(self):
+        table = self.table_merger(self.mmcif, self.dssp, self.sifts,
+                                  self.validation, self.annotation, self.variants)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[0, 'label_atom_id'])
+        self.assertEqual('A', table.loc[0, 'label_asym_id'])
+        self.assertEqual('118', table.loc[0, 'RES'])
+        self.assertEqual('VAL', table.loc[0, 'PDB_dbResName'])
+        self.assertEqual('V', table.loc[0, 'UniProt_dbResName'])
+
+    def test_table_merger_method_bio(self):
+        table = self.table_merger(self.mmcif_bio, self.dssp_bio, self.sifts,
+                                  self.validation, self.annotation, self.variants)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[329, 'label_atom_id'])
+        self.assertEqual('AA', table.loc[329, 'label_asym_id'])
+        self.assertEqual('118', table.loc[329, 'RES'])
+        self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
+        self.assertEqual('V', table.loc[329, 'UniProt_dbResName'])
+
+    def test_table_generator(self):
+        mmcif_table, dssp_table, sifts_table, valid_table, annot_table, variants_table = \
+            self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=False,
+                                 sifts=True, dssp=True, variants=False, annotations=False,
+                                 chains=None, res=None, sites=None, atoms=('CA',), lines=None,
+                                 residue_agg=False, overwrite=False)
+
+        table = self.table_merger(mmcif_table, dssp_table, sifts_table,
+                                  valid_table, annot_table, variants_table)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[0, 'label_atom_id'])
+        self.assertEqual('A', table.loc[0, 'label_asym_id'])
+        self.assertEqual('118', table.loc[0, 'RES'])
+        self.assertEqual('VAL', table.loc[0, 'PDB_dbResName'])
+        self.assertEqual('V', table.loc[0, 'UniProt_dbResName'])
+
+    def test_table_generator_bio(self):
+        mmcif_table, dssp_table, sifts_table, valid_table, annot_table, variants_table = \
+            self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=True,
+                                 sifts=True, dssp=True, variants=False, annotations=False,
+                                 chains=None, res=None, sites=None, atoms=('CA',), lines=None,
+                                 residue_agg=False, overwrite=False)
+
+        table = self.table_merger(mmcif_table, dssp_table, sifts_table,
+                                  valid_table, annot_table, variants_table)
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[329, 'label_atom_id'])
+        self.assertEqual('AA', table.loc[329, 'label_asym_id'])
+        # self.assertEqual('118', table.loc[329, 'RES'])
+        self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
+        self.assertEqual('V', table.loc[329, 'UniProt_dbResName'])
+
+    def test_table_merger_bio(self):
+        self.Tables.generate(pdb_id=self.pdbid, atoms=('CA',), bio_unit=True,
+                             dssp=True, sifts=True)
+        table = self.Tables.merge()
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[329, 'label_atom_id'])
+        self.assertEqual('AA', table.loc[329, 'label_asym_id'])
+        # self.assertEqual('118', table.loc[329, 'RES'])
+        self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
+        self.assertEqual('V', table.loc[329, 'UniProt_dbResName'])
 
 
 if __name__ == '__main__':
     logging.basicConfig(stream=sys.stderr)
     logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestTableMerger)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestMerger)
     unittest.TextTestRunner(verbosity=2).run(suite)

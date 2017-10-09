@@ -351,12 +351,15 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     return table
 
 
-def select_sifts(identifier, excluded_cols=None, overwrite=False, **kwargs):
+def select_sifts(identifier, excluded_cols=None, add_regions=True, add_dbs=False,
+                 overwrite=False, **kwargs):
     """
     Produce table ready from SIFTS XML file.
 
     :param identifier: PDB/mmCIF accession ID
     :param excluded_cols: option to exclude mmCIF columns
+    :param add_regions: boolean
+    :param add_dbs: boolean
     :param overwrite: boolean
     :return: returns a pandas DataFrame
     """
@@ -365,7 +368,8 @@ def select_sifts(identifier, excluded_cols=None, overwrite=False, **kwargs):
 
     download_sifts(identifier=identifier, filename=filename, overwrite=overwrite)
 
-    table = parse_sifts_residues(filename=filename, excluded_cols=excluded_cols)
+    table = parse_sifts_residues(filename=filename, excluded_cols=excluded_cols,
+                                 add_regions=add_regions, add_dbs=add_dbs)
 
     table = filter_sifts(table, **kwargs)
     return table
@@ -460,9 +464,10 @@ class SIFTS(GenericInputs):
         filename = self._get_filename(filename)
         return download_sifts(identifier=identifier, filename=filename, **kwargs)
 
-    def select(self, identifier=None, **kwargs):
+    def select(self, identifier=None, add_regions=True, add_dbs=False, **kwargs):
         identifier = self._get_identifier(identifier)
-        self.table = select_sifts(identifier=identifier, **kwargs)
+        self.table = select_sifts(identifier=identifier, add_regions=add_regions,
+                                  add_dbs=add_dbs, **kwargs)
         return self.table
 
 
