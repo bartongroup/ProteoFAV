@@ -509,6 +509,7 @@ _validation_types = {
     'validation_chain': str,
     'validation_resname': str,
     'validation_resnum': str,
+    'validation_resnum_full': str,
     'validation_seq': str,
     'validation_altcode': str,
     'validation_icode': str,

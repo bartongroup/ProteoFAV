@@ -99,6 +99,22 @@ def _fix_label_alt_id(table):
     return table
 
 
+def _add_validation_res_full(table):
+    """
+    Utility that adds a new column to the table.
+    Adds a new column with the 'full res' (i.e. seq_id + ins_code).
+
+    :param table: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    # adds both 'label' and 'auth' entries
+    if 'validation_resnum' in table and 'validation_icode' in table:
+        table['validation_resnum_full'] = (table['validation_resnum'] +
+                                           table['validation_icode'].str.replace('?', ''))
+    return table
+
+
 def select_validation(identifier, excluded_cols=None, overwrite=False, **kwargs):
     """
     Produces table from PDB validation XML file.
@@ -121,7 +137,8 @@ def select_validation(identifier, excluded_cols=None, overwrite=False, **kwargs)
     return table
 
 
-def filter_validation(table, excluded_cols=None, chains=None, res=None):
+def filter_validation(table, excluded_cols=None, chains=None, res=None,
+                      add_res_full=True, ):
     """
     Filter for Validation Pandas Dataframes.
 
@@ -129,12 +146,18 @@ def filter_validation(table, excluded_cols=None, chains=None, res=None):
     :param excluded_cols: option to exclude Validation columns
     :param chains: (tuple) chain IDs or None
     :param res: (tuple) res IDs or None
+    :param add_res_full: option to extend the table with 'res_full'
     :return: returns a pandas DataFrame
     """
 
     # selections / filtering
     # excluding columns
     table = exclude_columns(table, excluded=excluded_cols)
+
+    # table modular extensions or selections
+    if add_res_full:
+        table = _add_validation_res_full(table)
+        log.info("Validation added full res (res + ins_code)...")
 
     # excluding rows
     if chains is not None:

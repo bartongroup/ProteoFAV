@@ -7,6 +7,7 @@ import unittest
 
 from proteofav.validation import (parse_validation_residues, select_validation,
                                   _fix_label_alt_id, _fix_pdb_ins_code,
+                                  _add_validation_res_full,
                                   filter_validation, download_validation,
                                   Validation)
 
@@ -27,6 +28,7 @@ class TestValidationParser(unittest.TestCase):
         self.filter_validation = filter_validation
         self.download_validation = download_validation
         self.Validation = Validation
+        self.add_validation_res_full = _add_validation_res_full
 
     def tearDown(self):
         """Remove testing framework."""
@@ -39,6 +41,7 @@ class TestValidationParser(unittest.TestCase):
         self.filter_validation = None
         self.download_validation = None
         self.Validation = None
+        self.add_validation_res_full = None
 
     def test_to_2pah(self):
         data = self.parser(self.example_validation)
@@ -64,17 +67,29 @@ class TestValidationParser(unittest.TestCase):
         self.assertEqual('118', data.loc[0, 'validation_resnum'])
         self.assertEqual('?', data.loc[0, 'validation_icode'])
 
-    def test_filter_dssp_chain(self):
+    def test_filter_validation_chain(self):
         data = self.parser(self.example_validation)
         data = self.filter_validation(data, chains=('A',))
         self.assertNotIn("B", data.validation_chain.unique())
 
-    def test_filter_dssp_res(self):
+    def test_filter_validation_res(self):
         data = self.parser(self.example_validation)
         data = self.filter_validation(data, res=('118',))
         self.assertNotIn('119', data.validation_resnum.unique())
 
-    def test_download_dssp(self):
+    def test_filter_validation_add_res_full(self):
+        data = self.parser(self.example_validation)
+        self.assertIn('validation_resnum', data)
+        self.assertIn('validation_icode', data)
+        self.assertNotIn('validation_resnum_full', data)
+        data = self.add_validation_res_full(data)
+        self.assertIn('validation_resnum_full', data)
+        self.assertEqual(data.loc[0, 'validation_resnum_full'], '118')
+        data = self.parser(self.example_validation)
+        data = self.filter_validation(data, add_res_full=True)
+        self.assertEqual(data.loc[0, 'validation_resnum_full'], '118')
+
+    def test_download_validation(self):
         self.download_validation(self.pdbid, filename=self.output_validation,
                                  overwrite=True)
         if os.path.exists(self.output_validation):
