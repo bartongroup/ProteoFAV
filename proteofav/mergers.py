@@ -71,10 +71,6 @@ def mmcif_dssp_table_merger(mmcif_table, dssp_table):
                                   left_on=['auth_seq_id_full', 'label_asym_id'],
                                   right_on=['RES', 'CHAIN_FULL'])
     else:
-        print()
-        print(list(mmcif_table))
-        print(list(dssp_table))
-        print()
         raise TableMergerError('Not possible to merge mmCIF and DSSP table! '
                                'Some of the necessary columns are missing...')
 
@@ -104,6 +100,85 @@ def dssp_sifts_table_merger(dssp_table, sifts_table):
                                'Some of the necessary columns are missing...')
 
     log.info("Merged DSSP and SIFTS Tables...")
+    return table
+
+
+def mmcif_validation_table_merger(mmcif_table, validation_table, category='auth'):
+    """
+    Merge the mmCIF/PDB and Validation Tables.
+
+    :param mmcif_table: mmCIF pandas DataFrame
+    :param validation_table: Validation pandas DataFrame
+    :return: merged pandas DataFrame
+    """
+
+    # bare minimal columns needed
+    if ('{}_seq_id_full'.format(category) in mmcif_table and
+                '{}_asym_id'.format(category) in mmcif_table and
+                'validation_resnum_full' in validation_table and
+                'validation_chain' in validation_table):
+
+        table = mmcif_table.merge(validation_table, how='left',
+                                  left_on=['{}_seq_id_full'.format(category),
+                                           '{}_asym_id'.format(category)],
+                                  right_on=['validation_resnum_full',
+                                            'validation_chain'])
+    else:
+        raise TableMergerError('Not possible to merge mmCIF and Validation table! '
+                               'Some of the necessary columns are missing...')
+
+    log.info("Merged mmCIF and Validation Tables...")
+    return table
+
+
+def sifts_annotation_table_merger(sifts_table, annotation_table):
+    """
+    Merge the SIFTS and Annotation Tables (annotation needs to be aggregated
+    by residue - via `filter_annotation`).
+
+    :param sifts_table: SIFTS pandas DataFrame
+    :param annotation_table: Annotation pandas DataFrame
+    :return: merged pandas DataFrame
+    """
+
+    # bare minimal columns needed
+    if 'UniProt_dbResNum' in sifts_table and 'site' in annotation_table:
+
+        table = sifts_table.merge(annotation_table, how='left',
+                                  left_on=['UniProt_dbResNum'],
+                                  right_on=['site'])
+
+    else:
+        raise TableMergerError('Not possible to merge SIFTS and Annotation table! '
+                               'Some of the necessary columns are missing...')
+
+    log.info("Merged SIFTS and Annotation Tables...")
+    return table
+
+
+def sifts_variants_table_merger(sifts_table, variants_table):
+    """
+    Merge the mmCIF/PDB and Variants Tables.
+
+    :param sifts_table: SIFTS pandas DataFrame
+    :param variants_table: Variants pandas DataFrame
+    :return: merged pandas DataFrame
+    """
+
+    # bare minimal columns needed
+    if ('UniProt_dbAccessionId' in sifts_table and 'UniProt_dbResNum' in sifts_table and
+                'accession' in variants_table and 'begin' in variants_table):
+        variants_table['begin'] = variants_table['begin'].astype(str)
+
+        table = sifts_table.merge(variants_table, how='left',
+                                  left_on=['UniProt_dbAccessionId', 'UniProt_dbResNum'],
+                                  right_on=['accession', 'begin'])
+
+    else:
+        raise TableMergerError('Not possible to merge SIFTS and Variants table! '
+                               'Some of the necessary columns are missing...')
+
+    log.info("Merged SIFTS and Variants Tables...")
     return table
 
 

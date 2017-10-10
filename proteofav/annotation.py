@@ -87,8 +87,9 @@ def annotation_aggregation(table, query_type='', group_residues=True,
     table = pd.DataFrame(lines)
 
     if group_residues:
-        return table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
+        table = table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
 
+    table['site'] = table.index.astype(str)
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")
     return table

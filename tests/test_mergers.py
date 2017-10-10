@@ -23,6 +23,9 @@ from proteofav.mergers import (merge_tables,
                                mmcif_dssp_table_merger,
                                mmcif_sifts_table_merger,
                                dssp_sifts_table_merger,
+                               mmcif_validation_table_merger,
+                               sifts_annotation_table_merger,
+                               sifts_variants_table_merger,
                                uniprot_vars_ensembl_vars_merger,
                                table_merger, table_generator,
                                Tables)
@@ -69,6 +72,9 @@ class TestMerger(unittest.TestCase):
         self.mmcif_sifts = mmcif_sifts_table_merger
         self.mmcif_dssp = mmcif_dssp_table_merger
         self.dssp_sifts = dssp_sifts_table_merger
+        self.mmcif_validation = mmcif_validation_table_merger
+        self.sifts_annotation = sifts_annotation_table_merger
+        self.sifts_variants = sifts_variants_table_merger
         self.uni_ens_vars = uniprot_vars_ensembl_vars_merger
 
         self.table_merger = table_merger
@@ -101,6 +107,9 @@ class TestMerger(unittest.TestCase):
         self.mmcif_sifts = None
         self.mmcif_dssp = None
         self.dssp_sifts = None
+        self.mmcif_validation = None
+        self.sifts_annotation = None
+        self.sifts_variants = None
         self.uni_ens_vars = None
 
         self.table_merger = None
@@ -133,9 +142,9 @@ class TestMerger(unittest.TestCase):
 
         cls.sifts = SIFTS.select(identifier=cls.pdbid, add_regions=True, add_dbs=False)
 
-        cls.validation = Validation.select(identifier=cls.pdbid)
+        cls.validation = Validation.select(identifier=cls.pdbid, add_res_full=True)
 
-        cls.annotation = Annotation.select(identifier=cls.uniprotid)
+        cls.annotation = Annotation.select(identifier=cls.uniprotid, annotation_agg=True)
 
         cls.uni_vars, cls.ens_vars = Variants.select(cls.uniprotid,
                                                      id_source='uniprot',
@@ -384,6 +393,37 @@ class TestMerger(unittest.TestCase):
         self.assertEqual('B', table.loc[329, 'PDB_entityId'])
         self.assertEqual('118', table.loc[329, 'RES'])
         self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
+
+    def test_mmcif_validation_merger(self):
+        table = self.mmcif_validation(self.mmcif, self.validation)
+        self.assertIn('auth_asym_id', table)
+        self.assertIn('validation_rsr', table)
+        self.assertEqual(table.loc[0, 'auth_asym_id'], 'A')
+        self.assertEqual(table.loc[0, 'validation_rsr'], 0.242)
+        self.assertEqual(table.loc[0, 'auth_seq_id_full'], '118')
+        self.assertEqual(table.loc[0, 'validation_resnum_full'], '118')
+
+    def test_sifts_annotation_merger(self):
+        table = self.sifts_annotation(self.sifts, self.annotation)
+        self.assertIn('UniProt_dbResNum', table)
+        self.assertIn('site', table)
+        self.assertEqual(table.loc[0, 'UniProt_dbResNum'], '118')
+        self.assertEqual(table.loc[3, 'UniProt_dbResNum'], '121')
+        self.assertEqual(table.loc[3, 'site'], '121')
+        self.assertIn('Natural variant:', table.loc[3, 'annotation'])
+
+    def test_sifts_variants_merger(self):
+        table = self.sifts_variants(self.sifts, self.variants)
+        self.assertIn('UniProt_dbAccessionId', table)
+        self.assertIn('UniProt_dbResNum', table)
+        self.assertIn('xrefs_id', table)
+        self.assertIn('accession', table)
+        self.assertIn('begin', table)
+        self.assertEqual(table.loc[0, 'UniProt_dbResNum'], '118')
+        self.assertEqual(table.loc[0, 'UniProt_dbAccessionId'], 'P00439')
+        self.assertEqual(table.loc[0, 'accession'], 'P00439')
+        self.assertEqual(table.loc[0, 'xrefs_id'], 'rs776442422')
+        self.assertEqual(table.loc[0, 'siftScore'], 0.14)
 
     def test_uni_ens_vars_merger(self):
         table = self.uni_ens_vars(self.uni_vars, self.ens_vars)
