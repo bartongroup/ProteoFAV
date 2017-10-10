@@ -79,8 +79,8 @@ def mmcif_dssp_table_merger(mmcif_table, dssp_table, category='auth'):
 
         # workaround for BioUnits
         if ('orig_{}_asym_id'.format(category) in mmcif_table and not
-            (set(mmcif_table['{}_asym_id'.format(category)].unique()) ==
-                set(dssp_table['CHAIN_FULL'].unique()))):
+        (set(mmcif_table['{}_asym_id'.format(category)].unique()) ==
+             set(dssp_table['CHAIN_FULL'].unique()))):
             table = mmcif_table.merge(dssp_table, how='left',
                                       left_on=['{}_seq_id_full'.format(category),
                                                'orig_{}_asym_id'.format(category)],
@@ -450,6 +450,9 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
     """
     Simplifies the process of generating Tables and merging them.
 
+    Automatically merge data Tables from various resources. If no pdb_id set
+    `sifts_best`, which is sorted by sequence coverage. If no chain is set, uses all.
+
     :param uniprot_id: (str) UniProt ID
     :param pdb_id: (str) PDB ID
     :param bio_unit: boolean for using AsymUnits or BioUnits
@@ -474,7 +477,7 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
         # get pdb_id if only uniprot_id is provided
         if uniprot_id and not pdb_id:
             # fetch the best structures from the PDBe API
-            data = sifts_best(uniprot_id)
+            data = sifts_best(uniprot_id)[uniprot_id]
             if data is not None:
                 # uses the first structure
                 pdb_id = data[0]['pdb_id']
@@ -597,12 +600,30 @@ class Tables(object):
                                   self.validation, self.annotation, self.variants)
         return self.table
 
-    def generate(self, **kwargs):
-        """Generates the Tables, merges and stores"""
+    def generate(self, merge_tables=False, sequence_check='ignore', **kwargs):
+        """Generates the Tables, merges and stores
+
+        :param merge_tables: (bool) merge the Tables after generating them
+        :param str sequence_check: how to handle sequence inconsistencies.
+            Choose from 'raise', 'warn' or 'ignore'
+        """
         self.mmcif, self.dssp, self.sifts, self.validation, self.annotation, self.variants = \
             table_generator(**kwargs)
-        return (self.mmcif, self.dssp, self.sifts,
-                self.validation, self.annotation, self.variants)
+        if not merge_tables:
+            return (self.mmcif, self.dssp, self.sifts,
+                    self.validation, self.annotation, self.variants)
+        else:
+            table = table_merger(self.mmcif, self.dssp, self.sifts,
+                                 self.validation, self.annotation, self.variants)
+
+            if sequence_check == 'raise' or sequence_check == 'warn':
+                # TODO
+                pass
+            elif sequence_check != 'ignore':
+                raise ValueError("Sequence check method '{}' not implemented."
+                                 "".format(sequence_check))
+
+            return table
 
 
 Tables = Tables()

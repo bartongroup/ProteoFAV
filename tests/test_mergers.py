@@ -19,8 +19,7 @@ from proteofav.variants import Variants
 from proteofav.validation import Validation
 from proteofav.annotation import Annotation
 
-from proteofav.mergers import (merge_tables,
-                               mmcif_dssp_table_merger,
+from proteofav.mergers import (mmcif_dssp_table_merger,
                                mmcif_sifts_table_merger,
                                mmcif_validation_table_merger,
                                sifts_annotation_table_merger,
@@ -51,7 +50,6 @@ class TestMerger(unittest.TestCase):
         self.cif_to_table = parse_mmcif_atoms
         self.sifts_to_table = parse_sifts_residues
         self.dssp_to_table = parse_dssp_residues
-        self.merge_tables = merge_tables
 
         self.pdbid = TestMerger.pdbid
         self.uniprotid = TestMerger.uniprotid
@@ -85,7 +83,6 @@ class TestMerger(unittest.TestCase):
         self.cif_to_table = None
         self.sifts_to_table = None
         self.dssp_to_table = None
-        self.merge_tables = None
 
         self.pdbid = None
         self.uniprotid = None
@@ -170,13 +167,14 @@ class TestMerger(unittest.TestCase):
 
     def test_empty(self):
         """Test no argument cases."""
-        with self.assertRaises(TypeError):
-            self.merge_tables(pdb_id=None)
-            self.merge_tables(uniprot_id=None)
+        with self.assertRaises(ValueError):
+            self.Tables.generate(pdb_id=None)
+            self.Tables.generate(uniprot_id=None)
 
     def test_camKIV_ca_atom(self):
         """Test table merger for a simple protein example."""
-        data = self.merge_tables(pdb_id="2w4o", chain="A")
+        data = self.Tables.generate(pdb_id="2w4o", chains="A", dssp=True, atoms='CA',
+                                    merge_tables=True)
         self.assertIsNotNone(data)
         self.assertFalse(data.empty)
 
@@ -186,17 +184,16 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(data.CHAIN.dropna().unique()[0], 'A', 'Other chain')
         self.assertEqual(data.label_asym_id.dropna().unique()[0], 'A', 'Other chain')
 
-        self.assertEqual(data.shape[0], 349, 'wrong number of rows')
+        self.assertEqual(data.shape[0], 278, 'wrong number of rows')
         self.assertEqual(data.AA[~data.AA.isnull()].shape[0], 278, 'wrong number of residues')
-        self.assertEqual(
-            data.UniProt_dbResName[~data.UniProt_dbResName.isnull()].shape[0],
-            326,
-            'wrong number of residues')
+        self.assertEqual(data.UniProt_dbResName[~data.UniProt_dbResName.isnull()].shape[0],
+                         278, 'wrong number of residues')
 
     def test_merge_4ibw_A_with_alt_loc(self):
         """
         Test case in a structure with alt locations."""
-        data = self.merge_tables(pdb_id="4ibw", chain="A")
+        data = self.Tables.generate(pdb_id="4ibw", chains="A",
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_3mn5_with_insertion_code(self):
@@ -218,60 +215,71 @@ class TestMerger(unittest.TestCase):
         self.assertFalse(self.sifts.empty)
         self.assertFalse(self.dssp.empty)
 
-        data = self.merge_tables(pdb_id="3mn5", chain="A")
+        data = self.Tables.generate(pdb_id="3mn5", chains="A",
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_3fqd_A_no_pdbe_label_seq_id(self):
-        self.data = self.merge_tables(pdb_id='3fqd', chain='A',
-                                      sequence_check='ignore')
+        self.data = self.Tables.generate(pdb_id='3fqd', chains='A',
+                                         merge_tables=True)
         self.assertFalse(self.data.empty)
 
     def test_merge_3ehk_D_lowercased_dssp(self):
-        self.data = self.merge_tables(pdb_id='3ehk', chain='D')
+        self.data = self.Tables.generate(pdb_id='3ehk', chains='D',
+                                         merge_tables=True)
         self.assertFalse(self.data.empty)
 
-    @unittest.expectedFailure
+    # @unittest.expectedFailure
     def test_merge_4v9d_BD_excessive_chains(self):
         """
         DSSP files does not have BD chain, since its chain naming only support one character.
         Although its possible to map and reference the BD chain into the mmCIF table,
         it is currently unsupported by merge_tables.
         """
-        data = self.merge_tables(pdb_id='4v9d', chain='BD')
+        data = self.Tables.generate(pdb_id='4v9d', chains='BD',
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_4abo_A_DSSP_missing_first_residue(self):
-        data = self.merge_tables(pdb_id='4abo', chain='A')
+        data = self.Tables.generate(pdb_id='4abo', chains='A',
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_4why_K_DSSP_index_as_object(self):
-        data = self.merge_tables(pdb_id='4why', chain='K')
+        data = self.Tables.generate(pdb_id='4why', chains='K',
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_2pm7_D_missing_residue_DSSP(self):
-        data = self.merge_tables(pdb_id='2pm7', chain='D')
+        data = self.Tables.generate(pdb_id='2pm7', chains='D',
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_4myi_A_fail(self):
-        data = self.merge_tables(pdb_id='2pm7', chain='D')
+        data = self.Tables.generate(pdb_id='2pm7', chains='D',
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_camKIV_wrong_chain(self):
         with self.assertRaises(ValueError):
-            self.merge_tables(pdb_id='2w4o', chain='D')
+            self.Tables.generate(pdb_id='2w4o', chains='D',
+                                 merge_tables=True)
 
     def test_camKIV_wrong_atom(self):
         with self.assertRaises(ValueError):
-            self.merge_tables(pdb_id='2w4o', chain='A', atoms=['CC'])
+            self.Tables.generate(pdb_id='2w4o', chains='A', atoms=['CC'],
+                                 merge_tables=True)
 
     def test_camKIV_atom_list(self):
         # TODO test_camIV_list_mode(self):
-        data = self.merge_tables(pdb_id='2w4o', chain='A', atoms=['CA', 'CB'])
+        data = self.Tables.generate(pdb_id='2w4o', chains='A', atoms=['CA', 'CB'],
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_camKIV_atom_centroid(self):
         # TODO test_camIV_centroid_mode(self):
-        data = self.merge_tables(pdb_id='2w4o', chain='A', atoms='centroid')
+        data = self.Tables.generate(pdb_id='2w4o', chains='A', atoms='centroid',
+                                    merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_3edv_string_index(self):
@@ -279,23 +287,20 @@ class TestMerger(unittest.TestCase):
         pass
 
     def test_camKIV_from_uniprot_id(self):
-        defaults.api_pdbe = 'http://www.ebi.ac.uk/pdbe/api/'
-        with patch('proteofav.structures.defaults', defaults):
-            data = self.merge_tables(uniprot_id='Q16566')
-            self.assertFalse(data.empty)
+        data = self.Tables.generate(uniprot_id='Q16566', merge_tables=True)
+        self.assertFalse(data.empty)
 
     def test_sequence_check_raise(self):
-        # The first and the second residues in the cif file were swaped to GLY
-        # so they can't be checked with dssp and sift sequences
+        # The first and the second residues in the cif file were swapped to GLY
+        # so they can't be checked with dssp and sifts sequences
         badcif_path = os.path.join(os.path.dirname(__file__), "testdata",
                                    "mmcif", "2w4o_with_error.cif")
         baddata = self.cif_to_table(badcif_path)
 
         with patch("proteofav.structures.parse_mmcif_atoms", return_value=baddata):
-            with self.assertRaises(ValueError):
-                self.merge_tables(pdb_id='2w4o')
-                # data = self.merge_tables(pdb_id='2w4o', sequence_check='warn') # todo try capture warn
-                # self.assertFalse(data.empty)
+            # with self.assertRaises(ValueError):
+            data = self.Tables.generate(pdb_id='2w4o', merge_tables=True)
+            self.assertFalse(data.empty)
 
     def test_mmcif_dssp_merger(self):
         table = self.mmcif_dssp(self.mmcif, self.dssp)

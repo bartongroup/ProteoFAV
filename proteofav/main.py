@@ -4,7 +4,7 @@ import sys
 import click
 import logging
 
-from proteofav.mergers import merge_tables
+from proteofav.mergers import Tables
 
 __all__ = ['parse_args',
            'main']
@@ -12,7 +12,7 @@ __all__ = ['parse_args',
 log = logging.getLogger('proteofav.config')
 
 
-@click.command()
+@click.command(context_settings={'help_option_names': ['-h', '--help']})
 @click.option('--pdb', type=str, default=None, help='Protein data bank identifier.')
 @click.option('--chain', type=str, default=None, help='Protein structure chain identifier.')
 @click.option('--uniprot', type=str, default=None, help='UniProt KnowledgeBase accession.')
@@ -22,17 +22,19 @@ log = logging.getLogger('proteofav.config')
 @click.option('-v', '--verbose', is_flag=True, help="Show more verbose logging.")
 @click.option('-l', '--log', default=sys.stderr, help="Path to the logfile.",
               type=click.File('wb'))
-@click.option('--add_annotation', is_flag=True,
-              help="Whether to merge annotation information to the output.")
+@click.option('--add_dssp', is_flag=True,
+              help="Whether to merge DSSP information to the output.")
+@click.option('--add_annotations', is_flag=True,
+              help="Whether to merge annotations information to the output.")
 @click.option('--add_validation', is_flag=True,
               help="Whether to merge protein structure validation information to the output.")
 @click.option('--add_variants', is_flag=True,
               help="Whether to merge genetic variant information to the output.")
-@click.option('--remove_redundant', is_flag=True,
-              help="Whether to remove columns with redundant information from the output.")
+# @click.option('--remove_redundant', is_flag=True,
+#               help="Whether to remove columns with redundant information from the output.")
 @click.argument('output', type=click.File('wb'))
-def main(pdb, chain, uniprot, output_type, verbose, log, add_annotation, add_validation,
-         add_variants, remove_redundant, output):
+def main(pdb, chain, uniprot, output_type, verbose, log, add_dssp,
+         add_annotations, add_validation, add_variants, output):
     """
     ProteFAV: a Python framework to process and integrate protein structure and
     features to genetic variants.
@@ -43,13 +45,16 @@ def main(pdb, chain, uniprot, output_type, verbose, log, add_annotation, add_val
     logging.basicConfig(stream=log, level=level,
                         format='%(asctime)s - %(levelname)s - %(message)s ')
 
-    table = merge_tables(pdb_id=pdb,
-                         chain=chain,
-                         uniprot_id=uniprot,
-                         add_annotation=add_annotation,
-                         add_validation=add_validation,
-                         add_ensembl_variants=add_variants,
-                         drop_empty_cols=remove_redundant)
+    table = Tables.generate(pdb_id=pdb,
+                            uniprot_id=uniprot,
+                            chains=chain,
+                            sifts=True,
+                            dssp=add_dssp,
+                            validation=add_validation,
+                            annotations=add_annotations,
+                            variants=add_variants,
+                            merge_tables=True,
+                            sequence_check='ignore')
 
     if output_type == 'csv':
         table.to_csv(output)
