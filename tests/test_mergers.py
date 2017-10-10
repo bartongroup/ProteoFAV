@@ -22,7 +22,6 @@ from proteofav.annotation import Annotation
 from proteofav.mergers import (merge_tables,
                                mmcif_dssp_table_merger,
                                mmcif_sifts_table_merger,
-                               dssp_sifts_table_merger,
                                mmcif_validation_table_merger,
                                sifts_annotation_table_merger,
                                sifts_variants_table_merger,
@@ -71,7 +70,6 @@ class TestMerger(unittest.TestCase):
 
         self.mmcif_sifts = mmcif_sifts_table_merger
         self.mmcif_dssp = mmcif_dssp_table_merger
-        self.dssp_sifts = dssp_sifts_table_merger
         self.mmcif_validation = mmcif_validation_table_merger
         self.sifts_annotation = sifts_annotation_table_merger
         self.sifts_variants = sifts_variants_table_merger
@@ -106,7 +104,6 @@ class TestMerger(unittest.TestCase):
 
         self.mmcif_sifts = None
         self.mmcif_dssp = None
-        self.dssp_sifts = None
         self.mmcif_validation = None
         self.sifts_annotation = None
         self.sifts_variants = None
@@ -364,36 +361,6 @@ class TestMerger(unittest.TestCase):
         self.assertEqual('118', table.loc[329, 'PDB_dbResNum'])
         self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
 
-    def test_dssp_sifts_merger(self):
-        table = self.dssp_sifts(self.dssp, self.sifts)
-        # Chain level
-        self.assertNotIn('label_asym_id', table)
-        self.assertIn('CHAIN_FULL', table)
-        self.assertIn('PDB_entityId', table)
-        # Res level
-        self.assertNotIn('label_seq_id_full', table)
-        self.assertIn('RES', table)
-        self.assertIn('PDB_dbResNum', table)
-        # values
-        self.assertEqual('A', table.loc[0, 'PDB_entityId'])
-        self.assertEqual('118', table.loc[0, 'RES'])
-        self.assertEqual('VAL', table.loc[0, 'PDB_dbResName'])
-
-    def test_dssp_sifts_bio_merger(self):
-        table = self.dssp_sifts(self.dssp, self.sifts)
-        # Chain level
-        self.assertNotIn('label_asym_id', table)
-        self.assertIn('CHAIN_FULL', table)
-        self.assertIn('PDB_entityId', table)
-        # Res level
-        self.assertNotIn('label_seq_id_full', table)
-        self.assertIn('RES', table)
-        self.assertIn('PDB_dbResNum', table)
-        # values
-        self.assertEqual('B', table.loc[329, 'PDB_entityId'])
-        self.assertEqual('118', table.loc[329, 'RES'])
-        self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
-
     def test_mmcif_validation_merger(self):
         table = self.mmcif_validation(self.mmcif, self.validation)
         self.assertIn('auth_asym_id', table)
@@ -492,21 +459,21 @@ class TestMerger(unittest.TestCase):
         self.assertIn('RES', table)
         self.assertIn('PDB_dbResNum', table)
         # values
-        self.assertEqual('CA', table.loc[329, 'label_atom_id'])
-        self.assertEqual('AA', table.loc[329, 'label_asym_id'])
-        self.assertEqual('118', table.loc[329, 'RES'])
-        self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
-        self.assertEqual('V', table.loc[329, 'UniProt_dbResName'])
+        self.assertEqual('CA', table.loc[407, 'label_atom_id'])
+        self.assertEqual('AA', table.loc[407, 'label_asym_id'])
+        self.assertEqual('118', table.loc[407, 'RES'])
+        self.assertEqual('VAL', table.loc[407, 'PDB_dbResName'])
+        self.assertEqual('V', table.loc[407, 'UniProt_dbResName'])
 
     def test_table_generator(self):
-        mmcif_table, dssp_table, sifts_table, valid_table, annot_table, variants_table = \
-            self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=False,
-                                 sifts=True, dssp=True, variants=False, annotations=False,
+        mmcif_table, dssp_table, sifts_table, valid_table, annot_table, vars_table = \
+            self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=True,
+                                 sifts=True, dssp=True, validation=False, annotations=False, variants=False,
                                  chains=None, res=None, sites=None, atoms=('CA',), lines=None,
                                  residue_agg=False, overwrite=False)
 
         table = self.table_merger(mmcif_table, dssp_table, sifts_table,
-                                  valid_table, annot_table, variants_table)
+                                  valid_table, annot_table, vars_table)
         # Chain level
         self.assertIn('label_asym_id', table)
         self.assertIn('CHAIN_FULL', table)
@@ -523,14 +490,14 @@ class TestMerger(unittest.TestCase):
         self.assertEqual('V', table.loc[0, 'UniProt_dbResName'])
 
     def test_table_generator_bio(self):
-        mmcif_table, dssp_table, sifts_table, valid_table, annot_table, variants_table = \
+        mmcif_table, dssp_table, sifts_table, valid_table, annot_table, vars_table = \
             self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=True,
                                  sifts=True, dssp=True, variants=False, annotations=False,
                                  chains=None, res=None, sites=None, atoms=('CA',), lines=None,
                                  residue_agg=False, overwrite=False)
 
         table = self.table_merger(mmcif_table, dssp_table, sifts_table,
-                                  valid_table, annot_table, variants_table)
+                                  valid_table, annot_table, vars_table)
         # Chain level
         self.assertIn('label_asym_id', table)
         self.assertIn('CHAIN_FULL', table)
@@ -564,6 +531,46 @@ class TestMerger(unittest.TestCase):
         # self.assertEqual('118', table.loc[329, 'RES'])
         self.assertEqual('VAL', table.loc[329, 'PDB_dbResName'])
         self.assertEqual('V', table.loc[329, 'UniProt_dbResName'])
+
+    def test_table_generator_full(self):
+        mmcif_table, dssp_table, sifts_table, valid_table, annot_table, vars_table = \
+            self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=True,
+                                 sifts=True, dssp=True, validation=True, annotations=True, variants=True,
+                                 chains=None, res=None, sites=None, atoms=('CA',), lines=None,
+                                 residue_agg=False, overwrite=False)
+
+        table = self.table_merger(mmcif_table, dssp_table, sifts_table,
+                                  valid_table, annot_table, vars_table)
+
+        # Chain level
+        self.assertIn('label_asym_id', table)
+        self.assertIn('CHAIN_FULL', table)
+        self.assertIn('PDB_entityId', table)
+        # Res level
+        self.assertIn('label_seq_id_full', table)
+        self.assertIn('RES', table)
+        self.assertIn('PDB_dbResNum', table)
+        # values
+        self.assertEqual('CA', table.loc[0, 'label_atom_id'])
+        self.assertEqual('A', table.loc[0, 'label_asym_id'])
+        self.assertEqual('AA', table.loc[407, 'label_asym_id'])
+        self.assertEqual('118', table.loc[0, 'RES'])
+        self.assertEqual('118', table.loc[407, 'RES'])
+        self.assertEqual('VAL', table.loc[0, 'PDB_dbResName'])
+        self.assertEqual('V', table.loc[0, 'UniProt_dbResName'])
+        # validation
+        self.assertEqual('118', table.loc[0, 'validation_resnum_full'])
+        self.assertEqual('118', table.loc[407, 'validation_resnum_full'])
+        self.assertEqual('A', table.loc[0, 'validation_chain'])
+        self.assertEqual('A', table.loc[407, 'validation_chain'])
+        # annotations
+        self.assertIn('Natural variant:', table.loc[4, 'annotation'])
+        # variants
+        self.assertEqual('large_scale_study', table.loc[0, 'sourceType'])
+        self.assertEqual('ENSP00000448059', table.loc[0, 'translation'])
+        self.assertEqual('rs776442422', table.loc[0, 'xrefs_id'])
+        self.assertEqual('ExAC', table.loc[0, 'xrefs_name'])
+        self.assertEqual(0.14, table.loc[0, 'siftScore'])
 
 
 if __name__ == '__main__':

@@ -545,7 +545,9 @@ _annotation_types = {
     'SOURCE': str,
     'START': str,
     'STRAND': str,
-    'TYPE': str
+    'TYPE': str,
+    'site': str,
+    'accession': str
 }
 
 _uni_ens_var_types = {

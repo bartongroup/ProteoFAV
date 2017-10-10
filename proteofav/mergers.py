@@ -7,14 +7,16 @@ import pandas as pd
 from proteofav.structures import select_structures, mmCIF
 from proteofav.sifts import select_sifts, sifts_best, SIFTS
 from proteofav.dssp import select_dssp, DSSP
-from proteofav.variants import select_variants, Variants
+from proteofav.variants import select_variants, Variants, fetch_pdb_uniprot_mapping
 from proteofav.annotation import select_annotation, Annotation
 from proteofav.validation import select_validation, Validation
 from proteofav.utils import merging_down_by_key
 from proteofav.library import to_single_aa
 
-__all__ = ['uniprot_vars_ensembl_vars_merger',
-           'merge_tables']
+__all__ = ['mmcif_sifts_table_merger', 'mmcif_dssp_table_merger',
+           'mmcif_validation_table_merger', 'sifts_annotation_table_merger',
+           'sifts_variants_table_merger', 'uniprot_vars_ensembl_vars_merger',
+           'merge_tables', 'table_merger', 'table_generator', 'Tables']
 
 log = logging.getLogger('proteofav.config')
 
@@ -23,28 +25,33 @@ class TableMergerError(Exception):
     pass
 
 
-def mmcif_sifts_table_merger(mmcif_table, sifts_table):
+def mmcif_sifts_table_merger(mmcif_table, sifts_table, category='auth'):
     """
     Merge the mmCIF and SIFTS Tables.
 
     :param mmcif_table: mmCIF pandas DataFrame
     :param sifts_table: SIFTS pandas DataFrame
+    :param category: data category to be used as precedence in _atom_site.*_*
+        asym_id, seq_id and atom_id
     :return: merged pandas DataFrame
     """
 
     # bare minimal columns needed
-    if ('auth_seq_id_full' in mmcif_table and 'label_asym_id' in mmcif_table and
-                'PDB_dbResNum' in sifts_table and 'PDB_entityId' in sifts_table):
+    if ('{}_seq_id_full'.format(category) in mmcif_table and
+                '{}_asym_id'.format(category) in mmcif_table and
+                'PDB_dbResNum' in sifts_table and 'PDB_dbChainId' in sifts_table):
 
         # workaround for BioUnits
-        if 'orig_label_asym_id' in mmcif_table:
+        if 'orig_{}_asym_id'.format(category) in mmcif_table:
             table = mmcif_table.merge(sifts_table, how='left',
-                                      left_on=['auth_seq_id_full', 'orig_label_asym_id'],
-                                      right_on=['PDB_dbResNum', 'PDB_entityId'])
+                                      left_on=['{}_seq_id_full'.format(category),
+                                               'orig_{}_asym_id'.format(category)],
+                                      right_on=['PDB_dbResNum', 'PDB_dbChainId'])
         else:
             table = mmcif_table.merge(sifts_table, how='left',
-                                      left_on=['auth_seq_id_full', 'label_asym_id'],
-                                      right_on=['PDB_dbResNum', 'PDB_entityId'])
+                                      left_on=['{}_seq_id_full'.format(category),
+                                               '{}_asym_id'.format(category)],
+                                      right_on=['PDB_dbResNum', 'PDB_dbChainId'])
 
     else:
         raise TableMergerError('Not possible to merge mmCIF and SIFTS table! '
@@ -54,52 +61,41 @@ def mmcif_sifts_table_merger(mmcif_table, sifts_table):
     return table
 
 
-def mmcif_dssp_table_merger(mmcif_table, dssp_table):
+def mmcif_dssp_table_merger(mmcif_table, dssp_table, category='auth'):
     """
     Merge the mmCIF and DSSP Tables.
 
     :param mmcif_table: mmCIF pandas DataFrame
     :param dssp_table: DSSP pandas DataFrame
+    :param category: data category to be used as precedence in _atom_site.*_*
+        asym_id, seq_id and atom_id
     :return: merged pandas DataFrame
     """
 
     # bare minimal columns needed
-    if ('auth_seq_id_full' in mmcif_table and 'label_asym_id' in mmcif_table and
-                'RES' in dssp_table and 'CHAIN_FULL' in dssp_table):
+    if ('{}_seq_id_full'.format(category) in mmcif_table and
+                '{}_asym_id'.format(category) in mmcif_table and
+                'RES_FULL' in dssp_table and 'CHAIN_FULL' in dssp_table):
 
-        table = mmcif_table.merge(dssp_table, how='left',
-                                  left_on=['auth_seq_id_full', 'label_asym_id'],
-                                  right_on=['RES', 'CHAIN_FULL'])
+        # workaround for BioUnits
+        if ('orig_{}_asym_id'.format(category) in mmcif_table and not
+            (set(mmcif_table['{}_asym_id'.format(category)].unique()) ==
+                set(dssp_table['CHAIN_FULL'].unique()))):
+            table = mmcif_table.merge(dssp_table, how='left',
+                                      left_on=['{}_seq_id_full'.format(category),
+                                               'orig_{}_asym_id'.format(category)],
+                                      right_on=['RES_FULL', 'CHAIN_FULL'])
+        else:
+            table = mmcif_table.merge(dssp_table, how='left',
+                                      left_on=['{}_seq_id_full'.format(category),
+                                               '{}_asym_id'.format(category)],
+                                      right_on=['RES_FULL', 'CHAIN_FULL'])
+
     else:
         raise TableMergerError('Not possible to merge mmCIF and DSSP table! '
                                'Some of the necessary columns are missing...')
 
     log.info("Merged mmCIF and DSSP Tables...")
-    return table
-
-
-def dssp_sifts_table_merger(dssp_table, sifts_table):
-    """
-    Merge the DSSP and SIFTS Tables.
-
-    :param dssp_table: DSSP pandas DataFrame
-    :param sifts_table: SIFTS pandas DataFrame
-    :return: merged pandas DataFrame
-    """
-
-    # bare minimal columns needed
-    if ('RES' in dssp_table and 'CHAIN' in dssp_table and
-                'PDB_dbResNum' in sifts_table and 'PDB_entityId' in sifts_table):
-
-        table = dssp_table.merge(sifts_table, how='left',
-                                 left_on=['RES', 'CHAIN'],
-                                 right_on=['PDB_dbResNum', 'PDB_entityId'])
-
-    else:
-        raise TableMergerError('Not possible to merge DSSP and SIFTS table! '
-                               'Some of the necessary columns are missing...')
-
-    log.info("Merged DSSP and SIFTS Tables...")
     return table
 
 
@@ -109,6 +105,8 @@ def mmcif_validation_table_merger(mmcif_table, validation_table, category='auth'
 
     :param mmcif_table: mmCIF pandas DataFrame
     :param validation_table: Validation pandas DataFrame
+    :param category: data category to be used as precedence in _atom_site.*_*
+        asym_id, seq_id and atom_id
     :return: merged pandas DataFrame
     """
 
@@ -118,11 +116,19 @@ def mmcif_validation_table_merger(mmcif_table, validation_table, category='auth'
                 'validation_resnum_full' in validation_table and
                 'validation_chain' in validation_table):
 
-        table = mmcif_table.merge(validation_table, how='left',
-                                  left_on=['{}_seq_id_full'.format(category),
-                                           '{}_asym_id'.format(category)],
-                                  right_on=['validation_resnum_full',
-                                            'validation_chain'])
+        # workaround for BioUnits
+        if 'orig_{}_asym_id'.format(category) in mmcif_table:
+            table = mmcif_table.merge(validation_table, how='left',
+                                      left_on=['{}_seq_id_full'.format(category),
+                                               'orig_{}_asym_id'.format(category)],
+                                      right_on=['validation_resnum_full',
+                                                'validation_chain'])
+        else:
+            table = mmcif_table.merge(validation_table, how='left',
+                                      left_on=['{}_seq_id_full'.format(category),
+                                               '{}_asym_id'.format(category)],
+                                      right_on=['validation_resnum_full',
+                                                'validation_chain'])
     else:
         raise TableMergerError('Not possible to merge mmCIF and Validation table! '
                                'Some of the necessary columns are missing...')
@@ -142,11 +148,12 @@ def sifts_annotation_table_merger(sifts_table, annotation_table):
     """
 
     # bare minimal columns needed
-    if 'UniProt_dbResNum' in sifts_table and 'site' in annotation_table:
+    if ('UniProt_dbAccessionId' in sifts_table and 'UniProt_dbResNum' in sifts_table and
+                'accession' in annotation_table and 'site' in annotation_table):
 
         table = sifts_table.merge(annotation_table, how='left',
-                                  left_on=['UniProt_dbResNum'],
-                                  right_on=['site'])
+                                  left_on=['UniProt_dbAccessionId', 'UniProt_dbResNum'],
+                                  right_on=['accession', 'site'])
 
     else:
         raise TableMergerError('Not possible to merge SIFTS and Annotation table! '
@@ -211,6 +218,7 @@ def uniprot_vars_ensembl_vars_merger(uniprot_vars_table, ensembl_vars_table):
     return table
 
 
+# TODO replace by mew table_generator
 def merge_tables(uniprot_id=None,
                  pdb_id=None,
                  chain=None,
@@ -389,7 +397,6 @@ def merge_tables(uniprot_id=None,
     return table
 
 
-# FIXME - add missing
 def table_merger(mmcif_table=None, dssp_table=None, sifts_table=None,
                  validation_table=None, annotation_table=None,
                  variants_table=None):
@@ -405,9 +412,10 @@ def table_merger(mmcif_table=None, dssp_table=None, sifts_table=None,
     :return: merged pandas DataFrame
     """
 
-    available = [mmcif_table, dssp_table, sifts_table]
+    available = [mmcif_table, dssp_table, sifts_table,
+                 validation_table, annotation_table, variants_table]
     available = [k for k in available if k is not None]
-    if len(available) < 2:
+    if len(available) < 2 and (mmcif_table or sifts_table):
         raise TableMergerError(
             "At least two Tables are needed in order to merge...")
 
@@ -415,20 +423,28 @@ def table_merger(mmcif_table=None, dssp_table=None, sifts_table=None,
     if mmcif_table is not None:
         if dssp_table is not None:
             mmcif_table = mmcif_dssp_table_merger(mmcif_table, dssp_table)
-        if sifts_table is not None:
-            mmcif_table = mmcif_sifts_table_merger(mmcif_table, sifts_table)
+        if validation_table is not None:
+            mmcif_table = mmcif_validation_table_merger(mmcif_table,
+                                                        validation_table)
         table = mmcif_table
 
-    elif dssp_table is not None:
-        if sifts_table is not None:
-            dssp_table = dssp_sifts_table_merger(dssp_table, sifts_table)
-        table = dssp_table
+    if sifts_table is not None:
+        if annotation_table is not None:
+            sifts_table = sifts_annotation_table_merger(sifts_table,
+                                                        annotation_table)
+        if variants_table is not None:
+            sifts_table = sifts_variants_table_merger(sifts_table,
+                                                      variants_table)
+        table = sifts_table
+
+    if mmcif_table is not None and sifts_table is not None:
+        table = mmcif_sifts_table_merger(mmcif_table, sifts_table)
 
     return table
 
 
 def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
-                    sifts=True, dssp=False, variants=False, annotations=False,
+                    sifts=True, dssp=False, validation=False, annotations=False, variants=False,
                     chains=None, res=None, sites=None, atoms=None, lines=None,
                     residue_agg=False, overwrite=False):
     """
@@ -439,8 +455,9 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
     :param bio_unit: boolean for using AsymUnits or BioUnits
     :param sifts: boolean
     :param dssp: boolean
-    :param variants: boolean
+    :param validation: boolean
     :param annotations: boolean
+    :param variants: boolean
     :param chains: (tuple) Chain ID ('*_asym_id')
     :param res: (tuple) PDB ResNum ('*_seq_id_full')
     :param sites: (tuple) UniProt ResNum (positional index)
@@ -490,27 +507,58 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
             dssp_table = None
 
         # Validation table
-        if annotations:
-            validation_table = Validation.select(identifier=uniprot_id)
+        if validation:
+            validation_table = Validation.select(identifier=pdb_id)
         else:
             validation_table = None
 
-        # Variants table
-        if variants:
-            uni_vars, ens_vars = Variants.select(uniprot_id, id_source='uniprot',
-                                                 synonymous=True,
-                                                 uniprot_vars=True,
-                                                 ensembl_germline_vars=True,
-                                                 ensembl_somatic_vars=True)
-            variants_table = uniprot_vars_ensembl_vars_merger(uni_vars, ens_vars)
-        else:
-            variants_table = None
-
         # Annotations table
         if annotations:
-            annotations_table = Annotation.select(identifier=uniprot_id)
+            if uniprot_id:
+                annotations_table = Annotation.select(identifier=uniprot_id,
+                                                      annotation_agg=True)
+            else:
+                annotations_table = None
+                annot_tables = []
+                data = fetch_pdb_uniprot_mapping(identifier=pdb_id).json()[pdb_id]['UniProt']
+                for uniprot_id in data:
+                    annot_tables.append(Annotation.select(identifier=uniprot_id,
+                                                          annotation_agg=True))
+                if len(annot_tables) > 1:
+                    annotations_table = pd.concat(annot_tables).reset_index(drop=True)
+                elif len(annot_tables):
+                    annotations_table = annot_tables[0]
         else:
             annotations_table = None
+
+        # Variants table
+        if variants:
+            if uniprot_id:
+                uni_vars, ens_vars = Variants.select(identifier=uniprot_id,
+                                                     id_source='uniprot',
+                                                     synonymous=True,
+                                                     uniprot_vars=True,
+                                                     ensembl_germline_vars=True,
+                                                     ensembl_somatic_vars=True)
+                variants_table = uniprot_vars_ensembl_vars_merger(uni_vars, ens_vars)
+            else:
+                variants_table = None
+                vars_tables = []
+                data = fetch_pdb_uniprot_mapping(identifier=pdb_id).json()[pdb_id]['UniProt']
+                for uniprot_id in data:
+                    uni_vars, ens_vars = Variants.select(identifier=uniprot_id,
+                                                         id_source='uniprot',
+                                                         synonymous=True,
+                                                         uniprot_vars=True,
+                                                         ensembl_germline_vars=True,
+                                                         ensembl_somatic_vars=True)
+                    vars_tables.append(uniprot_vars_ensembl_vars_merger(uni_vars, ens_vars))
+                if len(vars_tables) > 1:
+                    variants_table = pd.concat(vars_tables).reset_index(drop=True)
+                elif len(vars_tables):
+                    variants_table = vars_tables[0]
+        else:
+            variants_table = None
 
         return (mmcif_table, dssp_table, sifts_table,
                 validation_table, annotations_table, variants_table)

@@ -372,6 +372,7 @@ def select_sifts(identifier, excluded_cols=None, add_regions=True, add_dbs=False
                                  add_regions=add_regions, add_dbs=add_dbs)
 
     table = filter_sifts(table, **kwargs)
+    table = constrain_column_types(table, col_type_dict=sifts_types)
     return table
 
 

@@ -679,6 +679,8 @@ def select_structures(identifier=None, excluded_cols=None,
 
     table = filter_structures(table=table, excluded_cols=excluded_cols, **kwargs)
 
+    table = constrain_column_types(table, col_type_dict=pdbx_types)
+
     # id is the atom identifier and it is need for all atoms tables.
     if table[UNIFIED_COL + ['id']].duplicated().any():
         log.error('Failed to find unique index for {}'.format(filename))

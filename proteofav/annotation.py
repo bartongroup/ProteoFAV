@@ -61,12 +61,13 @@ def parse_gff_features(filename, excluded_cols=None):
     return table
 
 
-def annotation_aggregation(table, query_type='', group_residues=True,
+def annotation_aggregation(table, identifier=None, query_type='', group_residues=True,
                            drop_types=('Helix', 'Beta strand', 'Turn', 'Chain')):
     """
     Filtering and making the final Annotation Table.
 
     :param table: pandas DataFrame object
+    :param identifier: to add a new column with 'accession' ID
     :param str query_type: Select type of feature
     :param bool group_residues: by default each row in the resulting table,
         maps to a residue. When set to False, each row represent a feature
@@ -90,6 +91,7 @@ def annotation_aggregation(table, query_type='', group_residues=True,
         table = table.groupby('idx').agg({'annotation': lambda x: ', '.join(x)})
 
     table['site'] = table.index.astype(str)
+    table['accession'] = [identifier] * len(table)
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")
     return table
@@ -112,17 +114,18 @@ def _annotation_writer(gff_row):
         return '{0.TYPE}: {0.Note} ({0.ID})'.format(gff_row)
 
 
-def filter_annotation(table, annotation_agg=False, **kwargs):
+def filter_annotation(table, identifier=None, annotation_agg=False, **kwargs):
     """
     Filtering and making the final Annotation Table.
 
     :param table: pandas DataFrame object
+    :param identifier: to add a new column with 'accession' ID
     :param annotation_agg: boolean
     :return: returns a pandas DataFrame
     """
 
     if annotation_agg:
-        table = annotation_aggregation(table, **kwargs)
+        table = annotation_aggregation(table, identifier=identifier, **kwargs)
 
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")
@@ -144,7 +147,8 @@ def select_annotation(identifier, excluded_cols=None, overwrite=False, **kwargs)
                         overwrite=overwrite)
 
     table = parse_gff_features(filename=filename, excluded_cols=excluded_cols)
-    table = filter_annotation(table, **kwargs)
+    table = filter_annotation(table, identifier, **kwargs)
+    table = constrain_column_types(table, col_type_dict=annotation_types)
     return table
 
 

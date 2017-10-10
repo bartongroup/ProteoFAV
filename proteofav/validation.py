@@ -133,12 +133,12 @@ def select_validation(identifier, excluded_cols=None, overwrite=False, **kwargs)
     table = parse_validation_residues(filename=filename, excluded_cols=excluded_cols)
 
     table = filter_validation(table, excluded_cols=excluded_cols, **kwargs)
-
+    table = constrain_column_types(table, col_type_dict=validation_types)
     return table
 
 
 def filter_validation(table, excluded_cols=None, chains=None, res=None,
-                      add_res_full=True, ):
+                      add_res_full=True):
     """
     Filter for Validation Pandas Dataframes.
 

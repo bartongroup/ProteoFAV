@@ -327,14 +327,10 @@ def select_dssp(identifier, excluded_cols=None, overwrite=False, **kwargs):
     table = parse_dssp_residues(filename=filename, excluded_cols=excluded_cols)
 
     table = filter_dssp(table=table, excluded_cols=excluded_cols, **kwargs)
+    table = constrain_column_types(table, col_type_dict=dssp_types)
 
     if table.duplicated(['RES_FULL', 'CHAIN']).any():
         log.info('DSSP file for {} has not unique index'.format(identifier))
-    try:
-        table.loc[:, 'RES_FULL'] = table.loc[:, 'RES_FULL'].astype(int)
-    except ValueError:
-        log.warning("{} insertion code detected in the DSSP file.".format(identifier))
-        table.loc[:, 'RES_FULL'] = table.loc[:, 'RES_FULL'].astype(str)
     return table
 
 

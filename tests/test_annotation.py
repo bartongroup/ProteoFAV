@@ -75,25 +75,25 @@ class TestUNIPROTParser(unittest.TestCase):
     def test_filter_annotation_uniprot_gff(self):
         table = self.parse_gff_features(self.example_annotation)
         table = self.annotation_aggregation(table)
-        self.assertEqual(list(table.columns), ['annotation'])
+        self.assertEqual(set(table.columns), {'annotation', 'site', 'accession'})
         self.assertTrue((~table.annotation.str.contains('Chain')).all())
         self.assertEqual(table.shape[0], len(self.ccc2_sequence))
 
         table = self.parse_gff_features(self.example_annotation)
         table = self.filter_annotation(table, annotation_agg=True)
-        self.assertEqual(list(table.columns), ['annotation'])
+        self.assertEqual(set(table.columns), {'annotation', 'site', 'accession'})
         self.assertTrue((~table.annotation.str.contains('Chain')).all())
         self.assertEqual(table.shape[0], len(self.ccc2_sequence))
 
     def test_parse_uniprot_gff_un_grouped(self):
         table = self.parse_gff_features(self.example_annotation)
         table = self.annotation_aggregation(table, group_residues=False)
-        self.assertEqual(set(table.columns), {'annotation', 'idx'})
+        self.assertEqual(set(table.columns), {'annotation', 'idx', 'site', 'accession'})
         self.assertTrue(table.idx.max() >= len(self.ccc2_sequence))
 
         table = self.parse_gff_features(self.example_annotation)
         table = self.filter_annotation(table, annotation_agg=True, group_residues=False)
-        self.assertEqual(set(table.columns), {'annotation', 'idx'})
+        self.assertEqual(set(table.columns), {'annotation', 'idx', 'site', 'accession'})
         self.assertTrue(table.idx.max() >= len(self.ccc2_sequence))
 
     def test_download_uniprot_gff(self):
