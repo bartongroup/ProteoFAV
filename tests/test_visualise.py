@@ -1,16 +1,18 @@
-# coding=utf-8
-import unittest
+# -*- coding: utf-8 -*-
 
+import sys
+import logging
+import unittest
 import pandas as pd
 
 from proteofav.visualise import make_chimera_attribute_file, make_chimera_command_file
 
 
-
 class TestVisualiser(unittest.TestCase):
     def setUp(self):
         """Initialize the framework for testing."""
-        # self.example_dssp = path.join(path.dirname(__file__), "DSSP/1iej.dssp")
+        # self.example_dssp = path.join(path.dirname(__file__), "testdata",
+        #                               "dssp", "1iej.dssp")
         self.chimera_attribute = make_chimera_attribute_file
         self.chimera_command = make_chimera_command_file
 
@@ -48,9 +50,13 @@ class TestVisualiser(unittest.TestCase):
         lines = self.chimera_command('here', content='test\n')
         self.assertEqual(lines, result)
 
+    # TODO
     def test_visualise_chimera(self):
-        pass  # TODO
+        pass
 
 
 if __name__ == '__main__':
-    unittest.main()
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("proteofav.config").setLevel(logging.CRITICAL)
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestVisualiser)
+    unittest.TextTestRunner(verbosity=2).run(suite)

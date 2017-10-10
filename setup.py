@@ -1,22 +1,28 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
-ProteFAV: protein feature aggregation and variants
---------------------------------------------------
+ProteoFAV: Protein Feature Aggregation and Variants
+---------------------------------------------------
 
-Exploring the power of Pandas to work with protein structures,
-sequences and genetic variants.
+Open-source framework for simple and fast integration
+of protein structure data with sequence annotations
+and genetic variation
 
 :copyright: (c) 2015-2017.
 :license: TBD, see LICENSE for more details.
 """
 
-
-from setuptools import setup
-from setuptools import find_packages
+import os
+from setuptools import setup, find_packages
 
 from proteofav import __version__, __authors__
+
+
+def gather_dependencies():
+    with open('requirements.txt', 'r') as f_in:
+        return [l for l in f_in.read().rsplit(os.linesep)
+                if l and not l.startswith("#")]
+DEPENDENCIES = gather_dependencies()
 
 
 setup(
@@ -31,13 +37,8 @@ setup(
     py_modules=['proteofav.main'],
 
     # Package dependencies.
-    install_requires=['pandas>=0.17',
-                      'requests>=2.12',
-                      'lxml>=3.6',
-                      'click>=6',
-                      'scipy'
-                      ],
-    test_requires=['mock', 'python_version>"3.4"'], #
+    install_requires=DEPENDENCIES,
+    test_requires=['mock', 'python_version>"3.5"'],
 
     # Tests.
     test_suite='tests',

@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 """
 Defines the methods that load and validate user configuration parameters, such
     as data resources web address or local and remote file paths.
@@ -8,11 +8,9 @@ Defines the methods that load and validate user configuration parameters, such
 >>> print(defaults.api_pdbe)
 http://www.ebi.ac.uk/pdbe/api/
 >>> from proteofav.config import Defaults
->>> local_defaults = Defaults("config.txt")
+>>> local_defaults = Defaults('config.ini')
 >>> print(local_defaults.api_uniprot)
 http://www.uniprot.org/uniprot/
->>> print(local_defaults.sifts_extension)
-.xml.gz
 >>> print(local_defaults.email)
 Traceback (most recent call last):
 ...
@@ -20,26 +18,24 @@ AttributeError: 'Defaults' object has no attribute 'email'
 
 """
 
-from __future__ import absolute_import
-
-import tempfile
-import logging
 import os
-from os import path
 import sys
+import click
+import logging
+import tempfile
+
 try:
     # python 2.7
     from ConfigParser import ConfigParser
 except ImportError:
     from configparser import ConfigParser
 
-import click
-
-__all__ = ["defaults", "Defaults"]
 log = logging.getLogger(__name__)
 logging.captureWarnings(True)
 logging.basicConfig(stream=sys.stderr, level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s ')
+
+__all__ = ["defaults", "Defaults"]
 
 
 class Defaults(object):
@@ -53,25 +49,25 @@ class Defaults(object):
     >>> defaults.api_pdbe = 'test'
     >>> print(defaults.api_pdbe)
     test
-
     """
+
     def __init__(self, config_file=None):
         if config_file:
             # user provided config
             pass
-        elif path.isfile(path.join(click.get_app_dir('proteofav'), 'config.txt')):
+        elif os.path.isfile(os.path.join(click.get_app_dir('proteofav'), 'config.ini')):
             # os config
-            config_file = path.join(click.get_app_dir('proteofav'), 'config.txt')
+            config_file = os.path.join(click.get_app_dir('proteofav'), 'config.ini')
         else:
             # proteofav default config
-            config_file = path.join(path.dirname(__file__), 'config.txt')
+            config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
         config = ConfigParser()
-        if path.isfile(config_file):
+        if os.path.isfile(config_file):
             config.read(config_file)
             self.__config = config
             self.populate_attributes()
             self.config_file = config_file
-        else:     # pragma: no cover
+        else:  # pragma: no cover
             raise IOError('Config file {} not available.'.format(config_file))
 
     def populate_attributes(self):
@@ -91,14 +87,14 @@ class Defaults(object):
     def commit_configuration(self):
         pass
 
-
     def write(self, file_path=None):
-        file_path = file_path or path.join(click.get_app_dir('proteofav'), 'config.txt')
+        file_path = file_path or os.path.join(click.get_app_dir('proteofav'), 'config.ini')
 
-        if not path.exists(path.dirname(file_path)):
-            os.makedirs(path.dirname(file_path))
+        if not os.path.exists(os.path.dirname(file_path)):
+            os.makedirs(os.path.dirname(file_path))
         # self.reverse_attributes() # TODO reverse populate from __dict__ to self.config
         with open(file_path, 'w') as f:
             self.__config.write(f)
+
 
 defaults = Defaults()

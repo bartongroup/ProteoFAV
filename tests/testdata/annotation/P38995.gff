@@ -1,0 +1,37 @@
+##gff-version 3
+##sequence-region P38995 1 1004
+P38995	UniProtKB	Chain	1	1004	.	.	.	ID=PRO_0000046318;Note=Copper-transporting ATPase	
+P38995	UniProtKB	Topological domain	1	262	.	.	.	Note=Cytoplasmic;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Transmembrane	263	283	.	.	.	Note=Helical;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Topological domain	284	303	.	.	.	Note=Lumenal%2C vesicle;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Transmembrane	304	324	.	.	.	Note=Helical;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Topological domain	325	335	.	.	.	Note=Cytoplasmic;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Transmembrane	336	356	.	.	.	Note=Helical;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Topological domain	357	370	.	.	.	Note=Lumenal%2C vesicle;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Transmembrane	371	391	.	.	.	Note=Helical;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Topological domain	392	528	.	.	.	Note=Cytoplasmic;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Transmembrane	529	549	.	.	.	Note=Helical;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Topological domain	550	577	.	.	.	Note=Lumenal%2C vesicle;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Transmembrane	578	598	.	.	.	Note=Helical;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Topological domain	599	901	.	.	.	Note=Cytoplasmic;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Transmembrane	902	924	.	.	.	Note=Helical;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Topological domain	925	927	.	.	.	Note=Lumenal%2C vesicle;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Transmembrane	928	950	.	.	.	Note=Helical;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Topological domain	951	1004	.	.	.	Note=Cytoplasmic;Ontology_term=ECO:0000255;evidence=ECO:0000255	
+P38995	UniProtKB	Domain	3	68	.	.	.	Note=HMA 1;Ontology_term=ECO:0000255;evidence=ECO:0000255|PROSITE-ProRule:PRU00280	
+P38995	UniProtKB	Domain	81	147	.	.	.	Note=HMA 2;Ontology_term=ECO:0000255;evidence=ECO:0000255|PROSITE-ProRule:PRU00280	
+P38995	UniProtKB	Active site	627	627	.	.	.	Note=4-aspartylphosphate intermediate;Ontology_term=ECO:0000250;evidence=ECO:0000250	
+P38995	UniProtKB	Metal binding	13	13	.	.	.	Note=Copper	
+P38995	UniProtKB	Metal binding	16	16	.	.	.	Note=Copper	
+P38995	UniProtKB	Metal binding	91	91	.	.	.	Note=Copper;Ontology_term=ECO:0000255;evidence=ECO:0000255|PROSITE-ProRule:PRU00280	
+P38995	UniProtKB	Metal binding	94	94	.	.	.	Note=Copper;Ontology_term=ECO:0000255;evidence=ECO:0000255|PROSITE-ProRule:PRU00280	
+P38995	UniProtKB	Metal binding	838	838	.	.	.	Note=Magnesium;Ontology_term=ECO:0000255;evidence=ECO:0000255|PROSITE-ProRule:PRU00280	
+P38995	UniProtKB	Metal binding	842	842	.	.	.	Note=Magnesium;Ontology_term=ECO:0000255;evidence=ECO:0000255|PROSITE-ProRule:PRU00280	
+P38995	UniProtKB	Beta strand	2	8	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1FVQ	
+P38995	UniProtKB	Helix	14	25	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1FVQ	
+P38995	UniProtKB	Beta strand	27	33	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1FVQ	
+P38995	UniProtKB	Turn	37	40	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1FVQ	
+P38995	UniProtKB	Beta strand	41	46	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1FVQ	
+P38995	UniProtKB	Beta strand	48	50	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1FVS	
+P38995	UniProtKB	Helix	52	62	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1FVQ	
+P38995	UniProtKB	Beta strand	66	70	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1FVQ	

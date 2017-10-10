@@ -1,0 +1,263 @@
+##gff-version 3
+##sequence-region P00439 1 452
+P00439	UniProtKB	Chain	1	452	.	.	.	ID=PRO_0000205548;Note=Phenylalanine-4-hydroxylase
+P00439	UniProtKB	Domain	36	114	.	.	.	Note=ACT;Ontology_term=ECO:0000255;evidence=ECO:0000255|PROSITE-ProRule:PRU01007
+P00439	UniProtKB	Metal binding	285	285	.	.	.	Note=Iron%3B via tele nitrogen;Ontology_term=ECO:0000250;evidence=ECO:0000250|UniProtKB:P04176
+P00439	UniProtKB	Metal binding	290	290	.	.	.	Note=Iron%3B via tele nitrogen;Ontology_term=ECO:0000250;evidence=ECO:0000250|UniProtKB:P04176
+P00439	UniProtKB	Metal binding	330	330	.	.	.	Note=Iron;Ontology_term=ECO:0000250;evidence=ECO:0000250|UniProtKB:P04176
+P00439	UniProtKB	Modified residue	16	16	.	.	.	Note=Phosphoserine%3B by PKA;Ontology_term=ECO:0000244,ECO:0000269;evidence=ECO:0000244|PubMed:24275569,ECO:0000269|PubMed:12185072;Dbxref=PMID:24275569,PMID:12185072
+P00439	UniProtKB	Natural variant	16	16	.	.	.	ID=VAR_000869;Note=In PKU. S->P;Dbxref=dbSNP:rs62642946
+P00439	UniProtKB	Natural variant	20	20	.	.	.	ID=VAR_009239;Note=In HPA. Q->L;Dbxref=dbSNP:rs199475662
+P00439	UniProtKB	Natural variant	39	39	.	.	.	ID=VAR_000870;Note=In HPA and PKU%3B haplotype 1. F->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:12501224;Dbxref=dbSNP:rs62642926,PMID:12501224
+P00439	UniProtKB	Natural variant	39	39	.	.	.	ID=VAR_000871;Note=In PKU%3B haplotypes 9%2C21. Missing;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:23792259,ECO:0000269|PubMed:9452062;Dbxref=PMID:23792259,PMID:9452062
+P00439	UniProtKB	Natural variant	40	40	.	.	.	ID=VAR_000872;Note=In PKU. S->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs62642938,PMID:8889590
+P00439	UniProtKB	Natural variant	41	41	.	.	.	ID=VAR_000873;Note=In PKU. L->F;Dbxref=dbSNP:rs62642928
+P00439	UniProtKB	Natural variant	41	41	.	.	.	ID=VAR_009240;Note=In PKU%3B mild. L->P;Dbxref=dbSNP:rs62642916
+P00439	UniProtKB	Natural variant	42	42	.	.	.	ID=VAR_000874;Note=In PKU%3B haplotype 21. K->I;Dbxref=dbSNP:rs62635346
+P00439	UniProtKB	Natural variant	45	45	.	.	.	ID=VAR_067994;Note=In PKU. V->A;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22513348;Dbxref=PMID:22513348
+P00439	UniProtKB	Natural variant	46	46	.	.	.	ID=VAR_000875;Note=In PKU%3B haplotype 5%3B significantly reduces phenylalanine binding. G->S;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs74603784,PMID:8889590
+P00439	UniProtKB	Natural variant	47	47	.	.	.	ID=VAR_000876;Note=In non-PKU HPA%3B haplotype 4%3B significantly reduces phenylalanine binding. A->V;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8088845;Dbxref=dbSNP:rs118203925,PMID:8088845
+P00439	UniProtKB	Natural variant	48	48	.	.	.	ID=VAR_000877;Note=In PKU%3B mild%3B haplotypes 3%2C4. L->S;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:1679030,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:8889590,ECO:0000269|PubMed:9521426;Dbxref=dbSNP:rs5030841,PMID:12501224,PMID:1679030,PMID:22513348,PMID:8889590,PMID:9521426
+P00439	UniProtKB	Natural variant	53	53	.	.	.	ID=VAR_000878;Note=In PKU. R->H;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9452061;Dbxref=dbSNP:rs118092776,PMID:9452061
+P00439	UniProtKB	Natural variant	55	55	.	.	.	ID=VAR_000879;Note=In HPA and PKU%3B does not affect oligomerization%3B results in loss of substrate activation. F->L;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294,ECO:0000269|PubMed:9521426;Dbxref=dbSNP:rs199475598,PMID:12501224,PMID:18538294,PMID:9521426
+P00439	UniProtKB	Natural variant	56	56	.	.	.	ID=VAR_000880;Note=In PKU%3B haplotype 10. E->D;Dbxref=dbSNP:rs199475567
+P00439	UniProtKB	Natural variant	61	61	.	.	.	ID=VAR_067995;Note=In PKU. N->D;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:12501224;Dbxref=dbSNP:rs199475651,PMID:12501224
+P00439	UniProtKB	Natural variant	62	62	.	.	.	ID=VAR_067996;Note=In PKU. L->P;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22513348;Dbxref=PMID:22513348
+P00439	UniProtKB	Natural variant	63	64	.	.	.	ID=VAR_000881;Note=In PKU%3B haplotype 1%3B abolishes phenylalanine binding. TH->PN
+P00439	UniProtKB	Natural variant	65	65	.	.	.	ID=VAR_000882;Note=In PKU. I->N;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9521426;Dbxref=dbSNP:rs75193786,PMID:9521426
+P00439	UniProtKB	Natural variant	65	65	.	.	.	ID=VAR_067997;Note=In PKU%3B results in disturbed oligomerization%3B results in loss of substrate activation. I->S;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294;Dbxref=dbSNP:rs75193786,PMID:12501224,PMID:18538294
+P00439	UniProtKB	Natural variant	65	65	.	.	.	ID=VAR_000883;Note=In PKU%3B haplotypes 1%2C5%2C9%2C21%2CB%3B abolishes phenylalanine binding. I->T;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:8889590,ECO:0000269|PubMed:9452062;Dbxref=dbSNP:rs75193786,PMID:12501224,PMID:8889590,PMID:9452062
+P00439	UniProtKB	Natural variant	65	65	.	.	.	ID=VAR_067998;Note=In HPA and PKU. I->V;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:23792259;Dbxref=dbSNP:rs199475643,PMID:12501224,PMID:23792259
+P00439	UniProtKB	Natural variant	67	67	.	.	.	ID=VAR_000884;Note=In PKU%3B haplotype 4. S->P;Dbxref=dbSNP:rs5030842
+P00439	UniProtKB	Natural variant	68	68	.	.	.	ID=VAR_000885;Note=In PKU%3B haplotype 1. R->S;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs76394784,PMID:8889590
+P00439	UniProtKB	Natural variant	76	76	.	.	.	ID=VAR_000886;Note=In PKU. E->A;Dbxref=dbSNP:rs62507347
+P00439	UniProtKB	Natural variant	76	76	.	.	.	ID=VAR_067999;Note=In non-PKU HPA. E->G;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:11935335;Dbxref=dbSNP:rs62507347,PMID:11935335
+P00439	UniProtKB	Natural variant	84	84	.	.	.	ID=VAR_000887;Note=In PKU%3B haplotype 4. D->Y;Dbxref=dbSNP:rs62514902
+P00439	UniProtKB	Natural variant	87	87	.	.	.	ID=VAR_000888;Note=In non-PKU HPA%3B haplotype 1. S->R;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8088845;Dbxref=dbSNP:rs62516151,PMID:8088845
+P00439	UniProtKB	Natural variant	92	92	.	.	.	ID=VAR_000889;Note=In PKU. T->I;Dbxref=dbSNP:rs62514903
+P00439	UniProtKB	Natural variant	94	94	.	.	.	ID=VAR_000890;Note=In PKU%3B mild%3B haplotype 2. Missing;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:1709636;Dbxref=PMID:1709636
+P00439	UniProtKB	Natural variant	98	98	.	.	.	ID=VAR_000891;Note=In non-PKU HPA. L->S;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8364546;Dbxref=dbSNP:rs62517167,PMID:8364546
+P00439	UniProtKB	Natural variant	104	104	.	.	.	ID=VAR_000892;Note=In PKU%3B mild%3B haplotype 1. A->D;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9792411;Dbxref=dbSNP:rs62642929,PMID:9792411
+P00439	UniProtKB	Natural variant	110	110	.	.	.	ID=VAR_009241;Note=In HPA. S->C
+P00439	UniProtKB	Natural variant	121	121	.	.	.	ID=VAR_069776;Note=In HPA. F->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:23792259;Dbxref=PMID:23792259
+P00439	UniProtKB	Natural variant	124	124	.	.	.	ID=VAR_000893;Note=In PKU%3B haplotype 28. T->I;Dbxref=dbSNP:rs199475571
+P00439	UniProtKB	Natural variant	129	129	.	.	.	ID=VAR_000894;Note=In PKU. D->Y;Dbxref=dbSNP:rs199475606
+P00439	UniProtKB	Natural variant	143	143	.	.	.	ID=VAR_000895;Note=In PKU%3B haplotype 11. D->G;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8889583;Dbxref=dbSNP:rs199475572,PMID:8889583
+P00439	UniProtKB	Natural variant	145	145	.	.	.	ID=VAR_011566;Note=In PKU. D->V;Dbxref=dbSNP:rs140175796
+P00439	UniProtKB	Natural variant	146	146	.	.	.	ID=VAR_000896;Note=In PKU. H->Y;Dbxref=dbSNP:rs199475599
+P00439	UniProtKB	Natural variant	148	148	.	.	.	ID=VAR_000897;Note=In PKU%3B haplotypes 1%2C2%2C7. G->S;Dbxref=dbSNP:rs80297647
+P00439	UniProtKB	Natural variant	151	151	.	.	.	ID=VAR_000898;Note=In PKU%3B haplotypes 1%2C8. D->H;Dbxref=dbSNP:rs199475597
+P00439	UniProtKB	Natural variant	154	154	.	.	.	ID=VAR_000899;Note=In PKU. Y->N;Dbxref=dbSNP:rs199475587
+P00439	UniProtKB	Natural variant	155	155	.	.	.	ID=VAR_009242;Note=In PKU. R->P;Dbxref=dbSNP:rs199475663
+P00439	UniProtKB	Natural variant	157	157	.	.	.	ID=VAR_000900;Note=In PKU%3B severe%3B 5%25 activity%3B requires 2 nucleotide substitutions. R->N;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9792411;Dbxref=PMID:9792411
+P00439	UniProtKB	Natural variant	157	157	.	.	.	ID=VAR_068000;Note=In PKU. R->S;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22513348;Dbxref=dbSNP:rs199475612,PMID:22513348
+P00439	UniProtKB	Natural variant	158	158	.	.	.	ID=VAR_000901;Note=In PKU%3B haplotypes 1%2C2%2C4%2C7%2C16%2C 28. R->Q;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:9452062;Dbxref=dbSNP:rs5030843,PMID:12501224,PMID:22513348,PMID:9452062
+P00439	UniProtKB	Natural variant	158	158	.	.	.	ID=VAR_000902;Note=In PKU. R->W;Dbxref=dbSNP:rs75166491
+P00439	UniProtKB	Natural variant	160	160	.	.	.	ID=VAR_000903;Note=In PKU. Q->P;Dbxref=dbSNP:rs199475601
+P00439	UniProtKB	Natural variant	161	161	.	.	.	ID=VAR_000904;Note=In PKU%3B haplotype 4. F->S;Dbxref=dbSNP:rs79635844
+P00439	UniProtKB	Natural variant	164	164	.	.	.	ID=VAR_000905;Note=In PKU%3B haplotype 1. I->T;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:7833954;Dbxref=dbSNP:rs199475595,PMID:7833954
+P00439	UniProtKB	Natural variant	167	167	.	.	.	ID=VAR_000906;Note=In PKU. N->I;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9452062;Dbxref=dbSNP:rs77554925,PMID:9452062
+P00439	UniProtKB	Natural variant	167	167	.	.	.	ID=VAR_011567;Note=In HPA. N->S;Dbxref=dbSNP:rs77554925
+P00439	UniProtKB	Natural variant	169	169	.	.	.	ID=VAR_011568;Note=In PKU. R->H;Dbxref=dbSNP:rs199475679
+P00439	UniProtKB	Natural variant	170	170	.	.	.	ID=VAR_011569;Note=In HPA. H->D;Dbxref=dbSNP:rs199475655
+P00439	UniProtKB	Natural variant	170	170	.	.	.	ID=VAR_068001;Note=In PKU%3B does not affect oligomerization. H->Q;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294;Dbxref=dbSNP:rs199475652,PMID:12501224,PMID:18538294
+P00439	UniProtKB	Natural variant	170	170	.	.	.	ID=VAR_000907;Note=In PKU. H->R;Dbxref=dbSNP:rs199475573
+P00439	UniProtKB	Natural variant	171	171	.	.	.	ID=VAR_000908;Note=In PKU%3B haplotype 1. G->A;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:7833954;Dbxref=dbSNP:rs199475596,PMID:7833954
+P00439	UniProtKB	Natural variant	171	171	.	.	.	ID=VAR_000909;Note=In PKU. G->R;Dbxref=dbSNP:rs199475613
+P00439	UniProtKB	Natural variant	173	173	.	.	.	ID=VAR_000910;Note=In PKU%3B haplotype 4. P->T;Dbxref=dbSNP:rs199475574
+P00439	UniProtKB	Natural variant	174	174	.	.	.	ID=VAR_000911;Note=In PKU%3B haplotype 1. I->T;Dbxref=dbSNP:rs138809906
+P00439	UniProtKB	Natural variant	174	174	.	.	.	ID=VAR_011570;Note=In PKU. I->V;Dbxref=dbSNP:rs199475632
+P00439	UniProtKB	Natural variant	175	175	.	.	.	ID=VAR_000912;Note=In PKU. P->A;Dbxref=dbSNP:rs199475604
+P00439	UniProtKB	Natural variant	176	176	.	.	.	ID=VAR_000913;Note=In non-PKU HPA. R->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8088845;Dbxref=dbSNP:rs74486803,PMID:8088845
+P00439	UniProtKB	Natural variant	176	176	.	.	.	ID=VAR_000914;Note=In PKU. R->P;Dbxref=dbSNP:rs74486803
+P00439	UniProtKB	Natural variant	177	177	.	.	.	ID=VAR_000915;Note=In PKU%3B haplotype 6. V->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22513348;Dbxref=dbSNP:rs199475602,PMID:22513348
+P00439	UniProtKB	Natural variant	177	177	.	.	.	ID=VAR_068002;Note=In HPA. V->M;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:12501224;Dbxref=dbSNP:rs199475602,PMID:12501224
+P00439	UniProtKB	Natural variant	178	178	.	.	.	ID=VAR_000916;Note=In non-PKU HPA. E->G;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22513348;Dbxref=dbSNP:rs77958223,PMID:22513348
+P00439	UniProtKB	Natural variant	183	183	.	.	.	ID=VAR_009243;Note=In PKU. E->Q;Dbxref=dbSNP:rs199475664
+P00439	UniProtKB	Natural variant	190	190	.	.	.	ID=VAR_000917;Note=In PKU%3B haplotype 3. V->A;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:9452062;Dbxref=dbSNP:rs62514919,PMID:22513348,PMID:9452062
+P00439	UniProtKB	Natural variant	194	194	.	.	.	ID=VAR_000918;Note=In PKU. L->P;Dbxref=dbSNP:rs5030844
+P00439	UniProtKB	Natural variant	194	194	.	.	.	ID=VAR_000919;Note=In PKU. Missing
+P00439	UniProtKB	Natural variant	196	196	.	.	.	ID=VAR_069777;Note=In HPA. S->Y;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:23792259;Dbxref=PMID:23792259
+P00439	UniProtKB	Natural variant	197	197	.	.	.	ID=VAR_000920;Note=In PKU. Missing
+P00439	UniProtKB	Natural variant	198	198	.	.	.	ID=VAR_000921;Note=In PKU%3B haplotype 2. Missing
+P00439	UniProtKB	Natural variant	201	201	.	.	.	ID=VAR_000922;Note=In PKU. H->R;Dbxref=dbSNP:rs62517180
+P00439	UniProtKB	Natural variant	201	201	.	.	.	ID=VAR_000923;Note=In non-PKU HPA%3B haplotype 1. H->Y;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:23792259,ECO:0000269|PubMed:9521426;Dbxref=dbSNP:rs62517205,PMID:23792259,PMID:9521426
+P00439	UniProtKB	Natural variant	204	204	.	.	.	ID=VAR_000924;Note=In PKU%3B mild%3B haplotypes 3%2C4. Y->C;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9048935;Dbxref=dbSNP:rs62514927,PMID:9048935
+P00439	UniProtKB	Natural variant	205	205	.	.	.	ID=VAR_011571;Note=In PKU. E->A;Dbxref=dbSNP:rs62508593
+P00439	UniProtKB	Natural variant	206	206	.	.	.	ID=VAR_000925;Note=In PKU. Y->D;Dbxref=dbSNP:rs62517170
+P00439	UniProtKB	Natural variant	207	207	.	.	.	ID=VAR_000926;Note=In PKU. N->D;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9452061;Dbxref=dbSNP:rs62508572,PMID:9452061
+P00439	UniProtKB	Natural variant	207	207	.	.	.	ID=VAR_000927;Note=In PKU%3B severe%3B haplotype 4. N->S;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9048935;Dbxref=dbSNP:rs62508721,PMID:9048935
+P00439	UniProtKB	Natural variant	211	211	.	.	.	ID=VAR_000928;Note=In PKU%3B haplotype 4. P->T;Dbxref=dbSNP:rs62514931
+P00439	UniProtKB	Natural variant	212	212	.	.	.	ID=VAR_000929;Note=In PKU. L->P;Dbxref=dbSNP:rs62517198
+P00439	UniProtKB	Natural variant	213	213	.	.	.	ID=VAR_000930;Note=In PKU%3B severe. L->P;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9521426;Dbxref=dbSNP:rs62516109,PMID:9521426
+P00439	UniProtKB	Natural variant	217	217	.	.	.	ID=VAR_000931;Note=In PKU. C->G;Dbxref=dbSNP:rs62508718
+P00439	UniProtKB	Natural variant	218	218	.	.	.	ID=VAR_000932;Note=In PKU%3B haplotypes 1%2C2. G->V;Dbxref=dbSNP:rs62514933
+P00439	UniProtKB	Natural variant	221	221	.	.	.	ID=VAR_000933;Note=In PKU%3B haplotype 4. E->G;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:1679030;Dbxref=dbSNP:rs62514934,PMID:1679030
+P00439	UniProtKB	Natural variant	222	222	.	.	.	ID=VAR_000934;Note=In PKU%3B haplotypes 3%2C4. D->V;Dbxref=dbSNP:rs62507319
+P00439	UniProtKB	Natural variant	224	224	.	.	.	ID=VAR_000935;Note=In PKU%3B haplotype 4. I->M;Dbxref=dbSNP:rs199475576
+P00439	UniProtKB	Natural variant	225	225	.	.	.	ID=VAR_000936;Note=In PKU. P->R;Dbxref=dbSNP:rs62517204
+P00439	UniProtKB	Natural variant	225	225	.	.	.	ID=VAR_000937;Note=In PKU%3B haplotype 1. P->T;Dbxref=dbSNP:rs199475589
+P00439	UniProtKB	Natural variant	226	226	.	.	.	ID=VAR_068003;Note=In PKU. Q->H;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22513348;Dbxref=dbSNP:rs62508615,PMID:22513348
+P00439	UniProtKB	Natural variant	230	230	.	.	.	ID=VAR_000938;Note=In non-PKU HPA%3B haplotype 4. V->I;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:23792259;Dbxref=dbSNP:rs62516152,PMID:23792259
+P00439	UniProtKB	Natural variant	231	231	.	.	.	ID=VAR_009244;Note=In PKU. S->F;Dbxref=dbSNP:rs62508577
+P00439	UniProtKB	Natural variant	231	231	.	.	.	ID=VAR_000939;Note=In PKU. S->P;Dbxref=dbSNP:rs5030845
+P00439	UniProtKB	Natural variant	233	233	.	.	.	ID=VAR_000940;Note=In PKU%3B haplotypes 2%2C3. F->L;Dbxref=dbSNP:rs62517208
+P00439	UniProtKB	Natural variant	238	238	.	.	.	ID=VAR_000941;Note=In PKU%3B haplotype 4. T->P;Dbxref=dbSNP:rs199475577
+P00439	UniProtKB	Natural variant	239	239	.	.	.	ID=VAR_000942;Note=In PKU. G->S;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:7833954;Dbxref=dbSNP:rs62517178,PMID:7833954
+P00439	UniProtKB	Natural variant	240	240	.	.	.	ID=VAR_011572;Note=In PKU. F->S;Dbxref=dbSNP:rs62508594
+P00439	UniProtKB	Natural variant	241	241	.	.	.	ID=VAR_000943;Note=In non-PKU HPA and PKU%3B haplotype 34. R->C;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:8889590,ECO:0000269|PubMed:9452062,ECO:0000269|PubMed:9852673;Dbxref=dbSNP:rs76687508,PMID:8889590,PMID:9452062,PMID:9852673
+P00439	UniProtKB	Natural variant	241	241	.	.	.	ID=VAR_000944;Note=In PKU%3B haplotypes 1%2C5. R->H;Dbxref=dbSNP:rs62508730
+P00439	UniProtKB	Natural variant	241	241	.	.	.	ID=VAR_000945;Note=In PKU. R->L;Dbxref=dbSNP:rs62508730
+P00439	UniProtKB	Natural variant	242	242	.	.	.	ID=VAR_000946;Note=In PKU. L->F;Dbxref=dbSNP:rs199475578
+P00439	UniProtKB	Natural variant	243	243	.	.	.	ID=VAR_000947;Note=In non-PKU HPA and PKU%3B haplotypes 4%2C7%2C9. R->Q;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:9600453,ECO:0000269|PubMed:9852673;Dbxref=dbSNP:rs62508588,PMID:9600453,PMID:9852673
+P00439	UniProtKB	Natural variant	244	244	.	.	.	ID=VAR_000948;Note=In PKU%3B haplotype 12. P->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:1363838;Dbxref=dbSNP:rs118203923,PMID:1363838
+P00439	UniProtKB	Natural variant	245	245	.	.	.	ID=VAR_000949;Note=In PKU%2C HPA and non-PKU HPA%3B haplotypes 3%2C7. V->A;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:8088845,ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs796052017,PMID:12501224,PMID:22513348,PMID:8088845,PMID:8889590
+P00439	UniProtKB	Natural variant	245	245	.	.	.	ID=VAR_000950;Note=In PKU%3B haplotype 11. V->E;Dbxref=dbSNP:rs76212747
+P00439	UniProtKB	Natural variant	245	245	.	.	.	ID=VAR_000951;Note=In PKU. V->L;Dbxref=dbSNP:rs62508694
+P00439	UniProtKB	Natural variant	246	246	.	.	.	ID=VAR_000952;Note=In PKU. A->D;Dbxref=dbSNP:rs199475610
+P00439	UniProtKB	Natural variant	247	247	.	.	.	ID=VAR_000953;Note=In PKU%3B haplotype 4. G->V;Dbxref=dbSNP:rs199475579
+P00439	UniProtKB	Natural variant	248	248	.	.	.	ID=VAR_000954;Note=In PKU. L->P;Dbxref=dbSNP:rs62507340
+P00439	UniProtKB	Natural variant	249	249	.	.	.	ID=VAR_000955;Note=In PKU%3B haplotype 1. L->F;Dbxref=dbSNP:rs74503222
+P00439	UniProtKB	Natural variant	252	252	.	.	.	ID=VAR_000956;Note=In PKU%3B haplotype 7. R->G;Dbxref=dbSNP:rs5030847
+P00439	UniProtKB	Natural variant	252	252	.	.	.	ID=VAR_000957;Note=In PKU%3B haplotype 1. R->Q;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:7833954;Dbxref=dbSNP:rs62644503,PMID:7833954
+P00439	UniProtKB	Natural variant	252	252	.	.	.	ID=VAR_000958;Note=In PKU%3B haplotypes 1%2C6%2C7%2C8%2C42%2C 69%3B complete loss of activity. R->W;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:11461196,ECO:0000269|PubMed:1672294,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:23792259;Dbxref=dbSNP:rs5030847,PMID:11461196,PMID:1672294,PMID:22513348,PMID:23792259
+P00439	UniProtKB	Natural variant	255	255	.	.	.	ID=VAR_000960;Note=In PKU%3B haplotype 36. L->S;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:2014802;Dbxref=dbSNP:rs62642930,PMID:2014802
+P00439	UniProtKB	Natural variant	255	255	.	.	.	ID=VAR_000959;Note=In PKU%3B haplotypes 18%2C21. L->V;Dbxref=dbSNP:rs62642931
+P00439	UniProtKB	Natural variant	257	257	.	.	.	ID=VAR_000961;Note=In PKU. G->C;Dbxref=dbSNP:rs5030848
+P00439	UniProtKB	Natural variant	259	259	.	.	.	ID=VAR_000962;Note=In PKU%3B haplotype 3. A->T;Dbxref=dbSNP:rs62642932
+P00439	UniProtKB	Natural variant	259	259	.	.	.	ID=VAR_000963;Note=In PKU%3B haplotypes 7%2C42. A->V;Dbxref=dbSNP:rs118203921
+P00439	UniProtKB	Natural variant	261	261	.	.	.	ID=VAR_000964;Note=In PKU. R->P;Dbxref=dbSNP:rs5030849
+P00439	UniProtKB	Natural variant	261	261	.	.	.	ID=VAR_000965;Note=In HPA and PKU%3B mild%3B haplotypes 1%2C2%2C4%2C22%2C 24%2C28. R->Q;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:1671810,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:23792259,ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs5030849,PMID:12501224,PMID:1671810,PMID:22513348,PMID:23792259,PMID:8889590
+P00439	UniProtKB	Natural variant	263	263	.	.	.	ID=VAR_000966;Note=In PKU. F->L;Dbxref=dbSNP:rs62642944
+P00439	UniProtKB	Natural variant	264	264	.	.	.	ID=VAR_000967;Note=In PKU. H->L;Dbxref=dbSNP:rs199475580
+P00439	UniProtKB	Natural variant	265	265	.	.	.	ID=VAR_000968;Note=In PKU. C->G;Dbxref=dbSNP:rs62517181
+P00439	UniProtKB	Natural variant	269	269	.	.	.	ID=VAR_000969;Note=In non-PKU HPA. I->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9521426;Dbxref=dbSNP:rs62508692,PMID:9521426
+P00439	UniProtKB	Natural variant	270	270	.	.	.	ID=VAR_000970;Note=In PKU. R->K;Dbxref=dbSNP:rs62514950
+P00439	UniProtKB	Natural variant	270	270	.	.	.	ID=VAR_000971;Note=In PKU%3B haplotype 1. R->S;Dbxref=dbSNP:rs62514951
+P00439	UniProtKB	Natural variant	271	271	.	.	.	ID=VAR_000972;Note=In PKU. H->Y;Dbxref=dbSNP:rs62517164
+P00439	UniProtKB	Natural variant	273	273	.	.	.	ID=VAR_000973;Note=In PKU%3B haplotype 7. S->F;Dbxref=dbSNP:rs62514953
+P00439	UniProtKB	Natural variant	274	274	.	.	.	ID=VAR_011573;Note=K->E;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:11461196;Dbxref=dbSNP:rs142934616,PMID:11461196
+P00439	UniProtKB	Natural variant	275	275	.	.	.	ID=VAR_068004;Note=In PKU%3B reduced activity%3B increased affinity for the substrate%3B mildly reduced substrate activation%3B decreased cofactor affinity. P->L;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294;Dbxref=dbSNP:rs62508715,PMID:12501224,PMID:18538294
+P00439	UniProtKB	Natural variant	276	276	.	.	.	ID=VAR_000974;Note=In PKU. M->I;Dbxref=dbSNP:rs62514954
+P00439	UniProtKB	Natural variant	276	276	.	.	.	ID=VAR_000975;Note=In PKU%3B haplotype 4. M->V;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8068076;Dbxref=dbSNP:rs62516149,PMID:8068076
+P00439	UniProtKB	Natural variant	277	277	.	.	.	ID=VAR_000976;Note=In PKU. Y->C;Dbxref=dbSNP:rs62516155
+P00439	UniProtKB	Natural variant	277	277	.	.	.	ID=VAR_000977;Note=In PKU%3B haplotype 2. Y->D;Dbxref=dbSNP:rs78655458
+P00439	UniProtKB	Natural variant	278	278	.	.	.	ID=VAR_000978;Note=In PKU. T->A;Dbxref=dbSNP:rs62516156
+P00439	UniProtKB	Natural variant	278	278	.	.	.	ID=VAR_000979;Note=In PKU. T->N;Dbxref=dbSNP:rs62507262
+P00439	UniProtKB	Natural variant	280	280	.	.	.	ID=VAR_000980;Note=In PKU%3B haplotypes 1%2C2%2C4%2C16%2C38%3B partial residual activity. E->K;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:2564729,ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs62508698,PMID:22513348,PMID:2564729,PMID:8889590
+P00439	UniProtKB	Natural variant	281	281	.	.	.	ID=VAR_000981;Note=In PKU%3B haplotypes 1%2C4. P->L;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:1672290,ECO:0000269|PubMed:1672294,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs5030851,PMID:12501224,PMID:1672290,PMID:1672294,PMID:22513348,PMID:8889590
+P00439	UniProtKB	Natural variant	282	282	.	.	.	ID=VAR_000982;Note=In PKU%3B haplotype 1. D->N;Dbxref=dbSNP:rs199475582
+P00439	UniProtKB	Natural variant	283	283	.	.	.	ID=VAR_000983;Note=In PKU%3B haplotype 21. I->F;Dbxref=dbSNP:rs62517168
+P00439	UniProtKB	Natural variant	283	283	.	.	.	ID=VAR_000984;Note=In PKU%3B severe. I->N;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9521426;Dbxref=dbSNP:rs62508693,PMID:9521426
+P00439	UniProtKB	Natural variant	290	290	.	.	.	ID=VAR_067758;Note=In PKU. H->Y;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22526846;Dbxref=PMID:22526846
+P00439	UniProtKB	Natural variant	297	297	.	.	.	ID=VAR_000985;Note=In PKU%3B haplotype 4. R->C;Dbxref=dbSNP:rs62642945
+P00439	UniProtKB	Natural variant	297	297	.	.	.	ID=VAR_000986;Note=In PKU. R->H;Dbxref=dbSNP:rs62642939
+P00439	UniProtKB	Natural variant	299	299	.	.	.	ID=VAR_000987;Note=In PKU%3B haplotype 8. F->C;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs62642933,PMID:8889590
+P00439	UniProtKB	Natural variant	300	300	.	.	.	ID=VAR_000988;Note=In PKU and HPA%3B haplotype 1%3B does not affect oligomerization%3B reduction in activity is probably due to a global conformational change in the protein that reduces allostery. A->S;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:23792259;Dbxref=dbSNP:rs5030853,PMID:12501224,PMID:18538294,PMID:22513348,PMID:23792259
+P00439	UniProtKB	Natural variant	300	300	.	.	.	ID=VAR_000989;Note=In PKU. A->V;Dbxref=dbSNP:rs199475609
+P00439	UniProtKB	Natural variant	303	303	.	.	.	ID=VAR_000990;Note=In PKU%3B haplotype 5. S->P;Dbxref=dbSNP:rs199475608
+P00439	UniProtKB	Natural variant	304	304	.	.	.	ID=VAR_000991;Note=In PKU. Q->R;Dbxref=dbSNP:rs199475592
+P00439	UniProtKB	Natural variant	306	306	.	.	.	ID=VAR_000992;Note=In non-PKU HPA%3B haplotype 4. I->V;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:1358789,ECO:0000269|PubMed:23792259;Dbxref=dbSNP:rs62642934,PMID:1358789,PMID:23792259
+P00439	UniProtKB	Natural variant	309	309	.	.	.	ID=VAR_000993;Note=In PKU%3B haplotype 7. A->D;Dbxref=dbSNP:rs62642935
+P00439	UniProtKB	Natural variant	309	309	.	.	.	ID=VAR_000994;Note=In PKU. A->V;Dbxref=dbSNP:rs62642935
+P00439	UniProtKB	Natural variant	310	310	.	.	.	ID=VAR_000995;Note=In PKU%3B haplotype 7. S->F;Dbxref=dbSNP:rs62642913
+P00439	UniProtKB	Natural variant	310	310	.	.	.	ID=VAR_068005;Note=In HPA%3B reduction in activity is probably due to a global conformational change in the protein that reduces allostery. S->Y;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294;Dbxref=dbSNP:rs62642913,PMID:12501224,PMID:18538294
+P00439	UniProtKB	Natural variant	311	311	.	.	.	ID=VAR_000996;Note=In PKU%3B haplotypes 1%2C7%2C10. L->P;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:2615649,ECO:0000269|PubMed:2840952;Dbxref=dbSNP:rs62642936,PMID:2615649,PMID:2840952
+P00439	UniProtKB	Natural variant	314	314	.	.	.	ID=VAR_000997;Note=In PKU. P->H;Dbxref=dbSNP:rs62642940
+P00439	UniProtKB	Natural variant	314	314	.	.	.	ID=VAR_068006;Note=In HPA%3B does not affect oligomerization%3B reduction in activity is probably due to a global conformational change in the protein that reduces allostery. P->S;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294;Dbxref=dbSNP:rs199475650,PMID:12501224,PMID:18538294
+P00439	UniProtKB	Natural variant	318	318	.	.	.	ID=VAR_011574;Note=In PKU%3B partial loss of activity. I->T;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:11461196;Dbxref=dbSNP:rs62642918,PMID:11461196
+P00439	UniProtKB	Natural variant	322	322	.	.	.	ID=VAR_000998;Note=In PKU%3B haplotype 12. A->G;Dbxref=dbSNP:rs62514958
+P00439	UniProtKB	Natural variant	322	322	.	.	.	ID=VAR_000999;Note=In PKU%3B haplotype 1. A->T;Dbxref=dbSNP:rs62514957
+P00439	UniProtKB	Natural variant	322	322	.	.	.	ID=VAR_067759;Note=In PKU. A->V;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22526846;Dbxref=PMID:22526846
+P00439	UniProtKB	Natural variant	325	325	.	.	.	ID=VAR_009245;Note=In PKU. Y->C;Dbxref=dbSNP:rs62508578
+P00439	UniProtKB	Natural variant	330	330	.	.	.	ID=VAR_009246;Note=In PKU. E->D;Dbxref=dbSNP:rs62508580
+P00439	UniProtKB	Natural variant	331	331	.	.	.	ID=VAR_001000;Note=In PKU%3B haplotype 1. F->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:7833954;Dbxref=dbSNP:rs62517179,PMID:7833954
+P00439	UniProtKB	Natural variant	333	333	.	.	.	ID=VAR_001001;Note=In PKU. L->F;Dbxref=dbSNP:rs62516060
+P00439	UniProtKB	Natural variant	334	334	.	.	.	ID=VAR_001002;Note=In PKU. C->S;Dbxref=dbSNP:rs62517174
+P00439	UniProtKB	Natural variant	337	337	.	.	.	ID=VAR_001003;Note=In PKU. G->V;Dbxref=dbSNP:rs62517206
+P00439	UniProtKB	Natural variant	338	338	.	.	.	ID=VAR_001004;Note=In PKU%3B haplotype 4. D->Y;Dbxref=dbSNP:rs62516150
+P00439	UniProtKB	Natural variant	341	341	.	.	.	ID=VAR_001005;Note=In PKU. K->R;Dbxref=dbSNP:rs62516153
+P00439	UniProtKB	Natural variant	341	341	.	.	.	ID=VAR_001006;Note=In PKU. K->T;Dbxref=dbSNP:rs62516153
+P00439	UniProtKB	Natural variant	342	342	.	.	.	ID=VAR_001007;Note=In PKU%3B haplotype 5. A->T;Dbxref=dbSNP:rs62507282
+P00439	UniProtKB	Natural variant	343	343	.	.	.	ID=VAR_001008;Note=In PKU. Y->C;Dbxref=dbSNP:rs62507265
+P00439	UniProtKB	Natural variant	344	344	.	.	.	ID=VAR_009247;Note=In PKU. G->R;Dbxref=dbSNP:rs62508679
+P00439	UniProtKB	Natural variant	344	344	.	.	.	ID=VAR_009248;Note=In PKU. G->V;Dbxref=dbSNP:rs62508582
+P00439	UniProtKB	Natural variant	345	345	.	.	.	ID=VAR_001009;Note=In PKU. A->S;Dbxref=dbSNP:rs62516062
+P00439	UniProtKB	Natural variant	345	345	.	.	.	ID=VAR_001010;Note=In PKU%3B haplotype 7. A->T;Dbxref=dbSNP:rs62516062
+P00439	UniProtKB	Natural variant	347	347	.	.	.	ID=VAR_001011;Note=In PKU. L->F;Dbxref=dbSNP:rs62516154
+P00439	UniProtKB	Natural variant	348	348	.	.	.	ID=VAR_001012;Note=In PKU%3B mild haplotype 9. L->V;Dbxref=dbSNP:rs62516092
+P00439	UniProtKB	Natural variant	349	349	.	.	.	ID=VAR_001013;Note=In PKU%3B severe. S->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9600453;Dbxref=dbSNP:rs62507279,PMID:9600453
+P00439	UniProtKB	Natural variant	349	349	.	.	.	ID=VAR_001014;Note=In PKU%3B haplotypes 1%2C4. S->P;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22513348;Dbxref=dbSNP:rs62508646,PMID:22513348
+P00439	UniProtKB	Natural variant	350	350	.	.	.	ID=VAR_001015;Note=In PKU%3B haplotype 2. S->T;Dbxref=dbSNP:rs62517183
+P00439	UniProtKB	Natural variant	357	357	.	.	.	ID=VAR_011575;Note=In PKU. C->G;Dbxref=dbSNP:rs62508595
+P00439	UniProtKB	Natural variant	362	362	.	.	.	ID=VAR_001016;Note=In PKU. P->T;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:10200057;Dbxref=dbSNP:rs62507329,PMID:10200057
+P00439	UniProtKB	Natural variant	364	368	.	.	.	ID=VAR_001018;Note=In PKU. Missing;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:1363837;Dbxref=PMID:1363837
+P00439	UniProtKB	Natural variant	364	364	.	.	.	ID=VAR_001017;Note=In PKU%3B haplotype 5. Missing;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:1975559;Dbxref=PMID:1975559
+P00439	UniProtKB	Natural variant	366	366	.	.	.	ID=VAR_001019;Note=In PKU. P->H;Dbxref=dbSNP:rs62516098
+P00439	UniProtKB	Natural variant	372	372	.	.	.	ID=VAR_001020;Note=In PKU. T->S;Dbxref=dbSNP:rs62517163
+P00439	UniProtKB	Natural variant	377	377	.	.	.	ID=VAR_001021;Note=In PKU%3B haplotype 4. Y->C;Dbxref=dbSNP:rs62642942
+P00439	UniProtKB	Natural variant	380	380	.	.	.	ID=VAR_001022;Note=In non-PKU HPA%3B haplotype 4. T->M;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:23792259;Dbxref=dbSNP:rs62642937,PMID:23792259
+P00439	UniProtKB	Natural variant	386	386	.	.	.	ID=VAR_001023;Note=In PKU%3B common mutation. Y->C;Dbxref=dbSNP:rs62516141
+P00439	UniProtKB	Natural variant	387	387	.	.	.	ID=VAR_001024;Note=In PKU%3B haplotype 1. Y->H;Dbxref=dbSNP:rs62517194
+P00439	UniProtKB	Natural variant	388	388	.	.	.	ID=VAR_001025;Note=In PKU. V->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9452061;Dbxref=dbSNP:rs62516101,PMID:9452061
+P00439	UniProtKB	Natural variant	388	388	.	.	.	ID=VAR_001026;Note=In PKU%3B haplotypes 1%2C4. V->M;Dbxref=dbSNP:rs62516101
+P00439	UniProtKB	Natural variant	390	390	.	.	.	ID=VAR_001027;Note=In PKU and non-PKU HPA%3B haplotype 4. E->G;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:23792259,ECO:0000269|PubMed:8098245,ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs5030856,PMID:12501224,PMID:22513348,PMID:23792259,PMID:8098245,PMID:8889590
+P00439	UniProtKB	Natural variant	394	394	.	.	.	ID=VAR_001028;Note=In PKU. D->A;Dbxref=dbSNP:rs62516102
+P00439	UniProtKB	Natural variant	394	394	.	.	.	ID=VAR_001029;Note=In PKU. D->H;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs62516142,PMID:8889590
+P00439	UniProtKB	Natural variant	395	395	.	.	.	ID=VAR_001030;Note=In PKU. A->G;Dbxref=dbSNP:rs62508736
+P00439	UniProtKB	Natural variant	395	395	.	.	.	ID=VAR_001031;Note=In PKU%3B haplotype 1. A->P;Dbxref=dbSNP:rs62516103
+P00439	UniProtKB	Natural variant	399	400	.	.	.	ID=VAR_001032;Note=In PKU%3B haplotype 7. Missing
+P00439	UniProtKB	Natural variant	403	403	.	.	.	ID=VAR_001033;Note=In non-PKU HPA and PKU%3B haplotype 43. A->V;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:23792259,ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs5030857,PMID:12501224,PMID:22513348,PMID:23792259,PMID:8889590
+P00439	UniProtKB	Natural variant	407	407	.	.	.	ID=VAR_068007;Note=In PKU. P->L;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:9950317;Dbxref=dbSNP:rs62644473,PMID:9950317
+P00439	UniProtKB	Natural variant	407	407	.	.	.	ID=VAR_011576;Note=In PKU. P->S;Dbxref=dbSNP:rs62644465
+P00439	UniProtKB	Natural variant	408	408	.	.	.	ID=VAR_001034;Note=In PKU%3B haplotypes 4%2C12. R->Q;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:1355066;Dbxref=dbSNP:rs5030859,PMID:1355066
+P00439	UniProtKB	Natural variant	408	408	.	.	.	ID=VAR_001035;Note=In HPA and PKU%3B haplotypes 1%2C2%2C4%2C5%2C13%2C34%2C 41%2C44%3B most common mutation%3B reduction in activity is probably due to a global conformational change in the protein that reduces allostery. R->W;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:1355066,ECO:0000269|PubMed:18538294,ECO:0000269|PubMed:22513348,ECO:0000269|PubMed:23792259,ECO:0000269|PubMed:8889590,ECO:0000269|PubMed:9452062,ECO:0000269|PubMed:9600453;Dbxref=dbSNP:rs5030858,PMID:12501224,PMID:1355066,PMID:18538294,PMID:22513348,PMID:23792259,PMID:8889590,PMID:9452062,PMID:9600453
+P00439	UniProtKB	Natural variant	410	410	.	.	.	ID=VAR_009249;Note=In PKU%3B mild. F->S;Dbxref=dbSNP:rs62644475
+P00439	UniProtKB	Natural variant	413	413	.	.	.	ID=VAR_001036;Note=In non-PKU HPA and PKU%3B haplotype 4. R->P;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:9852673;Dbxref=dbSNP:rs79931499,PMID:12501224,PMID:9852673
+P00439	UniProtKB	Natural variant	413	413	.	.	.	ID=VAR_001037;Note=In PKU%3B haplotype 1. R->S;Dbxref=dbSNP:rs62644467
+P00439	UniProtKB	Natural variant	414	414	.	.	.	ID=VAR_001038;Note=In HPA and PKU%3B haplotype 4%3B does not affect oligomerization%3B reduction in activity is probably due to a global conformational change in the protein that reduces allostery. Y->C;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294,ECO:0000269|PubMed:8889590;Dbxref=dbSNP:rs5030860,PMID:12501224,PMID:18538294,PMID:8889590
+P00439	UniProtKB	Natural variant	415	415	.	.	.	ID=VAR_001039;Note=In PKU%2C HPA and non-PKU HPA%3B haplotype 1. D->N;Ontology_term=ECO:0000269,ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:1358789,ECO:0000269|PubMed:22513348;Dbxref=dbSNP:rs62644499,PMID:12501224,PMID:1358789,PMID:22513348
+P00439	UniProtKB	Natural variant	417	417	.	.	.	ID=VAR_068008;Note=In PKU%3B reduction in activity is probably due to a global conformational change in the protein that reduces allostery. Y->H;Ontology_term=ECO:0000269,ECO:0000269;evidence=ECO:0000269|PubMed:12501224,ECO:0000269|PubMed:18538294;Dbxref=dbSNP:rs62644471,PMID:12501224,PMID:18538294
+P00439	UniProtKB	Natural variant	418	418	.	.	.	ID=VAR_001040;Note=In PKU%3B haplotype 4. T->P;Dbxref=dbSNP:rs62644501
+P00439	UniProtKB	Natural variant	421	421	.	.	.	ID=VAR_067760;Note=In PKU. I->S;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:22526846;Dbxref=PMID:22526846
+P00439	UniProtKB	Natural variant	430	430	.	.	.	ID=VAR_001041;Note=In PKU. L->P;Dbxref=dbSNP:rs199475607
+P00439	UniProtKB	Natural variant	447	447	.	.	.	ID=VAR_001042;Note=In PKU. A->D;Dbxref=dbSNP:rs76542238
+P00439	UniProtKB	Mutagenesis	283	283	.	.	.	Note=Loss of positive cooperativity and reduction of fold-activation by L-Phe preincubation. I->C;Ontology_term=ECO:0000269;evidence=ECO:0000269|PubMed:18835579;Dbxref=PMID:18835579
+P00439	UniProtKB	Sequence conflict	183	183	.	.	.	Note=E->G;Ontology_term=ECO:0000305;evidence=ECO:0000305
+P00439	UniProtKB	Beta strand	35	42	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:5FII
+P00439	UniProtKB	Helix	47	57	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:5FII
+P00439	UniProtKB	Beta strand	62	69	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:5FII
+P00439	UniProtKB	Beta strand	76	83	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:5FII
+P00439	UniProtKB	Helix	85	90	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:5FII
+P00439	UniProtKB	Helix	91	102	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:5FII
+P00439	UniProtKB	Beta strand	105	108	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:5FII
+P00439	UniProtKB	Helix	125	133	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	135	138	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1PAH
+P00439	UniProtKB	Helix	140	142	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Turn	147	150	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	152	167	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	181	201	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	204	217	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	227	238	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	241	244	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	246	248	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1MMT
+P00439	UniProtKB	Helix	251	259	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	262	265	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	283	289	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	291	294	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	297	310	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	315	327	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Turn	328	331	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	333	336	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	339	342	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	345	348	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	351	357	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	359	366	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	369	372	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	379	381	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	384	390	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	392	403	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	409	415	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Turn	416	419	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Beta strand	420	424	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:1J8U
+P00439	UniProtKB	Helix	426	450	.	.	.	Ontology_term=ECO:0000244;evidence=ECO:0000244|PDB:2PAH

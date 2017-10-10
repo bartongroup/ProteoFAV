@@ -5,7 +5,6 @@ env
 ._*
 .DS_Store
 __pycache__
-config.txt
 .ipynb_checkpoints
 .tox/
 *.egg-info
@@ -14,3 +13,4 @@ docs/_static/
 docs/_templates/
 notebooks/
 proteofav/analysis/
+tests/*.sqlite

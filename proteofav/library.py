@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 __all__ = ["single_letter_aa", "three_letter_aa", "scop_3to1", "to_single_aa",
@@ -202,6 +201,75 @@ scop_3to1 = {'CPI': 'X', 'AGM': 'R', 'G25': 'G', 'MA7': 'A', 'MA6': 'A', 'B2V': 
 
 to_single_aa = dict(zip(three_letter_aa, single_letter_aa))
 
+# Asx	B	Aspartic acid or Asparagine
+# Glx	Z	Glutamic acid or Glutamine
+# Xaa	X	Any amino acid
+# Xle	J	Leucine or Isoleucine
+aa_codes_1to3_extended = {
+    'A': 'ALA', 'C': 'CYS', 'D': 'ASP',
+    'E': 'GLU', 'F': 'PHE', 'G': 'GLY',
+    'H': 'HIS', 'K': 'LYS', 'I': 'ILE',
+    'L': 'LEU', 'M': 'MET', 'N': 'ASN',
+    'P': 'PRO', 'Q': 'GLN', 'R': 'ARG',
+    'S': 'SER', 'T': 'THR', 'V': 'VAL',
+    'Y': 'TYR', 'W': 'TRP',
+    'X': 'LNT', 'B': 'ASX', 'Z': 'GLX',
+    'J': 'XLE', 'U': 'SEC', 'O': 'PYL',
+    '-': '---',
+}
+
+aa_default_atoms = {
+    'ALA': ['N', 'O', 'CA', 'C', 'CB'],
+    'CYS': ['N', 'O', 'CA', 'C', 'SG', 'CB'],
+    'ASP': ['N', 'O', 'CA', 'C', 'CG', 'OD2', 'OD1', 'CB'],
+    'GLU': ['N', 'O', 'CA', 'C', 'CD', 'CG', 'OE1', 'CB', 'OE2'],
+    'PHE': ['N', 'O', 'CA', 'C', 'CE1', 'CD1', 'CZ', 'CG', 'CB', 'CE2', 'CD2'],
+    'GLY': ['N', 'O', 'CA', 'C'],
+    'HIS': ['N', 'O', 'CA', 'C', 'CB', 'CG', 'ND1', 'CD2', 'CE1', 'NE2'],
+    'LYS': ['N', 'O', 'CA', 'C', 'NZ', 'CD', 'CE', 'CG', 'CB'],
+    'ILE': ['N', 'O', 'CA', 'C', 'CG2', 'CD1', 'CB', 'CG1'],
+    'LEU': ['N', 'O', 'CA', 'C', 'CD2', 'CD1', 'CG', 'CB'],
+    'MET': ['N', 'O', 'CA', 'C', 'SD', 'CG', 'CB', 'CE'],
+    'ASN': ['N', 'O', 'CA', 'C', 'ND2', 'OD1', 'CB', 'CG'],
+    'PRO': ['N', 'O', 'CA', 'C', 'CD', 'CG', 'CB'],
+    'GLN': ['N', 'O', 'CA', 'C', 'CD', 'NE2', 'OE1', 'CB', 'CG'],
+    'ARG': ['N', 'O', 'CA', 'C', 'CZ', 'CD', 'NE', 'CG', 'CB'],
+    'SER': ['N', 'O', 'CA', 'C', 'CB', 'OG'],
+    'THR': ['N', 'O', 'CA', 'C', 'OG1', 'CG2', 'CB'],
+    'VAL': ['N', 'O', 'CA', 'C', 'CB', 'CG2', 'CG1'],
+    'TYR': ['N', 'O', 'CA', 'C', 'CE1', 'CD1', 'CZ', 'CG', 'CB', 'CE2', 'CD2'],
+    'TRP': ['N', 'O', 'CA', 'C', 'NE1', 'CZ3', 'CD1', 'CE3', 'CG', 'CB', 'CZ2', 'CE2', 'CD2'],
+}
+
+# obtained from biopython at
+# https://github.com/biopython/biopython/blob/master/Bio/PDB/DSSP.py
+# Miller max acc: Miller et al. 1987 http://dx.doi.org/10.1016/0022-2836(87)90038-6
+# Wilke: Tien et al. 2013 http://dx.doi.org/10.1371/journal.pone.0080635
+# Sander: Sander & Rost 1994 http://dx.doi.org/10.1002/prot.340200303
+ASA_Miller = {
+    'ALA': 113.0, 'ARG': 241.0, 'ASN': 158.0, 'ASP': 151.0,
+    'CYS': 140.0, 'GLN': 189.0, 'GLU': 183.0, 'GLY': 85.0,
+    'HIS': 194.0, 'ILE': 182.0, 'LEU': 180.0, 'LYS': 211.0,
+    'MET': 204.0, 'PHE': 218.0, 'PRO': 143.0, 'SER': 122.0,
+    'THR': 146.0, 'TRP': 259.0, 'TYR': 229.0, 'VAL': 160.0
+}
+
+ASA_Wilke = {
+    'ALA': 129.0, 'ARG': 274.0, 'ASN': 195.0, 'ASP': 193.0,
+    'CYS': 167.0, 'GLN': 225.0, 'GLU': 223.0, 'GLY': 104.0,
+    'HIS': 224.0, 'ILE': 197.0, 'LEU': 201.0, 'LYS': 236.0,
+    'MET': 224.0, 'PHE': 240.0, 'PRO': 159.0, 'SER': 155.0,
+    'THR': 172.0, 'TRP': 285.0, 'TYR': 263.0, 'VAL': 174.0
+}
+
+ASA_Sander = {
+    'ALA': 106.0, 'ARG': 248.0, 'ASN': 157.0, 'ASP': 163.0,
+    'CYS': 135.0, 'GLN': 198.0, 'GLU': 194.0, 'GLY': 84.0,
+    'HIS': 184.0, 'ILE': 169.0, 'LEU': 164.0, 'LYS': 205.0,
+    'MET': 188.0, 'PHE': 197.0, 'PRO': 136.0, 'SER': 130.0,
+    'THR': 142.0, 'TRP': 227.0, 'TYR': 222.0, 'VAL': 142.0
+}
+
 # taken from http://www.ensembl.org/info/about/species.html
 # on 10.08.2015
 valid_ensembl_species = ['orycteropus_afer_afer',
@@ -314,3 +382,197 @@ valid_ensembl_species_variation = ['bos_taurus',
                                    'rattus_norvegicus',
                                    'saccharomyces_cerevisiae',
                                    'tetraodon_nigroviridis']
+
+_convert_dtypes = {
+    int: 'int64',
+    float: 'float64',
+    str: 'object'
+}
+
+_pdbx_types = {
+    'group_PDB': str,
+    'id': int,
+    'type_symbol': str,
+    'label_atom_id': str,
+    'label_alt_id': str,
+    'label_comp_id': str,
+    'label_asym_id': str,
+    'label_entity_id': str,
+    'label_seq_id': str,
+    'new_asym_id': str,
+    'new_seq_id': str,
+    'pdbx_PDB_ins_code': str,
+    'Cartn_x': float,
+    'Cartn_y': float,
+    'Cartn_z': float,
+    'occupancy': float,
+    'B_iso_or_equiv': float,
+    'Cartn_x_esd': float,
+    'Cartn_y_esd': float,
+    'Cartn_z_esd': float,
+    'occupancy_esd': float,
+    'B_iso_or_equiv_esd': float,
+    'pdbx_formal_charge': int,
+    'auth_seq_id': str,
+    'auth_comp_id': str,
+    'auth_asym_id': str,
+    'auth_atom_id': str,
+    'pdbx_PDB_model_num': str,
+    'pdbe_label_seq_id': str,
+    'orig_label_asym_id': str,
+    'orig_auth_asym_id': str,
+    'auth_seq_id_full': str,
+    'label_seq_id_full': str,
+    'contact_indexes': str,
+}
+
+_dssp_types = {
+    'LINE': int,
+    'RES': str,
+    'RES_FULL': str,
+    'CHAIN': str,
+    'CHAIN_FULL': str,
+    'INSCODE': str,
+    'AA': str,
+    'SS': str,
+    'SS_CLASS': str,
+    'STRUCTURE': str,
+    'BP1': str,
+    'BP2': str,
+    'BP2_CHAIN': str,
+    'ACC': int,
+    'RSA': float,
+    'RSA_CLASS': str,
+    'NH_O_1': int,
+    'NH_O_1_nrg': float,
+    'O_HN_1': int,
+    'O_HN_1_nrg': float,
+    'NH_O_2': int,
+    'NH_O_2_nrg': float,
+    'O_HN_2': int,
+    'O_HN_2_nrg': float,
+    'TCO': float,
+    'KAPPA': float,
+    'ALPHA': float,
+    'PHI': float,
+    'PSI': float,
+    'X-CA': float,
+    'Y-CA': float,
+    'Z-CA': float
+}
+
+_sifts_types = {
+    'PDB_regionId': int,
+    'PDB_regionStart': int,
+    'PDB_regionEnd': int,
+    'PDB_regionResNum': str,
+    'PDB_dbVersion': str,
+    'PDB_dbAccessionId': str,
+    'PDB_dbResNum': str,
+    'PDB_dbResName': str,
+    'PDB_dbChainId': str,
+    'PDB_Annotation': str,
+    'PDB_entityId': str,
+    'PDB_codeSecondaryStructure': str,
+    'PDB_nameSecondaryStructure': str,
+    'UniProt_regionId': int,
+    'UniProt_regionStart': int,
+    'UniProt_regionEnd': int,
+    'UniProt_regionResNum': str,
+    'UniProt_dbVersion': str,
+    'UniProt_dbAccessionId': str,
+    'UniProt_dbResNum': str,
+    'UniProt_dbResName': str,
+    'CATH_regionId': int,
+    'CATH_regionStart': int,
+    'CATH_regionEnd': int,
+    'CATH_regionResNum': str,
+    'CATH_dbVersion': str,
+    'CATH_dbAccessionId': str,
+    'SCOP_regionId': int,
+    'SCOP_regionStart': int,
+    'SCOP_regionEnd': int,
+    'SCOP_regionResNum': str,
+    'SCOP_dbVersion': str,
+    'SCOP_dbAccessionId': str,
+    'Pfam_regionId': int,
+    'Pfam_regionStart': int,
+    'Pfam_regionEnd': int,
+    'Pfam_regionResNum': str,
+    'Pfam_dbVersion': str,
+    'Pfam_dbAccessionId': str
+}
+
+_validation_types = {
+    'validation_model': int,
+    'validation_ent': str,
+    'validation_chain': str,
+    'validation_resname': str,
+    'validation_resnum': str,
+    'validation_resnum_full': str,
+    'validation_seq': str,
+    'validation_altcode': str,
+    'validation_icode': str,
+    'validation_ligRSRZ': str,
+    'validation_ligRSRnbrMean': str,
+    'validation_ligRSRnbrStdev': str,
+    'validation_ligRSRnumnbrs': str,
+    'validation_avgoccu': float,
+    'validation_rota': str,
+    'validation_rsr': float,
+    'validation_owab': float,
+    'validation_rsrz': str,
+    'validation_num-H-reduce': str,
+    'validation_rama': str,
+    'validation_said': str,
+    'validation_NatomsEDS': int,
+    'validation_flippable-sidechain': str,
+    'validation_rscc': float,
+    'validation_phi': float,
+    'validation_psi': float,
+    'validation_mogul-ignore': str
+}
+
+_annotation_types = {
+    'empty': str,
+    'END': str,
+    'FRAME': str,
+    'GROUP': str,
+    'ID': str,
+    'NAME': str,
+    'NOTE': str,
+    'SCORE': str,
+    'SOURCE': str,
+    'START': str,
+    'STRAND': str,
+    'TYPE': str,
+    'site': str,
+    'accession': str
+}
+
+_uni_ens_var_types = {
+    'begin': int,
+    'end': int,
+    'polyphenScore': float,
+    'siftScore': float,
+}
+
+pdbx_types = {k: _convert_dtypes[v] for k, v in _pdbx_types.items()}
+dssp_types = {k: _convert_dtypes[v] for k, v in _dssp_types.items()}
+sifts_types = {k: _convert_dtypes[v] for k, v in _sifts_types.items()}
+validation_types = {k: _convert_dtypes[v] for k, v in _validation_types.items()}
+annotation_types = {k: _convert_dtypes[v] for k, v in _annotation_types.items()}
+uni_ens_var_types = {k: _convert_dtypes[v] for k, v in _uni_ens_var_types.items()}
+
+# updating terms in ensembl output so that they match
+# UniProt Proteins API counterparts
+update_ensembl_to_uniprot = {
+    'minor_allele_frequency': 'frequency',
+    'start': 'begin',
+    'end': 'end',
+    'sift': 'siftScore',
+    'polyphen': 'polyphenScore',
+    'type': 'consequenceType',
+    'id': 'xrefs_id'
+}
+
