@@ -4,13 +4,12 @@ ProteoFAV documentation
 Documentation:
 --------------
 
-   installation
-   usage
-   readme
-   proteofav
-   history
-   contributing
+   getting_started
+   example_usage
+   proteofav_docs
    authors
+   contributing
+   changelog
 
 
 Table of Contents
@@ -19,16 +18,14 @@ Table of Contents
 .. toctree::
    :maxdepth: 5
 
-   installation
-   usage
-   readme
-   proteofav
-   history
-   contributing
+   getting_started
+   example_usage
+   proteofav_docs
    authors
+   contributing
+   changelog
 
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

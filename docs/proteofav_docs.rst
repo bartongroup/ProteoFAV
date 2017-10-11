@@ -1,5 +1,5 @@
-ProteoFAV package
-=================
+ProteoFAV DocStrings
+====================
 
 Modules
 -------
@@ -29,21 +29,38 @@ proteofav.structures module
     :undoc-members:
     :show-inheritance:
 
-proteofav.uniprot module
-------------------------
+proteofav.dssp module
+---------------------
 
-.. automodule:: proteofav.uniprot
+.. automodule:: proteofav.dssp
     :members:
     :undoc-members:
     :show-inheritance:
 
-proteofav.utils module
+proteofav.sifts module
 ----------------------
 
-.. automodule:: proteofav.utils
+.. automodule:: proteofav.sifts
     :members:
     :undoc-members:
     :show-inheritance:
+
+proteofav.validation module
+---------------------------
+
+.. automodule:: proteofav.validation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+proteofav.annotation module
+---------------------------
+
+.. automodule:: proteofav.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 proteofav.variants module
 -------------------------
@@ -53,11 +70,18 @@ proteofav.variants module
     :undoc-members:
     :show-inheritance:
 
+proteofav.mergers module
+------------------------
 
-Module contents
----------------
+.. automodule:: proteofav.mergers
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-.. automodule:: proteofav
+proteofav.utils module
+----------------------
+
+.. automodule:: proteofav.utils
     :members:
     :undoc-members:
     :show-inheritance:

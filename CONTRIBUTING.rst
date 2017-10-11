@@ -5,8 +5,8 @@ Contributing
 ============
 
 Contributions are welcome, and they are greatly appreciated! Every
-    little bit helps, and credit will always be given. You can
-    contribute in many ways.
+little bit helps, and credit will always be given. You can
+contribute in many ways.
 
 Types of Contributions
 ----------------------
@@ -15,26 +15,28 @@ Please check GitHub issue tracker for:
 
 - bugs
 - features
-- enhacements
+- enhancements
 
 Style
 -----
 
 Wrap line over 99 (79 if possible). Lines with more than 79 characters
-    are harder to read in the command line. Else, we try to keep the
-    pep8 standards. Private functions start with an underline.
+are harder to read in the command line. Else, we try to keep the
+pep8 standards. Private functions start with an underline.
 
 Naming Conventions
 ------------------
 
 Functions that: get data from a resources should start with **fetch/\_fetch**.
- To load and process python objects **select/\_select**.
+To load and process python objects **select/\_select**.
 
 Python code is also documentation, hence explicit variable names are
-    recommended: **ensembl\_ptn\_id** instead **identifier**.
+recommended: **ensembl\_ptn\_id** instead **identifier**. Generally,
+for a function input parameter **identifier** can be used if the docstring
+clearly defines which type of Accession Identifier should be used.
 
 If the resource has its own name for a field or value, try to keep, for
-    consistency.
+consistency.
 
 Docstrings
 ----------
@@ -104,18 +106,18 @@ Columns type pragma
 -------------------
 
 Culumn type normalisation is a central issue in ProteoFAV. There is no simple
-    way to make column type consintent across all data files. Some pragmatic
-    rules to deal with NANs (Not an number) in non float columns are defined
-    here, but open to change. NAN in Python are always floats. If one has to
-    operate with integers or string, it must eliminate the NAN’s, and in
-    ProteoFAV we use the following rules:
+way to make column type consintent across all data files. Some pragmatic
+rules to deal with NANs (Not an number) in non float columns are defined
+here, but open to change. NAN in Python are always floats. If one has to
+operate with integers or string, it must eliminate the NAN’s, and in
+ProteoFAV we use the following rules:
 
 * If is a sequence index: -9999
 * If is a sequence column NAN’s: ‘X’
-* If is another string column: ’’ (empty string)
+* If is another string column: '' (empty string)
 
 Testing
 -------
 
-Doctests are not mandatory, but tests are. Tests are located in /test
+Doctests are not mandatory, but tests are. Tests are located in `/tests`
 and we use standard Unittest setup.

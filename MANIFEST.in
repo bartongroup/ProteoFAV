@@ -1,9 +1,4 @@
-include AUTHORS.rst
-include CONTRIBUTING.rst
-include HISTORY.rst
-include LICENSE.txt
-include README.rst
+include *.rst
+include *.txt
 include proteofav/config.txt
-include requirements.txt
 recursive-include docs *.rst
-include tests/config.txt

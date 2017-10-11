@@ -1,6 +1,6 @@
-=====
-Usage
-=====
+=============
+Example Usage
+=============
 
 ProteoFAV works both as a module and a command line tool.
 

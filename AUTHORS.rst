@@ -6,7 +6,7 @@ Development Lead
 ----------------
 
 * Thiago Britto-Borges <tbrittborges@dundee.ac.uk>
-* Fábio Madeira
+* Fábio Madeira <fabiomadeira@me.com>
 * Stuart MacGowan
 * Geoffrey J. Barton
 
@@ -14,20 +14,20 @@ Development Lead
 Acknowledgements
 ----------------
 
-We would like to thanks to:
+We would like to thank:
 
-* `PyCharm`_
-* `UniProt`_
-* `Ensembl`_
-* `TCGA`_ Pan Cancer Project
-* `Pandas`_ developers and community
-* `PDBE`_
+* Database repositories: `UniProt`_, `Ensembl`_, `PDBe`_, etc.
+* Python developers and community: `Python`_, `Pandas`_, etc.
+
 
 Contributors
 ------------
 
 None yet. Why not be the first?
 
-.. _PyCharm: https://www.jetbrains.com/pycharm/
-.. _UniProt:
-
+.. _UniProt: http://www.uniprot.org/
+.. _Ensembl: http://www.ensembl.org/
+.. _PDBe: http://www.ebi.ac.uk/pdbe/
+.. _Python: https://www.python.org/
+.. _Pandas: http://pandas.pydata.org/
+.. _@biomadeira: http://twitter.com/biomadeira
