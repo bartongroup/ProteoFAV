@@ -82,11 +82,7 @@ Run the Tests with:
 .. code-block:: bash
 
     $ python path/to/ProteoFAV/setup.py test
-
-or:
-
-.. code-block:: bash
-
+    # or
     $ cd path/to/ProteoFAV/tests
     $ python -m unittest discover
 
@@ -124,18 +120,18 @@ Changelog
 
 See the `Changelog`_
 
-Licensing
-~~~~~~~~~
-
-See `LICENSE`_.
-
 Credits
 ~~~~~~~
 
 See the `Credits`_
 
+Licensing
+~~~~~~~~~
+
+`GNU GPL3`_
+
 .. _requirements: https://github.com/bartongroup/ProteoFAV/blob/master/requirements.txt
-.. _LICENSE: https://github.com/bartongroup/ProteoFAV/blob/master/LICENSE.md
+.. _GNU GPL3: https://github.com/bartongroup/ProteoFAV/blob/master/LICENSE.md
 .. _issue tracker: https://github.com/bartongroup/ProteoFAV/issues
 .. _docs: https://github.com/bartongroup/ProteoFAV/blob/master/docs/index.rst
 .. _Pandas: http://pandas.pydata.org/
