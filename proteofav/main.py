@@ -6,8 +6,7 @@ import logging
 
 from proteofav.mergers import Tables
 
-__all__ = ['parse_args',
-           'main']
+__all__ = ['main']
 
 log = logging.getLogger('proteofav.config')
 

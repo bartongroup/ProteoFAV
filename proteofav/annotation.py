@@ -27,7 +27,7 @@ from proteofav.library import annotation_types
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ["_fetch_uniprot_gff", "parse_gff_features", "filter_annotation",
+__all__ = ["parse_gff_features", "filter_annotation",
            "select_annotation", "download_annotation", "Annotation"]
 
 
