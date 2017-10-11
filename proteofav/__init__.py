@@ -9,10 +9,10 @@ of protein structure data with sequence annotations
 and genetic variation
 
 :copyright: (c) 2015-2017.
-:license: TBD, see LICENSE for more details.
+:license: GNU GPL3, see LICENSE for more details.
 """
 
 __title__ = 'proteofav'
 __version__ = '0.1.0'
-__license__ = 'TBD'
+__license__ = 'GNU GPL3'
 __authors__ = [u'Fábio Madeira', u'Thiago Britto-Borges', u'Stuart MacGowan']

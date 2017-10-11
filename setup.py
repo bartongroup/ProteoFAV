@@ -9,7 +9,7 @@ of protein structure data with sequence annotations
 and genetic variation
 
 :copyright: (c) 2015-2017.
-:license: TBD, see LICENSE for more details.
+:license: GNU GPL3, see LICENSE for more details.
 """
 
 import os
@@ -46,7 +46,7 @@ setup(
     # Metadata for PyPI.
     author=__authors__,
     author_email='tbrittoborges@dundee.ac.uk',
-    license='LICENSE.txt',
+    license='LICENSE.md',
     entry_points={
         "console_scripts": ["proteofav-setup=proteofav.main:setup",
                             "proteofav=proteofav.main:main"]
@@ -61,7 +61,7 @@ setup(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'License :: TBD',
+        'License :: GNU GPL3',
         'Natural Language :: English',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
