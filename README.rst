@@ -96,9 +96,9 @@ After installing run:
 
     $ proteofav-setup
 
-To set-up the download directories for mmCIF (`db_mmcif`), SIFTS (`db_sifts`), DSSP (`db_dssp`),
-PDB Validation (db_validation) and Annotations (db_annotation) in the
-`config.ini`, otherwise ProteoFAV will download files to temporary directories.
+To set-up the download directories for mmCIF (``db_mmcif``), SIFTS (``db_sifts``), DSSP (``db_dssp``),
+PDB Validation (``db_validation``) and Annotations (``db_annotation``) in the
+``config.ini``, otherwise ProteoFAV will download files to temporary directories.
 
 Usage
 ~~~~~
@@ -128,10 +128,10 @@ See the `Credits`_
 Licensing
 ~~~~~~~~~
 
-`GNU GPL3`_
+GNU General Public License v3 (GPLv3). See `license`_ for details.
 
 .. _requirements: https://github.com/bartongroup/ProteoFAV/blob/master/requirements.txt
-.. _GNU GPL3: https://github.com/bartongroup/ProteoFAV/blob/master/LICENSE.md
+.. _license: https://github.com/bartongroup/ProteoFAV/blob/master/LICENSE.md
 .. _issue tracker: https://github.com/bartongroup/ProteoFAV/issues
 .. _docs: https://github.com/bartongroup/ProteoFAV/blob/master/docs/index.rst
 .. _Pandas: http://pandas.pydata.org/
