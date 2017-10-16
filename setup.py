@@ -33,6 +33,7 @@ setup(
 
     # Packaging options.
     # package_data={'': ['*.ipynb', '*.rst']},
+    package_data={'proteofav': ['*.ini']},
     include_package_data=True,
     py_modules=['proteofav.main'],
 

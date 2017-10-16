@@ -1,4 +1,4 @@
 include *.rst
 include *.txt
-include proteofav/config.txt
+include proteofav/config.ini
 recursive-include docs *.rst
