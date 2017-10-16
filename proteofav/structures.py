@@ -340,7 +340,7 @@ def _add_mmcif_atom_altloc(table):
     :return: returns a modified pandas DataFrame
     """
 
-    def join_atom_altloc(table, category='label'):
+    def join_atom_altloc(table, category='auth'):
         atom = table['{}_atom_id'.format(category)]
         altloc = table['label_alt_id']
 
@@ -387,7 +387,7 @@ def _remove_multiple_altlocs(table):
     return table.drop(table.index[drop_ixs])
 
 
-def _remove_partial_residues(table, category='label'):
+def _remove_partial_residues(table, category='auth'):
     """
     Removes residues that contain missing atoms. Needs to check
     which atoms are available for each residue. Also removes residues with
@@ -440,7 +440,7 @@ def _remove_partial_residues(table, category='label'):
     return table.drop(table.index[drop_ixs])
 
 
-def residues_aggregation(table, agg_method='centroid', category='label'):
+def residues_aggregation(table, agg_method='centroid', category='auth'):
     """
     Gets the residues' atoms and their centroids (mean).
 
@@ -690,7 +690,7 @@ def select_structures(identifier=None, excluded_cols=None,
 
 def filter_structures(table, excluded_cols=None,
                       models='first', chains=None, res=None, res_full=None,
-                      comps=None, atoms=None, lines=None, category='label',
+                      comps=None, atoms=None, lines=None, category='auth',
                       residue_agg=False, agg_method='centroid',
                       add_res_full=True, add_atom_altloc=False, reset_atom_id=True,
                       remove_altloc=False, remove_hydrogens=True, remove_partial_res=False):
@@ -841,7 +841,7 @@ def read_structures(filename=None, input_format=None, excluded_cols=None,
 
 
 def write_structures(table=None, filename=None, overwrite=False,
-                     output_format=None, category='label'):
+                     output_format=None, category='auth'):
     """
     Writes 'ATOM' lines in PDB or mmCIF format.
 
