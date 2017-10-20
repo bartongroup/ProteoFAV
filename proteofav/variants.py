@@ -177,6 +177,22 @@ def fetch_uniprot_species_from_id(identifier, retry_in=(429,)):
     return response
 
 
+def fetch_uniprot_id_from_name(identifier, retry_in=(429,)):
+    """
+    Retrieve UniProt ID from Name.
+
+    :param identifier: UniProt accession identifier
+    :param retry_in: http code for retrying connections
+    :return: Requests response object
+    """
+
+    url_root = defaults.api_uniprot
+    url_endpoint = "?query={}&columns=id&format=list".format(identifier)
+    url = url_root + url_endpoint
+    response = fetch_from_url_or_retry(url=url, json=False, retry_in=retry_in)
+    return response
+
+
 def fetch_pdb_uniprot_mapping(identifier, retry_in=(429,)):
     """
     Queries the PDBe API for SIFTS mapping between PDB - UniProt.

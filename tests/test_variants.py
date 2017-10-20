@@ -17,7 +17,7 @@ from proteofav.config import defaults
 from proteofav.variants import (_fetch_icgc_variants, fetch_uniprot_variants, fetch_ensembl_variants,
                                 fetch_ensembl_sequence_from_id, _match_uniprot_ensembl_seq,
                                 _compare_sequences, _count_mismatches, parse_uniprot_variants,
-                                fetch_uniprot_sequence,
+                                fetch_uniprot_sequence, fetch_uniprot_id_from_name,
                                 fetch_uniprot_ensembl_mapping, fetch_ensembl_uniprot_mapping,
                                 get_uniprot_id_from_mapping, get_ensembl_protein_id_from_mapping,
                                 fetch_uniprot_pdb_mapping, fetch_pdb_uniprot_mapping,
@@ -135,6 +135,7 @@ class VariantsTestCase(unittest.TestCase):
         self.get_uniprot_id_from_mapping = get_uniprot_id_from_mapping
         self.get_ensembl_protein_id_from_mapping = get_ensembl_protein_id_from_mapping
         self.fetch_uniprot_species_from_id = fetch_uniprot_species_from_id
+        self.fetch_uniprot_id_from_name = fetch_uniprot_id_from_name
         self.get_ensembl_species_from_uniprot = get_ensembl_species_from_uniprot
         self.get_uniprot_sequence = fetch_uniprot_sequence
         self.get_uniprot_organism = fetch_uniprot_formal_specie
@@ -188,6 +189,7 @@ class VariantsTestCase(unittest.TestCase):
         self.get_preferred_uniprot_id_from_mapping = None
         self.get_preferred_ensembl_id_from_mapping = None
         self.fetch_uniprot_species_from_id = None
+        self.fetch_uniprot_id_from_name = None
         self.get_ensembl_species_from_uniprot = None
         self.get_uniprot_sequence = None
         self.get_uniprot_organism = None
@@ -454,6 +456,11 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         organism = str(r.content, encoding='utf-8').split('\n')[1]
         species = '_'.join(organism.split()[0:2]).lower()
         self.assertEqual(species, "homo_sapiens")
+
+    def test_fetch_uniprot_id_from_name(self):
+        r = self.fetch_uniprot_id_from_name("PH4H_HUMAN")
+        self.assertTrue(r.ok)
+        self.assertEqual("P00439", str(r.content, encoding='utf-8').strip())
 
     def test_fetch_fetch_uniprot_pdb_mapping(self):
         r = self.fetch_uniprot_pdb_mapping(self.uniprot_id)
