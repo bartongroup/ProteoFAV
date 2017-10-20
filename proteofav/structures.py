@@ -854,24 +854,25 @@ def write_structures(table=None, filename=None, overwrite=False,
     :return: (side effects) writes to a file
     """
 
-    OutputFileHandler(filename, overwrite=overwrite)
+    if not os.path.exists(filename) or overwrite:
+        OutputFileHandler(filename, overwrite=overwrite)
 
-    if output_format is None:
-        if filename.endswith('.pdb') or filename.endswith('.ent'):
-            output_format = "pdb"
-        elif filename.endswith('.cif') or filename.endswith('.mmcif'):
-            output_format = "mmcif"
-        else:
-            message = ("Could not guess the format of the input file... "
-                       "Please define it by passing 'input_format'='<name>'")
-            raise ValueError(message)
+        if output_format is None:
+            if filename.endswith('.pdb') or filename.endswith('.ent'):
+                output_format = "pdb"
+            elif filename.endswith('.cif') or filename.endswith('.mmcif'):
+                output_format = "mmcif"
+            else:
+                message = ("Could not guess the format of the input file... "
+                           "Please define it by passing 'input_format'='<name>'")
+                raise ValueError(message)
 
-    if output_format == 'mmcif' or output_format == 'cif':
-        write_mmcif_from_table(filename=filename, table=table,
-                               overwrite=overwrite)
-    elif output_format == 'pdb' or output_format == 'ent':
-        write_pdb_from_table(filename=filename, table=table,
-                             overwrite=overwrite, category=category)
+        if output_format == 'mmcif' or output_format == 'cif':
+            write_mmcif_from_table(filename=filename, table=table,
+                                   overwrite=overwrite)
+        elif output_format == 'pdb' or output_format == 'ent':
+            write_pdb_from_table(filename=filename, table=table,
+                                 overwrite=overwrite, category=category)
 
 
 def download_structures(identifier=None, filename=None, output_format='mmcif',
