@@ -877,7 +877,7 @@ def write_structures(table=None, filename=None, overwrite=False,
 
 def download_structures(identifier=None, filename=None, output_format='mmcif',
                         bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
-                        overwrite=False):
+                        mmcif_version="_updated", overwrite=False):
     """
     Downloads a structure from the PDBe to the filesystem.
     BioUnits only work for mmCIF. If `pdb=True` the bio_unit arguments
@@ -891,6 +891,7 @@ def download_structures(identifier=None, filename=None, output_format='mmcif',
         biological assembly instead
     :param bio_unit_id: biological unit identifier
     :param overwrite: boolean
+    :param mmcif_version: "_updated" or simply ""
     :return: (side effects) writes to a file
     """
 
@@ -920,7 +921,7 @@ def download_structures(identifier=None, filename=None, output_format='mmcif',
         else:
             # original mmCIF?
             # url_endpoint = "download/{}.cif".format(pdbid)
-            url_endpoint = "download/{}_updated.cif".format(identifier)
+            url_endpoint = "download/{}{}.cif".format(identifier, mmcif_version)
             url_root = defaults.pdbe_fetch
             url = url_root + url_endpoint
 
