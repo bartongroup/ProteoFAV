@@ -22,7 +22,10 @@ from proteofav.msas import (read_alignments, read_msas,
                             parse_pfam_sth_seq_description,
                             parse_cath_fasta_seq_description,
                             parse_cath_sth_seq_description,
-                            parse_generic_seq_description)
+                            parse_generic_seq_description,
+                            download_msa_from_cath,
+                            download_msa_from_pfam,
+                            download_msas)
 
 from proteofav.config import defaults
 
@@ -79,6 +82,10 @@ class TestMSAS(unittest.TestCase):
         self.sequence_info_from_description = parse_sequence_info_from_description
         self.cath_sth_seq_description = parse_cath_sth_seq_description
 
+        self.download_msa_from_cath = download_msa_from_cath
+        self.download_msa_from_pfam = download_msa_from_pfam
+        self.download_msas = download_msas
+
         logging.disable(logging.DEBUG)
 
     def tearDown(self):
@@ -112,6 +119,10 @@ class TestMSAS(unittest.TestCase):
         self.cath_fasta_seq_description = None
         self.generic_seq_description = None
         self.sequence_info_from_description = None
+
+        self.download_msa_from_cath = None
+        self.download_msa_from_pfam = None
+        self.download_msas = None
 
         logging.disable(logging.NOTSET)
 
@@ -282,6 +293,44 @@ class TestMSAS(unittest.TestCase):
         self.assertEqual(data.loc[0, 'Source'], 'Pfam')
         self.assertEqual(data.loc[0, 'Start'], 27)
         self.assertEqual(data.loc[0, 'End'], 514)
+
+    def test_download_msa_from_cath(self):
+        self.download_msa_from_cath(self.cathid, self.output_fasta,
+                                    seq_format="fasta",
+                                    overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_fasta))
+        os.remove(self.output_fasta)
+
+        self.download_msa_from_cath(self.cathid, self.output_sto,
+                                    seq_format="stockholm",
+                                    overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_sto))
+        os.remove(self.output_sto)
+
+    def test_download_msa_from_pfam(self):
+        self.download_msa_from_pfam(self.pfamid, self.output_sto,
+                                    overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_sto))
+        os.remove(self.output_sto)
+
+    def test_download_msas(self):
+        self.download_msas(self.cathid, self.output_fasta,
+                           aln_source="cath", seq_format="fasta",
+                           overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_fasta))
+        os.remove(self.output_fasta)
+
+        self.download_msas(self.cathid, self.output_sto,
+                           aln_source="cath", seq_format="stockholm",
+                           overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_sto))
+        os.remove(self.output_sto)
+
+        self.download_msas(self.pfamid, self.output_sto,
+                           aln_source="pfam", seq_format="stockholm",
+                           overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_sto))
+        os.remove(self.output_sto)
 
 
 if __name__ == '__main__':

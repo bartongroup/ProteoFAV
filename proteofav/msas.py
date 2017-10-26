@@ -6,10 +6,10 @@ import logging
 import pandas as pd
 from Bio import AlignIO
 
-
+from proteofav.config import defaults
 from proteofav.variants import (fetch_uniprot_id_from_name, fetch_pdb_uniprot_mapping)
 from proteofav.utils import (constrain_column_types, exclude_columns,
-                             InputFileHandler)
+                             InputFileHandler, Downloader)
 
 log = logging.getLogger('proteofav.config')
 
@@ -19,7 +19,9 @@ __all__ = ['read_alignments', 'read_msas',
            'parse_pfam_sth_seq_description',
            'parse_cath_fasta_seq_description',
            'parse_cath_sth_seq_description',
-           'parse_generic_seq_description']
+           'parse_generic_seq_description',
+           'download_msa_from_cath',
+           'download_msa_from_pfam']
 
 SEQ_FORMAT_VALID = ('clustal', 'emboss', 'nexus', 'fasta', 'phylip', 'stockholm')
 
@@ -379,3 +381,81 @@ def parse_generic_seq_description(description, entry, get_uniprot_id=True):
             description = description.replace(match, "")
             entry['Description'] = description.strip()
     return entry
+
+
+def download_msas(identifier, filename, aln_source="pfam",
+                  seq_format="stockholm", overwrite=False, **kwargs):
+    """
+    Wrapper method. Downloads a MSA in fasta/stockholm format from CATH/Pfam
+    to the filesystem.
+
+    :param identifier: (str) CATH ID (<Superfamily>_<Family>) or Pfam Family ID
+    :param filename: path to the MSA file
+    :param aln_source: (str) either 'Pfam' or 'CATH'.
+    :param seq_format: (str) or None. Valid formats: "fasta" and "stockholm".
+    :param overwrite: boolean
+    :return: (side-effects) writes to a file
+    """
+
+    if aln_source == 'pfam':
+        download_msa_from_pfam(identifier=identifier, filename=filename,
+                               overwrite=overwrite, **kwargs)
+    elif aln_source == 'cath':
+        download_msa_from_cath(identifier=identifier, filename=filename,
+                               seq_format=seq_format,
+                               overwrite=overwrite, **kwargs)
+    else:
+        raise ValueError("Only able to download from CATH/Pfam in "
+                         "fasta/stockholm format...")
+
+
+def download_msa_from_cath(identifier, filename, seq_format="stockholm",
+                           aln_size=200, overwrite=False):
+    """
+    Downloads a MSA in fasta format from CATH to the filesystem.
+    Family here means 'Funfam'.
+
+    :param identifier: (str) CATH ID (<Superfamily>_<Family>)
+    :param filename: path to the MSA file
+    :param seq_format: (str) or None. Valid formats: "fasta" and "stockholm".
+    :param aln_size: (int) Maximum number of sequences (default = 200)
+    :param overwrite: (boolean)
+    :return: (side effects) writes to a file
+    """
+    if '_' not in identifier:
+        raise ValueError("Expected a full <Superfamily>_<Family> CATH ID but got {}"
+                         " instead...""".format(identifier))
+
+    assert type(aln_size) is int
+    superfamily, funfam = identifier.split('_')[0], identifier.split('_')[1]
+    url_root = defaults.cath_fetch
+    if seq_format == 'fasta':
+        out_format = 'seed_alignment.fasta'
+    else:
+        out_format = seq_format
+    url_endpoint = ("superfamily/{}/funfam/{}/files/{}?max_sequences={}"
+                    "".format(superfamily, funfam, out_format, aln_size))
+    url = url_root + url_endpoint
+
+    Downloader(url=url, filename=filename,
+               decompress=False, overwrite=overwrite)
+
+
+def download_msa_from_pfam(identifier, filename, aln_size="seed", overwrite=False):
+    """
+    Downloads a MSA in Stockholm format from Pfam to the filesystem.
+
+    :param identifier: (str) Pfam Family ID
+    :param filename: path to the MSA file
+    :param aln_size: (str) either "seed" or "full"
+    :param overwrite: (boolean)
+    :return: (side effects) writes to a file
+    """
+
+    assert type(aln_size) is str
+    url_root = defaults.pfam_fetch
+    url_endpoint = ("family/{}/alignment/{}/gzipped".format(identifier, aln_size))
+    url = url_root + url_endpoint
+
+    Downloader(url=url, filename=filename,
+               decompress=True, overwrite=overwrite)
