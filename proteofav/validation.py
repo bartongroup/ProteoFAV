@@ -173,7 +173,7 @@ def filter_validation(table, excluded_cols=None, chains=None, res=None,
     return table
 
 
-def download_validation(identifier=None, filename=None, overwrite=False):
+def download_validation(identifier, filename, overwrite=False):
     """
     Downloads a Validation Data XML from the PDBe.
 

@@ -875,7 +875,7 @@ def write_structures(table=None, filename=None, overwrite=False,
                                  overwrite=overwrite, category=category)
 
 
-def download_structures(identifier=None, filename=None, output_format='mmcif',
+def download_structures(identifier, filename, output_format='mmcif',
                         bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
                         mmcif_version="_updated", overwrite=False):
     """

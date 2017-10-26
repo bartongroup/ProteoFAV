@@ -152,7 +152,7 @@ def select_annotation(identifier, excluded_cols=None, overwrite=False, **kwargs)
     return table
 
 
-def download_annotation(identifier=None, filename=None, overwrite=False):
+def download_annotation(identifier, filename, overwrite=False):
     """
     Downloads a Annotation GFF from the UniProt.
 

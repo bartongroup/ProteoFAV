@@ -406,7 +406,7 @@ def filter_dssp(table, excluded_cols=None,
     return table
 
 
-def download_dssp(identifier=None, filename=None, overwrite=False):
+def download_dssp(identifier, filename, overwrite=False):
     """
     Downloads a pre-computed DSSP from the CMBI Netherlands FTP
     to the filesystem.

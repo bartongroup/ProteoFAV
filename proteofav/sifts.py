@@ -422,7 +422,7 @@ def filter_sifts(table, excluded_cols=None, chains=None,
     return table
 
 
-def download_sifts(identifier=None, filename=None, overwrite=False):
+def download_sifts(identifier, filename, overwrite=False):
     """
      Downloads a SIFTS xml from the EBI FTP to the filesystem.
 
