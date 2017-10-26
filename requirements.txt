@@ -9,3 +9,4 @@ requests_cache>=0.4.13
 responses>=0.8.1
 lxml>=3.7.3
 click>=6.7
+biopython>=1.68
