@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import re
 import copy
 import logging
@@ -9,7 +10,7 @@ from Bio import AlignIO
 from proteofav.config import defaults
 from proteofav.variants import (fetch_uniprot_id_from_name, fetch_pdb_uniprot_mapping)
 from proteofav.utils import (constrain_column_types, exclude_columns,
-                             InputFileHandler, Downloader)
+                             InputFileHandler, GenericInputs, Downloader)
 
 log = logging.getLogger('proteofav.config')
 
@@ -20,8 +21,10 @@ __all__ = ['read_alignments', 'read_msas',
            'parse_cath_fasta_seq_description',
            'parse_cath_sth_seq_description',
            'parse_generic_seq_description',
+           'select_msas', 'download_msas',
            'download_msa_from_cath',
-           'download_msa_from_pfam']
+           'download_msa_from_pfam',
+           'MSA']
 
 SEQ_FORMAT_VALID = ('clustal', 'emboss', 'nexus', 'fasta', 'phylip', 'stockholm')
 
@@ -383,6 +386,65 @@ def parse_generic_seq_description(description, entry, get_uniprot_id=True):
     return entry
 
 
+def select_msas(superfamily=None, family=None, seq_format=None,
+                aln_source='pfam', get_uniprot_id=True, excluded_cols=None,
+                overwrite=False, **kwargs):
+    """
+    Produce table read from a MSA.
+
+    :param superfamily: (str) Superfamily ID
+    :param family: (str) Family ID
+    :param seq_format: (str) or None. Valid formats: "fasta" and "stockholm".
+    :param aln_source: (str) either 'Pfam' or 'CATH'.
+    :param get_uniprot_id: (boolean)
+    :param excluded_cols: option to exclude mmCIF columns
+    :param overwrite: boolean
+    :return: returns a pandas DataFrame
+    """
+
+    if superfamily is not None and family is not None:
+        identifier = "{}_{}".format(superfamily, family)
+    elif superfamily is not None:
+        identifier = superfamily
+    elif family is not None:
+        identifier = family
+    else:
+        raise ValueError("At least one of `superfamily` or `family` "
+                         "needs to be provided...")
+
+    # seq_formats and respective file extensions: defaults to 'stockholm'
+    seq_format = seq_format.lower()
+    if seq_format == 'stockholm':
+        sf = 'sth'
+    elif seq_format == 'fasta':
+        sf = 'fasta'
+    else:
+        seq_format = 'stockholm'
+        sf = 'sth'
+
+    message = "Only able to download from CATH/Pfam in fasta/stockholm format..."
+    # download sources
+    aln_source = aln_source.lower()
+    if aln_source not in ('pfam', 'cath'):
+        raise ValueError(message)
+    # sequence formats
+    if seq_format not in ('fasta', 'stockholm'):
+        raise ValueError(message)
+
+    filename = os.path.join(defaults.db_msas, "{}.{}".format(identifier, sf))
+
+    download_msas(identifier=identifier, filename=filename,
+                  aln_source=aln_source, seq_format=seq_format,
+                  overwrite=overwrite, **kwargs)
+
+    table = read_msas(filename=filename, excluded_cols=excluded_cols,
+                      seq_format=seq_format, get_uniprot_id=get_uniprot_id)
+
+    # table = filter_structures(table=table, excluded_cols=excluded_cols, **kwargs)
+    # table = constrain_column_types(table, col_type_dict=msas_types)
+    return table
+
+
 def download_msas(identifier, filename, aln_source="pfam",
                   seq_format="stockholm", overwrite=False, **kwargs):
     """
@@ -459,3 +521,22 @@ def download_msa_from_pfam(identifier, filename, aln_size="seed", overwrite=Fals
 
     Downloader(url=url, filename=filename,
                decompress=True, overwrite=overwrite)
+
+
+class MSA(GenericInputs):
+    def read(self, filename=None, **kwargs):
+        filename = self._get_filename(filename)
+        self.table = read_msas(filename, **kwargs)
+        return self.table
+
+    def download(self, identifier=None, filename=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        filename = self._get_filename(filename)
+        return download_msas(identifier, filename, **kwargs)
+
+    def select(self, **kwargs):
+        self.table = select_msas(**kwargs)
+        return self.table
+
+
+MSA = MSA()

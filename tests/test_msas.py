@@ -25,7 +25,7 @@ from proteofav.msas import (read_alignments, read_msas,
                             parse_generic_seq_description,
                             download_msa_from_cath,
                             download_msa_from_pfam,
-                            download_msas)
+                            download_msas, select_msas, MSA)
 
 from proteofav.config import defaults
 
@@ -85,6 +85,8 @@ class TestMSAS(unittest.TestCase):
         self.download_msa_from_cath = download_msa_from_cath
         self.download_msa_from_pfam = download_msa_from_pfam
         self.download_msas = download_msas
+        self.select_msas = select_msas
+        self.MSA = MSA
 
         logging.disable(logging.DEBUG)
 
@@ -123,6 +125,8 @@ class TestMSAS(unittest.TestCase):
         self.download_msa_from_cath = None
         self.download_msa_from_pfam = None
         self.download_msas = None
+        self.select_msas = None
+        self.MSA = None
 
         logging.disable(logging.NOTSET)
 
@@ -331,6 +335,55 @@ class TestMSAS(unittest.TestCase):
                            overwrite=True)
         self.assertTrue(os.path.isfile(self.output_sto))
         os.remove(self.output_sto)
+
+    def test_select_msas(self):
+        data = self.select_msas(superfamily=self.pfamid,
+                                family=None, seq_format="stockholm",
+                                aln_source='pfam', get_uniprot_id=True,
+                                excluded_cols=None, overwrite=False)
+        self.assertIn('Sequence', list(data))
+        self.assertIn('Source', list(data))
+        self.assertIn('Name', list(data))
+        self.assertIn('Accession', list(data))
+        self.assertEqual(data.loc[0, 'Accession'], 'B9LRY6')
+        self.assertEqual(data.loc[0, 'Source'], 'Pfam')
+        self.assertEqual(data.loc[0, 'Start'], 27)
+        self.assertEqual(data.loc[0, 'End'], 514)
+
+    def test_reader_class_cath(self):
+        # read
+        data = self.MSA.read(filename=self.inputcath, excluded_cols=self.excluded,
+                             get_uniprot_id=True)
+        self.assertIn('Sequence', list(data))
+        self.assertIn('Source', list(data))
+        self.assertIn('Description', list(data))
+        self.assertIn('Collection', list(data))
+        self.assertEqual(data.loc[0, 'Accession'], 'Q59288')
+        self.assertEqual(data.loc[0, 'Domain'], '1hm3A01')
+        self.assertEqual(data.loc[0, 'Collection'], 'cath')
+        self.assertEqual(data.loc[0, 'Start'], 27)
+        self.assertEqual(data.loc[0, 'End'], 338)
+
+        # download
+        self.MSA.download(self.pfamid, self.output_sto,
+                          aln_source="pfam", seq_format="stockholm",
+                          overwrite=True)
+        self.assertTrue(os.path.isfile(self.output_sto))
+        os.remove(self.output_sto)
+
+        # select
+        data = self.MSA.select(superfamily=self.pfamid,
+                               family=None, seq_format="stockholm",
+                               aln_source='pfam', get_uniprot_id=True,
+                               excluded_cols=None, overwrite=False)
+        self.assertIn('Sequence', list(data))
+        self.assertIn('Source', list(data))
+        self.assertIn('Name', list(data))
+        self.assertIn('Accession', list(data))
+        self.assertEqual(data.loc[0, 'Accession'], 'B9LRY6')
+        self.assertEqual(data.loc[0, 'Source'], 'Pfam')
+        self.assertEqual(data.loc[0, 'Start'], 27)
+        self.assertEqual(data.loc[0, 'End'], 514)
 
 
 if __name__ == '__main__':
