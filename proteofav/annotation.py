@@ -40,6 +40,8 @@ def parse_gff_features(filename, excluded_cols=None):
     :return: returns a pandas DataFrame
     """
 
+    log.debug("Parsing GFF annotations from file...")
+
     header = ('NAME', 'SOURCE', 'TYPE', 'START', 'END',
               'SCORE', 'STRAND', 'FRAME', 'GROUP', 'empty')
     data = pd.read_table(filename, skiprows=2, names=header)
@@ -92,6 +94,9 @@ def annotation_aggregation(table, identifier=None, query_type='', group_residues
 
     table['site'] = table.index.astype(str)
     table['accession'] = [identifier] * len(table)
+
+    log.debug("Aggregated annotations...")
+
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")
     return table

@@ -37,7 +37,7 @@ def parse_dssp_residues(filename, excluded_cols=None):
     :return: returns a pandas DataFrame
     """
 
-    log.info("Parsing DSSP from lines...")
+    log.debug("Parsing DSSP from lines...")
 
     # example lines with some problems
     """
@@ -105,9 +105,8 @@ def parse_dssp_residues(filename, excluded_cols=None):
     table = constrain_column_types(table, col_type_dict=dssp_types)
 
     if table.empty:
-        log.error('DSSP file {} resulted in a empty Dataframe'.format(filename))
-        raise ValueError('DSSP file {} resulted in a empty Dataframe'.format(
-            filename))
+        raise ValueError('DSSP file {} resulted in a empty Dataframe'
+                         ''.format(filename))
     return table
 
 
@@ -282,14 +281,17 @@ def get_rsa(acc, resname, method="Sander"):
     except KeyError:
         return rsa
 
+    log.debug("Computed RSA from DSSP ACC with method '{}'".format(method))
     return rsa
 
 
-def get_rsa_class(rsa):
+def get_rsa_class(rsa, lower_threshold=5.0, upper_threshold=25.0):
     """
     Gets a class based on the RSA value
 
     :param rsa: (float) RSA score or string
+    :param lower_threshold: (float) threshold
+    :param upper_threshold: (float) threshold
     :return: RSA class
     """
     rsa_class = '-'
@@ -298,15 +300,17 @@ def get_rsa_class(rsa):
         # surface is rsa >= 25% (value = 2)
         # exposed is rsa >= 5% and rsa < 25% (value = 1)
         # core is rsa < 5% (value = 0)
-        if rsa >= 25.0:
+        if rsa >= upper_threshold:
             rsa_class = 'Surface'
-        elif 5.0 <= rsa < 25.0:
+        elif lower_threshold <= rsa < upper_threshold:
             rsa_class = 'Part. Exposed'
         else:
             rsa_class = 'Core'
     except ValueError:
         # returns a string
         pass
+    log.debug("RSA Classes are based on RSA cut-offs: {} and {}"
+              "".format(lower_threshold, upper_threshold))
     return rsa_class
 
 
@@ -330,7 +334,7 @@ def select_dssp(identifier, excluded_cols=None, overwrite=False, **kwargs):
     table = constrain_column_types(table, col_type_dict=dssp_types)
 
     if table.duplicated(['RES_FULL', 'CHAIN']).any():
-        log.info('DSSP file for {} has not unique index'.format(identifier))
+        log.warning('DSSP file for {} has not unique index'.format(identifier))
     return table
 
 
@@ -363,20 +367,20 @@ def filter_dssp(table, excluded_cols=None,
     # table modular extensions
     if add_full_chain:
         table = _add_dssp_full_chain(table)
-        log.info("DSSP added full chain...")
+        log.debug("DSSP added full chain...")
 
     table['SS'] = table.SS.fillna('-')
     if add_ss_reduced:
         table = _add_dssp_ss_reduced(table)
-        log.info("DSSP added reduced SS...")
+        log.debug("DSSP added reduced SS...")
 
     if add_rsa:
         table = _add_dssp_rsa(table, method=rsa_method)
-        log.info("DSSP added RSA...")
+        log.debug("DSSP added RSA...")
 
     if add_rsa_class:
         table = _add_dssp_rsa_class(table)
-        log.info("DSSP added RSA class...")
+        log.debug("DSSP added RSA class...")
 
     # drop missing residues ("!")  and chain breaks ("!*")
     table = table[table['AA'] != '!']
@@ -385,21 +389,21 @@ def filter_dssp(table, excluded_cols=None,
     # excluding rows
     if chains is not None:
         table = row_selector(table, 'CHAIN', chains)
-        log.info("DSSP table filtered by CHAIN...")
+        log.debug("DSSP table filtered by CHAIN...")
 
     if chains_full is not None:
         table = row_selector(table, 'CHAIN_FULL', chains_full)
-        log.info("DSSP table filtered by CHAIN_FULL...")
+        log.debug("DSSP table filtered by CHAIN_FULL...")
 
     if res is not None:
         table = row_selector(table, 'RES', res)
-        log.info("DSSP table filtered by RES...")
+        log.debug("DSSP table filtered by RES...")
 
     if reset_res_id:
         table.reset_index(inplace=True)
         table = table.drop(['index'], axis=1)
         table['LINE'] = table.index + 1
-        log.info("DSSP reset residue number...")
+        log.debug("DSSP reset residue number...")
 
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")

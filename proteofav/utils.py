@@ -78,6 +78,7 @@ def fetch_from_url_or_retry(url, json=True, header=None, post=False, data=None,
         response = requests.get(url, headers=header, params=params, stream=stream)
 
     if response.ok:
+        log.debug("Fetched data from {}...".format(url))
         return response
     elif response.status_code in retry_in and n_retries >= 0:
         time.sleep(wait)
@@ -87,7 +88,7 @@ def fetch_from_url_or_retry(url, json=True, header=None, post=False, data=None,
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            log.debug("%s: Unable to retrieve %s for %s",
+            log.warning("%s: Unable to retrieve %s for %s",
                       response.status_code, url, e)
 
 
@@ -124,9 +125,8 @@ def row_selector(table, key=None, value=None, reverse=False):
             log.debug("%s not in the DataFrame...", key)
 
     if table.empty:
-        message = 'Column {} does not contain {} value(s)...'.format(key, value)
-        log.debug(message)
-        raise ValueError(message)
+        raise ValueError('Column {} does not contain {} value(s)...'
+                         ''.format(key, value))
 
     return table
 
@@ -416,8 +416,9 @@ class Downloader(object):
                     open(self._filename, 'wb') as outfile:
                 shutil.copyfileobj(infile, outfile)
                 os.remove(self._tempfile)
+            log.debug("Downloaded data from {}".format(self._url))
         except (URLError, HTTPError, IOError, Exception) as e:
-            log.debug("Unable to retrieve %s for %s", self._url, e)
+            log.error("Unable to retrieve %s for %s", self._url, e)
 
     def _uncompress(self):
         InputFileHandler(self._filename)
@@ -429,7 +430,7 @@ class Downloader(object):
                 open(self._filename, 'wb') as outfile:
             shutil.copyfileobj(infile, outfile)
             os.remove(self._tempfile)
-            log.info("Decompressed %s", self._filename)
+            log.debug("Decompressed %s", self._filename)
 
 
 class GenericInputs(object):

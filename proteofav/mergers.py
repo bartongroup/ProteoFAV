@@ -298,11 +298,12 @@ def merge_tables(uniprot_id=None,
 
         # Check if the sequences are the same
         if not (dssp_seq[~mask] == cif_seq[~mask]).all():
-            log_msg = '{}|{} Cif and DSSP files have different sequences.'.format(pdb_id, chain)
+            message = ('{}|{} Cif and DSSP files have different sequences.'
+                       ''.format(pdb_id, chain))
             if sequence_check == 'raise':
-                raise ValueError(log_msg)
+                raise ValueError(message)
             else:
-                log.warning(log_msg)
+                log.warning(message)
 
     sifts_table = select_sifts(pdb_id, chains=chain)
     try:
@@ -329,11 +330,12 @@ def merge_tables(uniprot_id=None,
 
         # Check if the sequences are the same
         if not (sifts_seq[~mask] == cif_seq[~mask]).all():
-            log_msg = '{}|{} Cif and Sifts files have different sequences.'.format(pdb_id, chain)
+            message = ('{}|{} Cif and Sifts files have different sequences.'
+                       ''.format(pdb_id, chain))
             if sequence_check == 'raise':
-                raise ValueError(log_msg)
+                raise ValueError(message)
             else:
-                log.warning(log_msg)
+                log.warning(message)
 
     if add_validation:
         validation_table = select_validation(pdb_id, chains=chain)
@@ -357,7 +359,7 @@ def merge_tables(uniprot_id=None,
             elif isinstance(ensembl_vars, pd.DataFrame):
                 variants_table = ensembl_vars
             else:
-                log.info('No variants found...')
+                log.warning('No variants found for {}...'.format(identifier))
                 variants_table = pd.DataFrame()
 
             if not variants_table.empty:
@@ -393,7 +395,7 @@ def merge_tables(uniprot_id=None,
                     continue
                 del table[col]
                 setattr(table, col, value)
-                log.info('Column {} is now an attribute.'.format(col))
+                log.debug('Column {} is now an attribute.'.format(col))
     return table
 
 
@@ -483,8 +485,8 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
                 pdb_id = data[0]['pdb_id']
                 chains = (data[0]['chain_id'],)
             else:
-                log.info("Best structures not available from the PDBe API for %s",
-                         uniprot_id)
+                log.warning("Best structures not available from the PDBe API for %s",
+                            uniprot_id)
                 raise TableMergerError('Nothing to merge...')
 
         # mmCIF table

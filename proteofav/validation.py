@@ -30,11 +30,13 @@ def parse_validation_residues(filename, excluded_cols=None, global_parameters=Fa
     :return: returns a pandas DataFrame
     """
 
+    log.debug("Parsing Validation records from file...")
+
     tree = etree.parse(filename)
     root = tree.getroot()
     if global_parameters:
         global_parameters = root.find('Entry').attrib
-        log.info(global_parameters)
+        log.debug(global_parameters)
     rows = []
     header = set()
     for i, elem in enumerate(root.iterfind('ModelledSubgroup')):
@@ -65,9 +67,8 @@ def parse_validation_residues(filename, excluded_cols=None, global_parameters=Fa
     table.fillna(value=np.nan, inplace=True)
 
     if table.empty:
-        log.error('Validation file {} resulted in a empty Dataframe'.format(filename))
-        raise ValueError('Validation file {} resulted in a empty Dataframe'.format(
-            filename))
+        raise ValueError('Validation file {} resulted in a empty Dataframe'
+                         ''.format(filename))
     return table
 
 
@@ -157,16 +158,16 @@ def filter_validation(table, excluded_cols=None, chains=None, res=None,
     # table modular extensions or selections
     if add_res_full:
         table = _add_validation_res_full(table)
-        log.info("Validation added full res (res + ins_code)...")
+        log.debug("Validation added full res (res + ins_code)...")
 
     # excluding rows
     if chains is not None:
         table = row_selector(table, 'validation_chain', chains)
-        log.info("Validation table filtered by CHAIN...")
+        log.debug("Validation table filtered by CHAIN...")
 
     if res is not None:
         table = row_selector(table, 'validation_resnum', res)
-        log.info("Validation table filtered by RES...")
+        log.debug("Validation table filtered by RES...")
 
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")

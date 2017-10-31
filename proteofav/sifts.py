@@ -28,7 +28,7 @@ def _parse_sifts_dbs_from_file(filename, excluded_cols=None):
     :return: returns a nested dictionary
     """
 
-    log.info("Parsing SIFTS dbs from lines...")
+    log.debug("Parsing SIFTS dbs from lines...")
 
     InputFileHandler(filename)
 
@@ -70,7 +70,7 @@ def _parse_sifts_regions_from_file(filename, excluded_cols=None):
     :return: returns a nested dictionary
     """
 
-    log.info("Parsing SIFTS regions from lines...")
+    log.debug("Parsing SIFTS regions from lines...")
 
     InputFileHandler(filename)
 
@@ -150,7 +150,7 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     :return: returns a pandas DataFrame
     """
 
-    log.info("Parsing SIFTS residues from lines...")
+    log.debug("Parsing SIFTS residues from lines...")
 
     # example lines with some problems
     """
@@ -345,9 +345,8 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     table = constrain_column_types(table, col_type_dict=sifts_types)
 
     if table.empty:
-        log.error('SIFTS file {} resulted in a empty Dataframe'.format(filename))
-        raise ValueError('SIFTS file {} resulted in a empty Dataframe'.format(
-            filename))
+        raise ValueError('SIFTS file {} resulted in a empty Dataframe'
+                         ''.format(filename))
     return table
 
 
@@ -398,24 +397,24 @@ def filter_sifts(table, excluded_cols=None, chains=None,
     # excluding rows
     if chains is not None:
         table = row_selector(table, 'PDB_entityId', chains)
-        log.info("SIFTS table filtered by PDB_entityId...")
+        log.debug("SIFTS table filtered by PDB_entityId...")
 
     if chain_auth is not None:
         table = row_selector(table, 'PDB_dbChainId', chain_auth)
-        log.info("SIFTS table filtered by PDB_dbChainId...")
+        log.debug("SIFTS table filtered by PDB_dbChainId...")
 
     if res is not None:
         table = row_selector(table, 'PDB_dbResNum', res)
-        log.info("SIFTS table filtered by PDB_dbResNum...")
+        log.debug("SIFTS table filtered by PDB_dbResNum...")
 
     if uniprot is not None:
         table = row_selector(table, 'UniProt_dbAccessionId', uniprot)
-        log.info("SIFTS table filtered by UniProt_dbAccessionId...")
+        log.debug("SIFTS table filtered by UniProt_dbAccessionId...")
 
     if site is not None:
         table = row_selector(table, 'UniProt_dbResNum', site)
-        log.info("SIFTS table filtered by UniProt_dbResNum...")
-        log.info("DSSP reset residue number...")
+        log.debug("SIFTS table filtered by UniProt_dbResNum...")
+        log.debug("DSSP reset residue number...")
 
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")

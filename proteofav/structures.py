@@ -59,7 +59,7 @@ def parse_mmcif_atoms(filename, excluded_cols=None):
     :return: returns a pandas DataFrame
     """
 
-    log.info("Parsing mmCIF atoms from lines...")
+    log.debug("Parsing mmCIF atoms from lines...")
 
     # example lines with some problems
     """
@@ -99,14 +99,15 @@ def parse_mmcif_atoms(filename, excluded_cols=None):
                          'pdbx_formal_charge')
 
     table = exclude_columns(table, excluded=excluded_cols)
+    log.debug("Removed columns from mmCIF: {}..."
+              "".format(', '.join(list(excluded_cols))))
 
     # enforce some specific column types
     table = constrain_column_types(table, col_type_dict=pdbx_types)
 
     if table.empty:
-        log.error('mmCIF file {} resulted in a empty Dataframe'.format(filename))
-        raise ValueError('mmCIF file {} resulted in a empty Dataframe'.format(
-            filename))
+        raise ValueError('mmCIF file {} resulted in a empty Dataframe'
+                         ''.format(filename))
     return table
 
 
@@ -124,7 +125,7 @@ def parse_pdb_atoms(filename, excluded_cols=None,
     :return: returns a pandas DataFrame
     """
 
-    log.info("Parsing PDB atoms from lines...")
+    log.debug("Parsing PDB atoms from lines...")
 
     # example lines
     """
@@ -185,14 +186,15 @@ def parse_pdb_atoms(filename, excluded_cols=None,
                          'pdbx_formal_charge')
 
     table = exclude_columns(table, excluded=excluded_cols)
+    log.debug("Removed columns from PDB: {}..."
+              "".format(', '.join(list(excluded_cols))))
 
     # enforce some specific column types
     table = constrain_column_types(table, col_type_dict=pdbx_types)
 
     if table.empty:
-        log.error('PDB file {} resulted in a empty Dataframe'.format(filename))
-        raise ValueError('PDB file {} resulted in a empty Dataframe'.format(
-            filename))
+        raise ValueError('PDB file {} resulted in a empty Dataframe'
+                         ''.format(filename))
     return table
 
 
@@ -456,8 +458,7 @@ def residues_aggregation(table, agg_method='centroid', category='auth'):
     agg_cols = ['pdbx_PDB_model_num', '{}_asym_id'.format(category),
                 '{}_seq_id'.format(category)]
     if agg_method not in ['centroid', 'first', 'unique', 'mean', 'backbone_centroid']:
-        raise ValueError('Method {} is not currently implemented...'
-                         ''.format(agg_method))
+        raise ValueError('Method {} is not currently implemented...'.format(agg_method))
     if agg_method == 'backbone_centroid':
         table = row_selector(table, '{}_atom_id'.format(category), ('CA', 'N', 'C', 'O'))
         agg_method = 'centroid'
@@ -469,6 +470,7 @@ def residues_aggregation(table, agg_method='centroid', category='auth'):
     columns_to_agg['id'] = 'first'
     table = table.groupby(by=agg_cols, as_index=False).agg(columns_to_agg)
     table = table.sort_values(by='id').reset_index()
+    log.debug("Aggregated residues based on agg_method '{}'".format(agg_method))
     return table
 
 
@@ -492,6 +494,7 @@ def write_mmcif_from_table(table, filename, overwrite=False):
     if not os.path.exists(filename) or overwrite:
         with open(filename, 'w') as outlines:
             outlines.write("\n".join(atom_lines))
+        log.debug("Wrote mmCIF-formatted file {}...".format(filename))
     else:
         log.info("mmCIF for %s already available...", filename)
     return
@@ -521,6 +524,7 @@ def write_pdb_from_table(table, filename, overwrite=False, category='auth'):
     if not os.path.exists(filename) or overwrite:
         with open(filename, 'w') as outlines:
             outlines.write("".join(atom_lines))
+        log.debug("Wrote PDB-formatted file {}...".format(filename))
     else:
         log.info("PDB for %s already available...", filename)
     return
@@ -615,12 +619,11 @@ def fetch_summary_properties_pdbe(identifier, retry_in=(429,)):
     return response
 
 
-def get_preferred_assembly_id(identifier, verbose=False):
+def get_preferred_assembly_id(identifier):
     """
     Gets the preferred assembly id for the given PDB ID, from the PDBe API.
 
     :param identifier: PDB ID
-    :param verbose: boolean
     :return: str
     """
 
@@ -628,9 +631,7 @@ def get_preferred_assembly_id(identifier, verbose=False):
     try:
         data = fetch_summary_properties_pdbe(identifier).json()
     except Exception as e:
-        message = "Something went wrong for {}... {}".format(identifier, e)
-        if verbose:
-            log.error(message)
+        log.error("Something went wrong for {}... {}".format(identifier, e))
     try:
         nassemblies = data[identifier][0]["assemblies"]
         if len(nassemblies) > 1:
@@ -730,67 +731,67 @@ def filter_structures(table, excluded_cols=None,
     # if only first model (>1 in NMR structures)
     if models:
         table = row_selector(table, 'pdbx_PDB_model_num', models)
-        log.info("mmCIF/PDB table filtered by pdbx_PDB_model_num...")
+        log.debug("mmCIF/PDB table filtered by pdbx_PDB_model_num...")
 
     # select chains
     if chains:
         table = row_selector(table, '{}_asym_id'.format(category), chains)
-        log.info("mmCIF/PDB table filtered by %s_asym_id...", category)
+        log.debug("mmCIF/PDB table filtered by %s_asym_id...", category)
 
     # select lines
     if lines:
         table = row_selector(table, 'group_PDB', lines)
-        log.info("mmCIF/PDB table filtered by group_PDB...")
+        log.debug("mmCIF/PDB table filtered by group_PDB...")
 
     # table modular extensions or selections
     if add_res_full:
         table = _add_mmcif_res_full(table)
-        log.info("mmCIF/PDB added full res (res + ins_code)...")
+        log.debug("mmCIF/PDB added full res (res + ins_code)...")
 
     if add_atom_altloc:
         table = _add_mmcif_atom_altloc(table)
-        log.info("mmCIF/PDB added full atom (atom + altloc)...")
+        log.debug("mmCIF/PDB added full atom (atom + altloc)...")
 
     if remove_hydrogens:
         table = row_selector(table, key='type_symbol', value='H', reverse=True)
-        log.info("mmCIF/PDB removed existing hydrogens...")
+        log.debug("mmCIF/PDB removed existing hydrogens...")
 
     if remove_altloc:
         table = _remove_multiple_altlocs(table)
         reset_atom_id = True
-        log.info("mmCIF/PDB removed altlocs...")
+        log.debug("mmCIF/PDB removed altlocs...")
 
     if remove_partial_res:
         table = _remove_partial_residues(table)
-        log.info("mmCIF/PDB removed incomplete residues...")
+        log.debug("mmCIF/PDB removed incomplete residues...")
 
     if reset_atom_id:
         table.reset_index(inplace=True)
         table = table.drop(['index'], axis=1)
         table['id'] = table.index + 1
-        log.info("mmCIF/PDB reset atom numbers...")
+        log.debug("mmCIF/PDB reset atom numbers...")
 
     # excluding rows
     # select residues
     if res:
         table = row_selector(table, '{}_seq_id'.format(category), res)
-        log.info("mmCIF/PDB table filtered by %s_seq_id...", category)
+        log.debug("mmCIF/PDB table filtered by %s_seq_id...", category)
 
     if res_full:
         table = row_selector(table, '{}_seq_id_full'.format(category), res_full)
-        log.info("mmCIF/PDB table filtered by %s_seq_id_full...", category)
+        log.debug("mmCIF/PDB table filtered by %s_seq_id_full...", category)
 
     # select amino acids/molecules
     if comps:
         table = row_selector(table, '{}_comp_id'.format(category), comps)
-        log.info("mmCIF/PDB table filtered by %s_comp_id...", category)
+        log.debug("mmCIF/PDB table filtered by %s_comp_id...", category)
 
     # select atoms
     if atoms == 'centroid' or atoms == 'backbone_centroid':
         table = residues_aggregation(table, agg_method=atoms)
     elif atoms:
         table = row_selector(table, '{}_atom_id'.format(category), atoms)
-        log.info("mmCIF/PDB table filtered by %s_atom_id...", category)
+        log.debug("mmCIF/PDB table filtered by %s_atom_id...", category)
 
     if residue_agg:
         table = residues_aggregation(table, agg_method=agg_method,
@@ -824,9 +825,9 @@ def read_structures(filename=None, input_format=None, excluded_cols=None,
         elif filename.endswith('.cif') or filename.endswith('.mmcif'):
             input_format = "mmcif"
         else:
-            message = ("Could not guess the format of the input file... "
-                       "Please define it by passing 'input_format'='<name>'")
-            raise ValueError(message)
+            raise ValueError("Could not guess the format of the input file... "
+                             "Please define it by passing 'input_format'='<name>'")
+        log.debug("Input format seems to be {}...".format(input_format))
 
     if input_format == 'mmcif':
         table = parse_mmcif_atoms(filename, excluded_cols=excluded_cols)
@@ -835,8 +836,6 @@ def read_structures(filename=None, input_format=None, excluded_cols=None,
                                 fix_ins_code=pdb_fix_ins_code,
                                 fix_label_alt_id=pdb_fix_label_alt_id,
                                 fix_type_symbol=pdb_fix_type_symbol)
-    if table.empty:
-        raise ValueError('{} resulted in an empty DataFrame...'.format(filename))
     return table
 
 
@@ -863,9 +862,8 @@ def write_structures(table=None, filename=None, overwrite=False,
             elif filename.endswith('.cif') or filename.endswith('.mmcif'):
                 output_format = "mmcif"
             else:
-                message = ("Could not guess the format of the input file... "
-                           "Please define it by passing 'input_format'='<name>'")
-                raise ValueError(message)
+                raise ValueError("Could not guess the format of the input file... "
+                                 "Please define it by passing 'input_format'='<name>'")
 
         if output_format == 'mmcif' or output_format == 'cif':
             write_mmcif_from_table(filename=filename, table=table,
@@ -901,9 +899,8 @@ def download_structures(identifier, filename, output_format='mmcif',
         elif filename.endswith('.cif') or filename.endswith('.mmcif'):
             output_format = "mmcif"
         else:
-            message = ("Could not guess the format of the input file... "
-                       "Please define it by passing 'input_format'='<name>'")
-            raise ValueError(message)
+            raise ValueError("Could not guess the format of the input file... "
+                             "Please define it by passing 'input_format'='<name>'")
 
     decompress = False
     if output_format == 'mmcif' or output_format == 'cif':
@@ -931,9 +928,8 @@ def download_structures(identifier, filename, output_format='mmcif',
         url = url_root + url_endpoint
 
     else:
-        message = ("Could not guess the format of the output file... "
-                   "Please define it by passing 'output_format'='<name>'")
-        raise ValueError(message)
+        raise ValueError("Could not guess the format of the output file... "
+                         "Please define it by passing 'output_format'='<name>'")
 
     Downloader(url=url, filename=filename,
                decompress=decompress, overwrite=overwrite)

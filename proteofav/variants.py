@@ -575,7 +575,7 @@ def fetch_variants(identifier, id_source=None, synonymous=True, uniprot_vars=Tru
             info = fetch_uniprot_ensembl_mapping(identifier,
                                                  species=species).json()
         except ValueError:
-            log.info('Provided species {} is not valid'.format(species))
+            log.error('Provided species {} is not valid'.format(species))
             return None
         ensps = get_ensembl_protein_id_from_mapping(info)
         best_match = get_preferred_ensembl_id_from_mapping(ensps,
@@ -915,4 +915,3 @@ def _fetch_icgc_variants(identifier):
         data = data.join(transition)
 
     return data
-

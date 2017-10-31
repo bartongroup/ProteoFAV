@@ -58,6 +58,8 @@ def read_alignments(filename, seq_format=None):
     if seq_format is None:
         raise ValueError("Alignment format unrecognised...")
 
+    log.debug("Sequence format seems to be {}...".format(seq_format))
+
     alignment = AlignIO.read(filename, seq_format)
     return alignment, seq_format
 
@@ -73,6 +75,8 @@ def read_msas(filename, excluded_cols=(), seq_format=None, get_uniprot_id=True):
     :param get_uniprot_id: (boolean)
     :return: returns a pandas DataFrame
     """
+
+    log.debug("Parsing MSA from file...")
 
     rows = []
     alignment, seq_format = read_alignments(filename, seq_format)
@@ -152,7 +156,7 @@ def parse_sequence_info_from_description(description, entry, seq_format=None,
         if entry != prev_entry:
             return entry
 
-    log.debug("Nothing parsed from the MSA sequence description...")
+    log.warning("Nothing parsed from the MSA sequence description...")
     return entry
 
 
