@@ -3,8 +3,6 @@ ProteoFAV
 
 **Protein Feature Aggregation and Variants**
 
-.. |Pypi| |Build Status| |Documentation| |Coverage Status| |Health| |Pyup| |License|
-
 |Build Status| |Documentation| |Python: versions| |License|
 
 .. |Pypi| image:: https://img.shields.io/pypi/v/proteofav.svg
