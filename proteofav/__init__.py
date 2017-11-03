@@ -13,6 +13,6 @@ and genetic variation
 """
 
 __title__ = 'proteofav'
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __license__ = 'GNU GPL3'
 __authors__ = [u'Fábio Madeira', u'Thiago Britto-Borges', u'Stuart MacGowan']
