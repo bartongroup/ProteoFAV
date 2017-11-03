@@ -3,20 +3,28 @@ ProteoFAV
 
 **Protein Feature Aggregation and Variants**
 
+.. |Pypi| |Build Status| |Documentation| |Coverage Status| |Health| |Pyup| |License|
 
-.. image:: https://img.shields.io/pypi/v/proteofav.svg
-        :target: https://pypi.python.org/pypi/proteofav
+|Build Status| |Documentation| |Python: versions| |License|
 
-.. image:: https://img.shields.io/travis/bartongroup/proteofav.svg
-        :target: https://travis-ci.org/bartongroup/proteofav
-
-.. image:: https://readthedocs.org/projects/proteofav/badge/?version=latest
-        :target: https://proteofav.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
-.. image:: https://pyup.io/repos/github/bartongroup/proteofav/shield.svg
-     :target: https://pyup.io/repos/github/bartongroup/proteofav/
-     :alt: Updates
+.. |Pypi| image:: https://img.shields.io/pypi/v/proteofav.svg
+  :target: https://pypi.python.org/pypi/proteofav
+.. |Build Status| image:: https://img.shields.io/travis/bartongroup/proteofav.svg
+  :target: https://travis-ci.org/bartongroup/proteofav
+.. |Documentation| image:: https://readthedocs.org/projects/proteofav/badge/?version=latest
+  :target: https://proteofav.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
+.. |Coverage Status| image:: https://coveralls.io/repos/github/bartongroup/proteofav/badge.svg?branch=master
+  :target: https://coveralls.io/github/bartongroup/proteofav?branch=master
+.. |Health| image:: https://landscape.io/github/bartongroup/proteofav/master/landscape.svg?style=flat
+  :target: https://landscape.io/github/bartongroup/proteofav/master
+.. |Pyup| image:: https://pyup.io/repos/github/bartongroup/proteofav/shield.svg
+   :target: https://pyup.io/repos/github/bartongroup/proteofav/
+   :alt: Updates
+.. |License| image:: http://img.shields.io/badge/license-GPLv3-brightgreen.svg?style=flat
+  :target: https://github.com/bartongroup/proteofav//blob/master/LICENSE.md
+.. |Python: versions| image:: https://img.shields.io/badge/python-3.5,_3.6-blue.svg?style=flat
+   :target: http://travis-ci.org/bartongroup/proteofav/
 
 ProteoFAV is a Python module that address the challenge of cross-mapping protein structures and protein sequences,
 allowing for protein structures to be annotated with sequence features. It implements methods for working with
