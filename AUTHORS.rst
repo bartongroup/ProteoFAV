@@ -20,11 +20,6 @@ We would like to thank:
 * Python developers and community: `Python`_, `Pandas`_, etc.
 
 
-Contributors
-------------
-
-None yet. Why not be the first?
-
 .. _UniProt: http://www.uniprot.org/
 .. _Ensembl: http://www.ensembl.org/
 .. _PDBe: http://www.ebi.ac.uk/pdbe/

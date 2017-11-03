@@ -2,18 +2,11 @@
 Example Usage
 =============
 
-ProteoFAV works both as a module and a command line tool.
+Example usage is currently provided as a `Jupyter Notebook`, which can be viewed with the `GitHub's`_ file viewer or with the Jupyter `nbviewer`_.
 
-From the command line use::
-
-    python PycharmProjects/ProteoFAV/ --pdb=2w4o --chain=A test.csv
+You can download the Jupyter notebook from `GitHub`_ and test it with your ProteoFAV's installation.
 
 
-To use ProteoFAV in a project::
-
-    import proteofav
-
-To import a protected method - do it at your own risk - use::
-
-    from proteofav.uniprot import _uniprot_info
-
+.. _GitHub's: https://github.com/bartongroup/ProteoFAV/blob/master/Examples.ipynb
+.. _nbviewer: https://nbviewer.jupyter.org/github/bartongroup/ProteoFAV/blob/master/Examples.ipynb
+.. _GitHub: https://github.com/bartongroup/ProteoFAV

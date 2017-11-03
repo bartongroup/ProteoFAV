@@ -1,8 +1,6 @@
-ProteoFAV DocStrings
+ProteoFAV Docstrings
 ====================
 
-Modules
--------
 
 proteofav.config module
 -----------------------
@@ -74,6 +72,14 @@ proteofav.mergers module
 ------------------------
 
 .. automodule:: proteofav.mergers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+proteofav.msas module
+---------------------
+
+.. automodule:: proteofav.msas
     :members:
     :undoc-members:
     :show-inheritance:

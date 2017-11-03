@@ -1,8 +1,19 @@
 .. highlight:: shell
 
-============
-Contributing
-============
+=============================
+Contributing and Bug tracking
+=============================
+
+Feel free to fork, clone, share and distribute. If you find any bugs or issues please log them in the `issue tracker`_.
+
+Before you submit your Pull-requests read the `Contributing Guide`_ below.
+
+.. _issue tracker: https://github.com/bartongroup/ProteoFAV/issues
+.. _Contributing Guide: contributing.html#contributing-guide
+
+
+Contributing Guide
+------------------
 
 Contributions are welcome, and they are greatly appreciated! Every
 little bit helps, and credit will always be given. You can
