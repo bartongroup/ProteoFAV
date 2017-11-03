@@ -31,8 +31,8 @@ log = logging.getLogger('proteofav.config')
               help="Whether to merge genetic variant information to the output.")
 # @click.option('--remove_redundant', is_flag=True,
 #               help="Whether to remove columns with redundant information from the output.")
-@click.argument('output', type=click.File('wb'))
 def main(pdb, chain, uniprot, output_type, verbose, log, add_dssp,
+@click.argument('output', type=click.File('w'))
          add_annotations, add_validation, add_variants, output):
     """
     ProteFAV: a Python framework to process and integrate protein structure and
@@ -56,7 +56,7 @@ def main(pdb, chain, uniprot, output_type, verbose, log, add_dssp,
                             sequence_check='ignore')
 
     if output_type == 'csv':
-        table.to_csv(output)
+        table.to_csv(output, encoding='utf-8')
     elif output_type in {'jalview', 'chimera'}:
         raise NotImplementedError
     else:
