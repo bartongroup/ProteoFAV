@@ -10,3 +10,4 @@ responses>=0.8.1
 lxml>=3.7.3
 click>=6.7
 biopython>=1.68
+click_log>=0.2.1

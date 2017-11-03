@@ -3,6 +3,7 @@
 import sys
 import click
 import logging
+import click_log
 
 from proteofav.mergers import Tables
 
@@ -18,7 +19,6 @@ log = logging.getLogger('proteofav.config')
 @click.option('--output_type', default='csv',
               type=click.Choice(['csv', 'json', 'tab']),  # TODO add JALVIEW and chimera
               help='File format for the output.')
-@click.option('-v', '--verbose', is_flag=True, help="Show more verbose logging.")
 @click.option('-l', '--log', default=sys.stderr, help="Path to the logfile.",
               type=click.File('wb'))
 @click.option('--add_dssp', is_flag=True,
@@ -31,8 +31,9 @@ log = logging.getLogger('proteofav.config')
               help="Whether to merge genetic variant information to the output.")
 # @click.option('--remove_redundant', is_flag=True,
 #               help="Whether to remove columns with redundant information from the output.")
-def main(pdb, chain, uniprot, output_type, verbose, log, add_dssp,
 @click.argument('output', type=click.File('w'))
+@click_log.simple_verbosity_option(default="INFO")
+def main(pdb, chain, uniprot, output_type, log, add_dssp,
          add_annotations, add_validation, add_variants, output):
     """
     ProteFAV: a Python framework to process and integrate protein structure and
@@ -40,8 +41,7 @@ def main(pdb, chain, uniprot, output_type, verbose, log, add_dssp,
     OUTPUT: Path to the output file. Use `-` for stdout
     """
 
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(stream=log, level=level,
+    logging.basicConfig(stream=log,
                         format='%(asctime)s - %(levelname)s - %(message)s ')
 
     table = Tables.generate(pdb_id=pdb,
