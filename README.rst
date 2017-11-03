@@ -37,17 +37,37 @@ data exploration and analysis. Structure and sequence
 data are parsed/fetched onto Pandas DataFrames that are then merged-together (collapsed) onto a
 single DataFrame.
 
+Getting Started
+---------------
 
 Dependencies
 ~~~~~~~~~~~~
 
-The framework was developed to support Python 3.5+ and Pandas 0.20+.
+ProteoFAV was developed to support Python 3.5+ and Pandas 0.20+.
 
 Check `requirements`_ for specific requirements.
 
+.. _requirements: https://github.com/bartongroup/ProteoFAV/blob/master/requirements.txt
 
-Installation and developing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Installation
+~~~~~~~~~~~~
+
+To install the stable release, run this command in your terminal:
+
+.. code-block:: console
+
+    $ pip install proteofav
+
+If you don't have `pip`_ installed, this `Python installation guide`_ can guide
+you through the process.
+
+.. _pip: https://pip.pypa.io
+.. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
+
+
+Installing from source in a virtual environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Getting ProteoFAV:
 
@@ -56,11 +76,11 @@ Getting ProteoFAV:
     $ wget https://github.com/bartongroup/ProteoFAV/archive/master.zip -O ProteoFAV.zip
     $ unzip ProteoFAV.zip
 
-    # alternatively
+    # alternatively, cloning the git repository
     $ git clone https://github.com/bartongroup/ProteoFAV.git
 
 
-Installing With conda:
+Installing With Conda:
 
 .. code-block:: bash
 
@@ -76,7 +96,11 @@ Installing with Virtualenv:
     $ virtualenv --python `which python` env
     $ source env/bin/activate
     $ pip install -r requirements.txt
+    $ python path/to/ProteoFAV/setup.py install
 
+
+Testing the installation
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Test dependencies should be resolved with:
 
@@ -95,8 +119,10 @@ Run the Tests with:
     $ python -m unittest discover
 
 
-Configuration
-~~~~~~~~~~~~~
+ProteoFAV Configuration
+~~~~~~~~~~~~~~~~~~~~~~~
+
+ProteoFAV uses a configuration file `config.ini` where the user can specify the directory paths, as well as urls for commonly used data sources.
 
 After installing run:
 
@@ -104,37 +130,41 @@ After installing run:
 
     $ proteofav-setup
 
-To set-up the download directories for mmCIF (``db_mmcif``), SIFTS (``db_sifts``), DSSP (``db_dssp``),
-PDB Validation (``db_validation``) and Annotations (``db_annotation``) in the
-``config.ini``, otherwise ProteoFAV will download files to temporary directories.
 
-Usage
-~~~~~
+Example Usage
+-------------
 
-TODO
+Example usage is currently provided as a `Jupyter Notebook`, which can be viewed with the `GitHub's`_ file viewer or with the Jupyter `nbviewer`_.
+
+You can download the Jupyter notebook from `GitHub`_ and test it with your ProteoFAV's installation.
+
+.. _GitHub's: https://github.com/bartongroup/ProteoFAV/blob/master/Examples.ipynb
+.. _nbviewer: https://nbviewer.jupyter.org/github/bartongroup/ProteoFAV/blob/master/Examples.ipynb
+.. _GitHub: https://github.com/bartongroup/ProteoFAV
 
 
 Contributing and Bug tracking
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
 Feel free to fork, clone, share and distribute. If you find any bugs or
 issues please log them in the `issue tracker`_.
 
 Before you submit your *Pull-requests* read the `Contributing Guide`_.
 
-
-Changelog
-~~~~~~~~~
-
-See the `Changelog`_
-
 Credits
-~~~~~~~
+-------
 
 See the `Credits`_
 
+
+Changelog
+---------
+
+See the `Changelog`_
+
+
 Licensing
-~~~~~~~~~
+---------
 
 GNU General Public License v3 (GPLv3). See `license`_ for details.
 
