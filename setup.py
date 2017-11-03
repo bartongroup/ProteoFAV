@@ -62,14 +62,13 @@ setup(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'License :: GNU GPL3',
         'Natural Language :: English',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: PyPy',
-        'Programming Language :: Python :: Implementation :: PyPy3',
         'Topic :: Internet',
-        'Topic :: Scientific/Engineering :: Bio-informatics',
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
         'Topic :: Software Development :: Libraries :: Python Modules',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
     ]
 )
