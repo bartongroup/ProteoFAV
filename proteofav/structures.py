@@ -21,8 +21,9 @@ except ImportError:
 from proteofav.config import defaults
 from proteofav.utils import (fetch_from_url_or_retry, row_selector,
                              InputFileHandler, OutputFileHandler, GenericInputs,
-                             constrain_column_types, exclude_columns, Downloader)
-from proteofav.library import pdbx_types, aa_default_atoms
+                             constrain_column_types, exclude_columns, Downloader,
+                             check_sequence)
+from proteofav.library import pdbx_types, aa_default_atoms, scop_3to1
 
 log = logging.getLogger('proteofav.config')
 
@@ -646,6 +647,33 @@ def get_preferred_assembly_id(identifier):
 
     bio_best = str(pref_assembly)
     return bio_best
+
+
+def get_sequence(table, category='auth', ambiguous='X'):
+    """
+    Get the sequence for the PDBx table.
+
+    :param table: pandas DataFrame from PDBXreader
+    :param category: data category to be used as precedence in _atom_site.*_*
+        asym_id, seq_id and atom_id
+    :param ambiguous: (str) 1-letter symbol for ambiguous residues
+    :returns: (str) 1-letter sequence
+    """
+
+    # assumes it's a valid PDBx table
+    if isinstance(table, pd.DataFrame):
+        sequence = ""
+        for ix in table.index:
+            aa3 = table.loc[ix, "{}_comp_id".format(category)]
+            aa1 = scop_3to1[aa3]
+            if len(aa1) == 1:
+                sequence += aa1
+            else:
+                sequence += 'X'
+        sequence = check_sequence(sequence=sequence, ambiguous=ambiguous)
+    else:
+        return ValueError("Pandas DataFrame is not valid...")
+    return sequence
 
 
 ##############################################################################

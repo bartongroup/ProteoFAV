@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 import unittest
+import pandas as pd
 
 try:
     from mock import patch
@@ -22,7 +23,7 @@ from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_struc
                                   _remove_multiple_altlocs, _remove_partial_residues,
                                   read_structures, write_structures, download_structures,
                                   PDB, mmCIF, get_preferred_assembly_id,
-                                  fetch_summary_properties_pdbe)
+                                  fetch_summary_properties_pdbe, get_sequence)
 
 
 @patch("proteofav.structures.defaults", defaults)
@@ -69,6 +70,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.download_structures = download_structures
         self.PDB = PDB
         self.mmCIF = mmCIF
+        self.get_sequence = get_sequence
 
     def tearDown(self):
         """Remove testing framework."""
@@ -104,6 +106,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.download_structures = None
         self.PDB = None
         self.mmCIF = None
+        self.get_sequence = None
 
     def test_atom_to_table_mmcif(self):
         """
@@ -597,6 +600,15 @@ class TestMMCIFParser(unittest.TestCase):
     def test_preferred_assembly_pdbe(self):
         r = self.get_preferred_assembly_id(self.pdbid)
         self.assertEqual("1", r)
+
+    def test_get_sequence_structures(self):
+        table = mmCIF.read(filename=self.example_mmcif)
+        self.assertTrue(isinstance(table, pd.DataFrame))
+        table = self.filter_structures(table, chains=('A',), lines=('ATOM',))
+        table = self.residues_aggregation(table)
+        seq = self.get_sequence(table)
+        self.assertEqual(329, len(seq))
+        self.assertEqual('VPWFPRTIQELDRFANQILDADHPG', seq[0:25])
 
 
 if __name__ == '__main__':
