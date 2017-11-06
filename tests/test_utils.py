@@ -24,7 +24,8 @@ from proteofav.utils import (fetch_from_url_or_retry,
                              flatten_nested_structure,
                              refactor_key_val_singletons,
                              splitting_up_by_key,
-                             merging_down_by_key)
+                             merging_down_by_key,
+                             check_sequence)
 
 from proteofav.config import defaults as config
 
@@ -123,6 +124,10 @@ class TestUTILS(unittest.TestCase):
             'M5': [1, 2, 3],
             'M6': {'z1': 'z1'}
         }
+        self.check_sequence = check_sequence
+        self.seq1 = 'ADEK--XX*PTSV'
+        self.seq2 = 'GEDL--XX*PSSV'
+        self.seq3 = 'GEDL----*PSSV'
 
     def tearDown(self):
         """Remove testing framework."""
@@ -148,6 +153,10 @@ class TestUTILS(unittest.TestCase):
         self.vars_mock = None
         self.vars_mock2 = None
         self.json_mock = None
+        self.check_sequence = None
+        self.seq1 = None
+        self.seq2 = None
+        self.seq3 = None
 
     def test_fetch_from_url_or_retry_get_json(self):
         # mocked requests
@@ -429,6 +438,17 @@ class TestUTILS(unittest.TestCase):
         self.assertEqual(data['M4'], 'four')
         self.assertEqual(data['M5'], [1, 2, 3])
         self.assertEqual(data['M6_z1'], 'z1')
+
+    def test_check_sequence(self):
+        seq = self.check_sequence(self.seq1, gap_symbol='-', new_gap_symbol='X', ambiguous='X')
+        self.assertNotEqual(self.seq1, seq)
+        self.assertEqual(seq, 'ADEKXXXXXPTSV')
+        seq = self.check_sequence(self.seq2, gap_symbol='X', new_gap_symbol='-', ambiguous='-')
+        self.assertNotEqual(self.seq2, seq)
+        self.assertEqual(seq, 'GEDL-----PSSV')
+        seq = self.check_sequence(self.seq3, gap_symbol='-', new_gap_symbol='-', ambiguous='X')
+        self.assertNotEqual(self.seq3, seq)
+        self.assertEqual(seq, 'GEDL----XPSSV')
 
 
 if __name__ == '__main__':

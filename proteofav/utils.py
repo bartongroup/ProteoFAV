@@ -20,6 +20,8 @@ except ImportError:  # python 3.5
     from urllib.parse import quote as urllib_quote
     from urllib.request import urlretrieve
 
+from proteofav.library import aa_codes_1to3_extended
+
 log = logging.getLogger('proteofav.config')
 socket.setdefaulttimeout(15)  # avoid infinite hanging
 
@@ -349,6 +351,25 @@ def refactor_key_val_singletons(dictionary):
         else:
             new_dictionary[k] = v
     return new_dictionary
+
+
+def check_sequence(sequence, gap_symbol='-', new_gap_symbol='-', ambiguous='X'):
+    """
+    Checks an input sequence for uncommon residue symbols.
+
+    :param sequence: (str) protein sequence
+    :param gap_symbol: (str) 1-letter symbol for gaps
+    :param new_gap_symbol: (str) 1-letter symbol for gaps
+    :param ambiguous: (str) 1-letter symbol for ambiguous residues
+    :return: returns modified sequence
+    """
+
+    new_sequence = "".join([ambiguous if aa not in list(aa_codes_1to3_extended.keys()) else aa
+                            for aa in sequence])
+    if gap_symbol != new_gap_symbol:
+        new_sequence = new_sequence.replace(gap_symbol, new_gap_symbol)
+
+    return new_sequence
 
 
 class InputFileHandler(object):
