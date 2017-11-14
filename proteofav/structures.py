@@ -653,7 +653,7 @@ def get_sequence(table, category='auth', ambiguous='X'):
     """
     Get the sequence for the PDBx table.
 
-    :param table: pandas DataFrame from PDBXreader
+    :param table: pandas DataFrame from PDB/mmCIF.read()
     :param category: data category to be used as precedence in _atom_site.*_*
         asym_id, seq_id and atom_id
     :param ambiguous: (str) 1-letter symbol for ambiguous residues
