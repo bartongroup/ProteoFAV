@@ -19,7 +19,7 @@ ProteoFAV
 .. |Pyup| image:: https://pyup.io/repos/github/bartongroup/proteofav/shield.svg
    :target: https://pyup.io/repos/github/bartongroup/proteofav/
    :alt: Updates
-.. |License| image:: http://img.shields.io/badge/license-GPLv3-brightgreen.svg?style=flat
+.. |License| image:: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
   :target: https://github.com/bartongroup/proteofav//blob/master/LICENSE.md
 .. |Python: versions| image:: https://img.shields.io/badge/python-3.5,_3.6-blue.svg?style=flat
    :target: http://travis-ci.org/bartongroup/proteofav/
@@ -164,7 +164,7 @@ See the `Changelog`_
 Licensing
 ---------
 
-GNU General Public License v3 (GPLv3). See `license`_ for details.
+The MIT License (MIT). See `license`_ for details.
 
 .. _requirements: https://github.com/bartongroup/ProteoFAV/blob/master/requirements.txt
 .. _license: https://github.com/bartongroup/ProteoFAV/blob/master/LICENSE.md

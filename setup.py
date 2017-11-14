@@ -9,7 +9,7 @@ of protein structure data with sequence annotations
 and genetic variation
 
 :copyright: (c) 2015-2017.
-:license: GNU GPL3, see LICENSE for more details.
+:license: MIT, see LICENSE for more details.
 """
 
 import os
@@ -69,6 +69,6 @@ setup(
         'Topic :: Internet',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
+        'License :: OSI Approved :: MIT License',
     ]
 )
