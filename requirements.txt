@@ -3,6 +3,7 @@
 # Run 'pip install -r requirements.txt' to install these dependencies
 
 numpy>=1.13.3
+scipy>=0.19.1
 pandas>=0.20.3
 requests>=2.18.2
 requests_cache>=0.4.13
