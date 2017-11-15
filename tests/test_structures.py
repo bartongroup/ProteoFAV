@@ -24,7 +24,8 @@ from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_struc
                                   _remove_multiple_altlocs, _remove_partial_residues,
                                   read_structures, write_structures, download_structures,
                                   PDB, mmCIF, get_preferred_assembly_id,
-                                  fetch_summary_properties_pdbe, get_sequence)
+                                  fetch_summary_properties_pdbe,
+                                  get_sequence, get_coordinates)
 
 
 @patch("proteofav.structures.defaults", defaults)
@@ -74,6 +75,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.PDB = PDB
         self.mmCIF = mmCIF
         self.get_sequence = get_sequence
+        self.get_coordinates = get_coordinates
 
     def tearDown(self):
         """Remove testing framework."""
@@ -112,6 +114,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.PDB = None
         self.mmCIF = None
         self.get_sequence = None
+        self.get_coordinates = None
 
     def test_atom_to_table_mmcif(self):
         """
@@ -624,13 +627,18 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual("1", r)
 
     def test_get_sequence_structures(self):
-        table = mmCIF.read(filename=self.example_mmcif)
+        table = self.mmCIF.read(filename=self.example_mmcif)
         self.assertTrue(isinstance(table, pd.DataFrame))
         table = self.filter_structures(table, chains=('A',), lines=('ATOM',))
         table = self.residues_aggregation(table)
         seq = self.get_sequence(table)
         self.assertEqual(329, len(seq))
         self.assertEqual('VPWFPRTIQELDRFANQILDADHPG', seq[0:25])
+
+    def test_get_coordinates(self):
+        data = self.mmCIF.read(filename=self.example_mmcif)
+        coords = self.get_coordinates(data)
+        self.assertEqual(coords[0].tolist(), [-7.069, 21.943, 18.77])
 
 
 if __name__ == '__main__':

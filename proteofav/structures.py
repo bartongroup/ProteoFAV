@@ -9,6 +9,7 @@ for better error handling. Both levels are covered by test cases.
 
 import os
 import logging
+import numpy as np
 import pandas as pd
 from scipy.spatial import cKDTree
 from string import ascii_uppercase
@@ -708,6 +709,26 @@ def get_sequence(table, category='auth', ambiguous='X'):
     else:
         return ValueError("Pandas DataFrame is not valid...")
     return sequence
+
+
+def get_coordinates(table):
+    """
+    Get coordinates from the provided PDBx table
+    and return a vector-set with all the coordinates.
+
+    :param table: pandas DataFrame from PDBXreader
+    :returns: coordinates - array (N,3) where N is number of atoms
+    """
+
+    # assumes it's a valid PDBx table
+    if isinstance(table, pd.DataFrame):
+        coords = [np.array([table.loc[i, "Cartn_x"],
+                            table.loc[i, "Cartn_y"],
+                            table.loc[i, "Cartn_z"]],
+                           dtype=float) for i in table.index]
+    else:
+        return ValueError("Pandas DataFrame is not valid...")
+    return coords
 
 
 ##############################################################################
