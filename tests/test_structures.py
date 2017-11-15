@@ -20,6 +20,7 @@ from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_struc
                                   _get_atom_line, residues_aggregation,
                                   filter_structures,
                                   _add_mmcif_res_full, _add_mmcif_atom_altloc,
+                                  _get_contact_indexes_from_table, _add_mmcif_contacts,
                                   _remove_multiple_altlocs, _remove_partial_residues,
                                   read_structures, write_structures, download_structures,
                                   PDB, mmCIF, get_preferred_assembly_id,
@@ -63,6 +64,8 @@ class TestMMCIFParser(unittest.TestCase):
         self.filter_structures = filter_structures
         self.add_mmcif_res_full = _add_mmcif_res_full
         self.add_mmcif_atom_altloc = _add_mmcif_atom_altloc
+        self.get_contact_indexes = _get_contact_indexes_from_table
+        self.add_contacts = _add_mmcif_contacts
         self.remove_multiple_altlocs = _remove_multiple_altlocs
         self.remove_partial_residues = _remove_partial_residues
         self.read_structures = read_structures
@@ -99,6 +102,8 @@ class TestMMCIFParser(unittest.TestCase):
         self.filter_structures = None
         self.add_mmcif_res_full = None
         self.add_mmcif_atom_altloc = None
+        self.get_contact_indexes = None
+        self.add_contacts = None
         self.remove_multiple_altlocs = None
         self.remove_partial_residues = None
         self.read_structures = None
@@ -460,6 +465,23 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual('CA.B', data.loc[3, 'label_atom_altloc_id'])
         self.assertEqual('C', data.loc[4, 'label_atom_altloc_id'])
         self.assertEqual('O', data.loc[5, 'label_atom_altloc_id'])
+
+    def test_get_contact_indexes(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        indexes = self.get_contact_indexes(data)
+        self.assertEqual(indexes[0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 13])
+
+    def test_reader_add_contacts(self):
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        data = self.add_contacts(data)
+        keys = [k for k in data]
+        self.assertIn('contact_indexes', keys)
+        self.assertEqual(data.loc[0, 'contact_indexes'], '0,1,2,3,4,5,6,7,8,13')
+        data = self.mmcif_atom_parser(self.example_mmcif)
+        data = self.filter_structures(data, add_contacts=True, dist=5.0)
+        keys = [k for k in data]
+        self.assertIn('contact_indexes', keys)
+        self.assertEqual(data.loc[0, 'contact_indexes'], '0,1,2,3,4,5,6,7,8,13')
 
     def test_filter_structures_remove_altloc(self):
         data = self.pdb_atom_parser(self.example_pdb2)

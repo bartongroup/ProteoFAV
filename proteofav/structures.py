@@ -10,6 +10,7 @@ for better error handling. Both levels are covered by test cases.
 import os
 import logging
 import pandas as pd
+from scipy.spatial import cKDTree
 from string import ascii_uppercase
 
 try:
@@ -356,6 +357,39 @@ def _add_mmcif_atom_altloc(table):
     # NB. Use of assign prevents inplace modification
     table = table.assign(label_atom_altloc_id=join_atom_altloc(table, 'label'))
     table = table.assign(auth_atom_altloc_id=join_atom_altloc(table, 'auth'))
+    return table
+
+
+def _get_contact_indexes_from_table(data, dist=5.0):
+    """
+    Gets the DataFrame indexes of the nearby atoms under a provided radius (dist).
+
+    :param data: pandas DataFrame object
+    :param dist: distance threshold in Angstrom
+    :return: list of pandas DataFrame indexes
+    """
+
+    table = data
+    tree = cKDTree(table[['Cartn_x', 'Cartn_y', 'Cartn_z']])
+    query_point = table.loc[:, ['Cartn_x', 'Cartn_y', 'Cartn_z']]
+    indexes = tree.query_ball_point(query_point, r=dist)
+    return indexes
+
+
+def _add_mmcif_contacts(data, dist=5.0):
+    """
+    Utility that adds a new column to the table.
+    Adds a new column with the contacting indexes (str)
+
+    :param data: pandas DataFrame object
+    :return: returns a modified pandas DataFrame
+    """
+
+    table = data
+    indexes = _get_contact_indexes_from_table(table, dist=dist)
+    assert len(indexes) == len(table)
+    nindexes = [','.join([str(z) for z in x]) for x in indexes]
+    table['contact_indexes'] = nindexes
     return table
 
 
@@ -721,7 +755,8 @@ def filter_structures(table, excluded_cols=None,
                       models='first', chains=None, res=None, res_full=None,
                       comps=None, atoms=None, lines=None, category='auth',
                       residue_agg=False, agg_method='centroid',
-                      add_res_full=True, add_atom_altloc=False, reset_atom_id=True,
+                      add_res_full=True, add_atom_altloc=False,
+                      add_contacts=False, dist=5.0, reset_atom_id=True,
                       remove_altloc=False, remove_hydrogens=True, remove_partial_res=False):
     """
     Filter and residue aggregation for mmCIF and PDB Pandas Dataframes.
@@ -743,6 +778,8 @@ def filter_structures(table, excluded_cols=None,
     :param add_res_full: option to extend the table with 'res_full'
         i.e. res_number + insertion_code (e.g. '12A')
     :param add_atom_altloc: boolean (new string join)
+    :param add_contacts: boolean (list of contacting atom indexes)
+    :param dist: distance threshold in Angstrom
     :param reset_atom_id: boolean
     :param remove_altloc: boolean
     :param remove_hydrogens: boolean
@@ -779,6 +816,10 @@ def filter_structures(table, excluded_cols=None,
     if add_atom_altloc:
         table = _add_mmcif_atom_altloc(table)
         log.debug("mmCIF/PDB added full atom (atom + altloc)...")
+
+    if add_contacts:
+        table = _add_mmcif_contacts(table, dist=dist)
+        log.debug("mmCIF/PDB added list of contacting atom-atom indexes...")
 
     if remove_hydrogens:
         table = row_selector(table, key='type_symbol', value='H', reverse=True)
