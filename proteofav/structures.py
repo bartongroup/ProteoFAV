@@ -32,7 +32,8 @@ log = logging.getLogger('proteofav.config')
 __all__ = ['parse_mmcif_atoms', 'residues_aggregation',
            'fetch_summary_properties_pdbe', 'get_preferred_assembly_id',
            'filter_structures', 'select_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
-           'read_structures', 'download_structures', 'write_structures', 'PDB', 'mmCIF']
+           'read_structures', 'download_structures', 'write_structures',
+           '_Structure', 'PDB', 'mmCIF']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 
@@ -1025,7 +1026,7 @@ def download_structures(identifier, filename, output_format='mmcif',
                decompress=decompress, overwrite=overwrite)
 
 
-class Structure(GenericInputs):
+class _Structure(GenericInputs):
     def read(self, filename=None, **kwargs):
         filename = self._get_filename(filename)
         self.table = read_structures(filename=filename, **kwargs)
@@ -1047,5 +1048,5 @@ class Structure(GenericInputs):
         return self.table
 
 
-PDB = Structure()
-mmCIF = Structure()
+PDB = _Structure()
+mmCIF = _Structure()

@@ -16,7 +16,7 @@ from proteofav.config import defaults
 log = logging.getLogger('proteofav.config')
 
 __all__ = ['parse_sifts_residues', 'select_sifts', 'sifts_best',
-           'download_sifts', 'SIFTS']
+           'download_sifts', '_SIFTS', 'SIFTS']
 
 
 def _parse_sifts_dbs_from_file(filename, excluded_cols=None):
@@ -453,7 +453,7 @@ def sifts_best(identifier, first=False):
     return response.json() if not first else response.json()[identifier][0]
 
 
-class SIFTS(GenericInputs):
+class _SIFTS(GenericInputs):
     def read(self, filename=None, **kwargs):
         filename = self._get_filename(filename)
         self.table = parse_sifts_residues(filename=filename, **kwargs)
@@ -471,4 +471,4 @@ class SIFTS(GenericInputs):
         return self.table
 
 
-SIFTS = SIFTS()
+SIFTS = _SIFTS()

@@ -20,33 +20,33 @@ from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ["fetch_uniprot_variants",
-           "fetch_ensembl_variants",
-           "fetch_ensembl_sequence_from_id",
-           "fetch_uniprot_ensembl_mapping",
-           "fetch_ensembl_uniprot_mapping",
-           "fetch_uniprot_species_from_id",
-           "fetch_pdb_uniprot_mapping",
-           "fetch_uniprot_pdb_mapping",
-           "get_ensembl_species_from_uniprot",
-           "get_uniprot_id_from_mapping",
-           "get_ensembl_protein_id_from_mapping",
-           "get_preferred_uniprot_id_from_mapping",
-           "get_preferred_ensembl_id_from_mapping",
-           "_match_uniprot_ensembl_seq",
-           "_apply_sequence_index_map",
-           "_compare_sequences",
-           "_count_mismatches",
-           "fetch_uniprot_sequence",
-           "fetch_uniprot_formal_specie",
-           "select_variants",
-           "flatten_uniprot_variants_ebi",
-           "flatten_ensembl_variants",
-           "Variants",
-           "parse_uniprot_variants",
-           "select_uniprot_variants",
-           "icgc_missense_variant",
-           "_fetch_icgc_variants"]
+__all__ = ['fetch_uniprot_variants',
+           'fetch_ensembl_variants',
+           'fetch_ensembl_sequence_from_id',
+           'fetch_uniprot_ensembl_mapping',
+           'fetch_ensembl_uniprot_mapping',
+           'fetch_uniprot_species_from_id',
+           'fetch_pdb_uniprot_mapping',
+           'fetch_uniprot_pdb_mapping',
+           'get_ensembl_species_from_uniprot',
+           'get_uniprot_id_from_mapping',
+           'get_ensembl_protein_id_from_mapping',
+           'get_preferred_uniprot_id_from_mapping',
+           'get_preferred_ensembl_id_from_mapping',
+           '_match_uniprot_ensembl_seq',
+           '_apply_sequence_index_map',
+           '_compare_sequences',
+           '_count_mismatches',
+           'fetch_uniprot_sequence',
+           'fetch_uniprot_formal_specie',
+           'select_variants',
+           'flatten_uniprot_variants_ebi',
+           'flatten_ensembl_variants',
+           '_Variants', 'Variants',
+           'parse_uniprot_variants',
+           'select_uniprot_variants',
+           'icgc_missense_variant',
+           '_fetch_icgc_variants']
 
 
 def fetch_uniprot_variants(identifier, retry_in=(429,)):
@@ -700,7 +700,7 @@ def flatten_ensembl_variants(data, excluded=(), synonymous=True):
     return table
 
 
-class Variants(GenericInputs):
+class _Variants(GenericInputs):
     def fetch(self, identifier=None, **kwargs):
         identifier = self._get_identifier(identifier)
         uni, germ, som = fetch_variants(identifier=identifier, **kwargs)
@@ -712,7 +712,7 @@ class Variants(GenericInputs):
         return uni, ens
 
 
-Variants = Variants()
+Variants = _Variants()
 
 
 def parse_uniprot_variants(uniprot_id):

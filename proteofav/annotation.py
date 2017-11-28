@@ -27,8 +27,9 @@ from proteofav.library import annotation_types
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ["parse_gff_features", "filter_annotation",
-           "select_annotation", "download_annotation", "Annotation"]
+__all__ = ['parse_gff_features', 'filter_annotation',
+           'select_annotation', 'download_annotation',
+           '_Annotation', 'Annotation']
 
 
 def parse_gff_features(filename, excluded_cols=None):
@@ -174,7 +175,7 @@ def download_annotation(identifier, filename, overwrite=False):
                decompress=False, overwrite=overwrite)
 
 
-class Annotation(GenericInputs):
+class _Annotation(GenericInputs):
     def read(self, filename=None, **kwargs):
         filename = self._get_filename(filename)
         self.table = parse_gff_features(filename=filename, **kwargs)
@@ -191,4 +192,4 @@ class Annotation(GenericInputs):
         return self.table
 
 
-Annotation = Annotation()
+Annotation = _Annotation()

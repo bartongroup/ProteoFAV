@@ -14,7 +14,8 @@ from proteofav.library import validation_types
 log = logging.getLogger('proteofav.config')
 
 __all__ = ['parse_validation_residues', 'select_validation',
-           'filter_validation', 'download_validation', 'Validation']
+           'filter_validation', 'download_validation',
+           '_Validation', 'Validation']
 
 
 def parse_validation_residues(filename, excluded_cols=None, global_parameters=False,
@@ -191,7 +192,7 @@ def download_validation(identifier, filename, overwrite=False):
                decompress=False, overwrite=overwrite)
 
 
-class Validation(GenericInputs):
+class _Validation(GenericInputs):
     def read(self, filename=None, **kwargs):
         filename = self._get_filename(filename)
         self.table = parse_validation_residues(filename=filename, **kwargs)
@@ -208,4 +209,4 @@ class Validation(GenericInputs):
         return self.table
 
 
-Validation = Validation()
+Validation = _Validation()

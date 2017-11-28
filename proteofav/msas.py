@@ -24,7 +24,7 @@ __all__ = ['read_alignments', 'read_msas',
            'select_msas', 'download_msas',
            'download_msa_from_cath',
            'download_msa_from_pfam',
-           'MSA']
+           '_MSA', 'MSA']
 
 SEQ_FORMAT_VALID = ('clustal', 'emboss', 'nexus', 'fasta', 'phylip', 'stockholm')
 
@@ -527,7 +527,7 @@ def download_msa_from_pfam(identifier, filename, aln_size="seed", overwrite=Fals
                decompress=True, overwrite=overwrite)
 
 
-class MSA(GenericInputs):
+class _MSA(GenericInputs):
     def read(self, filename=None, **kwargs):
         filename = self._get_filename(filename)
         self.table = read_msas(filename, **kwargs)
@@ -543,4 +543,4 @@ class MSA(GenericInputs):
         return self.table
 
 
-MSA = MSA()
+MSA = _MSA()

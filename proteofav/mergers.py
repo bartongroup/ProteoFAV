@@ -16,7 +16,8 @@ from proteofav.library import to_single_aa
 __all__ = ['mmcif_sifts_table_merger', 'mmcif_dssp_table_merger',
            'mmcif_validation_table_merger', 'sifts_annotation_table_merger',
            'sifts_variants_table_merger', 'uniprot_vars_ensembl_vars_merger',
-           'merge_tables', 'table_merger', 'table_generator', 'Tables']
+           'merge_tables', 'table_merger', 'table_generator',
+           '_Tables', 'Tables']
 
 log = logging.getLogger('proteofav.config')
 
@@ -572,7 +573,7 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
         raise ValueError('No UniProt ID or PDB ID provided...')
 
 
-class Tables(object):
+class _Tables(object):
     def __init__(self):
         self.mmcif = None
         self.sifts = None
@@ -628,4 +629,4 @@ class Tables(object):
             return table
 
 
-Tables = Tables()
+Tables = _Tables()

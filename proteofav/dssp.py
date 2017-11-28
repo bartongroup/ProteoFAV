@@ -24,7 +24,8 @@ from proteofav.config import defaults
 log = logging.getLogger('proteofav.config')
 
 __all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'select_dssp',
-           'filter_dssp', 'get_rsa', 'get_rsa_class', 'download_dssp', 'DSSP']
+           'filter_dssp', 'get_rsa', 'get_rsa_class', 'download_dssp',
+           '_DSSP', 'DSSP']
 
 
 def parse_dssp_residues(filename, excluded_cols=None):
@@ -428,7 +429,7 @@ def download_dssp(identifier, filename, overwrite=False):
                decompress=False, overwrite=overwrite)
 
 
-class DSSP(GenericInputs):
+class _DSSP(GenericInputs):
     def read(self, filename=None, **kwargs):
         filename = self._get_filename(filename)
         self.table = parse_dssp_residues(filename=filename, **kwargs)
@@ -445,4 +446,4 @@ class DSSP(GenericInputs):
         return self.table
 
 
-DSSP = DSSP()
+DSSP = _DSSP()
