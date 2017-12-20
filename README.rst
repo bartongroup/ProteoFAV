@@ -28,17 +28,12 @@ ProteoFAV is a Python module that address the challenge of cross-mapping protein
 
 ProteFAV relies heavily in the `Pandas`_ library to quickly load data into DataFrames for fast data exploration and analysis. Structure and sequence data are parsed/fetched onto Pandas DataFrames that are then merged-together (collapsed) onto a single DataFrame.
 
-Overview
---------
-
-ProteoFAV handles data with aid of Pandas DataFrames. Data such as protein structures (sequence and atom 3D coordinates) and respective annotations (from structural analysis, e.g. interacting interfaces, secondary structure and solvent accessibility), as well as protein sequences and annotations (e.g. genetic variants, and other functional information obtained from SIFTS and UniProt) are handled by the classes/methods so that each modular (components) table can be integrated onto a single 'merged table'.
+Data such as protein structures (sequence and atom 3D coordinates) and respective annotations (from structural analysis, e.g. interacting interfaces, secondary structure and solvent accessibility), as well as protein sequences and annotations (e.g. genetic variants, and other functional information obtained from SIFTS and UniProt) are handled by the classes/methods so that each modular (component) table can be integrated onto a single 'merged table'.
 
 .. image:: proteofav.png
-   :align: middle
-   :width: 350
+   :width: 20pt
 
-
-The methods implemenented in `prointvar/merger.py` allow for the different components to be merged together onto a single Pandas DataFrame.
+The methods implemenented in ``proteofav/mergers.py`` allow for the different components to be merged together onto a single Pandas DataFrame.
 
 
 Getting Started
