@@ -24,16 +24,10 @@ ProteoFAV
 .. |Python: versions| image:: https://img.shields.io/badge/python-3.5,_3.6-blue.svg?style=flat
    :target: http://travis-ci.org/bartongroup/proteofav/
 
-ProteoFAV is a Python module that address the challenge of cross-mapping protein structures and protein sequences,
-allowing for protein structures to be annotated with sequence features. It implements methods for working with
-protein structures (via mmCIF, PDB, PDB Validation, DSSP and SIFTS files), sequence Features (via UniProt GFF annotations) and
-genetic variants (via UniProt/EBI Proteins API and Ensembl REST API). Cross-mapping of structure and sequence is
-performed with the aid of SIFTS.
+ProteoFAV is a Python module that address the challenge of cross-mapping protein structures and protein sequences, allowing for protein structures to be annotated with sequence features and annotations. It implements methods for working with protein structures (via mmCIF, PDB, PDB Validation, DSSP and SIFTS files), sequence Features (via UniProt GFF annotations) and genetic variants (via UniProt/EBI Proteins, Ensembl REST and TCGA TCGA Pan cancer APIs). Cross-mapping of structure and sequence is performed with the aid of SIFTS.
 
-ProteFAV relies heavily in the `Pandas`_ library to quickly load data into DataFrames for fast
-data exploration and analysis. Structure and sequence
-data are parsed/fetched onto Pandas DataFrames that are then merged-together (collapsed) onto a
-single DataFrame.
+ProteFAV relies heavily in the `Pandas`_ library to quickly load data into DataFrames for fast data exploration and analysis. Structure and sequence data are parsed/fetched onto Pandas DataFrames that are then merged-together (collapsed) onto a single DataFrame.
+
 
 Getting Started
 ---------------
@@ -57,8 +51,7 @@ To install the stable release, run this command in your terminal:
 
     $ pip install proteofav
 
-If you don't have `pip`_ installed, this `Python installation guide`_ can guide
-you through the process.
+If you don't have `pip`_ installed, this `Python installation guide`_ can guide you through the process.
 
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
@@ -120,7 +113,7 @@ Run the Tests with:
 ProteoFAV Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-ProteoFAV uses a configuration file `config.ini` where the user can specify the directory paths, as well as urls for commonly used data sources.
+ProteoFAV uses a configuration file ``config.ini`` where the user can specify the directory paths, as well as urls for commonly used data sources.
 
 After installing run:
 
@@ -144,8 +137,7 @@ You can download the Jupyter notebook from `GitHub`_ and test it with your Prote
 Contributing and Bug tracking
 -----------------------------
 
-Feel free to fork, clone, share and distribute. If you find any bugs or
-issues please log them in the `issue tracker`_.
+Feel free to fork, clone, share and distribute. If you find any bugs or issues please log them in the `issue tracker`_.
 
 Before you submit your *Pull-requests* read the `Contributing Guide`_.
 
