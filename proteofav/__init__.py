@@ -1,8 +1,8 @@
 # -*- coding: utf-8
 
 """
-ProteoFAV: Protein Feature Aggregation and Variants
----------------------------------------------------
+ProteoFAV: Protein Features, Annotations and Variants
+-----------------------------------------------------
 
 Open-source framework for simple and fast integration
 of protein structure data with sequence annotations

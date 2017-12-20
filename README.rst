@@ -1,7 +1,7 @@
 ProteoFAV
 =========
 
-**Protein Feature Aggregation and Variants**
+**Protein Features, Annotations and Variants**
 
 |Pypi| |Build Status| |Documentation| |Python: versions| |License|
 

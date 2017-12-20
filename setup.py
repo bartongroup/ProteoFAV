@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-ProteoFAV: Protein Feature Aggregation and Variants
----------------------------------------------------
+ProteoFAV: Protein Features, Annotations and Variants
+-----------------------------------------------------
 
 Open-source framework for simple and fast integration
 of protein structure data with sequence annotations
@@ -55,7 +55,7 @@ setup(
     url='https://github.com/bartongroup/ProteoFAV/tree/master',
     download_url="https://github.com/bartongroup/ProteoFAV/archive/master.zip",
     keywords='bioinformatics structural-biology data-analysis python pandas',
-    description='PROtein Feature Aggregation and Variants.',
+    description='PROtein Features, Annotations and Variants.',
     long_description=open('README.rst').read(),
 
     classifiers=[

@@ -1,7 +1,7 @@
 ProteoFAV's Documentation
 =========================
 
-ProteoFAV (Protein Feature Aggregation and Variants) is an open-source framework for simple and fast integration of protein structure data with sequence annotations and genetic variation.
+ProteoFAV (Protein Features, Annotations and Variants) is an open-source framework for simple and fast integration of protein structure data with sequence annotations and genetic variation.
 
 ProteoFAV is a Python module that address the challenge of cross-mapping protein structures and protein sequences,
 allowing for protein structures to be annotated with sequence features. It implements methods for working with
