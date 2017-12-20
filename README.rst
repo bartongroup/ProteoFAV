@@ -71,15 +71,6 @@ Getting ProteoFAV:
     $ git clone https://github.com/bartongroup/ProteoFAV.git
 
 
-Installing With Conda:
-
-.. code-block:: bash
-
-    $ conda-env create -n proteofav -f path/to/ProteoFAV/requirements.txt
-    $ source activate proteofav
-    $ cd path/to/ProteoFAV
-    $ pip install .
-
 Installing with Virtualenv:
 
 .. code-block:: bash
@@ -88,6 +79,16 @@ Installing with Virtualenv:
     $ source env/bin/activate
     $ pip install -r requirements.txt
     $ python path/to/ProteoFAV/setup.py install
+
+
+Installing With Conda:
+
+.. code-block:: bash
+
+    $ conda-env create -n proteofav -f path/to/ProteoFAV/requirements.txt
+    $ source activate proteofav
+    $ cd path/to/ProteoFAV
+    $ pip install .
 
 
 Testing the installation
