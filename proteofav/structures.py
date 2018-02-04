@@ -326,6 +326,7 @@ def _add_mmcif_res_full(table):
     :return: returns a modified pandas DataFrame
     """
 
+    table.is_copy = False
     # adds both 'label' and 'auth' entries
     if 'label_seq_id' in table:
         table['label_seq_id_full'] = (table['label_seq_id'] +
@@ -410,7 +411,7 @@ def _remove_multiple_altlocs(table):
         altloc = table.loc[ix, 'label_alt_id']
         if altloc != '.':
             # table.loc[ix, 'label_alt_id'] = '.'
-            table.set_value(ix, 'label_alt_id', '.')
+            table.at[ix, 'label_alt_id'] = '.'
             atomid = table.loc[ix, 'label_atom_id']
             try:
                 for nx in range(1, 100, 1):
