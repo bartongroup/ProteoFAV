@@ -911,7 +911,7 @@ def _fetch_icgc_variants(identifier):
                     ' Duplicated index for {}.'.format(identifier))
     else:
         data = data.join(consequence.apply(pd.Series), rsuffix='_protein')
-        transition = data.aaMutation.str.extract(transition_regex)
+        transition = data.aaMutation.str.extract(transition_regex, expand=False)
         data = data.join(transition)
 
     return data

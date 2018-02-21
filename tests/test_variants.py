@@ -485,7 +485,8 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         r = self.fetch_ensembl_uniprot_mapping(self.ensembl_id2)
         self.assertTrue(r.ok)
         uniprots = self.get_uniprot_id_from_mapping(r.json())
-        self.assertEqual(uniprots, ['A0A024RBG4', self.uniprot_id2])
+        self.assertIn('A0A024RBG4', uniprots)
+        self.assertIn(self.uniprot_id2, uniprots)
 
     def test_to_table_uniprot_ensembl_mapping_full(self):
         """
@@ -534,7 +535,8 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
 
         r = self.get_uniprot_id_from_mapping(data.json(), full_entry=False,
                                              uniprot_id=None)
-        self.assertEqual(r, ['A0A024RBG4', self.uniprot_id2])
+        self.assertIn('A0A024RBG4', r)
+        self.assertIn(self.uniprot_id2, r)
 
         r = self.get_uniprot_id_from_mapping(data.json(), full_entry=True,
                                              uniprot_id=None)
