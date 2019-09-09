@@ -903,9 +903,11 @@ def _fetch_icgc_variants(identifier):
         ['affectedDonorCountTotal', 'id', 'mutation'], meta_prefix='_')
     data = data[data['id'] == identifier]
     data.drop(['id'], axis=1, inplace=True)
-    data.rename(columns={'_id': 'id'}, inplace=True)
-
-    consequence = data.pop('consequence')
+    data.rename(columns={'consequence.aaMutation': 'aaMutation'}, inplace=True)
+    cols = data.columns.map(lambda x: x.replace('_', '') if isinstance(x, (str, 'utf-8')) else x)
+    data.columns = cols
+    consequence = data['aaMutation']
+    data.pop("consequence.functionalImpact")
     if consequence.index.duplicated().any():  # pragma: no cover
         log.warning('Joining ICGC variant data with its consequences data aborted:'
                     ' Duplicated index for {}.'.format(identifier))

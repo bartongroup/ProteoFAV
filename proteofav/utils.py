@@ -214,7 +214,7 @@ def exclude_columns(table, excluded=()):
         assert hasattr(excluded, '__iter__')
         try:
             table = table.drop(list(excluded), axis=1)
-        except ValueError:
+        except (ValueError, KeyError):
             # most likely theses are not in there
             pass
     return table

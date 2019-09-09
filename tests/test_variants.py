@@ -659,7 +659,7 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertIn('pdb_id', data.columns.values)
 
         # check the values of particular entries
-        self.assertEqual(data['pdb_id'].unique()[0], '2pah')
+        self.assertIn('2pah', data['pdb_id'].unique())
         self.assertIn('A', data['chain_id'].unique())
         self.assertIn('X-ray diffraction', data['experimental_method'].unique())
         self.assertTrue(type(data['coverage'][0]), float)

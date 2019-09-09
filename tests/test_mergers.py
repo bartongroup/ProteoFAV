@@ -395,7 +395,7 @@ class TestMerger(unittest.TestCase):
         self.assertEqual(table.loc[0, 'UniProt_dbAccessionId'], 'P00439')
         self.assertEqual(table.loc[0, 'accession'], 'P00439')
         self.assertEqual(table.loc[0, 'xrefs_id'], 'rs776442422')
-        self.assertEqual(table.loc[0, 'siftScore'], 0.14)
+        self.assertIn(0.14, table.loc[0, 'siftScore'])
 
     def test_uni_ens_vars_merger(self):
         table = self.uni_ens_vars(self.uni_vars, self.ens_vars)
@@ -464,15 +464,15 @@ class TestMerger(unittest.TestCase):
         self.assertIn('RES', table)
         self.assertIn('PDB_dbResNum', table)
         # values
-        self.assertEqual('CA', table.loc[407, 'label_atom_id'])
-        self.assertEqual('AA', table.loc[407, 'label_asym_id'])
-        self.assertEqual('118', table.loc[407, 'RES'])
-        self.assertEqual('VAL', table.loc[407, 'PDB_dbResName'])
-        self.assertEqual('V', table.loc[407, 'UniProt_dbResName'])
+        self.assertEqual('CA', table.loc[1151, 'label_atom_id'])
+        self.assertEqual('AA', table.loc[1151, 'label_asym_id'])
+        self.assertEqual('118', table.loc[1151, 'RES'])
+        self.assertEqual('VAL', table.loc[1151, 'PDB_dbResName'])
+        self.assertEqual('V', table.loc[1151, 'UniProt_dbResName'])
 
     def test_table_generator(self):
         mmcif_table, dssp_table, sifts_table, valid_table, annot_table, vars_table = \
-            self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=True,
+            self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=False,
                                  sifts=True, dssp=True, validation=False, annotations=False, variants=False,
                                  chains=None, res=None, sites=None, atoms=('CA',), lines=None,
                                  residue_agg=False, overwrite=False)
@@ -558,24 +558,24 @@ class TestMerger(unittest.TestCase):
         # values
         self.assertEqual('CA', table.loc[0, 'label_atom_id'])
         self.assertEqual('A', table.loc[0, 'label_asym_id'])
-        self.assertEqual('AA', table.loc[407, 'label_asym_id'])
+        self.assertEqual('AA', table.loc[1151, 'label_asym_id'])
         self.assertEqual('118', table.loc[0, 'RES'])
-        self.assertEqual('118', table.loc[407, 'RES'])
+        self.assertEqual('118', table.loc[1151, 'RES'])
         self.assertEqual('VAL', table.loc[0, 'PDB_dbResName'])
         self.assertEqual('V', table.loc[0, 'UniProt_dbResName'])
         # validation
         self.assertEqual('118', table.loc[0, 'validation_resnum_full'])
-        self.assertEqual('118', table.loc[407, 'validation_resnum_full'])
+        self.assertEqual('118', table.loc[1151, 'validation_resnum_full'])
         self.assertEqual('A', table.loc[0, 'validation_chain'])
-        self.assertEqual('A', table.loc[407, 'validation_chain'])
+        self.assertEqual('A', table.loc[1151, 'validation_chain'])
         # annotations
-        self.assertIn('Natural variant:', table.loc[4, 'annotation'])
+        self.assertIn('Natural variant:', table.loc[10, 'annotation'])
         # variants
         self.assertEqual('large_scale_study', table.loc[0, 'sourceType'])
         self.assertEqual('ENSP00000448059', table.loc[0, 'translation'])
         self.assertEqual('rs776442422', table.loc[0, 'xrefs_id'])
-        self.assertEqual('ExAC', table.loc[0, 'xrefs_name'])
-        self.assertEqual(0.14, table.loc[0, 'siftScore'])
+        self.assertIn('ExAC', table.loc[0, 'xrefs_name'])
+        self.assertIn(0.14, table.loc[0, 'siftScore'])
 
 
 if __name__ == '__main__':

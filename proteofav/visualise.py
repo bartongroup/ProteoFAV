@@ -38,11 +38,10 @@ def make_chimera_attribute_file(column, recipient='residues', match_mode="1 - to
     except AttributeError:  # column needs to be Series, not an DataFrame
         raise TypeError('Column parameter needs to be a pd.Series.')
 
-    template = """# Generated with ProteoFAV
-    attribute: {name}
-    match mode: {match_mode}
-    recipient: {recipient}
-    """
+    template = ("# Generated with ProteoFAV\n"
+                "\tattribute: {name}\n"
+                "\tmatch mode: {match_mode}\n"
+                "\trecipient: {recipient}\n")
 
     column = column.reset_index()
     formatter = ["\t:{}".format, "\t{}".format]

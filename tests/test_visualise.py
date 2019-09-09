@@ -21,9 +21,8 @@ class TestVisualiser(unittest.TestCase):
         self.chimera_attribute = None
 
     def test_make_chimera_attribute_file(self):
-        expected = ('# Generated with ProteoFAV\n    attribute: test\n    match mode: 1 - to - '
-                    '1\n    recipient: residues\n    '
-                    ':1\t32.4\n\t:2\t46.2\n\t:3\t52.5\n\t:4\t4.4\n\t:5\t22.1')
+        expected = ('# Generated with ProteoFAV\n\tattribute: test\n\tmatch mode: 1 - to - '
+                    '1\n\trecipient: residues\n\t:1\t32.4\n\t:2\t46.2\n\t:3\t52.5\n\t:4\t4.4\n\t:5\t22.1')
 
         example = pd.Series([32.4, 46.2, 52.5, 4.4, 22.1], index=range(1, 6), name='test')
 

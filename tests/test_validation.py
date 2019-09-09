@@ -65,7 +65,7 @@ class TestValidationParser(unittest.TestCase):
         self.assertEqual(' ', data.loc[0, 'validation_icode'])
         data = self.fix_pdb_ins_code(data)
         self.assertEqual('118', data.loc[0, 'validation_resnum'])
-        self.assertEqual('?', data.loc[0, 'validation_icode'])
+        self.assertEqual('??', data.loc[0, 'validation_icode'])
 
     def test_filter_validation_chain(self):
         data = self.parser(self.example_validation)

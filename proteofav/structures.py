@@ -246,7 +246,6 @@ def _fix_type_symbol(table):
         else:
             return ''.join([x for x in table[key_fix] if x in ascii_uppercase])[0]
 
-    table.is_copy = False
     table['type_symbol'] = table.apply(get_type_symbol, axis=1,
                                        args=('type_symbol', 'label_atom_id'))
     return table
@@ -326,14 +325,15 @@ def _add_mmcif_res_full(table):
     :return: returns a modified pandas DataFrame
     """
 
-    table.is_copy = False
+    table = table.copy()
     # adds both 'label' and 'auth' entries
     if 'label_seq_id' in table:
-        table['label_seq_id_full'] = (table['label_seq_id'] +
-                                      table['pdbx_PDB_ins_code'].str.replace('?', ''))
+        table.loc[:, 'label_seq_id_full'] = (table.loc[:, 'label_seq_id'] +
+                                             table.loc[:, 'pdbx_PDB_ins_code'].str.replace('?', ''))
+
     if 'auth_seq_id' in table:
-        table['auth_seq_id_full'] = (table['auth_seq_id'] +
-                                     table['pdbx_PDB_ins_code'].str.replace('?', ''))
+        table.loc[:, 'auth_seq_id_full'] = (table.loc[:, 'auth_seq_id'] +
+                                            table.loc[:, 'pdbx_PDB_ins_code'].str.replace('?', ''))
     return table
 
 
