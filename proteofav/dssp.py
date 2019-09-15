@@ -414,7 +414,7 @@ def filter_dssp(table, excluded_cols=None,
 def download_dssp(identifier, filename, overwrite=False):
     """
     Downloads a pre-computed DSSP from the CMBI Netherlands FTP
-    to the filesystem.
+    (or alternatively from the EMBL-EBI mirror) to the filesystem.
 
     :param identifier: (str) PDB accession ID
     :param filename: path to the DSSP file
@@ -422,11 +422,18 @@ def download_dssp(identifier, filename, overwrite=False):
     :return: (side effects) output file path
     """
 
-    url_root = defaults.dssp_fetch
-    url_endpoint = "{}.dssp".format(identifier)
-    url = url_root + url_endpoint
-    Downloader(url=url, filename=filename,
-               decompress=False, overwrite=overwrite)
+    try:
+        url_root = defaults.dssp_fetch
+        url_endpoint = "{}.dssp".format(identifier)
+        url = url_root + url_endpoint
+        Downloader(url=url, filename=filename,
+                   decompress=False, overwrite=overwrite)
+    except Exception:
+        url_root = defaults.dssp_fetch_alt
+        url_endpoint = "{}.dssp.gz".format(identifier)
+        url = url_root + url_endpoint
+        Downloader(url=url, filename=filename,
+                   decompress=True, overwrite=overwrite)
 
 
 class _DSSP(GenericInputs):
