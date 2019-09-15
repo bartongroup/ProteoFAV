@@ -9,7 +9,7 @@ from Bio import AlignIO
 
 from proteofav.config import defaults
 from proteofav.variants import (fetch_uniprot_id_from_name, fetch_pdb_uniprot_mapping)
-from proteofav.utils import (constrain_column_types, exclude_columns,
+from proteofav.utils import (constrain_column_types, remove_columns,
                              InputFileHandler, GenericInputs, Downloader)
 
 log = logging.getLogger('proteofav.config')
@@ -98,7 +98,7 @@ def read_msas(filename, excluded_cols=(), seq_format=None, get_uniprot_id=True):
     table = pd.DataFrame(rows)
 
     # excluding columns
-    table = exclude_columns(table, excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
     msa_types = {key: str for key in list(table) if key != 'Start' and key != 'End'}

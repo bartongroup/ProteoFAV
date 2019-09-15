@@ -8,8 +8,8 @@ from collections import OrderedDict
 
 from proteofav.variants import fetch_uniprot_pdb_mapping
 from proteofav.utils import (row_selector, InputFileHandler, Downloader,
-                             GenericInputs, constrain_column_types, exclude_columns)
 from proteofav.library import sifts_types
+                             GenericInputs, constrain_column_types, remove_columns)
 
 from proteofav.config import defaults
 
@@ -339,7 +339,7 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
             table[c] = table[c].fillna(0).astype(int)
 
     # excluding columns
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
     table = constrain_column_types(table, col_type_dict=sifts_types)
@@ -392,7 +392,7 @@ def filter_sifts(table, excluded_cols=None, chains=None,
 
     # selections / filtering
     # excluding columns
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # excluding rows
     if chains is not None:

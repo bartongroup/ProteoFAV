@@ -23,7 +23,7 @@ except ImportError:
 from proteofav.config import defaults
 from proteofav.utils import (fetch_from_url_or_retry, row_selector,
                              InputFileHandler, OutputFileHandler, GenericInputs,
-                             constrain_column_types, exclude_columns, Downloader,
+                             constrain_column_types, remove_columns, Downloader,
                              check_sequence)
 from proteofav.library import pdbx_types, aa_default_atoms, scop_3to1
 
@@ -102,7 +102,7 @@ def parse_mmcif_atoms(filename, excluded_cols=None):
                          'occupancy_esd', 'B_iso_or_equiv_esd',
                          'pdbx_formal_charge')
 
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
     log.debug("Removed columns from mmCIF: {}..."
               "".format(', '.join(list(excluded_cols))))
 
@@ -189,7 +189,7 @@ def parse_pdb_atoms(filename, excluded_cols=None,
                          'occupancy_esd', 'B_iso_or_equiv_esd',
                          'pdbx_formal_charge')
 
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
     log.debug("Removed columns from PDB: {}..."
               "".format(', '.join(list(excluded_cols))))
 
@@ -812,7 +812,7 @@ def filter_structures(table, excluded_cols=None,
 
     # selections / filtering
     # excluding columns
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # excluding rows
     # select the models

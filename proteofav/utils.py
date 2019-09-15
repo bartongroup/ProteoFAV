@@ -27,7 +27,7 @@ socket.setdefaulttimeout(15)  # avoid infinite hanging
 
 requests_cache.install_cache('proteofav')
 
-__all__ = ["fetch_from_url_or_retry", "row_selector", "constrain_column_types", "exclude_columns",
+__all__ = ["fetch_from_url_or_retry", "row_selector", "constrain_column_types", "remove_columns",
            "splitting_up_by_key", "merging_down_by_key",
            "flatten_nested_structure", "refactor_key_val_singletons",
            "InputFileHandler", "OutputFileHandler", "Downloader", "GenericInputs"]
@@ -200,7 +200,7 @@ def constrain_column_types(table, col_type_dict=None, nan_value_dict=None,
     return table
 
 
-def exclude_columns(table, excluded=()):
+def remove_columns(table, excluded=()):
     """
     Helper method that helps in filtering out columns based
     on the column name.

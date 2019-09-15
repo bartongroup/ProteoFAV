@@ -20,7 +20,7 @@ except ImportError:
 from proteofav.utils import (fetch_from_url_or_retry,
                              InputFileHandler, OutputFileHandler,
                              row_selector, constrain_column_types,
-                             exclude_columns, Downloader, GenericInputs,
+                             remove_columns, Downloader, GenericInputs,
                              flatten_nested_structure,
                              refactor_key_val_singletons,
                              splitting_up_by_key,
@@ -84,7 +84,7 @@ class TestUTILS(unittest.TestCase):
         self.InputFileHandler = InputFileHandler
         self.OutputFileHandler = OutputFileHandler
         self.constrain_column_types = constrain_column_types
-        self.exclude_columns = exclude_columns
+        self.exclude_columns = remove_columns
 
         self.pdbid = "2pah"
         root = os.path.abspath(os.path.dirname(__file__))

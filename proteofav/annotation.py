@@ -21,7 +21,7 @@ except ImportError:
     from urllib.parse import parse_qs
 
 from proteofav.config import defaults
-from proteofav.utils import (exclude_columns, constrain_column_types,
+from proteofav.utils import (remove_columns, constrain_column_types,
                              Downloader, GenericInputs)
 from proteofav.library import annotation_types
 
@@ -54,7 +54,7 @@ def parse_gff_features(filename, excluded_cols=None):
     # excluding columns
     if excluded_cols is None:
         excluded_cols = ('empty',)
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
     table = constrain_column_types(table, col_type_dict=annotation_types)

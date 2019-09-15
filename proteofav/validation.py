@@ -8,7 +8,7 @@ from lxml import etree
 
 from proteofav.config import defaults
 from proteofav.utils import (row_selector, constrain_column_types,
-                             exclude_columns, Downloader, GenericInputs)
+                             remove_columns, Downloader, GenericInputs)
 from proteofav.library import validation_types
 
 log = logging.getLogger('proteofav.config')
@@ -60,7 +60,7 @@ def parse_validation_residues(filename, excluded_cols=None, global_parameters=Fa
         table = _fix_label_alt_id(table)
 
     # exclude columns
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
     table = constrain_column_types(table, col_type_dict=validation_types)
@@ -154,7 +154,7 @@ def filter_validation(table, excluded_cols=None, chains=None, res=None,
 
     # selections / filtering
     # excluding columns
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # table modular extensions or selections
     if add_res_full:

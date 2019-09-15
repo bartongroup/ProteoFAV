@@ -14,7 +14,7 @@ except ImportError:
 
 from proteofav.structures import select_structures
 from proteofav.utils import (row_selector, InputFileHandler,
-                             constrain_column_types, exclude_columns,
+                             constrain_column_types, remove_columns,
                              GenericInputs, Downloader)
 from proteofav.library import (scop_3to1, dssp_types, aa_codes_1to3_extended)
 from proteofav.library import (ASA_Miller, ASA_Wilke, ASA_Sander)
@@ -100,7 +100,7 @@ def parse_dssp_residues(filename, excluded_cols=None):
                          "NH_O_2", "NH_O_2_nrg", "O_HN_2", "O_HN_2_nrg",
                          "X-CA", "Y-CA", "Z-CA")
 
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
     table = constrain_column_types(table, col_type_dict=dssp_types)
@@ -363,7 +363,7 @@ def filter_dssp(table, excluded_cols=None,
 
     # selections / filtering
     # excluding columns
-    table = exclude_columns(table, excluded=excluded_cols)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # table modular extensions
     if add_full_chain:

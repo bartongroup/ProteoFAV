@@ -10,7 +10,7 @@ from pandas.io.json import json_normalize
 
 from proteofav.annotation import select_annotation
 from proteofav.utils import (fetch_from_url_or_retry, row_selector,
-                             constrain_column_types, exclude_columns, GenericInputs,
+                             constrain_column_types, remove_columns, GenericInputs,
                              flatten_nested_structure, refactor_key_val_singletons,
                              splitting_up_by_key, merging_down_by_key)
 from proteofav.library import (valid_ensembl_species, uni_ens_var_types,
@@ -644,7 +644,7 @@ def flatten_uniprot_variants_ebi(data, excluded=()):
     table = pd.DataFrame(var_rows)
 
     # excluding columns
-    table = exclude_columns(table, excluded=excluded)
+    table = remove_columns(table, excluded=excluded)
 
     # enforce some specific column types
     table = constrain_column_types(table, uni_ens_var_types)
@@ -682,7 +682,7 @@ def flatten_ensembl_variants(data, excluded=(), synonymous=True):
     table.rename(columns=update_ensembl_to_uniprot, inplace=True)
 
     # excluding columns
-    table = exclude_columns(table, excluded=excluded)
+    table = remove_columns(table, excluded=excluded)
 
     # enforce some specific column types
     table = constrain_column_types(table, uni_ens_var_types)
