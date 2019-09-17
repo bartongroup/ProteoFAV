@@ -63,7 +63,7 @@ def parse_validation_residues(filename, excluded_cols=None, global_parameters=Fa
     table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
-    table = constrain_column_types(table, col_type_dict=validation_types)
+    table = constrain_column_types(table, column_dtype_dict=validation_types)
     # replace 'NoneTypes' by NaNs
     table.fillna(value=np.nan, inplace=True)
 
@@ -135,7 +135,7 @@ def load_validation(identifier, excluded_cols=None, overwrite=False, **kwargs):
     table = parse_validation_residues(filename=filename, excluded_cols=excluded_cols)
 
     table = filter_validation(table, excluded_cols=excluded_cols, **kwargs)
-    table = constrain_column_types(table, col_type_dict=validation_types)
+    table = constrain_column_types(table, column_dtype_dict=validation_types)
     return table
 
 

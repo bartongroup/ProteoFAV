@@ -64,13 +64,15 @@ def read_alignments(filename, seq_format=None):
     return alignment, seq_format
 
 
-def read_msas(filename, excluded_cols=(), seq_format=None, get_uniprot_id=True):
+def read_msas(filename, excluded_cols=None, column_dtype_dict=None,
+              seq_format=None, get_uniprot_id=True):
     """
     Reads a Pfam/CATH MSA and returns a pandas table with a
     collection of protein IDs and sequences
 
     :param filename: path to the MSA file
     :param excluded_cols: option to exclude some columns
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :param seq_format: (str) or None. Valid formats from Biopython.
     :param get_uniprot_id: (boolean)
     :return: returns a pandas DataFrame
@@ -101,8 +103,9 @@ def read_msas(filename, excluded_cols=(), seq_format=None, get_uniprot_id=True):
     table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
-    msa_types = {key: str for key in list(table) if key != 'Start' and key != 'End'}
-    table = constrain_column_types(table, msa_types)
+    if column_dtype_dict is None:
+        column_dtype_dict = {key: str for key in list(table) if key != 'Start' and key != 'End'}
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
 
     if table.empty:
         raise ValueError('{} resulted in an empty DataFrame...'.format(filename))
@@ -390,9 +393,10 @@ def parse_generic_seq_description(description, entry, get_uniprot_id=True):
     return entry
 
 
-                aln_source='pfam', get_uniprot_id=True, excluded_cols=None,
-                overwrite=False, **kwargs):
 def load_msas(superfamily=None, family=None, seq_format=None,
+              aln_source='pfam', get_uniprot_id=True,
+              excluded_cols=None, column_dtype_dict=None,
+              overwrite=False, **kwargs):
     """
     Produce table read from a MSA.
 
@@ -402,6 +406,7 @@ def load_msas(superfamily=None, family=None, seq_format=None,
     :param aln_source: (str) either 'Pfam' or 'CATH'.
     :param get_uniprot_id: (boolean)
     :param excluded_cols: option to exclude mmCIF columns
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :param overwrite: boolean
     :return: returns a pandas DataFrame
     """
@@ -445,10 +450,12 @@ def load_msas(superfamily=None, family=None, seq_format=None,
                       seq_format=seq_format, get_uniprot_id=get_uniprot_id)
 
     # table = filter_structures(table=table, excluded_cols=excluded_cols, **kwargs)
-    # table = constrain_column_types(table, col_type_dict=msas_types)
 
     # excluding columns
     table = remove_columns(table, excluded=excluded_cols)
+
+    # enforce some specific column types
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
     return table
 
 

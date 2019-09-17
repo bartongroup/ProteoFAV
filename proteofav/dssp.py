@@ -28,13 +28,15 @@ __all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'load_dssp',
            '_DSSP', 'DSSP']
 
 
-def parse_dssp_residues(filename, excluded_cols=dssp_excluded_cols):
+def parse_dssp_residues(filename, excluded_cols=dssp_excluded_cols,
+                        column_dtype_dict=dssp_types):
     """
     Parse lines of the DSSP file to get entries for every Residue
     in each CHAIN. The hierarchy is maintained. CHAIN->RESIDUE->[...].
 
     :param filename: path to the DSSP file
     :param excluded_cols: list of columns to be excluded
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :return: returns a pandas DataFrame
     """
 
@@ -97,7 +99,7 @@ def parse_dssp_residues(filename, excluded_cols=dssp_excluded_cols):
     table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
-    table = constrain_column_types(table, col_type_dict=dssp_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
 
     if table.empty:
         raise ValueError('DSSP file {} resulted in a empty Dataframe'
@@ -310,12 +312,13 @@ def get_rsa_class(rsa, lower_threshold=5.0, upper_threshold=25.0):
 
 
 def load_dssp(identifier, excluded_cols=dssp_excluded_cols,
-              overwrite=False, **kwargs):
+              column_dtype_dict=dssp_types, overwrite=False, **kwargs):
     """
     Produce table from DSSP file output.
 
     :param identifier: PDB/mmCIF accession ID
     :param excluded_cols: option to exclude DSSP columns
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :param overwrite: boolean
     :return: returns a pandas DataFrame
     """
@@ -327,7 +330,7 @@ def load_dssp(identifier, excluded_cols=dssp_excluded_cols,
     table = parse_dssp_residues(filename=filename, excluded_cols=excluded_cols)
 
     table = filter_dssp(table=table, excluded_cols=excluded_cols, **kwargs)
-    table = constrain_column_types(table, col_type_dict=dssp_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
 
     if table.duplicated(['RES_FULL', 'CHAIN']).any():
         log.warning('DSSP file for {} has not unique index'.format(identifier))

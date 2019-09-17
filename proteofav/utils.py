@@ -133,7 +133,7 @@ def row_selector(table, key=None, value=None, reverse=False):
     return table
 
 
-def constrain_column_types(table, col_type_dict=None, nan_value_dict=None,
+def constrain_column_types(table, column_dtype_dict=None, nan_value_dict=None,
                            replace_value_dict=None):
     """
     Helper method that helps in constraining data types for the
@@ -173,7 +173,7 @@ def constrain_column_types(table, col_type_dict=None, nan_value_dict=None,
         preference for integer columns that can contain NaNs.
 
     :param table: pandas DataFrame
-    :param col_type_dict: (dict) optional defines common types
+    :param column_dtype_dict: (dict) optional defines common types
     :param nan_value_dict: (dict) optional new value passed to replace NaNs
     :param replace_value_dict: (dict) optional new value passed to replace
         specific values
@@ -182,9 +182,9 @@ def constrain_column_types(table, col_type_dict=None, nan_value_dict=None,
     """
 
     for col in table:
-        if col_type_dict is not None and col in col_type_dict:
+        if column_dtype_dict is not None and col in column_dtype_dict:
             try:
-                table[col] = table[col].astype(col_type_dict[col])
+                table[col] = table[col].astype(column_dtype_dict[col])
             except (ValueError, KeyError, TypeError):
                 # probably there are some NaNs in there
                 # and it is impossible to coerce the column to the

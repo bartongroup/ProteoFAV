@@ -54,12 +54,14 @@ def yield_lines(filename):
             yield line
 
 
-def parse_mmcif_atoms(filename, excluded_cols=pdbx_excluded_cols):
+def parse_mmcif_atoms(filename, excluded_cols=pdbx_excluded_cols,
+                      column_dtype_dict=pdbx_types):
     """
     Parse mmCIF ATOM and HETATM lines.
 
     :param filename: path to the mmCIF file
     :param excluded_cols: list of columns to be excluded
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :return: returns a pandas DataFrame
     """
 
@@ -113,6 +115,7 @@ def parse_mmcif_atoms(filename, excluded_cols=pdbx_excluded_cols):
 
 
 def parse_pdb_atoms(filename, excluded_cols=pdbx_excluded_cols,
+                    column_dtype_dict=pdbx_types,
                     fix_label_alt_id=True, fix_ins_code=True, fix_type_symbol=True):
     """
     Parse PDB ATOM and HETATM lines. The ATOM lines are imported
@@ -120,6 +123,7 @@ def parse_pdb_atoms(filename, excluded_cols=pdbx_excluded_cols,
 
     :param filename: path to the PDB file
     :param excluded_cols: list of columns to be excluded
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :param fix_label_alt_id: boolean
     :param fix_ins_code: boolean
     :param fix_type_symbol: boolean
@@ -186,7 +190,9 @@ def parse_pdb_atoms(filename, excluded_cols=pdbx_excluded_cols,
               "".format(', '.join(list(excluded_cols))))
 
     # enforce some specific column types
-    table = constrain_column_types(table, col_type_dict=pdbx_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
+    log.debug("Update DataFrame column dtypes: {}..."
+              "".format(', '.join(column_dtype_dict.keys())))
 
     if table.empty:
         raise ValueError('PDB file {} resulted in a empty Dataframe'
@@ -728,14 +734,16 @@ def get_coordinates(table):
 ##############################################################################
 # Public methods
 ##############################################################################
-                      bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
-                      overwrite=False, **kwargs):
 def load_structures(identifier=None, excluded_cols=pdbx_excluded_cols,
+                    column_dtype_dict=pdbx_types,
+                    bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
+                    overwrite=False, **kwargs):
     """
     Produce table read from mmCIF file.
 
     :param identifier: PDB/mmCIF accession ID
     :param excluded_cols: option to exclude mmCIF columns
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :param bio_unit: (boolean) whether to get BioUnit instead of AsymUnit
     :param bio_unit_preferred: (boolean) if True fetches the 'preferred'
         biological assembly instead
@@ -753,11 +761,12 @@ def load_structures(identifier=None, excluded_cols=pdbx_excluded_cols,
                         bio_unit=bio_unit, bio_unit_preferred=bio_unit_preferred,
                         bio_unit_id=bio_unit_id, overwrite=overwrite)
 
-    table = read_structures(filename=filename, excluded_cols=excluded_cols)
+    table = read_structures(filename=filename, excluded_cols=excluded_cols,
+                            column_dtype_dict=column_dtype_dict)
 
     table = filter_structures(table=table, excluded_cols=excluded_cols, **kwargs)
 
-    table = constrain_column_types(table, col_type_dict=pdbx_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
 
     # id is the atom identifier and it is need for all atoms tables.
     if table[UNIFIED_COL + ['id']].duplicated().any():
@@ -886,15 +895,17 @@ def filter_structures(table, excluded_cols=None,
     return table
 
 
-                    pdb_fix_ins_code=True, pdb_fix_label_alt_id=True, pdb_fix_type_symbol=True):
 def read_structures(filename=None, input_format=None,
                     excluded_cols=pdbx_excluded_cols,
+                    column_dtype_dict=pdbx_types, pdb_fix_ins_code=True,
+                    pdb_fix_label_alt_id=True, pdb_fix_type_symbol=True):
     """
     Parse ATOM and HETATM lines from mmCIF or PDB files.
 
     :param filename: path to the mmCIF/PDB file
     :param input_format: either 'mmcif', 'cif', 'pdb' or 'ent'
     :param excluded_cols: option to exclude mmCIF columns
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :param pdb_fix_ins_code: boolean
     :param pdb_fix_label_alt_id: boolean
     :param pdb_fix_type_symbol: boolean
@@ -917,7 +928,10 @@ def read_structures(filename=None, input_format=None,
     if input_format == 'mmcif':
         table = parse_mmcif_atoms(filename, excluded_cols=excluded_cols)
     elif input_format == 'pdb':
+        table = parse_mmcif_atoms(filename, excluded_cols=excluded_cols,
+                                  column_dtype_dict=column_dtype_dict)
         table = parse_pdb_atoms(filename, excluded_cols=excluded_cols,
+                                column_dtype_dict=column_dtype_dict,
                                 fix_ins_code=pdb_fix_ins_code,
                                 fix_label_alt_id=pdb_fix_label_alt_id,
                                 fix_type_symbol=pdb_fix_type_symbol)

@@ -32,12 +32,14 @@ __all__ = ['parse_gff_features', 'filter_annotation',
            'load_annotation', 'download_annotation',
 
 
-def parse_gff_features(filename, excluded_cols=annotation_excluded_cols):
+def parse_gff_features(filename, excluded_cols=annotation_excluded_cols,
+                       column_dtype_dict=annotation_types):
     """
     Map Uniprot GFF features to the protein sequence.
 
     :param filename: path to the Annotation file
     :param excluded_cols: option to exclude Validation columns
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :return: returns a pandas DataFrame
     """
 
@@ -55,7 +57,7 @@ def parse_gff_features(filename, excluded_cols=annotation_excluded_cols):
     table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
-    table = constrain_column_types(table, col_type_dict=annotation_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
 
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")
@@ -137,12 +139,14 @@ def filter_annotation(table, identifier=None, annotation_agg=False, **kwargs):
 
 
 def load_annotation(identifier, excluded_cols=annotation_excluded_cols,
+                    column_dtype_dict=annotation_types,
                     overwrite=False, **kwargs):
     """
     Produces table from PDB validation XML file.
 
     :param identifier: UniProt accession ID
     :param excluded_cols: option to exclude columns
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :param overwrite: boolean
     :return: returns a pandas DataFrame
     """
@@ -153,7 +157,7 @@ def load_annotation(identifier, excluded_cols=annotation_excluded_cols,
 
     table = parse_gff_features(filename=filename, excluded_cols=excluded_cols)
     table = filter_annotation(table, identifier, **kwargs)
-    table = constrain_column_types(table, col_type_dict=annotation_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
     return table
 
 

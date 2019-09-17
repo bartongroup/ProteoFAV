@@ -133,7 +133,7 @@ def _parse_sifts_regions_from_file(filename, excluded_cols=sifts_excluded_cols):
 
 
 def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
-                         excluded_cols=sifts_excluded_cols):
+                         excluded_cols=sifts_excluded_cols, column_dtype_dict=sifts_types):
     """
     Parses the residue fields of a SIFTS XML file.
 
@@ -141,6 +141,7 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     :param add_regions: boolean
     :param add_dbs: boolean
     :param excluded_cols: list of columns to be excluded
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :return: returns a pandas DataFrame
     """
 
@@ -320,9 +321,6 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
 
     table = pd.DataFrame(rows)
 
-    # # enforce some specific column types
-    # table = constrain_column_types(table, sifts_types)
-
     for c in list(table):
         if '_regionId' in c:
             table[c] = table[c].fillna('-').astype(str)
@@ -333,7 +331,7 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
-    table = constrain_column_types(table, col_type_dict=sifts_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
 
     if table.empty:
         raise ValueError('SIFTS file {} resulted in a empty Dataframe'
@@ -341,8 +339,9 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     return table
 
 
-def load_sifts(identifier, excluded_cols=sifts_excluded_cols, add_regions=True, add_dbs=False,
-                 overwrite=False, **kwargs):
+def load_sifts(identifier, excluded_cols=sifts_excluded_cols,
+               column_dtype_dict=sifts_types, add_regions=True, add_dbs=False,
+               overwrite=False, **kwargs):
     """
     Produce table ready from SIFTS XML file.
 
@@ -363,7 +362,7 @@ def load_sifts(identifier, excluded_cols=sifts_excluded_cols, add_regions=True, 
                                  add_regions=add_regions, add_dbs=add_dbs)
 
     table = filter_sifts(table, **kwargs)
-    table = constrain_column_types(table, col_type_dict=sifts_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
     return table
 
 
