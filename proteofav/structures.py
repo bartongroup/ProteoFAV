@@ -25,7 +25,7 @@ from proteofav.utils import (fetch_from_url_or_retry, row_selector,
                              InputFileHandler, OutputFileHandler, GenericInputs,
                              constrain_column_types, remove_columns, Downloader,
                              check_sequence)
-from proteofav.library import pdbx_types, aa_default_atoms, scop_3to1
+from proteofav.library import (pdbx_types, pdbx_excluded_cols, scop_3to1, aa_default_atoms)
 
 log = logging.getLogger('proteofav.config')
 
@@ -54,7 +54,7 @@ def yield_lines(filename):
             yield line
 
 
-def parse_mmcif_atoms(filename, excluded_cols=None):
+def parse_mmcif_atoms(filename, excluded_cols=pdbx_excluded_cols):
     """
     Parse mmCIF ATOM and HETATM lines.
 
@@ -97,17 +97,14 @@ def parse_mmcif_atoms(filename, excluded_cols=None):
                           names=header, compression=None, converters=all_str,
                           keep_default_na=False)
     # excluding columns
-    if excluded_cols is None:
-        excluded_cols = ('Cartn_x_esd', 'Cartn_y_esd', 'Cartn_z_esd',
-                         'occupancy_esd', 'B_iso_or_equiv_esd',
-                         'pdbx_formal_charge')
-
     table = remove_columns(table, excluded=excluded_cols)
     log.debug("Removed columns from mmCIF: {}..."
               "".format(', '.join(list(excluded_cols))))
 
     # enforce some specific column types
-    table = constrain_column_types(table, col_type_dict=pdbx_types)
+    table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
+    log.debug("Update DataFrame column dtypes: {}..."
+              "".format(', '.join(column_dtype_dict.keys())))
 
     if table.empty:
         raise ValueError('mmCIF file {} resulted in a empty Dataframe'
@@ -115,7 +112,7 @@ def parse_mmcif_atoms(filename, excluded_cols=None):
     return table
 
 
-def parse_pdb_atoms(filename, excluded_cols=None,
+def parse_pdb_atoms(filename, excluded_cols=pdbx_excluded_cols,
                     fix_label_alt_id=True, fix_ins_code=True, fix_type_symbol=True):
     """
     Parse PDB ATOM and HETATM lines. The ATOM lines are imported
@@ -184,11 +181,6 @@ def parse_pdb_atoms(filename, excluded_cols=None,
         table = _fix_type_symbol(table)
 
     # excluding columns
-    if excluded_cols is None:
-        excluded_cols = ('Cartn_x_esd', 'Cartn_y_esd', 'Cartn_z_esd',
-                         'occupancy_esd', 'B_iso_or_equiv_esd',
-                         'pdbx_formal_charge')
-
     table = remove_columns(table, excluded=excluded_cols)
     log.debug("Removed columns from PDB: {}..."
               "".format(', '.join(list(excluded_cols))))
@@ -736,9 +728,9 @@ def get_coordinates(table):
 ##############################################################################
 # Public methods
 ##############################################################################
-def load_structures(identifier=None, excluded_cols=None,
                       bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
                       overwrite=False, **kwargs):
+def load_structures(identifier=None, excluded_cols=pdbx_excluded_cols,
     """
     Produce table read from mmCIF file.
 
@@ -894,8 +886,9 @@ def filter_structures(table, excluded_cols=None,
     return table
 
 
-def read_structures(filename=None, input_format=None, excluded_cols=None,
                     pdb_fix_ins_code=True, pdb_fix_label_alt_id=True, pdb_fix_type_symbol=True):
+def read_structures(filename=None, input_format=None,
+                    excluded_cols=pdbx_excluded_cols,
     """
     Parse ATOM and HETATM lines from mmCIF or PDB files.
 

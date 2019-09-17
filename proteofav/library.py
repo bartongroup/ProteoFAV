@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 __all__ = ["single_letter_aa", "three_letter_aa", "scop_3to1", "to_single_aa",
-           "valid_ensembl_species", "valid_ensembl_species_variation"]
+           "valid_ensembl_species", "valid_ensembl_species_variation",
+           "pdbx_excluded_cols", "dssp_excluded_cols",
+           "sifts_excluded_cols", "annotation_excluded_cols"]
 
 single_letter_aa = list('ACDEFGHIKLMNPQRSTVWY-TDHSM')
 
@@ -691,3 +693,15 @@ update_ensembl_to_uniprot = {
     'id': 'xrefs_id'
 }
 
+pdbx_excluded_cols = ('Cartn_x_esd', 'Cartn_y_esd', 'Cartn_z_esd',
+                      'occupancy_esd', 'B_iso_or_equiv_esd',
+                      'pdbx_formal_charge')
+
+dssp_excluded_cols = ("LINE", "STRUCTURE", "BP1", "BP2", "BP2_CHAIN",
+                      "NH_O_1", "NH_O_1_nrg", "O_HN_1", "O_HN_1_nrg",
+                      "NH_O_2", "NH_O_2_nrg", "O_HN_2", "O_HN_2_nrg",
+                      "X-CA", "Y-CA", "Z-CA")
+
+sifts_excluded_cols = ("InterPro", "GO", "EC", "NCBI")
+
+annotation_excluded_cols = ('empty',)

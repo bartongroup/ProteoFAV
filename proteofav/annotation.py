@@ -23,7 +23,7 @@ except ImportError:
 from proteofav.config import defaults
 from proteofav.utils import (remove_columns, constrain_column_types,
                              Downloader, GenericInputs)
-from proteofav.library import annotation_types
+from proteofav.library import annotation_types, annotation_excluded_cols
 
 log = logging.getLogger('proteofav.config')
 
@@ -32,7 +32,7 @@ __all__ = ['parse_gff_features', 'filter_annotation',
            'load_annotation', 'download_annotation',
 
 
-def parse_gff_features(filename, excluded_cols=None):
+def parse_gff_features(filename, excluded_cols=annotation_excluded_cols):
     """
     Map Uniprot GFF features to the protein sequence.
 
@@ -52,8 +52,6 @@ def parse_gff_features(filename, excluded_cols=None):
     table = data.merge(groups, left_index=True, right_index=True)
 
     # excluding columns
-    if excluded_cols is None:
-        excluded_cols = ('empty',)
     table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
@@ -138,7 +136,8 @@ def filter_annotation(table, identifier=None, annotation_agg=False, **kwargs):
     return table
 
 
-def load_annotation(identifier, excluded_cols=None, overwrite=False, **kwargs):
+def load_annotation(identifier, excluded_cols=annotation_excluded_cols,
+                    overwrite=False, **kwargs):
     """
     Produces table from PDB validation XML file.
 

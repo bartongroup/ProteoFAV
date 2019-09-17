@@ -8,8 +8,8 @@ from collections import OrderedDict
 
 from proteofav.variants import fetch_uniprot_pdb_mapping
 from proteofav.utils import (row_selector, InputFileHandler, Downloader,
-from proteofav.library import sifts_types
                              GenericInputs, constrain_column_types, remove_columns)
+from proteofav.library import sifts_types, sifts_excluded_cols
 
 from proteofav.config import defaults
 
@@ -19,7 +19,7 @@ log = logging.getLogger('proteofav.config')
 __all__ = ['parse_sifts_residues', 'load_sifts', 'sifts_best',
 
 
-def _parse_sifts_dbs_from_file(filename, excluded_cols=None):
+def _parse_sifts_dbs_from_file(filename, excluded_cols=sifts_excluded_cols):
     """
     Parses the residue fields of a SIFTS XML file.
 
@@ -31,10 +31,6 @@ def _parse_sifts_dbs_from_file(filename, excluded_cols=None):
     log.debug("Parsing SIFTS dbs from lines...")
 
     InputFileHandler(filename)
-
-    # excluding columns
-    if excluded_cols is None:
-        excluded_cols = ("InterPro", "GO", "EC", "NCBI")
 
     # parsing sifts segments
     try:
@@ -53,6 +49,7 @@ def _parse_sifts_dbs_from_file(filename, excluded_cols=None):
             db_entries = OrderedDict()
             for k, v in db.attrib.items():
                 db_entries[k] = v
+                # excluding columns
                 if k == 'dbSource' and v not in excluded_cols:
                     source = v
             if source not in excluded_cols and source != '':
@@ -61,7 +58,7 @@ def _parse_sifts_dbs_from_file(filename, excluded_cols=None):
     return sifts_object
 
 
-def _parse_sifts_regions_from_file(filename, excluded_cols=None):
+def _parse_sifts_regions_from_file(filename, excluded_cols=sifts_excluded_cols):
     """
     Parses the residue fields of a SIFTS XML file.
 
@@ -73,10 +70,6 @@ def _parse_sifts_regions_from_file(filename, excluded_cols=None):
     log.debug("Parsing SIFTS regions from lines...")
 
     InputFileHandler(filename)
-
-    # excluding columns
-    if excluded_cols is None:
-        excluded_cols = ("InterPro", "GO", "EC", "NCBI")
 
     # parsing sifts segments
     try:
@@ -109,6 +102,7 @@ def _parse_sifts_regions_from_file(filename, excluded_cols=None):
                         for k, v in annotation.attrib.items():
                             # db entries
                             if annotation.tag == db_reference:
+                                # excluding columns
                                 if k == 'dbSource' and v not in excluded_cols:
                                     source = v
                                 else:
@@ -139,7 +133,7 @@ def _parse_sifts_regions_from_file(filename, excluded_cols=None):
 
 
 def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
-                         excluded_cols=None):
+                         excluded_cols=sifts_excluded_cols):
     """
     Parses the residue fields of a SIFTS XML file.
 
@@ -198,10 +192,6 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
 
     InputFileHandler(filename)
 
-    # excluding columns
-    if excluded_cols is None:
-        excluded_cols = ("InterPro", "GO", "EC", "NCBI")
-
     # parse regions first
     if add_regions:
         regions = _parse_sifts_regions_from_file(filename=filename,
@@ -251,6 +241,7 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
                         for k, v in annotation.attrib.items():
                             # crossRefDb entries
                             if annotation.tag == cross_reference:
+                                # excluding columns
                                 if annotation.attrib["dbSource"] not in excluded_cols:
                                     # skipping various fields
                                     if k == 'dbSource' or k == 'dbCoordSys':
@@ -350,13 +341,14 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     return table
 
 
-def load_sifts(identifier, excluded_cols=None, add_regions=True, add_dbs=False,
+def load_sifts(identifier, excluded_cols=sifts_excluded_cols, add_regions=True, add_dbs=False,
                  overwrite=False, **kwargs):
     """
     Produce table ready from SIFTS XML file.
 
     :param identifier: PDB/mmCIF accession ID
     :param excluded_cols: option to exclude mmCIF columns
+    :param column_dtype_dict: dictionary of column-dtype key-value pairs
     :param add_regions: boolean
     :param add_dbs: boolean
     :param overwrite: boolean

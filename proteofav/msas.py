@@ -446,6 +446,9 @@ def load_msas(superfamily=None, family=None, seq_format=None,
 
     # table = filter_structures(table=table, excluded_cols=excluded_cols, **kwargs)
     # table = constrain_column_types(table, col_type_dict=msas_types)
+
+    # excluding columns
+    table = remove_columns(table, excluded=excluded_cols)
     return table
 
 

@@ -16,7 +16,7 @@ from proteofav.structures import load_structures
 from proteofav.utils import (row_selector, InputFileHandler,
                              constrain_column_types, remove_columns,
                              GenericInputs, Downloader)
-from proteofav.library import (scop_3to1, dssp_types, aa_codes_1to3_extended)
+from proteofav.library import (dssp_types, dssp_excluded_cols, scop_3to1, aa_codes_1to3_extended)
 from proteofav.library import (ASA_Miller, ASA_Wilke, ASA_Sander)
 
 from proteofav.config import defaults
@@ -28,7 +28,7 @@ __all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'load_dssp',
            '_DSSP', 'DSSP']
 
 
-def parse_dssp_residues(filename, excluded_cols=None):
+def parse_dssp_residues(filename, excluded_cols=dssp_excluded_cols):
     """
     Parse lines of the DSSP file to get entries for every Residue
     in each CHAIN. The hierarchy is maintained. CHAIN->RESIDUE->[...].
@@ -94,12 +94,6 @@ def parse_dssp_residues(filename, excluded_cols=None):
                         compression=None, converters=all_str, keep_default_na=False)
 
     # excluding columns
-    if excluded_cols is None:
-        excluded_cols = ("LINE", "STRUCTURE", "BP1", "BP2", "BP2_CHAIN",
-                         "NH_O_1", "NH_O_1_nrg", "O_HN_1", "O_HN_1_nrg",
-                         "NH_O_2", "NH_O_2_nrg", "O_HN_2", "O_HN_2_nrg",
-                         "X-CA", "Y-CA", "Z-CA")
-
     table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
@@ -315,7 +309,8 @@ def get_rsa_class(rsa, lower_threshold=5.0, upper_threshold=25.0):
     return rsa_class
 
 
-def load_dssp(identifier, excluded_cols=None, overwrite=False, **kwargs):
+def load_dssp(identifier, excluded_cols=dssp_excluded_cols,
+              overwrite=False, **kwargs):
     """
     Produce table from DSSP file output.
 
