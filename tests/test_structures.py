@@ -23,7 +23,7 @@ from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, load_structu
                                   _get_contact_indexes_from_table, _add_mmcif_contacts,
                                   _remove_multiple_altlocs, _remove_partial_residues,
                                   read_structures, write_structures, download_structures,
-                                  PDB, mmCIF, get_preferred_assembly_id,
+                                  PDB, MMCIF, get_preferred_assembly_id,
                                   fetch_summary_properties_pdbe,
                                   get_sequence, get_coordinates)
 
@@ -73,7 +73,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.write_structures = write_structures
         self.download_structures = download_structures
         self.PDB = PDB
-        self.mmCIF = mmCIF
+        self.MMCIF = MMCIF
         self.get_sequence = get_sequence
         self.get_coordinates = get_coordinates
 
@@ -112,7 +112,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.write_structures = None
         self.download_structures = None
         self.PDB = None
-        self.mmCIF = None
+        self.MMCIF = None
         self.get_sequence = None
         self.get_coordinates = None
 
@@ -571,7 +571,7 @@ class TestMMCIFParser(unittest.TestCase):
 
     def test_main_mmCIF(self):
         # read
-        data = self.mmCIF.read(self.example_mmcif)
+        data = self.MMCIF.read(self.example_mmcif)
         self.assertEqual(data.loc[0, 'label_asym_id'], 'A')
         self.assertEqual(data.loc[2686, 'label_asym_id'], 'B')
         self.assertEqual(data.loc[5315, 'label_asym_id'], 'C')
@@ -581,14 +581,14 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual(data.loc[5315, 'label_atom_id'], 'FE')
         self.assertEqual(data.loc[5316, 'label_atom_id'], 'FE')
         # read mmcif and write pdb
-        data = self.mmCIF.read(self.example_mmcif)
-        self.mmCIF.write(data, filename=self.output_pdb, overwrite=True)
+        data = self.MMCIF.read(self.example_mmcif)
+        self.MMCIF.write(data, filename=self.output_pdb, overwrite=True)
         self.assertTrue(os.path.isfile(self.output_pdb))
         data = self.pdb_atom_parser(self.output_pdb)
         self.assertIn('label_asym_id', list(data))
         os.remove(self.output_pdb)
         # download
-        self.mmCIF.download(self.pdbid, self.output_mmcif,
+        self.MMCIF.download(self.pdbid, self.output_mmcif,
                             overwrite=True)
         self.assertTrue(os.path.isfile(self.output_mmcif))
         os.remove(self.output_mmcif)
@@ -627,7 +627,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual("1", r)
 
     def test_get_sequence_structures(self):
-        table = self.mmCIF.read(filename=self.example_mmcif)
+        table = self.MMCIF.read(filename=self.example_mmcif)
         self.assertTrue(isinstance(table, pd.DataFrame))
         table = self.filter_structures(table, chains=('A',), lines=('ATOM',))
         table = self.residues_aggregation(table)
@@ -636,7 +636,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertEqual('VPWFPRTIQELDRFANQILDADHPG', seq[0:25])
 
     def test_get_coordinates(self):
-        data = self.mmCIF.read(filename=self.example_mmcif)
+        data = self.MMCIF.read(filename=self.example_mmcif)
         coords = self.get_coordinates(data)
         self.assertEqual(coords[0].tolist(), [-7.069, 21.943, 18.77])
 

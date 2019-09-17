@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import pandas as pd
 
-from proteofav.structures import select_structures, mmCIF
+from proteofav.structures import select_structures, MMCIF
 from proteofav.sifts import select_sifts, sifts_best, SIFTS
 from proteofav.dssp import select_dssp, DSSP
 from proteofav.variants import select_variants, Variants, fetch_pdb_uniprot_mapping
@@ -491,7 +491,7 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
                 raise TableMergerError('Nothing to merge...')
 
         # mmCIF table
-        mmcif_table = mmCIF.load(identifier=pdb_id, bio_unit=bio_unit,
+        mmcif_table = MMCIF.load(identifier=pdb_id, bio_unit=bio_unit,
                                  bio_unit_preferred=True, overwrite=overwrite,
                                  add_atom_altloc=True, add_res_full=True,
                                  category='auth', residue_agg=residue_agg,

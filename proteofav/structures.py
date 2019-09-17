@@ -33,7 +33,7 @@ __all__ = ['parse_mmcif_atoms', 'residues_aggregation',
            'fetch_summary_properties_pdbe', 'get_preferred_assembly_id',
            'filter_structures', 'load_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
            'read_structures', 'download_structures', 'write_structures',
-           '_Structure', 'PDB', 'mmCIF']
+           '_Structure', 'PDB', 'MMCIF']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 
@@ -695,7 +695,7 @@ def get_sequence(table, category='auth', ambiguous='X'):
     """
     Get the sequence for the PDBx table.
 
-    :param table: pandas DataFrame from PDB/mmCIF.read()
+    :param table: pandas DataFrame from PDB/MMCIF.read()
     :param category: data category to be used as precedence in _atom_site.*_*
         asym_id, seq_id and atom_id
     :param ambiguous: (str) 1-letter symbol for ambiguous residues
@@ -1064,4 +1064,4 @@ class _Structure(GenericInputs):
 
 
 PDB = _Structure()
-mmCIF = _Structure()
+MMCIF = _Structure()

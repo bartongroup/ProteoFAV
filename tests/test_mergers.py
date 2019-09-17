@@ -12,7 +12,7 @@ except ImportError:
     from unittest.mock import patch
 
 from proteofav.config import defaults
-from proteofav.structures import parse_mmcif_atoms, mmCIF
+from proteofav.structures import parse_mmcif_atoms, MMCIF
 from proteofav.dssp import parse_dssp_residues, DSSP, filter_dssp
 from proteofav.sifts import parse_sifts_residues, SIFTS
 from proteofav.variants import Variants
@@ -121,10 +121,10 @@ class TestMerger(unittest.TestCase):
         cls.inputbiodssp = os.path.join(root, "testdata", defaults.db_dssp,
                                         "{}_bio.dssp".format(cls.pdbid))
 
-        cls.mmcif = mmCIF.load(identifier=cls.pdbid,
+        cls.mmcif = MMCIF.load(identifier=cls.pdbid,
                                add_res_full=True, atoms=('CA',))
 
-        cls.mmcif_bio = mmCIF.load(identifier=cls.pdbid, bio_unit=True,
+        cls.mmcif_bio = MMCIF.load(identifier=cls.pdbid, bio_unit=True,
                                    bio_unit_preferred=True,
                                    add_res_full=True, atoms=('CA',))
 
