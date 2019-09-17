@@ -28,8 +28,8 @@ from proteofav.library import annotation_types
 log = logging.getLogger('proteofav.config')
 
 __all__ = ['parse_gff_features', 'filter_annotation',
-           'select_annotation', 'download_annotation',
            '_Annotation', 'Annotation']
+           'load_annotation', 'download_annotation',
 
 
 def parse_gff_features(filename, excluded_cols=None):
@@ -138,7 +138,7 @@ def filter_annotation(table, identifier=None, annotation_agg=False, **kwargs):
     return table
 
 
-def select_annotation(identifier, excluded_cols=None, overwrite=False, **kwargs):
+def load_annotation(identifier, excluded_cols=None, overwrite=False, **kwargs):
     """
     Produces table from PDB validation XML file.
 
@@ -186,9 +186,9 @@ class _Annotation(GenericInputs):
         filename = self._get_filename(filename)
         return download_annotation(identifier=identifier, filename=filename, **kwargs)
 
-    def select(self, identifier=None, **kwargs):
+    def load(self, identifier=None, **kwargs):
         identifier = self._get_identifier(identifier)
-        self.table = select_annotation(identifier=identifier, **kwargs)
+        self.table = load_annotation(identifier=identifier, **kwargs)
         return self.table
 
 

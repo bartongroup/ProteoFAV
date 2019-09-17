@@ -21,7 +21,7 @@ __all__ = ['read_alignments', 'read_msas',
            'parse_cath_fasta_seq_description',
            'parse_cath_sth_seq_description',
            'parse_generic_seq_description',
-           'select_msas', 'download_msas',
+           'load_msas', 'download_msas',
            'download_msa_from_cath',
            'download_msa_from_pfam',
            '_MSA', 'MSA']
@@ -390,9 +390,9 @@ def parse_generic_seq_description(description, entry, get_uniprot_id=True):
     return entry
 
 
-def select_msas(superfamily=None, family=None, seq_format=None,
                 aln_source='pfam', get_uniprot_id=True, excluded_cols=None,
                 overwrite=False, **kwargs):
+def load_msas(superfamily=None, family=None, seq_format=None,
     """
     Produce table read from a MSA.
 
@@ -538,8 +538,8 @@ class _MSA(GenericInputs):
         filename = self._get_filename(filename)
         return download_msas(identifier, filename, **kwargs)
 
-    def select(self, **kwargs):
-        self.table = select_msas(**kwargs)
+    def load(self, **kwargs):
+        self.table = load_msas(**kwargs)
         return self.table
 
 

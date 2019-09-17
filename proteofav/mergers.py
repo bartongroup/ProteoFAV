@@ -491,45 +491,45 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
                 raise TableMergerError('Nothing to merge...')
 
         # mmCIF table
-        mmcif_table = mmCIF.select(identifier=pdb_id, bio_unit=bio_unit,
-                                   bio_unit_preferred=True, overwrite=overwrite,
-                                   add_atom_altloc=True, add_res_full=True,
-                                   category='auth', residue_agg=residue_agg,
-                                   chains=chains, res_full=res, atoms=atoms, lines=lines)
+        mmcif_table = mmCIF.load(identifier=pdb_id, bio_unit=bio_unit,
+                                 bio_unit_preferred=True, overwrite=overwrite,
+                                 add_atom_altloc=True, add_res_full=True,
+                                 category='auth', residue_agg=residue_agg,
+                                 chains=chains, res_full=res, atoms=atoms, lines=lines)
 
         # SIFTS table
         if sifts:
-            sifts_table = SIFTS.select(identifier=pdb_id, add_regions=True, add_dbs=False,
-                                       chains=chains, res=res, uniprot=uniprot_id, site=sites)
+            sifts_table = SIFTS.load(identifier=pdb_id, add_regions=True, add_dbs=False,
+                                     chains=chains, res=res, uniprot=uniprot_id, site=sites)
         else:
             sifts_table = None
 
         # DSSP table
         if dssp:
-            dssp_table = DSSP.select(identifier=pdb_id,
-                                     add_ss_reduced=True, add_rsa_class=True,
-                                     chains_full=chains, res=res)
+            dssp_table = DSSP.load(identifier=pdb_id,
+                                   add_ss_reduced=True, add_rsa_class=True,
+                                   chains_full=chains, res=res)
         else:
             dssp_table = None
 
         # Validation table
         if validation:
-            validation_table = Validation.select(identifier=pdb_id)
+            validation_table = Validation.load(identifier=pdb_id)
         else:
             validation_table = None
 
         # Annotations table
         if annotations:
             if uniprot_id:
-                annotations_table = Annotation.select(identifier=uniprot_id,
-                                                      annotation_agg=True)
+                annotations_table = Annotation.load(identifier=uniprot_id,
+                                                    annotation_agg=True)
             else:
                 annotations_table = None
                 annot_tables = []
                 data = fetch_pdb_uniprot_mapping(identifier=pdb_id).json()[pdb_id]['UniProt']
                 for uniprot_id in data:
-                    annot_tables.append(Annotation.select(identifier=uniprot_id,
-                                                          annotation_agg=True))
+                    annot_tables.append(Annotation.load(identifier=uniprot_id,
+                                                        annotation_agg=True))
                 if len(annot_tables) > 1:
                     annotations_table = pd.concat(annot_tables).reset_index(drop=True)
                 elif len(annot_tables):
@@ -540,24 +540,24 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
         # Variants table
         if variants:
             if uniprot_id:
-                uni_vars, ens_vars = Variants.select(identifier=uniprot_id,
-                                                     id_source='uniprot',
-                                                     synonymous=True,
-                                                     uniprot_vars=True,
-                                                     ensembl_germline_vars=True,
-                                                     ensembl_somatic_vars=True)
+                uni_vars, ens_vars = Variants.load(identifier=uniprot_id,
+                                                   id_source='uniprot',
+                                                   synonymous=True,
+                                                   uniprot_vars=True,
+                                                   ensembl_germline_vars=True,
+                                                   ensembl_somatic_vars=True)
                 variants_table = uniprot_vars_ensembl_vars_merger(uni_vars, ens_vars)
             else:
                 variants_table = None
                 vars_tables = []
                 data = fetch_pdb_uniprot_mapping(identifier=pdb_id).json()[pdb_id]['UniProt']
                 for uniprot_id in data:
-                    uni_vars, ens_vars = Variants.select(identifier=uniprot_id,
-                                                         id_source='uniprot',
-                                                         synonymous=True,
-                                                         uniprot_vars=True,
-                                                         ensembl_germline_vars=True,
-                                                         ensembl_somatic_vars=True)
+                    uni_vars, ens_vars = Variants.load(identifier=uniprot_id,
+                                                       id_source='uniprot',
+                                                       synonymous=True,
+                                                       uniprot_vars=True,
+                                                       ensembl_germline_vars=True,
+                                                       ensembl_somatic_vars=True)
                     vars_tables.append(uniprot_vars_ensembl_vars_merger(uni_vars, ens_vars))
                 if len(vars_tables) > 1:
                     variants_table = pd.concat(vars_tables).reset_index(drop=True)
@@ -603,7 +603,7 @@ class _Tables(object):
                                   self.validation, self.annotation, self.variants)
         return self.table
 
-    def generate(self, merge_tables=False, sequence_check='ignore', **kwargs):
+    def load(self, merge_tables=False, sequence_check='ignore', **kwargs):
         """Generates the Tables, merges and stores
 
         :param merge_tables: (bool) merge the Tables after generating them

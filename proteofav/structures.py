@@ -31,7 +31,7 @@ log = logging.getLogger('proteofav.config')
 
 __all__ = ['parse_mmcif_atoms', 'residues_aggregation',
            'fetch_summary_properties_pdbe', 'get_preferred_assembly_id',
-           'filter_structures', 'select_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
+           'filter_structures', 'load_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
            'read_structures', 'download_structures', 'write_structures',
            '_Structure', 'PDB', 'mmCIF']
 
@@ -736,7 +736,7 @@ def get_coordinates(table):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_structures(identifier=None, excluded_cols=None,
+def load_structures(identifier=None, excluded_cols=None,
                       bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
                       overwrite=False, **kwargs):
     """
@@ -1043,9 +1043,9 @@ class _Structure(GenericInputs):
         filename = self._get_filename(filename)
         return download_structures(identifier=identifier, filename=filename, **kwargs)
 
-    def select(self, identifier=None, **kwargs):
+    def load(self, identifier=None, **kwargs):
         identifier = self._get_identifier(identifier)
-        self.table = select_structures(identifier=identifier, **kwargs)
+        self.table = load_structures(identifier=identifier, **kwargs)
         return self.table
 
 

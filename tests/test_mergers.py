@@ -121,31 +121,31 @@ class TestMerger(unittest.TestCase):
         cls.inputbiodssp = os.path.join(root, "testdata", defaults.db_dssp,
                                         "{}_bio.dssp".format(cls.pdbid))
 
-        cls.mmcif = mmCIF.select(identifier=cls.pdbid,
-                                 add_res_full=True, atoms=('CA',))
+        cls.mmcif = mmCIF.load(identifier=cls.pdbid,
+                               add_res_full=True, atoms=('CA',))
 
-        cls.mmcif_bio = mmCIF.select(identifier=cls.pdbid, bio_unit=True,
-                                     bio_unit_preferred=True,
-                                     add_res_full=True, atoms=('CA',))
+        cls.mmcif_bio = mmCIF.load(identifier=cls.pdbid, bio_unit=True,
+                                   bio_unit_preferred=True,
+                                   add_res_full=True, atoms=('CA',))
 
-        cls.dssp = DSSP.select(identifier=cls.pdbid,
-                               add_rsa_class=True, add_ss_reduced=True)
+        cls.dssp = DSSP.load(identifier=cls.pdbid,
+                             add_rsa_class=True, add_ss_reduced=True)
 
         dssp_bio = DSSP.read(filename=cls.inputbiodssp)
         cls.dssp_bio = filter_dssp(dssp_bio, add_rsa_class=True, add_ss_reduced=True)
 
-        cls.sifts = SIFTS.select(identifier=cls.pdbid, add_regions=True, add_dbs=False)
+        cls.sifts = SIFTS.load(identifier=cls.pdbid, add_regions=True, add_dbs=False)
 
-        cls.validation = Validation.select(identifier=cls.pdbid, add_res_full=True)
+        cls.validation = Validation.load(identifier=cls.pdbid, add_res_full=True)
 
-        cls.annotation = Annotation.select(identifier=cls.uniprotid, annotation_agg=True)
+        cls.annotation = Annotation.load(identifier=cls.uniprotid, annotation_agg=True)
 
-        cls.uni_vars, cls.ens_vars = Variants.select(cls.uniprotid,
-                                                     id_source='uniprot',
-                                                     synonymous=True,
-                                                     uniprot_vars=True,
-                                                     ensembl_germline_vars=True,
-                                                     ensembl_somatic_vars=True)
+        cls.uni_vars, cls.ens_vars = Variants.load(cls.uniprotid,
+                                                   id_source='uniprot',
+                                                   synonymous=False,
+                                                   uniprot_vars=True,
+                                                   ensembl_germline_vars=True,
+                                                   ensembl_somatic_vars=True)
         cls.variants = uniprot_vars_ensembl_vars_merger(cls.uni_vars, cls.ens_vars)
 
     @classmethod
@@ -168,13 +168,13 @@ class TestMerger(unittest.TestCase):
     def test_empty(self):
         """Test no argument cases."""
         with self.assertRaises(ValueError):
-            self.Tables.generate(pdb_id=None)
-            self.Tables.generate(uniprot_id=None)
+            self.Tables.load(pdb_id=None)
+            self.Tables.load(uniprot_id=None)
 
     def test_camKIV_ca_atom(self):
         """Test table merger for a simple protein example."""
-        data = self.Tables.generate(pdb_id="2w4o", chains="A", dssp=True, atoms='CA',
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id="2w4o", chains="A", dssp=True, atoms='CA',
+                                merge_tables=True)
         self.assertIsNotNone(data)
         self.assertFalse(data.empty)
 
@@ -192,8 +192,8 @@ class TestMerger(unittest.TestCase):
     def test_merge_4ibw_A_with_alt_loc(self):
         """
         Test case in a structure with alt locations."""
-        data = self.Tables.generate(pdb_id="4ibw", chains="A",
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id="4ibw", chains="A",
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_3mn5_with_insertion_code(self):
@@ -215,18 +215,18 @@ class TestMerger(unittest.TestCase):
         self.assertFalse(self.sifts.empty)
         self.assertFalse(self.dssp.empty)
 
-        data = self.Tables.generate(pdb_id="3mn5", chains="A",
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id="3mn5", chains="A",
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_3fqd_A_no_pdbe_label_seq_id(self):
-        self.data = self.Tables.generate(pdb_id='3fqd', chains='A',
-                                         merge_tables=True)
+        self.data = self.Tables.load(pdb_id='3fqd', chains='A',
+                                     merge_tables=True)
         self.assertFalse(self.data.empty)
 
     def test_merge_3ehk_D_lowercased_dssp(self):
-        self.data = self.Tables.generate(pdb_id='3ehk', chains='D',
-                                         merge_tables=True)
+        self.data = self.Tables.load(pdb_id='3ehk', chains='D',
+                                     merge_tables=True)
         self.assertFalse(self.data.empty)
 
     # @unittest.expectedFailure
@@ -236,50 +236,50 @@ class TestMerger(unittest.TestCase):
         Although its possible to map and reference the BD chain into the mmCIF table,
         it is currently unsupported by merge_tables.
         """
-        data = self.Tables.generate(pdb_id='4v9d', chains='BD',
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id='4v9d', chains='BD',
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_4abo_A_DSSP_missing_first_residue(self):
-        data = self.Tables.generate(pdb_id='4abo', chains='A',
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id='4abo', chains='A',
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_4why_K_DSSP_index_as_object(self):
-        data = self.Tables.generate(pdb_id='4why', chains='K',
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id='4why', chains='K',
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_2pm7_D_missing_residue_DSSP(self):
-        data = self.Tables.generate(pdb_id='2pm7', chains='D',
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id='2pm7', chains='D',
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_merge_4myi_A_fail(self):
-        data = self.Tables.generate(pdb_id='2pm7', chains='D',
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id='2pm7', chains='D',
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_camKIV_wrong_chain(self):
         with self.assertRaises(ValueError):
-            self.Tables.generate(pdb_id='2w4o', chains='D',
-                                 merge_tables=True)
+            self.Tables.load(pdb_id='2w4o', chains='D',
+                             merge_tables=True)
 
     def test_camKIV_wrong_atom(self):
         with self.assertRaises(ValueError):
-            self.Tables.generate(pdb_id='2w4o', chains='A', atoms=['CC'],
-                                 merge_tables=True)
+            self.Tables.load(pdb_id='2w4o', chains='A', atoms=['CC'],
+                             merge_tables=True)
 
     def test_camKIV_atom_list(self):
         # TODO test_camIV_list_mode(self):
-        data = self.Tables.generate(pdb_id='2w4o', chains='A', atoms=['CA', 'CB'],
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id='2w4o', chains='A', atoms=['CA', 'CB'],
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_camKIV_atom_centroid(self):
         # TODO test_camIV_centroid_mode(self):
-        data = self.Tables.generate(pdb_id='2w4o', chains='A', atoms='centroid',
-                                    merge_tables=True)
+        data = self.Tables.load(pdb_id='2w4o', chains='A', atoms='centroid',
+                                merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_3edv_string_index(self):
@@ -287,7 +287,7 @@ class TestMerger(unittest.TestCase):
         pass
 
     def test_camKIV_from_uniprot_id(self):
-        data = self.Tables.generate(uniprot_id='Q16566', merge_tables=True)
+        data = self.Tables.load(uniprot_id='Q16566', merge_tables=True)
         self.assertFalse(data.empty)
 
     def test_sequence_check_raise(self):
@@ -299,7 +299,7 @@ class TestMerger(unittest.TestCase):
 
         with patch("proteofav.structures.parse_mmcif_atoms", return_value=baddata):
             # with self.assertRaises(ValueError):
-            data = self.Tables.generate(pdb_id='2w4o', merge_tables=True)
+            data = self.Tables.load(pdb_id='2w4o', merge_tables=True)
             self.assertFalse(data.empty)
 
     def test_mmcif_dssp_merger(self):
@@ -519,8 +519,8 @@ class TestMerger(unittest.TestCase):
         self.assertEqual('V', table.loc[329, 'UniProt_dbResName'])
 
     def test_table_merger_bio(self):
-        self.Tables.generate(pdb_id=self.pdbid, atoms=('CA',), bio_unit=True,
-                             dssp=True, sifts=True)
+        self.Tables.load(pdb_id=self.pdbid, atoms=('CA',), bio_unit=True,
+                         dssp=True, sifts=True)
         table = self.Tables.merge()
         # Chain level
         self.assertIn('label_asym_id', table)

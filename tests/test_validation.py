@@ -5,7 +5,7 @@ import sys
 import logging
 import unittest
 
-from proteofav.validation import (parse_validation_residues, select_validation,
+from proteofav.validation import (parse_validation_residues, load_validation,
                                   _fix_label_alt_id, _fix_pdb_ins_code,
                                   _add_validation_res_full,
                                   filter_validation, download_validation,
@@ -108,7 +108,7 @@ class TestValidationParser(unittest.TestCase):
         if os.path.exists(self.output_validation):
             os.remove(self.output_validation)
         # select
-        self.Validation.select(self.pdbid)
+        self.Validation.load(self.pdbid)
 
 
 if __name__ == '__main__':

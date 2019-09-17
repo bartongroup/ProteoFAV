@@ -44,16 +44,16 @@ def main(pdb, chain, uniprot, output_type, log, add_dssp,
     logging.basicConfig(stream=log,
                         format='%(asctime)s - %(levelname)s - %(message)s ')
 
-    table = Tables.generate(pdb_id=pdb,
-                            uniprot_id=uniprot,
-                            chains=chain,
-                            sifts=True,
-                            dssp=add_dssp,
-                            validation=add_validation,
-                            annotations=add_annotations,
-                            variants=add_variants,
-                            merge_tables=True,
-                            sequence_check='ignore')
+    table = Tables.load(pdb_id=pdb,
+                        uniprot_id=uniprot,
+                        chains=chain,
+                        sifts=True,
+                        dssp=add_dssp,
+                        validation=add_validation,
+                        annotations=add_annotations,
+                        variants=add_variants,
+                        merge_tables=True,
+                        sequence_check='ignore')
 
     if output_type == 'csv':
         table.to_csv(output, encoding='utf-8')

@@ -13,7 +13,7 @@ except ImportError:
 
 from proteofav.sifts import (parse_sifts_residues, sifts_best,
                              _parse_sifts_regions_from_file,
-                             _parse_sifts_dbs_from_file, select_sifts,
+                             _parse_sifts_dbs_from_file, load_sifts,
                              filter_sifts, download_sifts, SIFTS)
 
 from proteofav.config import defaults
@@ -183,7 +183,7 @@ class TestSIFTSParser(unittest.TestCase):
         if os.path.exists(self.output_sifts):
             os.remove(self.output_sifts)
         # select
-        self.SIFTS.select(self.pdbid)
+        self.SIFTS.load(self.pdbid)
 
 
 if __name__ == '__main__':

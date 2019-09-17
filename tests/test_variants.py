@@ -26,7 +26,7 @@ from proteofav.variants import (_fetch_icgc_variants, fetch_uniprot_variants, fe
                                 fetch_uniprot_species_from_id, get_ensembl_species_from_uniprot,
                                 fetch_uniprot_formal_specie, _uniprot_info,
                                 flatten_uniprot_variants_ebi, flatten_ensembl_variants,
-                                select_variants, fetch_variants, Variants)
+                                load_variants, fetch_variants, Variants)
 
 example_uniprot_variants = {
     'accession': 'P40227',
@@ -162,7 +162,7 @@ class VariantsTestCase(unittest.TestCase):
         self.flatten_uniprot_variants_ebi = flatten_uniprot_variants_ebi
         self.flatten_ensembl_variants = flatten_ensembl_variants
         self.fetch_variants = fetch_variants
-        self.select_variants = select_variants
+        self.select_variants = load_variants
         self.Variants = Variants
 
     def tearDown(self):
@@ -372,7 +372,7 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
                                      206: "Natural variant: ['In PPNAD4; somatic mutation; the mutation results in cAMP-independent basal protein kinase activity and constitutive activation of protein kinase A. L->R'] (['VAR_071707'])",
                                      264: "Natural variant: ['S->C'] (['VAR_040593'])"})
 
-        with mock.patch('proteofav.variants.select_annotation') as mock_fun:
+        with mock.patch('proteofav.variants.load_annotation') as mock_fun:
             mock_fun.return_value = pd.DataFrame(mock_data)
             data = self.parse_uniprot_variants('XXXX')
 
@@ -907,12 +907,12 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertIn('end', list(ensembl))
 
     def test_variants_select_from_uniprot_id(self):
-        uniprot, ensembl = self.Variants.select(self.uniprot_id2,
-                                                id_source='uniprot',
-                                                synonymous=True,
-                                                uniprot_vars=False,
-                                                ensembl_germline_vars=True,
-                                                ensembl_somatic_vars=True)
+        uniprot, ensembl = self.Variants.load(self.uniprot_id2,
+                                              id_source='uniprot',
+                                              synonymous=True,
+                                              uniprot_vars=False,
+                                              ensembl_germline_vars=True,
+                                              ensembl_somatic_vars=True)
         self.assertIn('polyphenScore', list(ensembl))
         self.assertIn('siftScore', list(ensembl))
         self.assertIn('begin', list(ensembl))
@@ -922,12 +922,12 @@ null,"id":"rs746074624","translation":"ENSP00000288602","allele":"G/C","type":"m
         self.assertIsNone(uniprot)
 
     def test_variants_select_from_ensembl_id(self):
-        uniprot, ensembl = self.Variants.select(self.ensembl_id2,
-                                                id_source='ensembl',
-                                                synonymous=True,
-                                                uniprot_vars=True,
-                                                ensembl_germline_vars=False,
-                                                ensembl_somatic_vars=False)
+        uniprot, ensembl = self.Variants.load(self.ensembl_id2,
+                                              id_source='ensembl',
+                                              synonymous=True,
+                                              uniprot_vars=True,
+                                              ensembl_germline_vars=False,
+                                              ensembl_somatic_vars=False)
         self.assertIn('polyphenScore', list(uniprot))
         self.assertIn('siftScore', list(uniprot))
         self.assertIn('begin', list(uniprot))

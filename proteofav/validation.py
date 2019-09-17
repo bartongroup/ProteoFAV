@@ -13,7 +13,7 @@ from proteofav.library import validation_types
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_validation_residues', 'select_validation',
+__all__ = ['parse_validation_residues', 'load_validation',
            'filter_validation', 'download_validation',
            '_Validation', 'Validation']
 
@@ -117,7 +117,7 @@ def _add_validation_res_full(table):
     return table
 
 
-def select_validation(identifier, excluded_cols=None, overwrite=False, **kwargs):
+def load_validation(identifier, excluded_cols=None, overwrite=False, **kwargs):
     """
     Produces table from PDB validation XML file.
 
@@ -203,9 +203,9 @@ class _Validation(GenericInputs):
         filename = self._get_filename(filename)
         return download_validation(identifier=identifier, filename=filename, **kwargs)
 
-    def select(self, identifier=None, **kwargs):
+    def load(self, identifier=None, **kwargs):
         identifier = self._get_identifier(identifier)
-        self.table = select_validation(identifier=identifier, **kwargs)
+        self.table = load_validation(identifier=identifier, **kwargs)
         return self.table
 
 

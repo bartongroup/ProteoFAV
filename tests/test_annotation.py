@@ -10,7 +10,7 @@ try:
 except ImportError:
     import unittest.mock as mock
 
-from proteofav.annotation import (parse_gff_features, select_annotation,
+from proteofav.annotation import (parse_gff_features, load_annotation,
                                   annotation_aggregation, filter_annotation,
                                   download_annotation, Annotation)
 
@@ -115,7 +115,7 @@ class TestUNIPROTParser(unittest.TestCase):
         if os.path.exists(self.output_annotation):
             os.remove(self.output_annotation)
         # select
-        self.Annotation.select(self.uniprotid)
+        self.Annotation.load(self.uniprotid)
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ from io import BytesIO
 from io import StringIO
 from pandas.io.json import json_normalize
 
-from proteofav.annotation import select_annotation
+from proteofav.annotation import load_annotation
 from proteofav.utils import (fetch_from_url_or_retry, row_selector,
                              constrain_column_types, remove_columns, GenericInputs,
                              flatten_nested_structure, refactor_key_val_singletons,
@@ -39,7 +39,7 @@ __all__ = ['fetch_uniprot_variants',
            '_count_mismatches',
            'fetch_uniprot_sequence',
            'fetch_uniprot_formal_specie',
-           'select_variants',
+           'load_variants',
            'flatten_uniprot_variants_ebi',
            'flatten_ensembl_variants',
            '_Variants', 'Variants',
@@ -517,8 +517,8 @@ def _uniprot_info(uniprot_id, retry_in=(503, 500), cols=None):
 ##############################################################################
 # Public methods
 ##############################################################################
-def select_variants(identifier, id_source=None, synonymous=True, uniprot_vars=True,
-                    ensembl_germline_vars=True, ensembl_somatic_vars=True):
+def load_variants(identifier, id_source=None, synonymous=True, uniprot_vars=True,
+                  ensembl_germline_vars=True, ensembl_somatic_vars=True):
     """
     Aggregates Variants from UniProt Proteins API and Ensembl REST API.
 
@@ -729,8 +729,8 @@ def parse_uniprot_variants(uniprot_id):
     res_transition_group = '(?P<ref>[A-Z]+)->(?P<new>[A-Z]+)'
     ids_group = "\(\[\'([a-zA-Z0-9_]+)\'\]\)"
 
-    table = select_annotation(uniprot_id, annotation_agg=True,
-                              query_type='Natural variant')
+    table = load_annotation(uniprot_id, annotation_agg=True,
+                            query_type='Natural variant')
 
     if table.empty:
         return table

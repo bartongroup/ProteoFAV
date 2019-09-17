@@ -13,9 +13,9 @@ except ImportError:
     from unittest.mock import patch
 
 from proteofav.config import defaults
-from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, select_structures,
                                   parse_pdb_atoms, _fix_type_symbol,
                                   _fix_pdb_ins_code, _fix_label_alt_id,
+from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, load_structures,
                                   write_mmcif_from_table, write_pdb_from_table,
                                   _get_atom_line, residues_aggregation,
                                   filter_structures,
@@ -50,7 +50,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.mmcif_info_parser = _mmcif_fields
         self.example_tsv_out = os.path.join(os.path.dirname(__file__), "testdata",
                                             "mmcif", "2pah-bio.tsv")
-        self.select_structures = select_structures
+        self.select_structures = load_structures
         self.fetch_summary_properties_pdbe = fetch_summary_properties_pdbe
         self.get_preferred_assembly_id = get_preferred_assembly_id
         self.pdbid = '2pah'
@@ -593,7 +593,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertTrue(os.path.isfile(self.output_mmcif))
         os.remove(self.output_mmcif)
         # select
-        self.mmCIF.select(self.pdbid)
+        self.MMCIF.load(self.pdbid)
 
     def test_main_PDB(self):
         # read
@@ -616,7 +616,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.assertTrue(os.path.isfile(self.output_pdb))
         os.remove(self.output_pdb)
         # select
-        self.PDB.select(self.pdbid)
+        self.PDB.load(self.pdbid)
 
     def test_summary_properties_pdbe(self):
         r = self.fetch_summary_properties_pdbe(self.pdbid)

@@ -12,7 +12,7 @@ try:
 except ImportError:
     from io import StringIO
 
-from proteofav.structures import select_structures
+from proteofav.structures import load_structures
 from proteofav.utils import (row_selector, InputFileHandler,
                              constrain_column_types, remove_columns,
                              GenericInputs, Downloader)
@@ -23,7 +23,7 @@ from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'select_dssp',
+__all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'load_dssp',
            'filter_dssp', 'get_rsa', 'get_rsa_class', 'download_dssp',
            '_DSSP', 'DSSP']
 
@@ -117,8 +117,8 @@ def _import_dssp_chains_ids(pdb_id):
     :param pdb_id:
     :return: DSSP table with corrected chain ids.
     """
-    dssp_table = select_dssp(pdb_id)
-    cif_table = select_structures(pdb_id)
+    dssp_table = load_dssp(pdb_id)
+    cif_table = load_structures(pdb_id)
     cif_seq = cif_table.auth_comp_id.apply(scop_3to1.get)
     dssp_has_seq = dssp_table.aa.isin(scop_3to1.values())
     dssp_seq = dssp_table.aa[dssp_has_seq]
@@ -315,7 +315,7 @@ def get_rsa_class(rsa, lower_threshold=5.0, upper_threshold=25.0):
     return rsa_class
 
 
-def select_dssp(identifier, excluded_cols=None, overwrite=False, **kwargs):
+def load_dssp(identifier, excluded_cols=None, overwrite=False, **kwargs):
     """
     Produce table from DSSP file output.
 
@@ -447,9 +447,9 @@ class _DSSP(GenericInputs):
         filename = self._get_filename(filename)
         return download_dssp(identifier=identifier, filename=filename, **kwargs)
 
-    def select(self, identifier=None, **kwargs):
+    def load(self, identifier=None, **kwargs):
         identifier = self._get_identifier(identifier)
-        self.table = select_dssp(identifier=identifier, **kwargs)
+        self.table = load_dssp(identifier=identifier, **kwargs)
         return self.table
 
 

@@ -25,7 +25,7 @@ from proteofav.msas import (read_alignments, read_msas,
                             parse_generic_seq_description,
                             download_msa_from_cath,
                             download_msa_from_pfam,
-                            download_msas, select_msas, MSA)
+                            download_msas, load_msas, MSA)
 
 from proteofav.config import defaults
 
@@ -85,7 +85,7 @@ class TestMSAS(unittest.TestCase):
         self.download_msa_from_cath = download_msa_from_cath
         self.download_msa_from_pfam = download_msa_from_pfam
         self.download_msas = download_msas
-        self.select_msas = select_msas
+        self.select_msas = load_msas
         self.MSA = MSA
 
         logging.disable(logging.DEBUG)
@@ -372,10 +372,10 @@ class TestMSAS(unittest.TestCase):
         os.remove(self.output_sto)
 
         # select
-        data = self.MSA.select(superfamily=self.pfamid,
-                               family=None, seq_format="stockholm",
-                               aln_source='pfam', get_uniprot_id=True,
-                               excluded_cols=None, overwrite=False)
+        data = self.MSA.load(superfamily=self.pfamid,
+                             family=None, seq_format="stockholm",
+                             aln_source='pfam', get_uniprot_id=True,
+                             excluded_cols=None, overwrite=False)
         self.assertIn('Sequence', list(data))
         self.assertIn('Source', list(data))
         self.assertIn('Name', list(data))

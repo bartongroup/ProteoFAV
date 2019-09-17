@@ -15,8 +15,8 @@ from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_sifts_residues', 'select_sifts', 'sifts_best',
            'download_sifts', '_SIFTS', 'SIFTS']
+__all__ = ['parse_sifts_residues', 'load_sifts', 'sifts_best',
 
 
 def _parse_sifts_dbs_from_file(filename, excluded_cols=None):
@@ -350,7 +350,7 @@ def parse_sifts_residues(filename, add_regions=True, add_dbs=False,
     return table
 
 
-def select_sifts(identifier, excluded_cols=None, add_regions=True, add_dbs=False,
+def load_sifts(identifier, excluded_cols=None, add_regions=True, add_dbs=False,
                  overwrite=False, **kwargs):
     """
     Produce table ready from SIFTS XML file.
@@ -464,10 +464,10 @@ class _SIFTS(GenericInputs):
         filename = self._get_filename(filename)
         return download_sifts(identifier=identifier, filename=filename, **kwargs)
 
-    def select(self, identifier=None, add_regions=True, add_dbs=False, **kwargs):
+    def load(self, identifier=None, add_regions=True, add_dbs=False, **kwargs):
         identifier = self._get_identifier(identifier)
-        self.table = select_sifts(identifier=identifier, add_regions=add_regions,
-                                  add_dbs=add_dbs, **kwargs)
+        self.table = load_sifts(identifier=identifier, add_regions=add_regions,
+                                add_dbs=add_dbs, **kwargs)
         return self.table
 
 

@@ -14,7 +14,7 @@ except ImportError:
 from proteofav.library import scop_3to1
 from proteofav.config import defaults
 from proteofav.dssp import (parse_dssp_residues, _import_dssp_chains_ids,
-                            select_dssp, filter_dssp, get_rsa, get_rsa_class,
+                            load_dssp, filter_dssp, get_rsa, get_rsa_class,
                             _add_dssp_rsa, _add_dssp_rsa_class,
                             _add_dssp_ss_reduced, _add_dssp_full_chain,
                             download_dssp, DSSP)
@@ -266,7 +266,7 @@ class TestDSSPParser(unittest.TestCase):
         if os.path.exists(self.output_dssp):
             os.remove(self.output_dssp)
         # select
-        self.DSSP.select(self.pdbid)
+        self.DSSP.load(self.pdbid)
 
 
 if __name__ == '__main__':
