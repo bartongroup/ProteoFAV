@@ -619,13 +619,13 @@ def fetch_variants(identifier, id_source=None, synonymous=True, uniprot_vars=Tru
     return uni_vars, germ_vars, som_vars
 
 
-def flatten_uniprot_variants_ebi(data, excluded=()):
+def flatten_uniprot_variants_ebi(data, excluded_cols=None):
     """
     Flattens the json output obtained from the Proteins API variants
      endpoint.
 
     :param data: original response (json output)
-    :param excluded: option to exclude VAR columns
+    :param excluded_cols: option to exclude VAR columns
     :return: returns a pandas DataFrame
     """
 
@@ -644,7 +644,7 @@ def flatten_uniprot_variants_ebi(data, excluded=()):
     table = pd.DataFrame(var_rows)
 
     # excluding columns
-    table = remove_columns(table, excluded=excluded)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
     table = constrain_column_types(table, uni_ens_var_types)
@@ -661,13 +661,13 @@ def flatten_uniprot_variants_ebi(data, excluded=()):
     return table
 
 
-def flatten_ensembl_variants(data, excluded=(), synonymous=True):
+def flatten_ensembl_variants(data, excluded_cols=None, synonymous=True):
     """
     Flattens the json output obtained from the Proteins API variants
      endpoint.
 
     :param data: original response (json output)
-    :param excluded: option to exclude VAR columns
+    :param excluded_cols: option to exclude VAR columns
     :param synonymous: (boolean)
     :return: returns a pandas DataFrame
     """
@@ -682,7 +682,7 @@ def flatten_ensembl_variants(data, excluded=(), synonymous=True):
     table.rename(columns=update_ensembl_to_uniprot, inplace=True)
 
     # excluding columns
-    table = remove_columns(table, excluded=excluded)
+    table = remove_columns(table, excluded=excluded_cols)
 
     # enforce some specific column types
     table = constrain_column_types(table, uni_ens_var_types)
