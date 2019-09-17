@@ -179,10 +179,10 @@ def parse_pdb_atoms(filename, excluded_cols=pdbx_excluded_cols,
         table = _fix_pdb_ins_code(table)
     # fixes the 'label_alt_id
     if fix_label_alt_id:
-        table = _fix_label_alt_id(table)
+        table = _fix_pdb_label_alt_id(table)
     # fixes 'type_symbol' if missing
     if fix_type_symbol:
-        table = _fix_type_symbol(table)
+        table = _fix_pdb_type_symbol(table)
 
     # excluding columns
     table = remove_columns(table, excluded=excluded_cols)
@@ -203,7 +203,8 @@ def parse_pdb_atoms(filename, excluded_cols=pdbx_excluded_cols,
 def _fix_pdb_ins_code(table):
     """
     Utility that fixes the 'pdbx_PDB_ins_code' column to match what is expected
-    in the mmCIF format.
+    in mmCIF format. 
+    If insertion code is " "" it becomes "?".
 
     :param table: pandas DataFrame object
     :return: returns a modified pandas DataFrame
@@ -214,10 +215,12 @@ def _fix_pdb_ins_code(table):
     return table
 
 
-def _fix_label_alt_id(table):
+def _fix_pdb_label_alt_id(table):
     """
     Utility that fixes the 'label_alt_id' column to match what is
-    expected in the mmCIF format.
+    expected in mmCIF format.
+    
+    If label_alt_id is " " or "?", it becomes "."
 
     :param table: pandas DataFrame object
     :return: returns a modified pandas DataFrame
@@ -228,11 +231,15 @@ def _fix_label_alt_id(table):
     return table
 
 
-def _fix_type_symbol(table):
+def _fix_pdb_type_symbol(table):
     """
     Utility that fixes the 'type_symbol' column to match what is
-    expected in the mmCIF format - when missing in the Structure.
-
+    expected in mmCIF format - when missing in the Structure.
+    
+    If type_symbol is " ", it becomes "X", where X is the first capital 
+    letter from the 'label_atom_id'. Example, 'CA' atom takes 'C' as the
+    type symbol.
+    
     :param table: pandas DataFrame object
     :return: returns a modified pandas DataFrame
     """

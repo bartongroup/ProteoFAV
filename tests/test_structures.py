@@ -13,9 +13,9 @@ except ImportError:
     from unittest.mock import patch
 
 from proteofav.config import defaults
-                                  parse_pdb_atoms, _fix_type_symbol,
-                                  _fix_pdb_ins_code, _fix_label_alt_id,
 from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, load_structures,
+                                  parse_pdb_atoms, _fix_pdb_type_symbol,
+                                  _fix_pdb_ins_code, _fix_pdb_label_alt_id,
                                   write_mmcif_from_table, write_pdb_from_table,
                                   _get_atom_line, residues_aggregation,
                                   filter_structures,
@@ -55,9 +55,9 @@ class TestMMCIFParser(unittest.TestCase):
         self.get_preferred_assembly_id = get_preferred_assembly_id
         self.pdbid = '2pah'
         self.pdb_atom_parser = parse_pdb_atoms
-        self.fix_label_alt_id = _fix_label_alt_id
+        self.fix_label_alt_id = _fix_pdb_label_alt_id
         self.fix_pdb_ins_code = _fix_pdb_ins_code
-        self.fix_type_symbol = _fix_type_symbol
+        self.fix_type_symbol = _fix_pdb_type_symbol
         self.write_mmcif_from_table = write_mmcif_from_table
         self.write_pdb_from_table = write_pdb_from_table
         self.get_atom_line = _get_atom_line
