@@ -700,21 +700,6 @@ def flatten_ensembl_variants(data, excluded_cols=None, synonymous=True):
     return table
 
 
-class _Variants(GenericInputs):
-    def fetch(self, identifier=None, **kwargs):
-        identifier = self._get_identifier(identifier)
-        uni, germ, som = fetch_variants(identifier=identifier, **kwargs)
-        return uni, germ, som
-
-    def select(self, identifier=None, **kwargs):
-        identifier = self._get_identifier(identifier)
-        uni, ens = select_variants(identifier=identifier, **kwargs)
-        return uni, ens
-
-
-Variants = _Variants()
-
-
 def parse_uniprot_variants(uniprot_id):
     """
 
@@ -917,3 +902,19 @@ def _fetch_icgc_variants(identifier):
         data = data.join(transition)
 
     return data
+
+
+class _Variants(GenericInputs):
+    # TODO move to a download like method as fetch is currently very similar to select
+    def fetch(self, identifier=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        uni, germ, som = fetch_variants(identifier=identifier, **kwargs)
+        return uni, germ, som
+
+    def load(self, identifier=None, **kwargs):
+        identifier = self._get_identifier(identifier)
+        uni, ens = load_variants(identifier=identifier, **kwargs)
+        return uni, ens
+
+
+Variants = _Variants()
