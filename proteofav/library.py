@@ -2,6 +2,10 @@
 
 __all__ = ["single_letter_aa", "three_letter_aa", "scop_3to1", "to_single_aa",
            "valid_ensembl_species", "valid_ensembl_species_variation",
+           "ASA_Miller", "ASA_Sander", "ASA_Wilke",
+           "pdbx_types", "dssp_types", "sifts_types", "annotation_types",
+           "validation_types", "uni_ens_var_types",
+           "update_ensembl_to_uniprot",
            "pdbx_excluded_cols", "dssp_excluded_cols",
            "sifts_excluded_cols", "annotation_excluded_cols"]
 

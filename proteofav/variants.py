@@ -33,20 +33,15 @@ __all__ = ['fetch_uniprot_variants',
            'get_ensembl_protein_id_from_mapping',
            'get_preferred_uniprot_id_from_mapping',
            'get_preferred_ensembl_id_from_mapping',
-           '_match_uniprot_ensembl_seq',
-           '_apply_sequence_index_map',
-           '_compare_sequences',
-           '_count_mismatches',
            'fetch_uniprot_sequence',
            'fetch_uniprot_formal_specie',
            'load_variants',
            'flatten_uniprot_variants_ebi',
            'flatten_ensembl_variants',
-           '_Variants', 'Variants',
            'parse_uniprot_variants',
            'select_uniprot_variants',
            'icgc_missense_variant',
-           '_fetch_icgc_variants']
+           'Variants']
 
 
 def fetch_uniprot_variants(identifier, retry_in=(429,)):

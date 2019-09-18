@@ -24,7 +24,7 @@ __all__ = ['read_alignments', 'read_msas',
            'load_msas', 'download_msas',
            'download_msa_from_cath',
            'download_msa_from_pfam',
-           '_MSA', 'MSA']
+           'MSA']
 
 SEQ_FORMAT_VALID = ('clustal', 'emboss', 'nexus', 'fasta', 'phylip', 'stockholm')
 

@@ -15,8 +15,8 @@ from proteofav.utils import merging_down_by_key
 __all__ = ['mmcif_sifts_table_merger', 'mmcif_dssp_table_merger',
            'mmcif_validation_table_merger', 'sifts_annotation_table_merger',
            'sifts_variants_table_merger', 'uniprot_vars_ensembl_vars_merger',
-           '_Tables', 'Tables']
            'table_merger', 'table_generator',
+           'Tables']
 
 log = logging.getLogger('proteofav.config')
 

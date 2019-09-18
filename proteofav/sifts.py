@@ -15,8 +15,8 @@ from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
 
-           'download_sifts', '_SIFTS', 'SIFTS']
 __all__ = ['parse_sifts_residues', 'load_sifts', 'sifts_best',
+           'download_sifts', 'SIFTS']
 
 
 def _parse_sifts_dbs_from_file(filename, excluded_cols=sifts_excluded_cols):

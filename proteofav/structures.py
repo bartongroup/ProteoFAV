@@ -33,7 +33,7 @@ __all__ = ['parse_mmcif_atoms', 'residues_aggregation',
            'fetch_summary_properties_pdbe', 'get_preferred_assembly_id',
            'filter_structures', 'load_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
            'read_structures', 'download_structures', 'write_structures',
-           '_Structure', 'PDB', 'MMCIF']
+           'PDB', 'MMCIF']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 

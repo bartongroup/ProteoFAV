@@ -25,7 +25,7 @@ log = logging.getLogger('proteofav.config')
 
 __all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'load_dssp',
            'filter_dssp', 'get_rsa', 'get_rsa_class', 'download_dssp',
-           '_DSSP', 'DSSP']
+           'DSSP']
 
 
 def parse_dssp_residues(filename, excluded_cols=dssp_excluded_cols,

@@ -28,8 +28,8 @@ from proteofav.library import annotation_types, annotation_excluded_cols
 log = logging.getLogger('proteofav.config')
 
 __all__ = ['parse_gff_features', 'filter_annotation',
-           '_Annotation', 'Annotation']
            'load_annotation', 'download_annotation',
+           'Annotation']
 
 
 def parse_gff_features(filename, excluded_cols=annotation_excluded_cols,
