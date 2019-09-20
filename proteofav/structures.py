@@ -720,10 +720,10 @@ def get_sequence(table, category='auth', ambiguous='X'):
 
 def get_coordinates(table):
     """
-    Get coordinates from the provided PDBx table
+    Get coordinates from the provided PDB/mmCIF table
     and return a vector-set with all the coordinates.
 
-    :param table: pandas DataFrame from PDBXreader
+    :param table: pandas DataFrame from PDB/MMCIF.read()
     :returns: coordinates - array (N,3) where N is number of atoms
     """
 
@@ -735,7 +735,7 @@ def get_coordinates(table):
                            dtype=float) for i in table.index]
     else:
         return ValueError("Pandas DataFrame is not valid...")
-    return coords
+    return np.stack(coords)
 
 
 ##############################################################################
