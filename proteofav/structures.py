@@ -932,11 +932,10 @@ def read_structures(filename=None, input_format=None,
                              "Please define it by passing 'input_format'='<name>'")
         log.debug("Input format seems to be {}...".format(input_format))
 
-    if input_format == 'mmcif':
-        table = parse_mmcif_atoms(filename, excluded_cols=excluded_cols)
-    elif input_format == 'pdb':
+    if input_format == 'mmcif' or input_format == "cif":
         table = parse_mmcif_atoms(filename, excluded_cols=excluded_cols,
                                   column_dtype_dict=column_dtype_dict)
+    elif input_format == 'pdb' or input_format == "ent":
         table = parse_pdb_atoms(filename, excluded_cols=excluded_cols,
                                 column_dtype_dict=column_dtype_dict,
                                 fix_ins_code=pdb_fix_ins_code,
