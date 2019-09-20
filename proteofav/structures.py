@@ -29,7 +29,7 @@ from proteofav.library import (pdbx_types, pdbx_excluded_cols, scop_3to1, aa_def
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_mmcif_atoms', 'residues_aggregation',
+__all__ = ['parse_mmcif_atoms', 'get_mmcif_fields', 'residues_aggregation',
            'fetch_summary_properties_pdbe', 'get_preferred_assembly_id',
            'filter_structures', 'load_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
            'read_structures', 'download_structures', 'write_structures',
@@ -256,8 +256,7 @@ def _fix_pdb_type_symbol(table):
     return table
 
 
-def _mmcif_fields(filename, field_name='exptl.',
-                  require_index=False):
+def get_mmcif_fields(filename, field_name, require_index=False):
     """
     Generic method that gets a particular field to pandas table.
     :param filename: input mmCIF file
@@ -290,7 +289,27 @@ def _mmcif_fields(filename, field_name='exptl.',
         else:
             while line.startswith(field_name):
                 line = line.replace(field_name, '').rstrip()
-                head, data = line.split(None, 1)
+                try:
+                    head, data = line.split(None, 1)
+                except ValueError:
+                    head = line.rstrip()
+                    try:
+                        line = handle.next()
+                    except AttributeError:
+                        line = next(handle)
+                    data = ""
+                    while not line.startswith(field_name) and not line.startswith('#'):
+                        line = line.rstrip()
+                        if line.startswith(";") and len(line) != 1:
+                            data += line[1:]
+                        elif line.startswith(";"):
+                            break
+                        else:
+                            data += line
+                        try:
+                            line = handle.next()
+                        except AttributeError:
+                            line = next(handle)
                 header.append(head)
                 lines.append(data)
                 try:

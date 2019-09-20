@@ -13,7 +13,7 @@ except ImportError:
     from unittest.mock import patch
 
 from proteofav.config import defaults
-from proteofav.structures import (parse_mmcif_atoms, _mmcif_fields, load_structures,
+from proteofav.structures import (parse_mmcif_atoms, get_mmcif_fields, load_structures,
                                   parse_pdb_atoms, _fix_pdb_type_symbol,
                                   _fix_pdb_ins_code, _fix_pdb_label_alt_id,
                                   write_mmcif_from_table, write_pdb_from_table,
@@ -47,7 +47,7 @@ class TestMMCIFParser(unittest.TestCase):
         self.output_pdb = os.path.join(os.path.dirname(__file__), "testdata",
                                        "2pah.pdb")
         self.mmcif_atom_parser = parse_mmcif_atoms
-        self.mmcif_info_parser = _mmcif_fields
+        self.mmcif_info_parser = get_mmcif_fields
         self.example_tsv_out = os.path.join(os.path.dirname(__file__), "testdata",
                                             "mmcif", "2pah-bio.tsv")
         self.select_structures = load_structures
@@ -173,6 +173,13 @@ class TestMMCIFParser(unittest.TestCase):
                                            require_index=True)
         # check some data values
         self.assertEqual(oper_list.loc[0, 'type'], 'identity operation')
+
+        # get the sequence from entity information
+        entity = self.mmcif_info_parser(self.example_mmcif,
+                                        field_name='_entity_poly.')
+        self.assertIn('pdbx_seq_one_letter_code', entity)
+        self.assertEqual(entity.loc[0, 'pdbx_seq_one_letter_code'][0:40],
+                         'VPWFPRTIQELDRFANQILSYGAELDADHPGFKDPVYRAR')
 
     def test_bio_unit_to_table_mmcif(self):
         """
