@@ -320,14 +320,14 @@ def _fix_pdb_type_symbol(table):
     :return: returns a modified pandas DataFrame
     """
 
-    def get_type_symbol(table, key, key_fix):
+    def _get_type_symbol(table, key, key_fix):
         # this maybe a bit crude way of assigning this value
         if table[key] != " " and table[key] != "" and len(table[key]):
             return table[key]
         else:
             return ''.join([x for x in table[key_fix] if x in ascii_uppercase])[0]
 
-    table['type_symbol'] = table.apply(get_type_symbol, axis=1,
+    table['type_symbol'] = table.apply(_get_type_symbol, axis=1,
                                        args=('type_symbol', 'label_atom_id'))
     return table
 
@@ -363,7 +363,7 @@ def _add_mmcif_atom_altloc(table):
     :return: returns a modified pandas DataFrame
     """
 
-    def join_atom_altloc(table, category='auth'):
+    def _join_atom_altloc(table, category='auth'):
         atom = table['{}_atom_id'.format(category)]
         altloc = table['label_alt_id']
 
@@ -374,8 +374,8 @@ def _add_mmcif_atom_altloc(table):
         return new_column
 
     # NB. Use of assign prevents inplace modification
-    table = table.assign(label_atom_altloc_id=join_atom_altloc(table, 'label'))
-    table = table.assign(auth_atom_altloc_id=join_atom_altloc(table, 'auth'))
+    table = table.assign(label_atom_altloc_id=_join_atom_altloc(table, 'label'))
+    table = table.assign(auth_atom_altloc_id=_join_atom_altloc(table, 'auth'))
     return table
 
 
