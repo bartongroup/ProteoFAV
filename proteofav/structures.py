@@ -29,7 +29,7 @@ from proteofav.library import (pdbx_types, pdbx_excluded_cols, scop_3to1, aa_def
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_mmcif_atoms', 'get_mmcif_fields', 'residues_aggregation',
+__all__ = ['parse_mmcif_atoms', 'parse_mmcif_categories', 'residues_aggregation',
            'fetch_summary_properties_pdbe', 'get_preferred_assembly_id',
            'filter_structures', 'load_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
            'read_structures', 'download_structures', 'write_structures',
@@ -256,26 +256,32 @@ def _fix_pdb_type_symbol(table):
     return table
 
 
-def get_mmcif_fields(filename, field_name, require_index=False):
+def parse_mmcif_categories(filename, category, require_index=False):
     """
-    Generic method that gets a particular field to pandas table.
+    Generic method that gets a particular mmCIF data category to pandas table.
     :param filename: input mmCIF file
-    :param field_name: name of the field to be parsed
+    :param category: name of the mmCIF data category to be parsed
     :param require_index: boolean for when lines need to start with and index ID
       of any sort
     :return: Pandas table
     """
     header = []
     lines = []
+
+    if not category.startswith("_"):
+        category = "_" + category
+    if not category.endswith("."):
+        category = category + "."
+
     with open(filename, "r+") as handle:
         for line in handle:
-            if line.startswith(field_name):
+            if line.startswith(category):
                 break
             last_line = line
 
         if 'loop_' in last_line:
-            while line.startswith(field_name):
-                header.append(line.replace(field_name, '').rstrip())
+            while line.startswith(category):
+                header.append(line.replace(category, '').rstrip())
                 try:
                     line = handle.next()
                 except AttributeError:
@@ -287,8 +293,8 @@ def get_mmcif_fields(filename, field_name, require_index=False):
                 except AttributeError:
                     line = next(handle)
         else:
-            while line.startswith(field_name):
-                line = line.replace(field_name, '').rstrip()
+            while line.startswith(category):
+                line = line.replace(category, '').rstrip()
                 try:
                     head, data = line.split(None, 1)
                 except ValueError:
@@ -298,7 +304,7 @@ def get_mmcif_fields(filename, field_name, require_index=False):
                     except AttributeError:
                         line = next(handle)
                     data = ""
-                    while not line.startswith(field_name) and not line.startswith('#'):
+                    while not line.startswith(category) and not line.startswith('#'):
                         line = line.rstrip()
                         if line.startswith(";") and len(line) != 1:
                             data += line[1:]
@@ -319,7 +325,7 @@ def get_mmcif_fields(filename, field_name, require_index=False):
             lines = (' '.join(lines)).replace('"', "'")
 
     if require_index:
-        # requires the lines to start with and index ID
+        # requires the lines to start with an index ID
         nlines = []
         for e in lines:
             try:
