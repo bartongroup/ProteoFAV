@@ -40,20 +40,6 @@ UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
 PDB_FORMAT = "%s%5i %-4s%c%3s %c%4s%c   %8.3f%8.3f%8.3f%s%6.2f      %4s%2s%2s\n"
 
 
-##############################################################################
-# Private methods
-##############################################################################
-def yield_lines(filename):
-    """
-    Custom function for iterating over line from filename.
-    :param filename: path to filename
-    :return None:
-    """
-    with open(filename) as lines:
-        for line in lines:
-            yield line
-
-
 def parse_mmcif_atoms(filename, excluded_cols=pdbx_excluded_cols,
                       column_dtype_dict=pdbx_types):
     """
