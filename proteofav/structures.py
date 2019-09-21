@@ -100,6 +100,96 @@ def parse_mmcif_atoms(filename, excluded_cols=pdbx_excluded_cols,
     return table
 
 
+def parse_mmcif_categories(filename, category, require_index=False):
+    """
+    Generic method that gets a particular mmCIF data category to pandas table.
+    :param filename: input mmCIF file
+    :param category: name of the mmCIF data category to be parsed
+    :param require_index: boolean for when lines need to start with and index ID
+      of any sort
+    :return: Pandas table
+    """
+    header = []
+    lines = []
+
+    if not category.startswith("_"):
+        category = "_" + category
+    if not category.endswith("."):
+        category = category + "."
+
+    with open(filename, "r+") as handle:
+        for line in handle:
+            if line.startswith(category):
+                break
+            last_line = line
+
+        if 'loop_' in last_line:
+            while line.startswith(category):
+                header.append(line.replace(category, '').rstrip())
+                try:
+                    line = handle.next()
+                except AttributeError:
+                    line = next(handle)
+            while not line.startswith('#'):
+                lines.append(line.replace('"', "'"))
+                try:
+                    line = handle.next()
+                except AttributeError:
+                    line = next(handle)
+        else:
+            while line.startswith(category):
+                line = line.replace(category, '').rstrip()
+                try:
+                    head, data = line.split(None, 1)
+                except ValueError:
+                    head = line.rstrip()
+                    try:
+                        line = handle.next()
+                    except AttributeError:
+                        line = next(handle)
+                    data = ""
+                    while not line.startswith(category) and not line.startswith('#'):
+                        line = line.rstrip()
+                        if line.startswith(";") and len(line) != 1:
+                            data += line[1:]
+                        elif line.startswith(";"):
+                            break
+                        else:
+                            data += line
+                        try:
+                            line = handle.next()
+                        except AttributeError:
+                            line = next(handle)
+                header.append(head)
+                lines.append(data)
+                try:
+                    line = handle.next()
+                except AttributeError:
+                    line = next(handle)
+            lines = (' '.join(lines)).replace('"', "'")
+
+    if require_index:
+        # requires the lines to start with an index ID
+        nlines = []
+        for e in lines:
+            try:
+                int(e[0:2])
+                e = e.replace('\n', '')
+            except (TypeError, ValueError):
+                pass
+            nlines.append(e)
+        lines = ''.join(nlines)
+    else:
+        lines = ''.join(lines)
+
+    table = pd.read_table(StringIO(lines),
+                          names=header,
+                          delim_whitespace=True,
+                          quotechar="'",
+                          index_col=False)
+    return table
+
+
 def parse_pdb_atoms(filename, excluded_cols=pdbx_excluded_cols,
                     column_dtype_dict=pdbx_types,
                     fix_label_alt_id=True, fix_ins_code=True, fix_type_symbol=True):
@@ -239,96 +329,6 @@ def _fix_pdb_type_symbol(table):
 
     table['type_symbol'] = table.apply(get_type_symbol, axis=1,
                                        args=('type_symbol', 'label_atom_id'))
-    return table
-
-
-def parse_mmcif_categories(filename, category, require_index=False):
-    """
-    Generic method that gets a particular mmCIF data category to pandas table.
-    :param filename: input mmCIF file
-    :param category: name of the mmCIF data category to be parsed
-    :param require_index: boolean for when lines need to start with and index ID
-      of any sort
-    :return: Pandas table
-    """
-    header = []
-    lines = []
-
-    if not category.startswith("_"):
-        category = "_" + category
-    if not category.endswith("."):
-        category = category + "."
-
-    with open(filename, "r+") as handle:
-        for line in handle:
-            if line.startswith(category):
-                break
-            last_line = line
-
-        if 'loop_' in last_line:
-            while line.startswith(category):
-                header.append(line.replace(category, '').rstrip())
-                try:
-                    line = handle.next()
-                except AttributeError:
-                    line = next(handle)
-            while not line.startswith('#'):
-                lines.append(line.replace('"', "'"))
-                try:
-                    line = handle.next()
-                except AttributeError:
-                    line = next(handle)
-        else:
-            while line.startswith(category):
-                line = line.replace(category, '').rstrip()
-                try:
-                    head, data = line.split(None, 1)
-                except ValueError:
-                    head = line.rstrip()
-                    try:
-                        line = handle.next()
-                    except AttributeError:
-                        line = next(handle)
-                    data = ""
-                    while not line.startswith(category) and not line.startswith('#'):
-                        line = line.rstrip()
-                        if line.startswith(";") and len(line) != 1:
-                            data += line[1:]
-                        elif line.startswith(";"):
-                            break
-                        else:
-                            data += line
-                        try:
-                            line = handle.next()
-                        except AttributeError:
-                            line = next(handle)
-                header.append(head)
-                lines.append(data)
-                try:
-                    line = handle.next()
-                except AttributeError:
-                    line = next(handle)
-            lines = (' '.join(lines)).replace('"', "'")
-
-    if require_index:
-        # requires the lines to start with an index ID
-        nlines = []
-        for e in lines:
-            try:
-                int(e[0:2])
-                e = e.replace('\n', '')
-            except (TypeError, ValueError):
-                pass
-            nlines.append(e)
-        lines = ''.join(nlines)
-    else:
-        lines = ''.join(lines)
-
-    table = pd.read_table(StringIO(lines),
-                          names=header,
-                          delim_whitespace=True,
-                          quotechar="'",
-                          index_col=False)
     return table
 
 
