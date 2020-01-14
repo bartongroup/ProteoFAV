@@ -455,31 +455,57 @@ class Downloader(object):
 
 
 class GenericInputs(object):
-    def __init__(self, identifier=None, filename=None, table=None):
+    def __init__(self, identifier=None, filename=None, table=None,
+                 input_format=None, output_format=None, item=None):
         self._identifier = identifier
         self._filename = filename
         self._table = table
+        self._input_format = input_format
+        self._output_format = output_format
+        self._item = item
+        self.table = table
 
     def _get_identifier(self, identifier=None):
         if identifier is None and self._identifier is None:
-            raise ValueError("An Identifier is needed!")
+            raise ValueError("An Identifier is required!")
         elif identifier is not None:
             self._identifier = identifier
         return self._identifier
 
     def _get_filename(self, filename=None):
         if filename is None and self._filename is None:
-            raise ValueError("A filename is needed!")
+            raise ValueError("A filename is required!")
         elif filename is not None:
             self._filename = filename
         return self._filename
 
     def _get_table(self, table=None):
         if table is None and self._table is None:
-            raise ValueError("A Pandas DataFrame is needed!")
+            raise ValueError("A Pandas DataFrame is required!")
         elif table is not None:
             self._table = table
         return self._table
+
+    def _get_input_format(self, input_format=None):
+        if input_format is None and self._input_format is None:
+            raise ValueError("An input_format is required!")
+        elif input_format is not None:
+            self._input_format = input_format
+        return self._input_format
+
+    def _get_output_format(self, output_format=None):
+        if output_format is None and self._output_format is None:
+            raise ValueError("An output_format is required!")
+        elif output_format is not None:
+            self._output_format = output_format
+        return self._output_format
+
+    def _get_item(self, item=None):
+        if item is None and self._item is None:
+            raise ValueError("An item is required!")
+        elif item is not None:
+            self._item = item
+        return self._item
 
 
 if __name__ == '__main__':

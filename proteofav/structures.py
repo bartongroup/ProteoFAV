@@ -1075,5 +1075,5 @@ class _Structure(GenericInputs):
         return self.table
 
 
-PDB = _Structure()
-MMCIF = _Structure()
+PDB = _Structure(input_format='pdb', output_format='pdb', item='auth')
+MMCIF = _Structure(input_format='mmcif', output_format='mmcif', item='label')
