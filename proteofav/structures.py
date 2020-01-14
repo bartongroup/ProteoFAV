@@ -29,10 +29,11 @@ from proteofav.library import (pdbx_types, pdbx_excluded_cols, scop_3to1, aa_def
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_mmcif_atoms', 'parse_mmcif_categories', 'residues_aggregation',
+__all__ = ['parse_mmcif_atoms', 'parse_mmcif_categories', 'parse_pdb_atoms',
+           'residues_aggregation', 'write_mmcif_from_table', 'write_pdb_from_table',
            'fetch_summary_properties_pdbe', 'get_preferred_assembly_id',
-           'filter_structures', 'load_structures', 'write_mmcif_from_table', 'write_pdb_from_table',
-           'read_structures', 'download_structures', 'write_structures',
+           'get_sequence', 'get_coordinates', 'load_structures', 'filter_structures',
+           'read_structures', 'write_structures', 'download_structures',
            'PDB', 'MMCIF']
 
 UNIFIED_COL = ['pdbx_PDB_model_num', 'auth_asym_id', 'auth_seq_id']
@@ -795,8 +796,11 @@ def load_structures(identifier=None, excluded_cols=pdbx_excluded_cols,
     return table
 
 
+# TODO add entities across the board:
+# entities use 'label', whereas chains use 'auth'
+# use label by default?
 def filter_structures(table, excluded_cols=None,
-                      models='first', chains=None, res=None, res_full=None,
+                      models='first', entities=None, chains=None, res=None, res_full=None,
                       comps=None, atoms=None, lines=None, item='auth',
                       residue_agg=False, agg_method='centroid',
                       add_res_full=True, add_atom_altloc=False,
@@ -804,7 +808,7 @@ def filter_structures(table, excluded_cols=None,
                       remove_altloc=False, remove_hydrogens=True, remove_partial_res=False):
     """
     Filter and residue aggregation for mmCIF and PDB Pandas Dataframes.
-    Improves consistency  ATOM and HETATM lines from mmCIF or PDB files.
+    Improves consistency of ATOM and HETATM lines from mmCIF or PDB files.
 
     :param table: pandas DataFrame object
     :param excluded_cols: option to exclude mmCIF columns
@@ -1055,21 +1059,25 @@ def download_structures(identifier, filename, output_format=None,
 
 class _Structure(GenericInputs):
     def read(self, filename=None, **kwargs):
+        log.debug("Reading %s in %s format" % (self._filename, self._input_format))
         filename = self._get_filename(filename)
         self.table = read_structures(filename=filename, **kwargs)
         return self.table
 
     def write(self, table=None, filename=None, **kwargs):
+        log.debug("Writing %s in %s format" % (self._filename, self._output_format))
         table = self._get_table(table)
         filename = self._get_filename(filename)
         return write_structures(table=table, filename=filename, **kwargs)
 
     def download(self, identifier=None, filename=None, **kwargs):
+        log.debug("Downloading %s in %s format" % (self._identifier, self._output_format))
         identifier = self._get_identifier(identifier)
         filename = self._get_filename(filename)
         return download_structures(identifier=identifier, filename=filename, **kwargs)
 
     def load(self, identifier=None, **kwargs):
+        log.debug("Selecting structure in %s format" % self._input_format)
         identifier = self._get_identifier(identifier)
         self.table = load_structures(identifier=identifier, **kwargs)
         return self.table

@@ -531,7 +531,7 @@ def load_variants(identifier, id_source=None, synonymous=True, uniprot_vars=True
                                                    ensembl_somatic_vars)
 
     if isinstance(germ_vars, pd.DataFrame) and isinstance(som_vars, pd.DataFrame):
-        ens_vars = pd.concat([germ_vars, som_vars]).reset_index(drop=True)
+        ens_vars = pd.concat([germ_vars, som_vars], sort=True).reset_index(drop=True)
     elif isinstance(germ_vars, pd.DataFrame):
         ens_vars = germ_vars
     elif isinstance(som_vars, pd.DataFrame):

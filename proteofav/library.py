@@ -676,6 +676,9 @@ _uni_ens_var_types = {
     'end': int,
     'polyphenScore': float,
     'siftScore': float,
+    'frequency': float,
+    'xrefs_id': str,
+    'consequenceType': str
 }
 
 pdbx_types = {k: _convert_dtypes[v] for k, v in _pdbx_types.items()}

@@ -254,7 +254,7 @@ class VariantsTestCase(unittest.TestCase):
             'index')
         self.assertEqual(data.shape, (2, 21))
         self.assertEqual(data.loc[0, 'begin'], "41")
-        # TODO check why it not parsing thois one as float
+        # TODO check why it not parsing this one as float
         self.assertEqual(data.loc[0, 'end'], "41")
         self.assertEqual(data.loc[0, 'consequenceType'], 'missense')
         self.assertEqual(data.loc[0, 'sourceType'], 'uniprot')

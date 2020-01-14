@@ -23,7 +23,7 @@ from proteofav.config import defaults
 
 log = logging.getLogger('proteofav.config')
 
-__all__ = ['parse_dssp_residues', '_import_dssp_chains_ids', 'load_dssp',
+__all__ = ['parse_dssp_residues', 'load_dssp',
            'filter_dssp', 'get_rsa', 'get_rsa_class', 'download_dssp',
            'DSSP']
 
@@ -333,7 +333,7 @@ def load_dssp(identifier, excluded_cols=dssp_excluded_cols,
     table = constrain_column_types(table, column_dtype_dict=column_dtype_dict)
 
     if table.duplicated(['RES_FULL', 'CHAIN']).any():
-        log.warning('DSSP file for {} has not unique index'.format(identifier))
+        log.info('DSSP file for {} has not unique index'.format(identifier))
     return table
 
 

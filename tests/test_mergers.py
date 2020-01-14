@@ -497,7 +497,7 @@ class TestMerger(unittest.TestCase):
     def test_table_generator_bio(self):
         mmcif_table, dssp_table, sifts_table, valid_table, annot_table, vars_table = \
             self.table_generator(uniprot_id=None, pdb_id=self.pdbid, bio_unit=True,
-                                 sifts=True, dssp=True, variants=False, annotations=False,
+                                 sifts=True, dssp=True, validation=False, variants=False, annotations=False,
                                  chains=None, res=None, sites=None, atoms=('CA',), lines=None,
                                  residue_agg=False, overwrite=False)
 
