@@ -8,7 +8,7 @@ Open-source framework for simple and fast integration
 of protein structure data with sequence annotations
 and genetic variation
 
-:copyright: (c) 2015-2017.
+:copyright: (c) 2015-2020.
 :license: MIT, see LICENSE for more details.
 """
 

@@ -2,11 +2,11 @@
 Changelog
 =========
 
-0.2 beta (Nov-2017)
+0.2 beta (2017-2020)
 -------------------
 
-* New interfaces to Data (via class methods 'read', 'write', 'download', 'select' and 'fetch')
-* New modular approach for merging Pandas Tables (via methods 'merge' and 'generate')
+* New interfaces to Data (via class methods 'read', 'write', 'download', 'load' and 'fetch')
+* New modular approach for merging Pandas Tables (via methods 'merge' and 'load')
 * Parsing of PDB-formatted files and writing in both mmCIF and PDB formats
 * Improved aggregation and flattening (normalisation) of genetic variants from UniProt Proteins API and Ensembl REST API
 * Updated Documentation and CI

@@ -8,7 +8,7 @@ Open-source framework for simple and fast integration
 of protein structure data with sequence annotations
 and genetic variation
 
-:copyright: (c) 2015-2017.
+:copyright: (c) 2015-2020.
 :license: MIT, see LICENSE for more details.
 """
 
@@ -39,7 +39,7 @@ setup(
 
     # Package dependencies.
     install_requires=DEPENDENCIES,
-    test_requires=['mock', 'python_version>"3.5"'],
+    test_requires=['mock', 'python_version>"3.7"'],
 
     # Tests.
     test_suite='tests',
@@ -63,8 +63,7 @@ setup(
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'Natural Language :: English',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Internet',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
