@@ -205,8 +205,7 @@ def uniprot_vars_ensembl_vars_merger(uniprot_vars_table, ensembl_vars_table):
     if (set(merge_on).issubset(uniprot_vars_table.columns) and
             set(merge_on).issubset(ensembl_vars_table.columns)):
 
-        table = uniprot_vars_table.merge(ensembl_vars_table, how='outer',
-                                         on=merge_on).reset_index(drop=True)
+        table = uniprot_vars_table.append(ensembl_vars_table, sort=True).reset_index(drop=True)
 
         table = merging_down_by_key(table, key='xrefs_id')
         table.fillna(np.nan, inplace=True)
