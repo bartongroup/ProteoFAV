@@ -25,32 +25,32 @@ class TableMergerError(Exception):
     pass
 
 
-def mmcif_sifts_table_merger(mmcif_table, sifts_table, category='auth'):
+def mmcif_sifts_table_merger(mmcif_table, sifts_table, item='auth'):
     """
     Merge the mmCIF and SIFTS Tables.
 
     :param mmcif_table: mmCIF pandas DataFrame
     :param sifts_table: SIFTS pandas DataFrame
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :return: merged pandas DataFrame
     """
 
     # bare minimal columns needed
-    if ('{}_seq_id_full'.format(category) in mmcif_table and
-                '{}_asym_id'.format(category) in mmcif_table and
+    if ('{}_seq_id_full'.format(item) in mmcif_table and
+                '{}_asym_id'.format(item) in mmcif_table and
                 'PDB_dbResNum' in sifts_table and 'PDB_dbChainId' in sifts_table):
 
         # workaround for BioUnits
-        if 'orig_{}_asym_id'.format(category) in mmcif_table:
+        if 'orig_{}_asym_id'.format(item) in mmcif_table:
             table = mmcif_table.merge(sifts_table, how='left',
-                                      left_on=['{}_seq_id_full'.format(category),
-                                               'orig_{}_asym_id'.format(category)],
+                                      left_on=['{}_seq_id_full'.format(item),
+                                               'orig_{}_asym_id'.format(item)],
                                       right_on=['PDB_dbResNum', 'PDB_dbChainId'])
         else:
             table = mmcif_table.merge(sifts_table, how='left',
-                                      left_on=['{}_seq_id_full'.format(category),
-                                               '{}_asym_id'.format(category)],
+                                      left_on=['{}_seq_id_full'.format(item),
+                                               '{}_asym_id'.format(item)],
                                       right_on=['PDB_dbResNum', 'PDB_dbChainId'])
 
     else:
@@ -61,34 +61,34 @@ def mmcif_sifts_table_merger(mmcif_table, sifts_table, category='auth'):
     return table
 
 
-def mmcif_dssp_table_merger(mmcif_table, dssp_table, category='auth'):
+def mmcif_dssp_table_merger(mmcif_table, dssp_table, item='auth'):
     """
     Merge the mmCIF and DSSP Tables.
 
     :param mmcif_table: mmCIF pandas DataFrame
     :param dssp_table: DSSP pandas DataFrame
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :return: merged pandas DataFrame
     """
 
     # bare minimal columns needed
-    if ('{}_seq_id_full'.format(category) in mmcif_table and
-                '{}_asym_id'.format(category) in mmcif_table and
+    if ('{}_seq_id_full'.format(item) in mmcif_table and
+                '{}_asym_id'.format(item) in mmcif_table and
                 'RES_FULL' in dssp_table and 'CHAIN_FULL' in dssp_table):
 
         # workaround for BioUnits
-        if ('orig_{}_asym_id'.format(category) in mmcif_table and not
-        (set(mmcif_table['{}_asym_id'.format(category)].unique()) ==
-             set(dssp_table['CHAIN_FULL'].unique()))):
+        if ('orig_{}_asym_id'.format(item) in mmcif_table and not
+        (set(mmcif_table['{}_asym_id'.format(item)].unique()) ==
+         set(dssp_table['CHAIN_FULL'].unique()))):
             table = mmcif_table.merge(dssp_table, how='left',
-                                      left_on=['{}_seq_id_full'.format(category),
-                                               'orig_{}_asym_id'.format(category)],
+                                      left_on=['{}_seq_id_full'.format(item),
+                                               'orig_{}_asym_id'.format(item)],
                                       right_on=['RES_FULL', 'CHAIN_FULL'])
         else:
             table = mmcif_table.merge(dssp_table, how='left',
-                                      left_on=['{}_seq_id_full'.format(category),
-                                               '{}_asym_id'.format(category)],
+                                      left_on=['{}_seq_id_full'.format(item),
+                                               '{}_asym_id'.format(item)],
                                       right_on=['RES_FULL', 'CHAIN_FULL'])
 
     else:
@@ -99,34 +99,34 @@ def mmcif_dssp_table_merger(mmcif_table, dssp_table, category='auth'):
     return table
 
 
-def mmcif_validation_table_merger(mmcif_table, validation_table, category='auth'):
+def mmcif_validation_table_merger(mmcif_table, validation_table, item='auth'):
     """
     Merge the mmCIF/PDB and Validation Tables.
 
     :param mmcif_table: mmCIF pandas DataFrame
     :param validation_table: Validation pandas DataFrame
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :return: merged pandas DataFrame
     """
 
     # bare minimal columns needed
-    if ('{}_seq_id_full'.format(category) in mmcif_table and
-                '{}_asym_id'.format(category) in mmcif_table and
+    if ('{}_seq_id_full'.format(item) in mmcif_table and
+                '{}_asym_id'.format(item) in mmcif_table and
                 'validation_resnum_full' in validation_table and
                 'validation_chain' in validation_table):
 
         # workaround for BioUnits
-        if 'orig_{}_asym_id'.format(category) in mmcif_table:
+        if 'orig_{}_asym_id'.format(item) in mmcif_table:
             table = mmcif_table.merge(validation_table, how='left',
-                                      left_on=['{}_seq_id_full'.format(category),
-                                               'orig_{}_asym_id'.format(category)],
+                                      left_on=['{}_seq_id_full'.format(item),
+                                               'orig_{}_asym_id'.format(item)],
                                       right_on=['validation_resnum_full',
                                                 'validation_chain'])
         else:
             table = mmcif_table.merge(validation_table, how='left',
-                                      left_on=['{}_seq_id_full'.format(category),
-                                               '{}_asym_id'.format(category)],
+                                      left_on=['{}_seq_id_full'.format(item),
+                                               '{}_asym_id'.format(item)],
                                       right_on=['validation_resnum_full',
                                                 'validation_chain'])
     else:
@@ -312,7 +312,7 @@ def table_generator(uniprot_id=None, pdb_id=None, bio_unit=False,
         mmcif_table = MMCIF.load(identifier=pdb_id, bio_unit=bio_unit,
                                  bio_unit_preferred=True, overwrite=overwrite,
                                  add_atom_altloc=True, add_res_full=True,
-                                 category='auth', residue_agg=residue_agg,
+                                 item='auth', residue_agg=residue_agg,
                                  chains=chains, res_full=res, atoms=atoms, lines=lines)
 
         # SIFTS table

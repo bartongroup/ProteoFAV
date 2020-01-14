@@ -363,8 +363,8 @@ def _add_mmcif_atom_altloc(table):
     :return: returns a modified pandas DataFrame
     """
 
-    def _join_atom_altloc(table, category='auth'):
-        atom = table['{}_atom_id'.format(category)]
+    def _join_atom_altloc(table, item):
+        atom = table['{}_atom_id'.format(item)]
         altloc = table['label_alt_id']
 
         new_column = (atom + '.' + altloc)
@@ -443,14 +443,14 @@ def _remove_multiple_altlocs(table):
     return table.drop(table.index[drop_ixs])
 
 
-def _remove_partial_residues(table, category='auth'):
+def _remove_partial_residues(table, item='label'):
     """
     Removes residues that contain missing atoms. Needs to check
     which atoms are available for each residue. Also removes residues with
     same '*_seq_id' as the previous residue.
 
     :param table: pandas DataFrame object
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :return: returns a modified pandas DataFrame
     """
@@ -466,10 +466,10 @@ def _remove_partial_residues(table, category='auth'):
     for ix in table.index:
         group = table.loc[ix, 'group_PDB']
         if group == 'ATOM':
-            curr_res = table.loc[ix, '{}_comp_id'.format(category)]
-            curr_seq = table.loc[ix, '{}_seq_id'.format(category)]
+            curr_res = table.loc[ix, '{}_comp_id'.format(item)]
+            curr_seq = table.loc[ix, '{}_seq_id'.format(item)]
             if curr_res in aa_default_atoms:
-                curr_atom = table.loc[ix, '{}_atom_id'.format(category)]
+                curr_atom = table.loc[ix, '{}_atom_id'.format(item)]
                 if prev_res == curr_res and prev_seq == curr_seq:
                     curr_ixs.append(ix)
                     curr_atoms.append(curr_atom)
@@ -496,25 +496,25 @@ def _remove_partial_residues(table, category='auth'):
     return table.drop(table.index[drop_ixs])
 
 
-def residues_aggregation(table, agg_method='centroid', category='auth'):
+def residues_aggregation(table, agg_method='centroid', item='label'):
     """
     Gets the residues' atoms and their centroids (mean).
 
     :param table: pandas DataFrame object
     :param agg_method: current values: 'centroid', 'backbone_centroid'',
         first', 'mean' and 'unique'
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :return: returns a modified pandas DataFrame
     """
 
     agg_generic = agg_method
-    agg_cols = ['pdbx_PDB_model_num', '{}_asym_id'.format(category),
-                '{}_seq_id'.format(category)]
+    agg_cols = ['pdbx_PDB_model_num', '{}_asym_id'.format(item),
+                '{}_seq_id'.format(item)]
     if agg_method not in ['centroid', 'first', 'unique', 'mean', 'backbone_centroid']:
         raise ValueError('Method {} is not currently implemented...'.format(agg_method))
     if agg_method == 'backbone_centroid':
-        table = row_selector(table, '{}_atom_id'.format(category), ('CA', 'N', 'C', 'O'))
+        table = row_selector(table, '{}_atom_id'.format(item), ('CA', 'N', 'C', 'O'))
         agg_method = 'centroid'
     if agg_method == 'centroid' or agg_method == 'mean':
         agg_generic = 'first'
@@ -554,14 +554,14 @@ def write_mmcif_from_table(table, filename, overwrite=False):
     return
 
 
-def write_pdb_from_table(table, filename, overwrite=False, category='auth'):
+def write_pdb_from_table(table, filename, overwrite=False, item='auth'):
     """
     Generic method that writes 'atom' lines in PDB format.
 
     :param table: pandas DataFrame object
     :param filename: path to the PDB file
     :param overwrite: boolean
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :return: (side effects) writes to file
     """
@@ -572,7 +572,7 @@ def write_pdb_from_table(table, filename, overwrite=False, category='auth'):
         atom_number += 1
         atom_lines.append(_get_atom_line(table=table, index=i,
                                          atom_number=atom_number,
-                                         category=category))
+                                         item=item))
 
     # write the final output
     if not os.path.exists(filename) or overwrite:
@@ -584,7 +584,7 @@ def write_pdb_from_table(table, filename, overwrite=False, category='auth'):
     return
 
 
-def _get_atom_line(table, index, atom_number, category='auth'):
+def _get_atom_line(table, index, atom_number, item='auth'):
     """
     Returns an ATOM PDB-formatted string.
     (Based on code from the PDB module in Biopython.)
@@ -592,7 +592,7 @@ def _get_atom_line(table, index, atom_number, category='auth'):
     :param table: pandas DataFrame object
     :param index: atom index
     :param atom_number: incremental number
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :return: returns a PDB-formatted ATOM/HETATM line
     """
@@ -612,7 +612,7 @@ def _get_atom_line(table, index, atom_number, category='auth'):
     ATOM     22 HD22 ASN A   2      25.276  31.270   8.035  1.00  0.00           H
     """
 
-    name = table.loc[ix, '{}_atom_id'.format(category)]
+    name = table.loc[ix, '{}_atom_id'.format(item)]
     if len(name) == 1:
         name = " {}  ".format(name.strip())
     elif len(name) == 2:
@@ -626,12 +626,12 @@ def _get_atom_line(table, index, atom_number, category='auth'):
     if altloc == ".":
         altloc = " "
 
-    resname = table.loc[ix, '{}_comp_id'.format(category)]
+    resname = table.loc[ix, '{}_comp_id'.format(item)]
 
-    chain_id = table.loc[ix, '{}_asym_id'.format(category)]
+    chain_id = table.loc[ix, '{}_asym_id'.format(item)]
     chain_id = chain_id[0]
 
-    resseq = str(table.loc[ix, '{}_seq_id'.format(category)])
+    resseq = str(table.loc[ix, '{}_seq_id'.format(item)])
 
     icode = table.loc[ix, 'pdbx_PDB_ins_code']
     if icode == "?":
@@ -702,12 +702,14 @@ def get_preferred_assembly_id(identifier):
     return bio_best
 
 
-def get_sequence(table, category='auth', ambiguous='X'):
+# TODO improve to get only ATOM lines, select only entities and
+#  aggregate atoms by residue
+def get_sequence(table, item='label', ambiguous='X'):
     """
     Get the sequence for the PDBx table.
 
     :param table: pandas DataFrame from PDB/MMCIF.read()
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :param ambiguous: (str) 1-letter symbol for ambiguous residues
     :returns: (str) 1-letter sequence
@@ -717,7 +719,7 @@ def get_sequence(table, category='auth', ambiguous='X'):
     if isinstance(table, pd.DataFrame):
         sequence = ""
         for ix in table.index:
-            aa3 = table.loc[ix, "{}_comp_id".format(category)]
+            aa3 = table.loc[ix, "{}_comp_id".format(item)]
             aa1 = scop_3to1[aa3]
             if len(aa1) == 1:
                 sequence += aa1
@@ -795,7 +797,7 @@ def load_structures(identifier=None, excluded_cols=pdbx_excluded_cols,
 
 def filter_structures(table, excluded_cols=None,
                       models='first', chains=None, res=None, res_full=None,
-                      comps=None, atoms=None, lines=None, category='auth',
+                      comps=None, atoms=None, lines=None, item='auth',
                       residue_agg=False, agg_method='centroid',
                       add_res_full=True, add_atom_altloc=False,
                       add_contacts=False, dist=5.0, reset_atom_id=True,
@@ -807,13 +809,13 @@ def filter_structures(table, excluded_cols=None,
     :param table: pandas DataFrame object
     :param excluded_cols: option to exclude mmCIF columns
     :param models: (tuple) model IDs or 'first' or None
-    :param chains: (tuple) chain IDs or None
+    :param chains: (tuple) chain IDs or None (uses 'label' or 'auth' asym ids)
     :param res: (tuple) res IDs or None
     :param res_full: (tuple) full res IDs ('*_seq_id' + 'pdbx_PDB_ins_code') or None
     :param comps: (tuple) comp IDs or None
     :param atoms: (tuple) atom IDs or None
     :param lines: (tuple) 'ATOM' or 'HETATM' or None (both)
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id
     :param residue_agg: (boolean) whether to do residue aggregation
     :param agg_method: current values: 'centroid', 'first', 'mean' and 'unique'
@@ -842,8 +844,8 @@ def filter_structures(table, excluded_cols=None,
 
     # select chains
     if chains:
-        table = row_selector(table, '{}_asym_id'.format(category), chains)
-        log.debug("mmCIF/PDB table filtered by %s_asym_id...", category)
+        table = row_selector(table, '{}_asym_id'.format(item), chains)
+        log.debug("mmCIF/PDB table filtered by %s_asym_id...", item)
 
     # select lines
     if lines:
@@ -885,28 +887,28 @@ def filter_structures(table, excluded_cols=None,
     # excluding rows
     # select residues
     if res:
-        table = row_selector(table, '{}_seq_id'.format(category), res)
-        log.debug("mmCIF/PDB table filtered by %s_seq_id...", category)
+        table = row_selector(table, '{}_seq_id'.format(item), res)
+        log.debug("mmCIF/PDB table filtered by %s_seq_id...", item)
 
     if res_full:
-        table = row_selector(table, '{}_seq_id_full'.format(category), res_full)
-        log.debug("mmCIF/PDB table filtered by %s_seq_id_full...", category)
+        table = row_selector(table, '{}_seq_id_full'.format(item), res_full)
+        log.debug("mmCIF/PDB table filtered by %s_seq_id_full...", item)
 
     # select amino acids/molecules
     if comps:
-        table = row_selector(table, '{}_comp_id'.format(category), comps)
-        log.debug("mmCIF/PDB table filtered by %s_comp_id...", category)
+        table = row_selector(table, '{}_comp_id'.format(item), comps)
+        log.debug("mmCIF/PDB table filtered by %s_comp_id...", item)
 
     # select atoms
     if atoms == 'centroid' or atoms == 'backbone_centroid':
-        table = residues_aggregation(table, agg_method=atoms)
+        table = residues_aggregation(table, agg_method=atoms, item=item)
     elif atoms:
-        table = row_selector(table, '{}_atom_id'.format(category), atoms)
-        log.debug("mmCIF/PDB table filtered by %s_atom_id...", category)
+        table = row_selector(table, '{}_atom_id'.format(item), atoms)
+        log.debug("mmCIF/PDB table filtered by %s_atom_id...", item)
 
     if residue_agg:
         table = residues_aggregation(table, agg_method=agg_method,
-                                     category=category)
+                                     item=item)
 
     if table.empty:
         raise ValueError("The filters resulted in an empty DataFrame...")
@@ -956,14 +958,14 @@ def read_structures(filename=None, input_format=None,
 
 
 def write_structures(table=None, filename=None, overwrite=False,
-                     output_format=None, category='auth'):
+                     output_format=None, item='auth'):
     """
     Writes 'ATOM' lines in PDB or mmCIF format.
 
     :param table: pandas DataFrame object
     :param filename: path to the mmCIF/PDB file
     :param overwrite: boolean
-    :param category: data category to be used as precedence in _atom_site.*_*
+    :param item: data item to be used as precedence in _atom_site.*_
         asym_id, seq_id and atom_id (generally either 'label' or 'auth')
     :param output_format: either 'mmcif', 'cif', 'pdb' or 'ent'
     :return: (side effects) writes to a file
@@ -986,10 +988,10 @@ def write_structures(table=None, filename=None, overwrite=False,
                                    overwrite=overwrite)
         elif output_format == 'pdb' or output_format == 'ent':
             write_pdb_from_table(filename=filename, table=table,
-                                 overwrite=overwrite, category=category)
+                                 overwrite=overwrite, item=item)
 
 
-def download_structures(identifier, filename, output_format='mmcif',
+def download_structures(identifier, filename, output_format=None,
                         bio_unit=False, bio_unit_preferred=False, bio_unit_id="1",
                         mmcif_version="_updated", overwrite=False):
     """
