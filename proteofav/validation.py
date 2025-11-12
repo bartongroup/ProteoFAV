@@ -47,7 +47,7 @@ def parse_validation_residues(filename, excluded_cols=None, global_parameters=Fa
         not_in = {k: None for k in header.difference(row.keys())}
         row.update(not_in)
 
-    table = pd.DataFrame(rows, columns=header)
+    table = pd.DataFrame(rows, columns=list(header))
 
     # column renaming
     table.columns = ["validation_" + name for name in table.columns]
